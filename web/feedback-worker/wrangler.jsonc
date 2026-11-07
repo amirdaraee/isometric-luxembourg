@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "isometric-feedback",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  // Reached only through the custom domain, behind Cloudflare's edge (DDoS protection and the WAF rule).
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "api.isometric.lu", "custom_domain": true }],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "isometric-feedback",
+      // Replace with the id printed by `npx wrangler d1 create isometric-feedback` before deploying.
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  // Cheap first line of defence before any D1 query: per client, per Cloudflare location, approximate.
+  "ratelimits": [
+    { "name": "BURST", "namespace_id": "4711", "simple": { "limit": 10, "period": 60 } }
+  ],
+  "vars": {
+    // Origins allowed by CORS. localhost:3000 is the local dev server, where the admin page lives.
+    "ALLOWED_ORIGINS": "https://isometric.lu,https://www.isometric.lu,http://localhost:3000",
+    // Hostnames a Turnstile token must have been issued on (empty: not checked).
+    "TURNSTILE_HOSTNAMES": "isometric.lu,www.isometric.lu,localhost"
+  },
+  // Daily clean-up: expired rate-limit counters, and IP hashes older than 30 days.
+  "triggers": { "crons": ["17 3 * * *"] },
+  "observability": { "enabled": true }
+  // Secrets (never in this file): TURNSTILE_SECRET, IP_SALT, ADMIN_TOKEN. Local values go in .dev.vars.
+}
