@@ -1,6 +1,8 @@
 // Real trams and trains from the national timetable (GTFS, data.public.lu, CC BY), see pipeline/build_transit.py.
 // Positions come from the clock: each trip lists [arrival s, departure s, distance along its track shape].
 
+import { drawVehicle, spriteLength, type Sprites } from "./sprites";
+
 export interface TransitData {
   shapes: number[][];
   trips: { s: number; k: "tram" | "train"; n: string; t: [number, number, number][] }[];
@@ -36,12 +38,20 @@ export function luxSeconds(now = new Date()): number {
 }
 
 const MPP = 0.25;
+/** How much a ground length shrinks on screen along screen heading h (full left-right, half up-down). */
+function shrink(h: number): number {
+  const c = Math.cos(h), sn = Math.sin(h);
+  return 1 / Math.sqrt(c * c + 4 * sn * sn);
+}
 const TRAM = { car: 45 / MPP, width: 2.65 / MPP, cars: 1 };
 const TRAIN = { car: 26.8 / MPP, width: 2.9 / MPP, cars: 4 };
 
 /** Draw every vehicle running at `sec`. `toScreen` maps image px to screen px; `visible` says whether a point shows. */
 export function drawTransit(g: CanvasRenderingContext2D, d: TransitData, shapes: Shape[], sec: number, z: number,
-  ox: number, oy: number, W: number, H: number, visible: (x: number, y: number) => boolean, night: number) {
+  ox: number, oy: number, W: number, H: number, visible: (x: number, y: number) => boolean, night: number,
+  spr?: Sprites | null) {
+  // With sprites, every section is collected first and drawn far to near (by screen y), so nearer ones overlap.
+  const queue: { type: string; sx: number; sy: number; h: number; lit: boolean }[] = [];
   for (const tr of d.trips) {
     const t = tr.t;
     for (const s2 of [sec, sec + 86400]) {   // trips after midnight are stored with times > 24 h
@@ -59,6 +69,27 @@ export function drawTransit(g: CanvasRenderingContext2D, d: TransitData, shapes:
       }
       const sh = shapes[tr.s];
       const dir = t[t.length - 1][2] >= t[0][2] ? 1 : -1;
+      if (spr) {
+        // Luxtram: end, three middle sections, end (turned round); CFL push-pull: cab, coaches, locomotive.
+        const types = tr.k === "tram" ? ["tram_end", "tram_mid", "tram_mid", "tram_mid", "tram_end"]
+          : ["train_cab", "train_coach", "train_coach", "train_loco"];
+        let back = 0;
+        types.forEach((type, i) => {
+          // lengths along the track are on-screen map px, so a section takes its foreshortened length
+          const L0 = (spriteLength(spr, type) || (tr.k === "tram" ? 9 : 26) / MPP) + 0.4 / MPP;
+          const h0 = at(sh, dist - dir * back)[2];
+          const L = L0 * shrink(h0);
+          const centre = dist - dir * (back + L / 2);
+          back += L;
+          const [x, y, ang] = at(sh, centre);
+          const sx = x * z + ox, sy = y * z + oy;
+          if (sx < -200 || sx > W + 200 || sy < -200 || sy > H + 200 || !visible(x, y)) return;
+          const forward = ang + (dir < 0 ? Math.PI : 0);
+          const last = i === types.length - 1;
+          queue.push({ type, sx, sy, h: tr.k === "tram" && last ? forward + Math.PI : forward, lit: night > 0.05 });
+        });
+        continue;
+      }
       const spec = tr.k === "tram" ? TRAM : TRAIN;
       for (let c = 0; c < spec.cars; c++) {
         const centre = dist - dir * (c + 0.5) * (spec.car + 1.2 / MPP);
@@ -66,6 +97,18 @@ export function drawTransit(g: CanvasRenderingContext2D, d: TransitData, shapes:
         const sx = x * z + ox, sy = y * z + oy;
         if (sx < -200 || sx > W + 200 || sy < -200 || sy > H + 200 || !visible(x, y)) continue;
         drawCar(g, sx, sy, ang + (dir < 0 ? Math.PI : 0), spec.car * z, Math.max(spec.width * z, 2), tr.k, c, spec.cars, night);
+      }
+    }
+  }
+  if (spr && queue.length) {
+    queue.sort((a, b) => a.sy - b.sy);
+    for (const q of queue) {
+      drawVehicle(g, spr, q.type, 0, q.sx, q.sy, q.h, z);
+      if (q.lit) {   // lit windows at night: a warm glow over the body
+        g.globalAlpha = night * 0.55;
+        g.fillStyle = "rgba(255,206,130,1)";
+        g.beginPath(); g.ellipse(q.sx, q.sy - 2.2 / MPP * z, Math.max(2, 3.5 / MPP * z), Math.max(1, 1.2 / MPP * z), 0, 0, Math.PI * 2); g.fill();
+        g.globalAlpha = 1;
       }
     }
   }

@@ -201,7 +201,7 @@ export default function App() {
       </div>
 
       <div className="foot">
-        {on("previewBadge") && meta.art !== "final" && <span className="badge">{meta.art === "painted" ? "Preview: old town painted, the rest is 3D data" : "Preview: 3D data, final art coming"}</span>}
+        {on("previewBadge") && meta.art !== "final" && <span className="badge">{meta.art === "painted" ? ((meta.painted?.length ?? 0) > 1 ? "Preview: the whole city is painted; details are still being refined" : "Preview: old town painted, the rest is 3D data") : "Preview: 3D data, final art coming"}</span>}
         <button type="button" className="link" onClick={() => setAbout(true)}>About and credits</button>
       </div>
 

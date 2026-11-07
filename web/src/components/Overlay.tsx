@@ -289,7 +289,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
           const v = vx >= 0 && vy >= 0 && vx < V.w && vy < V.h ? V.d[vy * V.w + vx] : 0;
           return v === 255 || v === 128;
         };
-        drawTransit(g, transit.current.d, transit.current.shapes, hour === null ? luxSeconds() : hour * 3600, z, ox, oy, W, H, visible, night);
+        drawTransit(g, transit.current.d, transit.current.shapes, hour === null ? luxSeconds() : hour * 3600, z, ox, oy, W, H, visible, night, sprites.current);
       }
 
       if (traffic && on("traffic") && st.sim && z >= 0.08) {
