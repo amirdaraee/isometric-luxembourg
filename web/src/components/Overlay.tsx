@@ -2,17 +2,19 @@ import { useEffect, useRef } from "react";
 import { asset } from "../config";
 import { on } from "../features";
 import type { MapHandle, MapMeta } from "./IsometricMap";
-import { drawTransit, luxSeconds, prepareShapes, type TransitData } from "./Transit";
-import { drawVehicle, loadSprites, type Sprites } from "./sprites";
-import { loadOcclusion, type Occlusion } from "./occlusion";
+import { luxDayMask, luxSeconds, prepareShapes, stretch, transitSections, TRANSIT_HEIGHT_M, type Section, type Shape,
+  type TransitData } from "./Transit";
+import { drawLamps, drawVehicle, loadSprites, spriteLength, type Sprites } from "./sprites";
+import { DRIVABLE, loadDrivable, loadOcclusion, type Drivable, type Occlusion } from "./occlusion";
 import { waterPoints } from "./Water";
 import { Traffic, type DrawableCar } from "../sim/traffic";
 import { testParams } from "../testParams";
+import { subscribe } from "../frame";
 
 // Projected OSM lines (web/public/data/lines.json, from pipeline/project_lines.py), in map image pixels.
 interface Line { id: number; n?: string; k?: string; b?: boolean; t?: boolean; o?: boolean; p: number[] }
 interface Lines { roads: Line[]; rail: Line[]; waterways: Line[]; water: Line[] }
-interface Prepared extends Line { box: [number, number, number, number]; len: number; cum: number[] }
+interface Prepared extends Line { box: [number, number, number, number]; len: number; cum: number[]; path?: Path2D }
 
 interface Props {
   map: React.RefObject<MapHandle>;
@@ -49,14 +51,26 @@ function drawCarRect(g: CanvasRenderingContext2D, c: DrawableCar, sx: number, sy
   g.restore();
 }
 
-/** How much a length along the ground shrinks on screen when it points along screen heading h (isometric view:
- *  full length left-right, half length up-down). */
-function screenShrink(h: number): number {
-  const c = Math.cos(h), sn = Math.sin(h);
-  return 1 / Math.sqrt(c * c + 4 * sn * sn);
+/**
+ * Headlight beam of a vehicle: a soft wedge on the ground ahead of it, drawn in ground metres (forward, right) through
+ * the map's 2:1 view, so it narrows and shortens with the heading like the road itself. sx, sy: screen px of the
+ * vehicle's ground centre; z: screen px per map px.
+ */
+function drawBeam(g: CanvasRenderingContext2D, c: DrawableCar, sx: number, sy: number, z: number, night: number) {
+  const h = c.headingScreenRad, fx = Math.cos(h), fy = 2 * Math.sin(h), n = Math.hypot(fx, fy);
+  const k = z / MPP;   // screen px per ground metre, before the 2:1 squash
+  const half = (c.length * MPP) / 2, w = (c.width * MPP) / 2, reach = 9 + half;
+  g.save();
+  g.transform((fx / n) * k, (fy / n / 2) * k, (-fy / n) * k, (fx / n / 2) * k, sx, sy);
+  const grd = g.createLinearGradient(half - 0.3, 0, reach, 0);
+  grd.addColorStop(0, `rgba(255,236,190,${0.5 * night})`); grd.addColorStop(1, "rgba(255,236,190,0)");
+  g.fillStyle = grd;
+  g.beginPath(); g.moveTo(half - 0.3, -w * 0.9); g.lineTo(reach, -w * 2.4); g.lineTo(reach, w * 2.4); g.lineTo(half - 0.3, w * 0.9); g.fill();
+  g.restore();
 }
 
-/** Headlight beam ahead and tail lights behind, in the car's own frame; brake lights brighter when braking. */
+/** The placeholder rectangle's lights (drawCarRect only; it is flat, so lamps at its ends are right): headlight beam
+ * ahead and tail lights behind, in the car's own frame; brake lights brighter when braking. */
 function drawCarLights(g: CanvasRenderingContext2D, c: DrawableCar, L: number, Wd: number, night: number) {
   if (night > 0.05) {
     g.globalAlpha = night;
@@ -131,6 +145,96 @@ function drawSirenLights(g: CanvasRenderingContext2D, c: DrawableCar, sx: number
   g.restore();
 }
 
+/** ?siren=<street name> (for videos and checks): an emergency vehicle on a call on that street near the middle of the
+ * view, again whenever none is about (needs the emergency switch). */
+const SIREN_STREET = typeof location !== "undefined" ? new URLSearchParams(location.search).get("siren") : null;
+
+/** One thing to draw on the vehicle layer: a road vehicle or a tram or train section, at screen (sx, sy) (its ground
+ * centre, lifted onto a deck where it is on one), with an opacity. */
+interface Item { car?: DrawableCar; sec?: Section; sx: number; sy: number; a: number }
+/** The cut height of each vehicle pass (m): cars; buses, fire engines and trams; trains; everything on a deck. */
+const PASS_HEIGHT_M = [1.6, 3.2, TRANSIT_HEIGHT_M.train, TRANSIT_HEIGHT_M.train];
+/** How far (m) a vehicle's drawing reaches from its ground centre: half a 27 m coach, its height, beams, halos. */
+const REACH_M = 30;
+/** Half the width of the tube a tunnel clip erases (m), either side of the track. */
+const TUNNEL_HALF_M = 3.5;
+
+/** A tram or train section: its sprite and lamps (headlamps at the front by day as well, tail lamps and lit windows
+ * at night; only the lamp pixels the camera sees light up), or the placeholder when the sprites are not there. */
+function drawSection(g: CanvasRenderingContext2D, spr: Sprites | null, q: Section, sx: number, sy: number, z: number,
+  night: number) {
+  if (spr) {
+    drawVehicle(g, spr, q.type, 0, sx, sy, q.h, z);
+    drawLamps(g, spr, q.type, sx, sy, q.h, z,
+      { head: q.end === 1 ? Math.max(0.35, night) : 0, tail: q.end === -1 ? night : 0, glass: night * 0.8 });
+    return;
+  }
+  const L = (q.d1 - q.d0) * z, Wd = Math.max(((q.kind === "tram" ? 2.65 : 2.9) / MPP) * z, 2);
+  g.save(); g.translate(sx, sy); g.rotate(q.h);
+  g.fillStyle = "rgba(0,0,0,.28)"; g.fillRect(-L / 2 + 1.5, -Wd / 2 + 2, L, Wd);
+  g.fillStyle = q.kind === "tram" ? "#1f2125" : "#f2f2ef"; g.fillRect(-L / 2, -Wd / 2, L, Wd);
+  g.fillStyle = q.kind === "tram" ? "#b9bec6" : "#d4202b"; g.fillRect(-L / 2, Wd * 0.22, L, Wd * 0.28);
+  g.strokeStyle = "rgba(20,20,24,.85)"; g.lineWidth = 1; g.strokeRect(-L / 2, -Wd / 2, L, Wd);
+  if (night > 0.05) {
+    g.globalAlpha = night; g.fillStyle = "rgba(255,214,140,.9)";
+    for (let k = 0; k < 4; k++) g.fillRect(-L / 2 + (L * (k + 0.5)) / 4 - L * 0.05, -Wd * 0.12, L * 0.1, Wd * 0.24);
+    g.globalAlpha = 1;
+  }
+  g.restore();
+}
+
+/**
+ * Clips a section at a tunnel portal: erases, on `g`, the tunnel stretches of its shape near it, as a tube of
+ * TUNNEL_HALF_M either side of the track swept up by the vehicle's height, so the coach slides into the hillside.
+ * lift: screen px the section was lifted by (a deck at the portal).
+ */
+function clipTunnels(g: CanvasRenderingContext2D, sh: Shape, q: Section, lift: number, z: number, ox: number, oy: number) {
+  const up = (TRANSIT_HEIGHT_M[q.kind] + 0.5) * (0.8660254 / MPP) * z, b = (TUNNEL_HALF_M / MPP) * z;
+  g.save();
+  g.globalCompositeOperation = "destination-out";
+  g.fillStyle = "#000";
+  for (const [t0, t1] of sh.tunnels) {
+    if (t1 < q.d0 - 10 || t0 > q.d1 + 10) continue;
+    const p = stretch(sh, Math.max(t0, q.d0 - 40), Math.min(t1, q.d1 + 40));
+    for (let i = 0; i + 3 < p.length; i += 2) {
+      const ax = p[i] * z + ox, ay = p[i + 1] * z + oy + lift, bx = p[i + 2] * z + ox, by = p[i + 3] * z + oy + lift;
+      // across the track on the ground (the map is drawn 2:1), on screen
+      const gx = bx - ax, gy = (by - ay) * 2, n = Math.hypot(gx, gy) || 1;
+      const px = (-gy / n) * b, py = ((gx / n) * b) / 2;
+      // the convex hull of the tube's cross-section at both ends, at the ground and at the roof
+      const pts: [number, number][] = [];
+      for (const [x, y] of [[ax, ay], [bx, by]]) for (const s of [-1, 1]) for (const h of [0, up]) pts.push([x + px * s, y + py * s - h]);
+      const hull = convexHull(pts);
+      g.beginPath(); g.moveTo(hull[0][0], hull[0][1]);
+      for (let k = 1; k < hull.length; k++) g.lineTo(hull[k][0], hull[k][1]);
+      g.closePath(); g.fill();
+    }
+  }
+  g.restore();
+}
+
+/** Convex hull of a few points (monotone chain), in order round the hull. */
+function convexHull(p: [number, number][]): [number, number][] {
+  const s = [...p].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: number[], a: number[], b: number[]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo: [number, number][] = [], hi: [number, number][] = [];
+  for (const q of s) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (let i = s.length - 1; i >= 0; i--) { const q = s[i]; while (hi.length >= 2 && cross(hi[hi.length - 2], hi[hi.length - 1], q) <= 0) hi.pop(); hi.push(q); }
+  return lo.slice(0, -1).concat(hi.slice(0, -1));
+}
+
+/** The line as a Path2D in map px, made once (drawn through the view's transform). */
+function mapPath(r: Prepared, closed = false): Path2D {
+  if (!r.path) {
+    const p = new Path2D();
+    p.moveTo(r.p[0], r.p[1]);
+    for (let i = 2; i < r.p.length; i += 2) p.lineTo(r.p[i], r.p[i + 1]);
+    if (closed) p.closePath();
+    r.path = p;
+  }
+  return r.path;
+}
+
 function prepare(l: Line): Prepared {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   const cum = [0];
@@ -170,10 +274,21 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
   const sprites = useRef<Sprites | null>(null);
   const occl = useRef<Occlusion | null>(null);
   const vlayer = useRef<HTMLCanvasElement | null>(null);
+  // The screen box drawn on the vehicle layer last frame (cleared the next).
+  const vbox = useRef<[number, number, number, number] | null>(null);
+  // Tram and train sections at a tunnel portal, drawn here and clipped before they join the vehicle layer.
+  const portalLayer = useRef<HTMLCanvasElement | null>(null);
+  // When the last ?siren= vehicle was put on its street.
+  const sirenAt = useRef(-1e9);
+  const drivable = useRef<Drivable | null>(null);
+  // Per car id: how visible it is (0..1, the guard's fade) and the frame it was last seen in.
+  const fades = useRef(new Map<number, { a: number; stamp: number }>());
+  const fadeStamp = useRef(0);
   useEffect(() => {
     if (!on("traffic") && !on("transit")) return;
     loadSprites().then((x) => { sprites.current = x; }).catch(() => {});
     loadOcclusion().then((x) => { occl.current = x; }).catch(() => {});
+    loadDrivable().then((x) => { drivable.current = x; }).catch(() => {});
   }, []);
   const state = useRef<{ lines?: Lines; roads?: Prepared[]; named?: Prepared[]; rail?: Prepared[]; water?: Prepared[];
     waterways?: Prepared[]; flocks?: Flock[]; sim?: Traffic }>({});
@@ -201,40 +316,56 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
     img.src = asset("/data/visibility.png");
   }, []);
 
+  // Birds start over the rivers (the painted water mask) inside the painted area.
   useEffect(() => {
+    if (!on("birds")) return;
+    const st = state.current, areas0 = meta.painted ?? [];
+    let bseed = 7;
+    const brnd = () => ((bseed = (bseed * 48271) % 2147483647) / 2147483647);
+    waterPoints().then((pts) => {
+      const spawn = pts.filter((g) => areas0.some((a) => g.x > a.x0 && g.x < a.x0 + a.w && g.y > a.y0 && g.y < a.y0 + a.h))
+        .map((g) => ({ x: g.x, y: g.y, ph: 0, len: 0 }));
+      st.flocks = spawn.length ? Array.from({ length: 14 }, () => newFlock(spawn, brnd)) : [];
+      (st as { spawn?: Glint[] }).spawn = spawn;
+    }).catch(() => { st.flocks = []; });
+  }, [meta]);
+
+  // The street lines (2 MB) only once streets or traffic are wanted; the traffic graph is then built when the page
+  // is idle, so that it never holds up the first paint.
+  const wantLines = streets || traffic;
+  const linesAsked = useRef(false);
+  useEffect(() => {
+    if (!wantLines || linesAsked.current) return;
+    linesAsked.current = true;
     fetch(asset("/data/lines.json")).then((r) => r.json()).then((L: Lines) => {
       const st = state.current;
       st.roads = L.roads.filter((r) => !r.t).map(prepare);
       st.named = st.roads.filter((r) => r.n && r.k !== "footway" && r.k !== "path" && r.k !== "steps" && r.len > 120);
       st.rail = L.rail.filter((r) => !r.t).map(prepare);
       st.water = L.water.map(prepare);
-      // Birds start over the rivers (the painted water mask) inside the painted area.
-      const areas0 = meta.painted ?? [];
-      let bseed = 7;
-      const brnd = () => ((bseed = (bseed * 48271) % 2147483647) / 2147483647);
-      waterPoints().then((pts) => {
-        const spawn = pts.filter((g) => areas0.some((a) => g.x > a.x0 && g.x < a.x0 + a.w && g.y > a.y0 && g.y < a.y0 + a.h))
-          .map((g) => ({ x: g.x, y: g.y, ph: 0, len: 0 }));
-        st.flocks = spawn.length ? Array.from({ length: 14 }, () => newFlock(spawn, brnd)) : [];
-        (st as { spawn?: Glint[] }).spawn = spawn;
-      }).catch(() => { st.flocks = []; });
       st.waterways = L.waterways.filter((r) => !r.t).map(prepare);
       // Traffic only where the map is painted (src/sim/traffic.ts: road graph, junctions, signals, car following).
-      if (meta.painted?.length) st.sim = new Traffic(L.roads, { areas: meta.painted, mpp: MPP, emergency: on("emergency"), seed: testParams.seed ?? undefined });
-    });
-  }, [meta]);
+      if (!meta.painted?.length || !on("traffic")) return;
+      const build = () => {
+        st.sim = new Traffic(L.roads, { areas: meta.painted!, mpp: MPP, emergency: on("emergency"), seed: testParams.seed ?? undefined });
+        // In development, the simulation is reachable from the console and from headless checks.
+        if (import.meta.env.DEV) (window as unknown as { traffic?: Traffic }).traffic = st.sim;
+      };
+      if ("requestIdleCallback" in window) requestIdleCallback(build, { timeout: 1500 }); else setTimeout(build, 50);
+    }).catch(() => { linesAsked.current = false; });
+  }, [meta, wantLines]);
 
   useEffect(() => {
-    let raf = 0, last = performance.now();
-    const loop = (now: number) => {
-      raf = requestAnimationFrame(loop);
-      draw(now);
-    };
+    let last = performance.now();
+    // Draw once per frame. While the map moves, OpenSeadragon's own frame ("update-viewport") draws, so cars and
+    // street lines never trail the map; the frame clock then skips its draw. When the map is still, the frame clock
+    // draws. (A guard until frame.ts merges the map's frame into its own.)
+    let lastMapDraw = -1e9;
     const draw = (now: number) => {
-      const dt = Math.min((now - last) / 1000, 0.1);
-      last = now;
+      const dt = Math.min(Math.max(now - last, 0) / 1000, 0.1);
+      last = Math.max(last, now);
       const cv = canvas.current, v = map.current?.getView(), st = state.current;
-      if (!cv || !v || !st.roads) return;
+      if (!cv || !v) return;
       const dpr = window.devicePixelRatio || 1, W = window.innerWidth, H = window.innerHeight;
       if (cv.width !== W * dpr || cv.height !== H * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
       const g = cv.getContext("2d")!;
@@ -247,30 +378,28 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       // image px -> screen px
       const z = v.z, ox = W / 2 - v.x * z, oy = H / 2 - v.y * z;
       const vis = (b: number[]) => b[2] * z + ox > -50 && b[0] * z + ox < W + 50 && b[3] * z + oy > -50 && b[1] * z + oy < H + 50;
-      const path = (p: number[]) => {
-        g.beginPath();
-        g.moveTo(p[0] * z + ox, p[1] * z + oy);
-        for (let i = 2; i < p.length; i += 2) g.lineTo(p[i] * z + ox, p[i + 1] * z + oy);
-      };
 
-      if (streets) {
+      if (streets && st.roads) {
+        // Cached paths in map px, drawn through the view (line widths and dashes are in screen px, hence / z).
+        g.setTransform(dpr * z, 0, 0, dpr * z, dpr * ox, dpr * oy);
         g.lineJoin = "round"; g.lineCap = "round";
-        g.fillStyle = "rgba(56,152,255,.35)"; g.strokeStyle = "rgba(56,152,255,.9)"; g.lineWidth = 1.5;
-        for (const w of st.water!) if (vis(w.box)) { path(w.p); g.closePath(); g.fill(); g.stroke(); }
-        g.lineWidth = 3;
-        for (const w of st.waterways!) if (vis(w.box)) { path(w.p); g.stroke(); }
-        g.strokeStyle = "rgba(20,20,20,.85)"; g.setLineDash([6, 4]); g.lineWidth = 2;
-        for (const r of st.rail!) if (vis(r.box)) { path(r.p); g.stroke(); }
+        g.fillStyle = "rgba(56,152,255,.35)"; g.strokeStyle = "rgba(56,152,255,.9)"; g.lineWidth = 1.5 / z;
+        for (const w of st.water!) if (vis(w.box)) { const p = mapPath(w, true); g.fill(p); g.stroke(p); }
+        g.lineWidth = 3 / z;
+        for (const w of st.waterways!) if (vis(w.box)) g.stroke(mapPath(w));
+        g.strokeStyle = "rgba(20,20,20,.85)"; g.setLineDash([6 / z, 4 / z]); g.lineWidth = 2 / z;
+        for (const r of st.rail!) if (vis(r.box)) g.stroke(mapPath(r));
         g.setLineDash([]);
         const zs = Math.min(Math.max(z * 4, 0.6), 2.2);
         for (const r of st.roads) {
           const sty = ROAD_STYLE[r.k ?? ""];
           if (!sty || !vis(r.box)) continue;
           if (z < 0.12 && !["motorway", "trunk", "primary", "secondary"].includes(r.k!)) continue;
-          path(r.p);
-          g.strokeStyle = "rgba(20,24,32,.55)"; g.lineWidth = sty[1] * zs + 2; g.stroke();
-          g.strokeStyle = r.b ? "#ffe066" : sty[0]; g.lineWidth = sty[1] * zs; g.stroke();
+          const p = mapPath(r);
+          g.strokeStyle = "rgba(20,24,32,.55)"; g.lineWidth = (sty[1] * zs + 2) / z; g.stroke(p);
+          g.strokeStyle = r.b ? "#ffe066" : sty[0]; g.lineWidth = (sty[1] * zs) / z; g.stroke(p);
         }
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
         // Street names along their longest straight-ish stretch, only when zoomed in enough to read.
         if (z >= 0.22) {
           g.font = `600 ${Math.round(11 + Math.min(z, 1.2) * 4)}px system-ui, sans-serif`;
@@ -336,23 +465,9 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         }
       }
 
-      if (traffic && on("transit") && transit.current && z >= 0.06) {
-        const V = vis_.current;
-        const visible = (x: number, y: number) => {
-          if (!V) return true;
-          const vx = x >> 3, vy = y >> 3;
-          const v = vx >= 0 && vy >= 0 && vx < V.w && vy < V.h ? V.d[vy * V.w + vx] : 0;
-          return v === 255 || v === 128;
-        };
-        drawTransit(g, transit.current.d, transit.current.shapes, hour === null ? luxSeconds() : hour * 3600, z, ox, oy, W, H, visible, night, sprites.current);
-      }
-
-      if (traffic && on("traffic") && st.sim && z >= 0.08) {
-        // fewer cars late at night and at dawn, rush hours busiest
-        const hr = hour === null ? luxSeconds() / 3600 : hour;
-        const busy = hr < 5 ? 0.12 : hr < 6.5 ? 0.35 : hr < 9.5 ? 1 : hr < 16 ? 0.75 : hr < 19 ? 1 : hr < 22 ? 0.5 : 0.25;
-        // Only the streets near the view are simulated; cars come and go at the margins.
-        st.sim.step(dt, { x0: -ox / z, y0: -oy / z, x1: (W - ox) / z, y1: (H - oy) / z }, busy);
+      const doCars = traffic && on("traffic") && !!st.sim && z >= 0.08;
+      const doTrains = traffic && on("transit") && !!transit.current && z >= 0.06;
+      if (doCars || doTrains) {
         const V = vis_.current;
         // Is the ground (or, for a bridge road, the deck) really visible from above here?
         const seen = (x: number, y: number, bridge: boolean) => {
@@ -361,46 +476,146 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
           const val = vx >= 0 && vy >= 0 && vx < V.w && vy < V.h ? V.d[vy * V.w + vx] : 0;
           return val === 255 || (val === 128 && bridge);
         };
-        const spr = sprites.current, occ = occl.current;
-        const vl = vlayer.current ?? (vlayer.current = document.createElement("canvas"));
-        if (vl.width !== cv.width || vl.height !== cv.height) { vl.width = cv.width; vl.height = cv.height; }
-        const vg = vl.getContext("2d")!;
-        vg.setTransform(dpr, 0, 0, dpr, 0, 0);
-        vg.clearRect(0, 0, W, H);
-        // Three passes, shortest vehicles first, each followed by its cut: cars, vans, police cars and ambulances
-        // (1.6 m), buses and fire engines (3.2 m), then everything on a bridge deck, lifted onto the modelled deck and
-        // cut against the deck layer.
-        const passes: [DrawableCar, number, number][][] = [[], [], []];
-        for (const c of st.sim.cars()) {
-          // Hidden in a tunnel, behind a building, or (for ground roads) under a bridge: don't draw.
-          if (c.tunnel) continue;
-          let sx = c.x * z + ox, sy = c.y * z + oy;
-          if (sx < -30 || sx > W + 30 || sy < -30 || sy > H + 30 || !seen(c.x, c.y, c.bridge)) continue;
-          if (c.bridge && occ) {
-            const d = occ.deckAt(c.x, c.y);
-            if (d) { sy -= d.lift * z; passes[2].push([c, sx, sy]); continue; }
+        const spr = sprites.current, occ = occl.current, drv = drivable.current;
+        // Four passes, shortest vehicles first, each followed by its cut: cars, vans, police cars and ambulances
+        // (1.6 m); buses, fire engines and trams (3.2 m); trains (4.6 m); then everything on a bridge deck, lifted
+        // onto the modelled deck and cut against the deck layer.
+        const passes: Item[][] = [[], [], [], []];
+        if (doCars) {
+          const sim = st.sim!;
+          // fewer cars late at night and at dawn, rush hours busiest
+          const hr = hour === null ? luxSeconds() / 3600 : hour;
+          const busy = hr < 5 ? 0.12 : hr < 6.5 ? 0.35 : hr < 9.5 ? 1 : hr < 16 ? 0.75 : hr < 19 ? 1 : hr < 22 ? 0.5 : 0.25;
+          // Only the streets near the view are simulated; cars come and go at the margins.
+          sim.step(dt, { x0: -ox / z, y0: -oy / z, x1: (W - ox) / z, y1: (H - oy) / z }, busy);
+          if (SIREN_STREET && on("emergency") && now - sirenAt.current > 4000 && sim.emergencyAlive().siren === 0) {
+            sirenAt.current = now;
+            const kinds = ["ambulance", "police", "fire"] as const;
+            sim.spawnEmergency(kinds[Math.floor(now / 1000) % 3], true, SIREN_STREET);
           }
-          passes[c.type === "bus" || c.type === "fire" ? 1 : 0].push([c, sx, sy]);
+          // The guard: where a car's drawn ground point is on water, inside a building, outside the painted art, or
+          // behind a building that the occlusion cut does not hide it behind (it would show on the facade), the car
+          // fades out over 0.3 s (and back in when it leaves). On a modelled deck it is fine. Without drivable data
+          // yet, the old visibility test decides.
+          const show = (c: DrawableCar, gy: number, onDeck: boolean) => {
+            const v = drv ? drv.at(c.x, gy) : -1;
+            if (v < 0) return seen(c.x, c.y, c.bridge);
+            if (v === DRIVABLE.unpainted) return false;
+            if (v === DRIVABLE.water || v === DRIVABLE.building) return onDeck;
+            if (v === DRIVABLE.hidden) return onDeck || (occ ? occ.coverage(c.x, gy, 1.6) >= 0.5 : false);
+            return true;
+          };
+          const fade = fades.current, stamp = ++fadeStamp.current;
+          let guarded = 0;
+          for (const c of sim.cars()) {
+            // In a tunnel: not drawn.
+            if (c.tunnel) continue;
+            let sx = c.x * z + ox, sy = c.y * z + oy;
+            if (sx < -30 || sx > W + 30 || sy < -30 || sy > H + 30) continue;
+            let gy = c.y, pass = c.type === "bus" || c.type === "fire" ? 1 : 0;
+            if (c.bridge && occ) {
+              const d = occ.deckAt(c.x, c.y);
+              if (d) { sy -= d.lift * z; gy -= d.lift; pass = 3; }
+            }
+            const want = show(c, gy, pass === 3) ? 1 : 0;
+            const f = fade.get(c.id);
+            let a = f ? f.a : want;
+            a = want > a ? Math.min(want, a + dt / 0.3) : Math.max(want, a - dt / 0.3);
+            if (f) { f.a = a; f.stamp = stamp; } else fade.set(c.id, { a, stamp });
+            if (!want) guarded++;
+            if (a <= 0.01) continue;
+            passes[pass].push({ car: c, sx, sy, a });
+          }
+          sim.stats.guarded = guarded;
+          if (stamp % 120 === 0) for (const [id, f] of fade) if (f.stamp !== stamp) fade.delete(id);
         }
-        const view = { z, ox, oy, w: W, h: H };
-        passes.forEach((list, i) => {
-          for (const [c, sx, sy] of list) {
-            if (spr) {
-              drawVehicle(vg, spr, c.type, c.variant, sx, sy, c.headingScreenRad, z);
-              const k = screenShrink(c.headingScreenRad);
-              vg.save(); vg.translate(sx, sy); vg.rotate(c.headingScreenRad);
-              drawCarLights(vg, c, c.length * z * k, Math.max(c.width * z * 0.7, 1.2), night);
-              vg.restore();
-            } else drawCarRect(vg, c, sx, sy, z, night);
-            if (c.siren) drawSirenLights(vg, c, sx, sy, z, now / 1000, night);
+        if (doTrains) {
+          // Trams and trains: on the OSM rail ways the painting followed. In a tunnel they are not drawn (a section
+          // at a portal is clipped there); on a viaduct or bridge they are lifted onto the modelled deck; everywhere
+          // they are cut against the foreground like the cars. Outside the painted art they are not drawn.
+          const tc = transit.current!;
+          const m = 300 / z;
+          const secs = transitSections(tc.d, tc.shapes, hour === null ? luxSeconds() : hour * 3600, luxDayMask(),
+            [-ox / z - m, -oy / z - m, (W - ox) / z + m, (H - oy) / z + m], spr ? (t) => spriteLength(spr, t) : undefined);
+          for (const q of secs) {
+            if (drv && drv.at(q.x, q.y) === DRIVABLE.unpainted) continue;
+            const sx = q.x * z + ox;
+            let sy = q.y * z + oy, pass = q.kind === "tram" ? 1 : 2;
+            if (occ && q.way >= 0 && occ.isDeck(q.way)) {   // on a deck, even where it sits where lines.json drew it
+              sy -= occ.deckLift(q.way, q.s) * z;
+              pass = 3;
+            }
+            if (sx < -300 || sx > W + 300 || sy < -300 || sy > H + 300) continue;
+            passes[pass].push({ sec: q, sx, sy, a: 1 });
           }
-          if (occ && list.length) occ.cut(vg, view, i === 0 ? 1.6 : i === 1 ? 3.2 : 4.5, i === 2 ? "deck" : "ground");
-        });
-        g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(vl, 0, 0); g.restore();
+        }
+        if (passes.some((l) => l.length)) {
+          const vl = vlayer.current ?? (vlayer.current = document.createElement("canvas"));
+          if (vl.width !== cv.width || vl.height !== cv.height) { vl.width = cv.width; vl.height = cv.height; }
+          const vg = vl.getContext("2d")!;
+          vg.setTransform(dpr, 0, 0, dpr, 0, 0);
+          // Only the box round the vehicles is cleared, cut and copied (with the last frame's box, so nothing old
+          // stays behind): a long train with its lamps, beams and halos fits in REACH_M of its ground centre.
+          const m = (REACH_M / MPP) * z + 12;
+          let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+          for (const list of passes) for (const it of list) {
+            bx0 = Math.min(bx0, it.sx); by0 = Math.min(by0, it.sy); bx1 = Math.max(bx1, it.sx); by1 = Math.max(by1, it.sy);
+          }
+          const box: [number, number, number, number] = [Math.max(0, Math.floor(bx0 - m)), Math.max(0, Math.floor(by0 - m)),
+            Math.min(W, Math.ceil(bx1 + m)), Math.min(H, Math.ceil(by1 + m))];
+          const lb = vbox.current ?? box;
+          vg.clearRect(Math.min(lb[0], box[0]), Math.min(lb[1], box[1]),
+            Math.max(lb[2], box[2]) - Math.min(lb[0], box[0]), Math.max(lb[3], box[3]) - Math.min(lb[1], box[1]));
+          vbox.current = box;
+          const view = { z, ox, oy, w: W, h: H };
+          // Bare crowns in winter hide much less.
+          const canopy = season === "winter" ? 0.4 : 1;
+          // Far to near within each pass (by screen y), so a nearer vehicle overlaps the one behind it.
+          for (const list of passes) list.sort((a, b) => a.sy - b.sy);
+          // Brake lights by day only close up and softer; at night tail lights always on and brake lights brighter.
+          const brakeDay = z >= 0.6 ? 0.6 : 0;
+          const tunnels = transit.current?.shapes;
+          passes.forEach((list, i) => {
+            // Headlight beams first, on the ground: the bodies drawn next cover their start, and the cut trims them.
+            if (spr && night > 0.05) for (const it of list) if (it.car) { vg.globalAlpha = it.a; drawBeam(vg, it.car, it.sx, it.sy, z, night); }
+            // Sections at a tunnel portal go on their own layer first, to be clipped there.
+            let portals: Item[] | null = null;
+            for (const it of list) {
+              const c = it.car;
+              if (!c) {
+                if (it.sec!.portal && tunnels) (portals ??= []).push(it);
+                else drawSection(vg, spr, it.sec!, it.sx, it.sy, z, night);
+                continue;
+              }
+              vg.globalAlpha = it.a;
+              if (spr) {
+                drawVehicle(vg, spr, c.type, c.variant, it.sx, it.sy, c.headingScreenRad, z);
+                drawLamps(vg, spr, c.type, it.sx, it.sy, c.headingScreenRad, z,
+                  { tail: night * 0.85, brake: c.braking ? Math.max(night, brakeDay) : 0, head: night });
+              } else drawCarRect(vg, c, it.sx, it.sy, z, night);
+              if (c.siren) drawSirenLights(vg, c, it.sx, it.sy, z, now / 1000, night);
+            }
+            vg.globalAlpha = 1;
+            if (portals && tunnels) {
+              const pl = portalLayer.current ?? (portalLayer.current = document.createElement("canvas"));
+              if (pl.width !== cv.width || pl.height !== cv.height) { pl.width = cv.width; pl.height = cv.height; }
+              const pg = pl.getContext("2d")!;
+              pg.setTransform(dpr, 0, 0, dpr, 0, 0);
+              pg.clearRect(box[0], box[1], box[2] - box[0], box[3] - box[1]);
+              for (const it of portals) drawSection(pg, spr, it.sec!, it.sx, it.sy, z, night);
+              for (const it of portals) clipTunnels(pg, tunnels[it.sec!.shape], it.sec!, it.sy - (it.sec!.y * z + oy), z, ox, oy);
+              const [px, py, pw, ph] = [box[0] * dpr, box[1] * dpr, (box[2] - box[0]) * dpr, (box[3] - box[1]) * dpr];
+              if (pw > 0 && ph > 0) { vg.save(); vg.setTransform(1, 0, 0, 1, 0, 0); vg.drawImage(pl, px, py, pw, ph, px, py, pw, ph); vg.restore(); }
+            }
+            if (occ && list.length) occ.cut(vg, view, PASS_HEIGHT_M[i], i === 3 ? "deck" : "ground", canopy, box);
+          });
+          const [qx, qy, qw, qh] = [box[0] * dpr, box[1] * dpr, (box[2] - box[0]) * dpr, (box[3] - box[1]) * dpr];
+          if (qw > 0 && qh > 0) { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(vl, qx, qy, qw, qh, qx, qy, qw, qh); g.restore(); }
+        }
         // Small signal heads at the stop lines, when zoomed in.
-        if (on("signals") && z > 0.6) {
+        if (doCars && on("signals") && z > 0.6) {
           const r = Math.max(1.6, (0.45 / MPP) * z);
-          for (const sg of st.sim.signals()) {
+          for (const sg of st.sim!.signals()) {
             if (!seen(sg.x, sg.y, false)) continue;
             const sx = sg.x * z + ox, sy = sg.y * z + oy;
             g.fillStyle = "rgba(20,22,28,.85)";
@@ -411,10 +626,9 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         }
       }
     };
-    raf = requestAnimationFrame(loop);
-    // Also redraw inside the map's own redraw, so cars and street lines never trail the map while it moves.
-    const off = map.current?.onFrame(() => draw(performance.now()));
-    return () => { cancelAnimationFrame(raf); off?.(); };
+    const stop = subscribe((t) => { if (t - lastMapDraw > 40) draw(t); });
+    const off = map.current?.onFrame(() => { const t = performance.now(); lastMapDraw = t; draw(t); });
+    return () => { stop(); off?.(); };
   }, [map]);
 
   return <canvas ref={canvas} className="overlay" aria-hidden="true" />;

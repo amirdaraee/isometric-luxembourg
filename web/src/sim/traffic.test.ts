@@ -5,7 +5,9 @@
  *
  * (Node 22.6+ runs TypeScript directly.) Runs the old-town view at 30 steps per second and prints cars alive, mean
  * speed, deadlock removals, cars that ever overlapped another, vehicles on lanes closed to them (cars on
- * pedestrian streets, bus lanes, through a destination-only street) and the emergency vehicles and their calls. Exits non-zero if the numbers look wrong.
+ * pedestrian streets, bus lanes, through a destination-only street) and the emergency vehicles and their calls; then
+ * runs emergency scenarios on real streets (sirens making their way: corridor, pull-over, overtaking). Exits non-zero
+ * if the numbers look wrong.
  */
 import { readFileSync } from "node:fs";
 import { Traffic, type RoadLine } from "./traffic.ts";
@@ -107,7 +109,59 @@ console.log("--- emergency vehicles off, 2 minutes");
 console.log(`graph ${JSON.stringify(plain.size)}; mean ${((plainSpeed / plainN) * 3.6).toFixed(1)} km/h; spawned ${plain.stats.spawned}, ` +
   `deadlocks ${plain.stats.deadlocks}; overlaps ${plainOverlaps.size}; on closed lanes ${plainForbidden.size}; emergency ${plain.stats.emergency}`);
 
-const ok = mean > 15 && mean < 50 && everOverlapped.size <= Math.max(2, sim.stats.spawned * 0.002) &&
+// Emergency scenarios on real streets (PLAN_NEXT.md item 8): a siren put on the street every 15 s (when the last one
+// has gone) for 3 minutes, after 30 s of traffic, against the same run without them. Per scenario: the sirens' mean
+// speed on the street as a share of their free-flow speed there (the same sirens with no other traffic), cars passed while aside, overtakes, overlaps (only a siren passing a car that
+// stands aside may share its lane), cars still aside 15 s after the siren has gone, and deadlocks.
+interface Scenario { name: string; street: string; x: number; y: number; want: number }
+const SCENARIOS: Scenario[] = [
+  { name: "two lanes, Boulevard Royal", street: "Boulevard Royal", x: 7025, y: 5515, want: 0.7 },
+  // Avenue Pasteur ends at the Allée Scheffer lights, whose queue often reaches back over the junction: a siren
+  // waits there for room as everyone does (40% before item 8).
+  { name: "one lane two-way, Avenue Pasteur", street: "Avenue Pasteur", x: 9458, y: 3413, want: 0.45 },
+  { name: "one lane two-way, Rue Guillaume Schneider", street: "Rue Guillaume Schneider", x: 9458, y: 3413, want: 0.5 },
+  { name: "narrow two-way, Rue Michel Lentz", street: "Rue Michel Lentz", x: 9458, y: 3413, want: 0.5 },
+  { name: "narrow one-way, Avenue Émile Reuter", street: "Avenue Émile Reuter", x: 7615, y: 5801, want: 0.5 },
+  { name: "signalled, Boulevard Prince Henri", street: "Boulevard Prince Henri", x: 7025, y: 5515, want: 0.5 },
+];
+const scenarioFails: string[] = [];
+console.log("--- emergency scenarios, 3 minutes each");
+for (const sc of SCENARIOS) {
+  const run = (sirens: boolean, busy = 1) => {
+    const t = new Traffic(lines.roads, { areas: [{ x0: 0, y0: 0, w: 26624, h: 14336 }], seed: 7 });
+    const v = { x0: sc.x - 700, y0: sc.y - 450, x1: sc.x + 700, y1: sc.y + 450 };
+    const over = new Set<string>();
+    let spawned = 0, lastSpawn = -1e9, stale = 0, onS = 0, onM = 0;
+    for (let i = 1; i <= 210 * 30; i++) {
+      t.step(dt, v, busy);
+      const sec = i * dt;
+      for (const q of t.sirenStates()) if (q.street === sc.street) { onS += dt; onM += q.v * dt; }
+      if (sirens && sec > 30 && sec - lastSpawn > 15 && t.emergencyAlive().siren === 0) {
+        if (t.spawnEmergency(spawned % 3 === 0 ? "ambulance" : spawned % 3 === 1 ? "police" : "fire", true, sc.street)) spawned++;
+        lastSpawn = sec;
+      }
+      if (i % 15 === 0) {
+        const ids = t.laneOverlaps();
+        for (let k = 0; k < ids.length; k += 2) over.add(`${ids[k]}:${ids[k + 1]}`);
+        stale = Math.max(stale, t.asideStale(15));
+      }
+    }
+    return { t, spawned, over: over.size, stale, speed: onM / Math.max(onS, 1e-9) };
+  };
+  const a = run(true), b = run(false), f = run(true, 0), st = a.t.stats;
+  const share = a.speed / Math.max(f.speed, 0.1);
+  console.log(`${sc.name}: sirens ${a.spawned}, speed ${(share * 100).toFixed(0)}% of free flow (${(f.speed * 3.6).toFixed(0)} km/h; want ${sc.want * 100}%), ` +
+    `passed ${st.passed}, overtakes ${st.overtakes}, overlaps ${a.over}, aside 15 s after ${a.stale}, deadlocks ` +
+    `${st.deadlocks} (without sirens ${b.t.stats.deadlocks})`);
+  if (!a.spawned) scenarioFails.push(`${sc.name}: no siren could be put on the street`);
+  if (share < sc.want) scenarioFails.push(`${sc.name}: siren speed ${(share * 100).toFixed(0)}% of free`);
+  if (a.over) scenarioFails.push(`${sc.name}: ${a.over} overlaps`);
+  if (a.stale) scenarioFails.push(`${sc.name}: ${a.stale} cars aside 15 s after the siren`);
+  if (st.deadlocks > b.t.stats.deadlocks + 2) scenarioFails.push(`${sc.name}: deadlocks ${st.deadlocks} against ${b.t.stats.deadlocks}`);
+}
+if (scenarioFails.length) console.error("scenario failures:\n  " + scenarioFails.join("\n  "));
+
+const ok = scenarioFails.length === 0 && mean > 15 && mean < 50 && everOverlapped.size <= Math.max(2, sim.stats.spawned * 0.002) &&
   sim.stats.deadlocks <= sim.stats.spawned * 0.02 && panOverlaps.size === 0 && pan.stats.alive > 20 &&
   forbidden.size === 0 && panForbidden.size === 0 && plainForbidden.size === 0 && plain.stats.emergency === 0 &&
   sim.stats.emergency > 0 && sim.stats.calls > 0;

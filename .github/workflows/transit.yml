@@ -1,0 +1,50 @@
+name: Timetable refresh
+# Once a month: rebuild web/public/data/transit.json from the newest national GTFS feed (data.public.lu, CC BY) and
+# open a pull request with it. The build needs only files in git (lines.json and pipeline/data/rail_ways.json).
+on:
+  schedule:
+    - cron: "17 5 3 * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  transit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pip install numpy scipy pyproj
+      - name: Download the newest GTFS feed
+        run: |
+          url=$(curl -sf https://data.public.lu/api/1/datasets/horaires-et-arrets-des-transport-publics-gtfs/ \
+            | python -c "import json,sys; print(json.load(sys.stdin)['resources'][0]['url'])")
+          echo "feed: $url"
+          curl -sfL "$url" -o /tmp/gtfs.zip
+          mkdir -p /tmp/gtfs && unzip -q -o /tmp/gtfs.zip -d /tmp/gtfs
+          echo "FEED=$(basename "$url")" >> "$GITHUB_ENV"
+      - name: Build transit.json
+        working-directory: pipeline
+        run: python build_transit.py --gtfs /tmp/gtfs --days auto
+      - name: Check it
+        working-directory: web
+        run: node src/components/transit.test.ts
+      - name: Open a pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- web/public/data/transit.json; then echo "no change"; exit 0; fi
+          branch="timetable-$(date +%Y-%m)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add web/public/data/transit.json
+          git commit -m "Timetable: transit.json from $FEED"
+          git push -f origin "$branch"
+          gh pr create --head "$branch" --title "Timetable refresh ($FEED)" \
+            --body "transit.json rebuilt by build_transit.py from $FEED (data.public.lu, CC BY)." || true

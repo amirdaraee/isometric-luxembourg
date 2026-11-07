@@ -1,35 +1,92 @@
 // Real trams and trains from the national timetable (GTFS, data.public.lu, CC BY), see pipeline/build_transit.py.
-// Positions come from the clock: each trip lists [arrival s, departure s, distance along its track shape].
+// Positions come from the clock: each trip lists [arrival s, departure s, distance along its track shape]. The track
+// shapes are the OSM rail lines the painting followed, as runs over lines.json ways, so every section knows its way
+// and its distance along it: Overlay lifts it onto bridge decks (occlusion deckLift), hides it in tunnels and cuts
+// it against the foreground like the cars.
+//
+// This module has no drawing and no DOM, so the headless test (transit.test.ts) runs it in Node.
 
-import { drawVehicle, spriteLength, type Sprites } from "./sprites";
-import { today } from "../testParams";
+import { today } from "../testParams.ts";
 
 export interface TransitData {
   shapes: number[][];
+  /** Per shape: the stretches of lines.json rail ways it runs over, [way id, s from, s to] (map px along the way). */
+  runs?: [number, number, number][][];
+  /** The ids of the ways in `runs` that are tunnels. */
+  tunnels?: number[];
   /** d: day types the trip runs on (1 weekday, 2 Saturday, 4 Sunday and public holidays). */
   trips: { s: number; k: "tram" | "train"; n: string; t: [number, number, number][]; d?: number }[];
 }
-interface Shape { p: number[]; cum: number[]; len: number; box: [number, number, number, number] }
+/** One stretch of a shape along one way: shape distance d0..d1 maps onto way distance s0 + (d - d0) * k. */
+interface Run { d0: number; d1: number; id: number; s0: number; k: number; tunnel: boolean }
+export interface Shape {
+  p: number[]; cum: number[]; len: number; box: [number, number, number, number];
+  runs: Run[];
+  /** Shape distance intervals in tunnels, merged. */
+  tunnels: [number, number][];
+}
 
 export function prepareShapes(d: TransitData): Shape[] {
-  return d.shapes.map((p) => {
+  const tun = new Set(d.tunnels ?? []);
+  return d.shapes.map((p, si) => {
     const cum = [0];
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (let i = 0; i < p.length; i += 2) {
       x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]); y0 = Math.min(y0, p[i + 1]); y1 = Math.max(y1, p[i + 1]);
       if (i) cum.push(cum[cum.length - 1] + Math.hypot(p[i] - p[i - 2], p[i + 1] - p[i - 1]));
     }
-    return { p, cum, len: cum[cum.length - 1], box: [x0, y0, x1, y1] };
+    const len = cum[cum.length - 1];
+    // The runs' lengths along their ways add up to the shape's length (both are the same polylines in map px), up to
+    // the rounding of the stored numbers: scale them onto the shape so the two never drift apart.
+    const raw = d.runs?.[si] ?? [];
+    const total = raw.reduce((a, r) => a + Math.abs(r[2] - r[1]), 0);
+    const f = total > 0 ? len / total : 1;
+    const runs: Run[] = [];
+    let at = 0;
+    for (const [id, a, b] of raw) {
+      const L = Math.abs(b - a) * f;
+      runs.push({ d0: at, d1: at + L, id, s0: a, k: (b >= a ? 1 : -1) / f, tunnel: tun.has(id) });
+      at += L;
+    }
+    const tunnels: [number, number][] = [];
+    for (const r of runs) {
+      if (!r.tunnel) continue;
+      const last = tunnels[tunnels.length - 1];
+      if (last && r.d0 - last[1] < 1) last[1] = r.d1; else tunnels.push([r.d0, r.d1]);
+    }
+    return { p, cum, len, box: [x0, y0, x1, y1], runs, tunnels };
   });
 }
 
-function at(s: Shape, d: number): [number, number, number] {
+/** Point and screen heading at distance d along a shape. */
+export function at(s: Shape, d: number): [number, number, number] {
   d = Math.min(Math.max(d, 0), s.len);
   let lo = 1, hi = s.cum.length - 1;
   while (lo < hi) { const mid = (lo + hi) >> 1; if (s.cum[mid] < d) lo = mid + 1; else hi = mid; }
   const i = lo, a = (i - 1) * 2, seg = s.cum[i] - s.cum[i - 1] || 1, f = (d - s.cum[i - 1]) / seg;
   const dx = s.p[a + 2] - s.p[a], dy = s.p[a + 3] - s.p[a + 1];
   return [s.p[a] + dx * f, s.p[a + 1] + dy * f, Math.atan2(dy, dx)];
+}
+
+/** The lines.json way at distance d along a shape and the distance along that way (map px), or null for a shape
+ * without runs. */
+export function wayAt(s: Shape, d: number): { id: number; s: number; tunnel: boolean } | null {
+  const R = s.runs;
+  if (!R.length) return null;
+  let lo = 0, hi = R.length - 1;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (R[mid].d1 < d) lo = mid + 1; else hi = mid; }
+  const r = R[lo];
+  return { id: r.id, s: r.s0 + (Math.min(Math.max(d, r.d0), r.d1) - r.d0) * r.k, tunnel: r.tunnel };
+}
+
+/** The shape between distances d0 and d1 as map px points [x, y, x, y, ...]. */
+export function stretch(s: Shape, d0: number, d1: number): number[] {
+  d0 = Math.max(0, d0); d1 = Math.min(s.len, d1);
+  if (d1 <= d0) return [];
+  const a = at(s, d0), b = at(s, d1), out = [a[0], a[1]];
+  for (let i = 1; i < s.cum.length - 1; i++) if (s.cum[i] > d0 && s.cum[i] < d1) out.push(s.p[i * 2], s.p[i * 2 + 1]);
+  out.push(b[0], b[1]);
+  return out;
 }
 
 /** Seconds since midnight, Luxembourg time. */
@@ -66,16 +123,43 @@ function shrink(h: number): number {
   const c = Math.cos(h), sn = Math.sin(h);
   return 1 / Math.sqrt(c * c + 4 * sn * sn);
 }
-const TRAM = { car: 45 / MPP, width: 2.65 / MPP, cars: 1 };
-const TRAIN = { car: 26.8 / MPP, width: 2.9 / MPP, cars: 4 };
+/** Luxtram: end, three middle sections, end (turned round); CFL push-pull: cab, coaches, locomotive. */
+const TYPES = {
+  tram: ["tram_end", "tram_mid", "tram_mid", "tram_mid", "tram_end"],
+  train: ["train_cab", "train_coach", "train_coach", "train_loco"],
+};
+/** Section lengths in metres when the sprites are not there (the placeholder drawing). */
+const DEFAULT_M: Record<string, number> = { tram_end: 9.5, tram_mid: 8.7, train_cab: 26.8, train_coach: 26.8, train_loco: 19 };
+/** Vehicle heights in metres, for the foreground cut and the tunnel clip. */
+export const TRANSIT_HEIGHT_M = { tram: 3.6, train: 4.6 };
 
-/** Draw every vehicle running at `sec`. `toScreen` maps image px to screen px; `visible` says whether a point shows. */
-export function drawTransit(g: CanvasRenderingContext2D, d: TransitData, shapes: Shape[], sec: number, z: number,
-  ox: number, oy: number, W: number, H: number, visible: (x: number, y: number) => boolean, night: number,
-  spr?: Sprites | null) {
-  // With sprites, every section is collected first and drawn far to near (by screen y), so nearer ones overlap.
-  const queue: { type: string; sx: number; sy: number; h: number; lit: boolean }[] = [];
-  const mask = luxDayMask();
+/** One tram or train section to draw, in map px. */
+export interface Section {
+  kind: "tram" | "train";
+  type: string;
+  /** Ground centre, map px. */
+  x: number; y: number;
+  /** Screen heading for the sprite. */
+  h: number;
+  /** 1 the leading section (headlamps), -1 the last one (tail lamps), 0 between. */
+  end: number;
+  /** lines.json way under the centre and the distance along it (map px); way -1 for a shape without runs. */
+  way: number; s: number;
+  /** The section reaches into a tunnel: draw it, then clip it at the portal. */
+  portal: boolean;
+  shape: number;
+  /** The section's stretch along its shape. */
+  d0: number; d1: number;
+}
+
+/**
+ * Every tram and train section running at `sec` (seconds since midnight) on day type `mask`, inside the map px box
+ * `box` (x0, y0, x1, y1), far to near is the caller's business. Sections wholly inside a tunnel are left out.
+ * `lengthPx(type)` gives a section's length in map px (the sprite's), or 0 for the default.
+ */
+export function transitSections(d: TransitData, shapes: Shape[], sec: number, mask: number,
+  box: [number, number, number, number], lengthPx: (type: string) => number = () => 0): Section[] {
+  const out: Section[] = [];
   for (const tr of d.trips) {
     if (tr.d !== undefined && !(tr.d & mask)) continue;
     const t = tr.t;
@@ -93,76 +177,36 @@ export function drawTransit(g: CanvasRenderingContext2D, d: TransitData, shapes:
         }
       }
       const sh = shapes[tr.s];
+      if (sh.box[2] < box[0] - 400 || sh.box[0] > box[2] + 400 || sh.box[3] < box[1] - 400 || sh.box[1] > box[3] + 400) continue;
       const dir = t[t.length - 1][2] >= t[0][2] ? 1 : -1;
-      if (spr) {
-        // Luxtram: end, three middle sections, end (turned round); CFL push-pull: cab, coaches, locomotive.
-        const types = tr.k === "tram" ? ["tram_end", "tram_mid", "tram_mid", "tram_mid", "tram_end"]
-          : ["train_cab", "train_coach", "train_coach", "train_loco"];
-        let back = 0;
-        types.forEach((type, i) => {
-          // lengths along the track are on-screen map px, so a section takes its foreshortened length
-          const L0 = (spriteLength(spr, type) || (tr.k === "tram" ? 9 : 26) / MPP) + 0.4 / MPP;
-          const h0 = at(sh, dist - dir * back)[2];
-          const L = L0 * shrink(h0);
-          const centre = dist - dir * (back + L / 2);
-          back += L;
-          const [x, y, ang] = at(sh, centre);
-          const sx = x * z + ox, sy = y * z + oy;
-          if (sx < -200 || sx > W + 200 || sy < -200 || sy > H + 200 || !visible(x, y)) return;
-          const forward = ang + (dir < 0 ? Math.PI : 0);
-          const last = i === types.length - 1;
-          queue.push({ type, sx, sy, h: tr.k === "tram" && last ? forward + Math.PI : forward, lit: night > 0.05 });
-        });
-        continue;
-      }
-      const spec = tr.k === "tram" ? TRAM : TRAIN;
-      for (let c = 0; c < spec.cars; c++) {
-        const centre = dist - dir * (c + 0.5) * (spec.car + 1.2 / MPP);
+      const types = TYPES[tr.k];
+      let back = 0;
+      types.forEach((type, i) => {
+        // lengths along the track are on-screen map px, so a section takes its foreshortened length
+        const L0 = (lengthPx(type) || DEFAULT_M[type] / MPP) + 0.4 / MPP;
+        const h0 = at(sh, dist - dir * back)[2];
+        const L = L0 * shrink(h0);
+        const a = dist - dir * back, b = dist - dir * (back + L);
+        const centre = (a + b) / 2;
+        back += L;
+        const lo = Math.min(a, b), hi = Math.max(a, b);
+        if (hi < 0 || lo > sh.len) return;                                    // not on the track yet, or past its end
+        let portal = false;
+        for (const [t0, t1] of sh.tunnels) {
+          if (lo >= t0 && hi <= t1) return;                                    // wholly in a tunnel
+          if (hi > t0 && lo < t1) portal = true;
+        }
         const [x, y, ang] = at(sh, centre);
-        const sx = x * z + ox, sy = y * z + oy;
-        if (sx < -200 || sx > W + 200 || sy < -200 || sy > H + 200 || !visible(x, y)) continue;
-        drawCar(g, sx, sy, ang + (dir < 0 ? Math.PI : 0), spec.car * z, Math.max(spec.width * z, 2), tr.k, c, spec.cars, night);
-      }
+        if (x < box[0] || x > box[2] || y < box[1] || y > box[3]) return;
+        const forward = ang + (dir < 0 ? Math.PI : 0);
+        const last = i === types.length - 1;
+        const w = wayAt(sh, centre);
+        out.push({
+          kind: tr.k, type, x, y, h: tr.k === "tram" && last ? forward + Math.PI : forward,
+          end: i === 0 ? 1 : last ? -1 : 0, way: w ? w.id : -1, s: w ? w.s : 0, portal, shape: tr.s, d0: lo, d1: hi,
+        });
+      });
     }
   }
-  if (spr && queue.length) {
-    queue.sort((a, b) => a.sy - b.sy);
-    for (const q of queue) {
-      drawVehicle(g, spr, q.type, 0, q.sx, q.sy, q.h, z);
-      if (q.lit) {   // lit windows at night: a warm glow over the body
-        g.globalAlpha = night * 0.55;
-        g.fillStyle = "rgba(255,206,130,1)";
-        g.beginPath(); g.ellipse(q.sx, q.sy - 2.2 / MPP * z, Math.max(2, 3.5 / MPP * z), Math.max(1, 1.2 / MPP * z), 0, 0, Math.PI * 2); g.fill();
-        g.globalAlpha = 1;
-      }
-    }
-  }
-}
-
-function drawCar(g: CanvasRenderingContext2D, x: number, y: number, ang: number, L: number, Wd: number,
-  kind: "tram" | "train", i: number, n: number, night: number) {
-  g.save();
-  g.translate(x, y);
-  g.rotate(ang);
-  // shadow, then a darker "side" strip to suggest height in the isometric view
-  g.fillStyle = "rgba(0,0,0,.28)"; g.fillRect(-L / 2 + 1.5, -Wd / 2 + 2, L, Wd);
-  if (kind === "tram") {
-    g.fillStyle = "#1f2125"; g.fillRect(-L / 2, -Wd / 2, L, Wd);                     // black body
-    g.fillStyle = "#b9bec6"; g.fillRect(-L / 2, -Wd / 2, L, Wd * 0.38);              // silver roof band
-    g.fillStyle = "#2e8fa8"; for (let k = 1; k < 5; k++) g.fillRect(-L / 2 + (L * k) / 5 - 1, -Wd / 2, 2, Wd); // coloured door glass
-  } else {
-    g.fillStyle = "#f2f2ef"; g.fillRect(-L / 2, -Wd / 2, L, Wd);                     // white double-deck coach
-    g.fillStyle = "#d4202b"; g.fillRect(-L / 2, Wd * 0.22, L, Wd * 0.28);            // red lower band
-    g.fillStyle = "#d4202b"; g.fillRect(-L * 0.06, -Wd / 2, L * 0.06, Wd);           // red doors
-    if (i === 0) { g.fillStyle = "#d4202b"; g.fillRect(L / 2 - L * 0.1, -Wd / 2, L * 0.1, Wd); }   // red nose
-    if (i === n - 1) { g.fillStyle = "#d4202b"; g.fillRect(-L / 2, -Wd / 2, L * 0.1, Wd); }
-  }
-  g.strokeStyle = "rgba(20,20,24,.85)"; g.lineWidth = 1; g.strokeRect(-L / 2, -Wd / 2, L, Wd);
-  if (night > 0.05) {   // lit windows and head/tail lights at night
-    g.globalAlpha = night;
-    g.fillStyle = "rgba(255,214,140,.9)";
-    for (let k = 0; k < 6; k++) g.fillRect(-L / 2 + (L * (k + 0.5)) / 6 - L * 0.04, -Wd * 0.12, L * 0.08, Wd * 0.24);
-    g.globalAlpha = 1;
-  }
-  g.restore();
+  return out;
 }
