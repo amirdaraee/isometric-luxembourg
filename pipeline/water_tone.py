@@ -66,6 +66,10 @@ def main():
     # yellow-green (b > 128 in OpenCV's LAB) and are left alone
     m &= (a[..., 2] < 129) & (a[..., 0] > 25)
     m = cv2.morphologyEx(m.astype(np.uint8), cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)) > 0
+    if m.sum() < 50:  # nothing painted as water here: leave the image untouched
+        im.save(out)
+        print("no painted water")
+        return
     cur = a[m].mean(axis=0)
     new = a.copy()
     new[..., 0] = t[0] + (a[..., 0] - cur[0]) * 0.8          # keep the ripples, at the target's lightness
