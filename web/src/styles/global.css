@@ -110,3 +110,13 @@ kbd { padding: 1px 7px; border: 1px solid var(--line); border-radius: 5px; color
 .scene button.xmas.on { background: #1f7a3d; }
 .scene button:focus-visible { outline: 2px solid #ef3340; outline-offset: 2px; }
 @media (max-width: 640px) { .scene { bottom: calc(60px + env(safe-area-inset-bottom)); } }
+
+/* Shown while the view is centred on a part of the map that is not painted yet. */
+.unpainted { position: fixed; top: 72px; left: 50%; transform: translateX(-50%); z-index: 5; padding: 7px 14px;
+  border-radius: 999px; font-size: 13px; max-width: calc(100vw - 32px); text-align: center; pointer-events: none; }
+
+/* Tilt-shift: blur that grows towards the top and bottom edges (two masked backdrop blurs per edge). */
+.tilt { position: fixed; left: 0; right: 0; height: 22vh; pointer-events: none; z-index: 1;
+  backdrop-filter: blur(2.5px); -webkit-backdrop-filter: blur(2.5px); }
+.tilt-top { top: 0; mask-image: linear-gradient(to bottom, #000, transparent); -webkit-mask-image: linear-gradient(to bottom, #000, transparent); }
+.tilt-bottom { bottom: 0; mask-image: linear-gradient(to top, #000, transparent); -webkit-mask-image: linear-gradient(to top, #000, transparent); }

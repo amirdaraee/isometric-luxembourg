@@ -21,6 +21,10 @@ export const DEFAULTS = {
   transit: true,
   /** Light glinting on the rivers and ponds (animated, drawn over the painted water). */
   water: true,
+  /** Flocks of birds over the valleys (by day). */
+  birds: true,
+  /** Tilt-shift: the screen's top and bottom edges softly blurred, like a miniature photo. */
+  tiltShift: true,
   /** "Streets" layer with street names. */
   streets: true,
   /** Place pins with labels. */

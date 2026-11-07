@@ -188,6 +188,11 @@ export default function App() {
       </div>
 
       {toast && <div className="toast glass" role="status">{toast}</div>}
+      {on("tiltShift") && <><div className="tilt tilt-top" aria-hidden="true" /><div className="tilt tilt-bottom" aria-hidden="true" /></>}
+      {on("previewBadge") && view && view.z >= 0.1 && meta.painted?.length &&
+        !meta.painted.some((a) => view.x >= a.x0 && view.x <= a.x0 + a.w && view.y >= a.y0 && view.y <= a.y0 + a.h) && (
+        <div className="unpainted glass" role="note">This part of the city is still being drawn: you're looking at the 3D model underneath.</div>
+      )}
 
       {about && (
         <div className="about-wrap" onClick={() => setAbout(false)}>

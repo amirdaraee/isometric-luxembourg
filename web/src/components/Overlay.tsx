@@ -53,6 +53,15 @@ function at(r: Prepared, s: number): [number, number, number] {
 }
 
 interface Car { road: Prepared; s: number; dir: 1 | -1; speed: number; colour: string; len: number; v?: number }
+/** A flock: centre in map px, heading, speed (map px/s), birds as offsets from the centre with a flap phase. */
+interface Flock { x: number; y: number; h: number; v: number; turn: number; birds: { dx: number; dy: number; ph: number }[] }
+
+function newFlock(spawn: Glint[], rnd: () => number): Flock {
+  const at = spawn[Math.floor(rnd() * spawn.length)];
+  const n = 4 + Math.floor(rnd() * 10);
+  const birds = Array.from({ length: n }, () => ({ dx: (rnd() - 0.5) * 70, dy: (rnd() - 0.5) * 40, ph: rnd() * 6.28 }));
+  return { x: at.x, y: at.y - 60, h: rnd() * 6.28, v: 28 + rnd() * 20, turn: (rnd() - 0.5) * 0.3, birds };
+}
 /** A point of light on the water: map px, a phase for its twinkle, a length. */
 interface Glint { x: number; y: number; ph: number; len: number }
 
@@ -85,7 +94,7 @@ function scatterGlints(water: Prepared[]): Glint[] {
 export function Overlay({ map, meta, streets, traffic, night, hour, season }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const state = useRef<{ lines?: Lines; roads?: Prepared[]; named?: Prepared[]; rail?: Prepared[]; water?: Prepared[];
-    waterways?: Prepared[]; glints?: Glint[]; cars?: Car[]; ends?: Map<string, { road: Prepared; atStart: boolean }[]>;
+    waterways?: Prepared[]; glints?: Glint[]; flocks?: Flock[]; cars?: Car[]; ends?: Map<string, { road: Prepared; atStart: boolean }[]>;
     signals?: Map<string, number> }>({});
   const flags = useRef({ streets, traffic, night, hour, season });
   flags.current = { streets, traffic, night, hour, season };
@@ -119,6 +128,13 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       st.rail = L.rail.filter((r) => !r.t).map(prepare);
       st.water = L.water.map(prepare);
       st.glints = scatterGlints(st.water);
+      // Birds start over the rivers (the valleys) inside the painted area.
+      const areas0 = meta.painted ?? [];
+      const spawn = st.glints.filter((g) => areas0.some((a) => g.x > a.x0 && g.x < a.x0 + a.w && g.y > a.y0 && g.y < a.y0 + a.h));
+      let bseed = 7;
+      const brnd = () => ((bseed = (bseed * 48271) % 2147483647) / 2147483647);
+      st.flocks = spawn.length ? Array.from({ length: 14 }, () => newFlock(spawn, brnd)) : [];
+      (st as { spawn?: Glint[] }).spawn = spawn;
       st.waterways = L.waterways.filter((r) => !r.t).map(prepare);
       // Traffic only where the map is painted, on roads cars use.
       const areas = meta.painted ?? [];
@@ -177,7 +193,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       const { streets, traffic, night, hour, season } = flags.current;
       const winter = season === "winter" && on("snow");
       const glints = on("water") && st.glints && v.z >= 0.12;
-      if (!streets && !traffic && !winter && !glints) return;
+      const birds = on("birds") && st.flocks?.length && night < 0.6 && v.z >= 0.1;
+      if (!streets && !traffic && !winter && !glints && !birds) return;
       // image px -> screen px
       const z = v.z, ox = W / 2 - v.x * z, oy = H / 2 - v.y * z;
       const vis = (b: number[]) => b[2] * z + ox > -50 && b[0] * z + ox < W + 50 && b[3] * z + oy > -50 && b[1] * z + oy < H + 50;
@@ -251,6 +268,35 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
           const L = Math.max(2, gl.len * z);
           g.fillStyle = `rgba(${col},${a.toFixed(3)})`;
           g.fillRect(sx - L / 2, sy, L, wpx);
+        }
+      }
+
+      if (birds) {
+        // Inked birds: two short wing strokes that flap; flocks drift and turn slowly, and start again over a river
+        // when they leave the painted area.
+        const t = now / 1000;
+        const areas = meta.painted ?? [];
+        const spawn = (st as { spawn?: Glint[] }).spawn!;
+        g.strokeStyle = "rgba(28,30,40,.85)"; g.lineCap = "round";
+        g.lineWidth = Math.max(1.4, z * 2.2);
+        const span = Math.max(5, 11 * z);
+        for (let i = 0; i < st.flocks!.length; i++) {
+          const f = st.flocks![i];
+          f.h += (f.turn + Math.sin(t * 0.13 + i) * 0.25) * dt;
+          f.x += Math.cos(f.h) * f.v * dt; f.y += Math.sin(f.h) * f.v * 0.5 * dt;
+          if (!areas.some((a) => f.x > a.x0 && f.x < a.x0 + a.w && f.y > a.y0 && f.y < a.y0 + a.h)) {
+            st.flocks![i] = newFlock(spawn, Math.random);
+            continue;
+          }
+          for (const b of f.birds) {
+            const sx = (f.x + b.dx) * z + ox, sy = (f.y + b.dy) * z + oy;
+            if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
+            const up = Math.sin(t * 9 + b.ph) * 0.6;
+            g.beginPath();
+            g.moveTo(sx - span, sy - span * up); g.quadraticCurveTo(sx - span * 0.4, sy - span * 0.35, sx, sy);
+            g.quadraticCurveTo(sx + span * 0.4, sy - span * 0.35, sx + span, sy - span * up);
+            g.stroke();
+          }
         }
       }
 
