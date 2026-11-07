@@ -3,17 +3,23 @@ import { asset } from "../config";
 import type { MapHandle } from "./IsometricMap";
 
 /**
- * Moving light on the rivers, drawn only inside the painted water.
+ * Moving water on the rivers, drawn only inside the painted water and following the river's course.
  *
- * The water mask (web/public/data/water_mask.png and .json, from pipeline/build_water_mask.py) is found in the
- * painted art itself, so the effect never spills over banks, trees, bridges or roads. It is drawn with WebGL on its
- * own canvas, in map coordinates, so the pattern sticks to the map:
- *  - shimmer: the water is cut into small 6 x 2 map px patches (1.5 x 0.5 m); six times a second each patch looks
- *    up a slow swell at a slightly jittered spot and, near its crest or trough, becomes a faint light or dark ripple
- *    stroke (the idea of "Pixel Singapore": patches that take their value from somewhere along the swell);
- *  - crest flashes: now and then a short bright crest lights up for half a second, with a dark ink line under it;
- *  - at night the ripples catch warm city light, and broken warm reflections hang below lamps on the banks.
- * Nothing changes between the 6 Hz steps, so the canvas is redrawn only on a new step or when the map moves.
+ * The water atlas (web/public/data/water_mask.png and .json, from pipeline/build_water_mask.py) is found in the
+ * painted art itself, so the effect never spills over banks, trees, bridges or roads. Each texel holds the distance
+ * to the bank (R, whose first metre is also the soft mask) and the surface current (G, B: the downstream direction,
+ * from the OpenStreetMap centrelines, with a length that is 1 mid-stream and less near the banks). It is drawn with
+ * WebGL on its own canvas, in map coordinates, so the pattern sticks to the map:
+ *  - current lines: short, slightly bowed strokes lying along the flow, mostly pale with a few faint dark ink
+ *    ones, that drift downstream a few map px a second (faster mid-stream) and fade in and out. They are drawn in
+ *    two overlapping cycles, each shifting a fixed stroke pattern downstream and starting again with new strokes,
+ *    so there is no conveyor belt; a slow noise field makes them gather in some places and thin out in others;
+ *  - bank lines: broken lines a little inside each bank, which follow the bank (lines of equal bank distance) and
+ *    slide downstream, like water running past the edge;
+ *  - crest flashes: now and then a short bright crest along the flow lights up for a moment, with a dark ink line
+ *    under it;
+ *  - at night the lines catch warm city light, and broken warm reflections hang below lamps on the banks.
+ * The canvas is redrawn at most 30 times a second, and only when the map moves if reduced motion is asked for.
  */
 
 interface Props {
@@ -22,12 +28,14 @@ interface Props {
   night: number;
 }
 
-/** The mask atlas description written by build_water_mask.py. */
+/** The atlas description written by build_water_mask.py. */
 interface MaskInfo { x0: number; y0: number; scale: number; w: number; h: number; chunk: number; cols: number; chunks: number[] }
 
-const MIN_ZOOM = 0.12; // further out the ripples would be under a pixel: draw nothing
+const MIN_ZOOM = 0.12; // further out the strokes would be under a pixel: draw nothing
 const FADE_TO = 0.16;  // full strength from here in
-const STEPS_PER_S = 6;
+const FPS = 30;        // redraws per second while the water moves
+const WOBBLE_HZ = 6;   // night reflections flicker in steps, like the old 6 Hz shimmer
+const LOOP_S = 3600;   // time wraps after an hour (a whole number of every cycle below), to keep floats precise
 
 const VS = `
 attribute vec4 a_pos;     // map px relative to the mask origin (xy), atlas uv (zw)
@@ -46,12 +54,15 @@ precision highp float;
 varying vec2 v_map;
 varying vec2 v_uv;
 uniform sampler2D u_mask;
-uniform float u_t;       // seconds, in 1/6 s steps
-uniform float u_step;    // the step number, kept small
-uniform float u_cell;    // patch size multiplier: 1, 2 or 4 as the map zooms out
+uniform float u_t;       // seconds, wrapped every hour
+uniform float u_step;    // 6 Hz step number, kept small (night flicker)
+uniform float u_cell;    // pattern size multiplier: 1, 2 or 4 as the map zooms out
+uniform float u_aa;      // map px per device pixel, for smooth stroke edges
 uniform float u_night;   // 0 .. 1
 uniform float u_fade;    // 0 .. 1, fades the effect in as the map zooms in
-uniform float u_debug;   // 1: tint the whole mask magenta (?waterdebug in the address)
+uniform float u_debug;   // 1: tint the water by flow (?waterdebug in the address)
+
+const float CYCLE = 4.0;  // seconds a stroke lives before the pattern starts again
 
 // Hash without sine (Dave Hoskins), stable for the cell indices used here.
 float h21(vec2 p) {
@@ -60,76 +71,137 @@ float h21(vec2 p) {
   return fract((p3.x + p3.y) * p3.z);
 }
 
-const vec2 D1 = vec2(0.24, 0.97);   // main swell direction (screen y is foreshortened ground, so crests run across)
-const vec2 D2 = vec2(-0.55, 0.83);
-float swell(vec2 p, float t) {
-  return 0.62 * sin(dot(p, D1) * 0.131 - t * 2.4) + 0.38 * sin(dot(p, D2) * 0.209 + t * 1.7 + 1.3);
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2(1.0, 0.0)), f.x), mix(h21(i + vec2(0.0, 1.0)), h21(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+// Premultiplied "over".
+void over(inout vec4 acc, vec3 c, float a) { acc = vec4(c * a, a) + acc * (1.0 - a); }
+
+// Coverage of a line of half width hw at distance d, smoothed over one device pixel.
+float line(float d, float hw) { return clamp(0.5 + (hw - abs(d)) / u_aa, 0.0, 1.0) * min(1.0, 2.0 * hw / u_aa + 0.35); }
+
+// Strokes along the flow around q: x light, y dark ink. A stroke per cell (if any) with its own place, length and bow,
+// new for every cycle; the 3 x 3 neighbourhood lets strokes cross cell borders.
+vec2 strokes(vec2 q, float cyc, vec2 dir, vec2 nrm, float dens) {
+  float cs = 16.0 * u_cell;
+  vec2 base = floor(q / cs);
+  vec2 res = vec2(0.0);
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 c = base + vec2(float(i), float(j));
+      vec2 sd = c + vec2(cyc * 17.13, cyc * 3.71);
+      if (h21(sd) > dens) continue;
+      vec2 ctr = (c + 0.5 + (vec2(h21(sd + 1.7), h21(sd + 4.1)) - 0.5) * 0.9) * cs;
+      vec2 d = q - ctr;
+      float len = cs * (0.35 + 0.5 * h21(sd + 7.3));
+      float u = dot(d, dir) / (0.5 * len);
+      if (abs(u) >= 1.0) continue;
+      float bow = (h21(sd + 9.1) - 0.5) * 0.16 * len * (1.0 - u * u);
+      float s = line(dot(d, nrm) - bow, 0.6 * u_cell * sqrt(1.0 - u * u));
+      if (h21(sd + 2.9) < 0.2) res.y = max(res.y, s); else res.x = max(res.x, s);
+    }
+  }
+  return res;
 }
 
 void main() {
-  float m = texture2D(u_mask, v_uv).r;
+  vec3 tx = texture2D(u_mask, v_uv).rgb;
+  float bank = tx.r * 255.0 / 16.0;            // metres to the bank
+  float m = clamp(bank, 0.0, 1.0);              // soft 1 m inner edge
   if (m < 0.02) discard;
+  vec2 v = (tx.gb * 255.0 - 128.0) / 127.0;
+  float spd = clamp(length(v), 0.0, 1.0);       // 1 mid-stream, ~0.3 at the banks
+  vec2 dir = v / max(length(v), 1e-3);          // downstream, in map px axes
+  vec2 nrm = vec2(-dir.y, dir.x);
+  vec2 down = nrm.y >= 0.0 ? nrm : -nrm;        // the side that is lower on screen
   vec2 p = v_map;
   float t = u_t;
 
-  // Shimmer: 6 x 2 map px patches in rows, every row shifted by a random amount so the patches do not line up.
-  vec2 cs = vec2(6.0, 2.0) * u_cell;
-  float row = floor(p.y / cs.y);
-  float off = h21(vec2(row, 7.0)) * cs.x;
-  vec2 cell = vec2(floor((p.x + off) / cs.x), row);
-  vec2 centre = vec2((cell.x + 0.5) * cs.x - off, (row + 0.5) * cs.y);
-  float jit = (h21(cell + vec2(u_step * 0.37, u_step * 0.11)) - 0.5) * 10.0 * u_cell;
-  float v = swell(centre + D1 * jit, t) + (h21(cell * 1.7 + 0.5) - 0.5) * 0.7;
-
-  // By day pale sky-coloured ripples; at night fewer, brighter ones that catch the warm city light.
-  vec3 lightCol = mix(vec3(0.90, 0.97, 0.98), vec3(1.0, 0.70, 0.34), u_night);
+  vec3 lightCol = mix(vec3(0.90, 0.97, 0.98), vec3(1.0, 0.72, 0.38), u_night);
   vec3 darkCol = mix(vec3(0.05, 0.19, 0.24), vec3(0.02, 0.04, 0.10), u_night);
-  vec3 col = vec3(0.0);
-  float a = 0.0;
-  if (v > mix(0.72, 0.98, u_night)) { col = lightCol; a = mix(0.30, 0.50, u_night); }
-  else if (v < -0.8) { col = darkCol; a = mix(0.18, 0.24, u_night); }
+  vec4 acc = vec4(0.0);
 
-  // Night: broken warm reflections, columns of short dashes that hang below a light and wobble each step.
+  // Current lines: two cycles half a cycle apart, each fading in and out (their weights add up to one).
+  float vel = (1.0 + 6.0 * spd * spd) * max(u_cell * 0.75, 1.0);   // map px per second
+  float dens = (0.16 + 0.34 * smoothstep(0.35, 0.75, vnoise(p / (110.0 * u_cell) + vec2(t * 0.011, t * 0.006))))
+             * (0.55 + 0.45 * spd) * (1.0 - 0.35 * u_night);
+  vec2 st = vec2(0.0);
+  for (int k = 0; k < 2; k++) {
+    float tc = t / CYCLE + 0.5 * float(k);
+    float ph = fract(tc);
+    float w = 1.0 - abs(2.0 * ph - 1.0);
+    st += w * strokes(p - dir * vel * ph * CYCLE, floor(tc) * 2.0 + float(k), dir, nrm, dens);
+  }
+  over(acc, darkCol, st.y * mix(0.2, 0.24, u_night));
+  over(acc, lightCol, st.x * mix(0.42, 0.5, u_night));
+
+  // Bank lines: lines of equal bank distance, broken by noise that slides downstream; a faint dark one nearer the
+  // bank. Left out where the river is too narrow for them (they would ring the middle of the stream).
+  float across = 1.0 - sqrt(clamp(1.0 - (spd - 0.3) / 0.7, 0.0, 1.0));   // the pipeline's profile, inverted
+  float room = 1.0 - smoothstep(0.5, 0.8, across);
+  if (room > 0.0 && bank < 3.0) {
+    float bl = 0.0, bd = 0.0;
+    float vb = 2.5 * max(u_cell * 0.75, 1.0);
+    for (int k = 0; k < 2; k++) {
+      float tc = t / (1.5 * CYCLE) + 0.5 * float(k);
+      float ph = fract(tc);
+      float w = 1.0 - abs(2.0 * ph - 1.0);
+      vec2 q = (p - dir * vb * ph * 1.5 * CYCLE) / (10.0 * u_cell) + floor(tc) * vec2(5.3, 1.7) + float(k) * 9.1;
+      bl += w * smoothstep(0.5, 0.62, vnoise(q));
+      bd += w * smoothstep(0.55, 0.7, vnoise(q * 0.7 + 31.0));
+    }
+    float hw = 0.55 * u_cell;
+    over(acc, darkCol, room * bd * line((bank - 0.9) * 4.0, hw) * mix(0.16, 0.2, u_night));
+    over(acc, lightCol, room * bl * line((bank - 1.6) * 4.0, hw) * mix(0.34, 0.4, u_night));
+  }
+
+  // Night: broken warm reflections, columns of short dashes that hang below a light, lie along the flow and wobble.
   if (u_night > 0.01) {
     vec2 gs = vec2(44.0, 88.0);
     vec2 gc = floor(p / gs);
     if (h21(gc + 3.3) < 0.22 * u_night) {
       float yf = fract(p.y / gs.y);
-      float ri = floor(p.y / cs.y);
+      float rs = 3.0 * u_cell;
+      float ri = floor(p.y / rs);
       float cx = (gc.x + 0.2 + 0.6 * h21(gc + 1.1)) * gs.x + (h21(vec2(ri, u_step)) - 0.5) * 3.0 * u_cell;
+      vec2 d = p - vec2(cx, (ri + 0.5) * rs);
       float hw = (1.5 + 2.5 * h21(gc + 2.2)) * (1.0 - 0.6 * yf) * max(u_cell * 0.6, 1.0);
       bool on = h21(vec2(ri * 1.3, gc.x + u_step * 0.21)) > 0.3;
-      if (on && abs(p.x - cx) < hw) {
-        float ra = 0.6 * (1.0 - yf) * u_night;
-        if (ra > a) { col = vec3(1.0, 0.72, 0.36); a = ra; }
+      if (on && abs(dot(d, dir)) < hw) {
+        over(acc, vec3(1.0, 0.72, 0.36), line(dot(d, nrm), 0.6 * u_cell) * 0.55 * (1.0 - yf) * u_night);
       }
     }
   }
 
-  // Crest flashes: in a coarse grid, a rare cell lights a short crest for half a second (three 6 Hz steps).
-  vec2 bs = vec2(40.0, 14.0) * u_cell;
-  float brow = floor(p.y / bs.y);
-  float boff = h21(vec2(brow, 3.0)) * bs.x;
-  vec2 bc = vec2(floor((p.x + boff) / bs.x), brow);
-  float ph0 = h21(bc + 0.7) * 7.0;
-  float slot = floor(t * 2.0 + ph0);
-  if (h21(bc + vec2(mod(slot, 97.0) * 1.31, 5.0)) < 0.025) {
-    float ph = fract(t * 2.0 + ph0);
-    float env = sin(3.14159 * (ph + 0.1667));
-    vec2 lc = p - vec2((bc.x + 0.5) * bs.x - boff, (bc.y + 0.5) * bs.y);
-    float halfLen = bs.x * 0.25 * (0.6 + 0.4 * env);
-    if (abs(lc.x) < halfLen) {
-      if (abs(lc.y) < cs.y * 0.5) { col = mix(vec3(1.0), vec3(1.0, 0.86, 0.6), u_night); a = 0.62 * env; }
-      else if (lc.y >= cs.y * 0.5 && lc.y < cs.y * 1.5 && abs(lc.x) < halfLen * 0.8) {
-        col = darkCol; a = max(a, 0.18 * env);
-      }
+  // Crest flashes: in a coarse grid, a rare cell lights a short crest along the flow for two thirds of a second.
+  vec2 bs = vec2(56.0) * u_cell;
+  vec2 bc = floor(p / bs);
+  float slot = floor(t * 1.5 + h21(bc + 0.7) * 7.0);
+  if (h21(bc + vec2(mod(slot, 97.0) * 1.31, 5.0)) < 0.03) {
+    float ph = fract(t * 1.5 + h21(bc + 0.7) * 7.0);
+    float env = sin(3.14159 * ph);
+    vec2 ctr = (bc + 0.5 + (vec2(h21(bc + slot), h21(bc - slot)) - 0.5) * 0.4) * bs + dir * vel * ph * 0.67;
+    vec2 d = p - ctr;
+    float len = 7.0 * u_cell * (0.6 + 0.4 * env);
+    float u = dot(d, dir) / len;
+    if (abs(u) < 1.0) {
+      float taper = sqrt(1.0 - u * u);
+      over(acc, darkCol, line(dot(d, down) - 1.3 * u_cell, 0.45 * u_cell * taper) * 0.2 * env);
+      over(acc, mix(vec3(1.0), vec3(1.0, 0.86, 0.6), u_night), line(dot(d, nrm), 0.55 * u_cell * taper) * 0.62 * env);
     }
   }
 
-  a *= clamp(m * 1.2, 0.0, 1.0) * u_fade;
-  if (u_debug > 0.5) { col = mix(vec3(1.0, 0.0, 0.8), col, a); a = max(a, 0.45 * m); }
-  if (a < 0.003) discard;
-  gl_FragColor = vec4(col * a, a);
+  acc *= clamp(m * 1.2, 0.0, 1.0) * u_fade;
+  if (u_debug > 0.5) {
+    // Hue by downstream direction, brighter mid-stream, so the flow field can be checked against the river.
+    vec3 hue = 0.5 + 0.5 * vec3(dir.x, dir.y, -dir.x);
+    acc = vec4(hue * (0.25 + 0.4 * spd), 0.6) * m + acc * (1.0 - 0.6 * m);
+  }
+  if (acc.a < 0.003) discard;
+  gl_FragColor = acc;
 }`;
 
 /** Centres of the water mask's blocks, in map px: places over the rivers (for example to start bird flocks). */
@@ -186,7 +258,9 @@ function setup(gl: WebGLRenderingContext, info: MaskInfo, img: HTMLImageElement)
   const tex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, img);
+  // The atlas holds numbers, not colours: no colour management on upload.
+  gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -196,7 +270,7 @@ function setup(gl: WebGLRenderingContext, info: MaskInfo, img: HTMLImageElement)
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   gl.clearColor(0, 0, 0, 0);
   const u: GlState["u"] = {};
-  for (const name of ["u_view", "u_scale", "u_mask", "u_t", "u_step", "u_cell", "u_night", "u_fade", "u_debug"]) {
+  for (const name of ["u_view", "u_scale", "u_mask", "u_t", "u_step", "u_cell", "u_aa", "u_night", "u_fade", "u_debug"]) {
     u[name] = gl.getUniformLocation(prog, name);
   }
   gl.uniform1i(u.u_mask, 0);
@@ -216,7 +290,7 @@ export function Water({ map, night }: Props) {
     let st: GlState | null = null;
     let info: MaskInfo | null = null;
     let img: HTMLImageElement | null = null;
-    let raf = 0, alive = true, lastStep = -1, last = "", cleared = false;
+    let raf = 0, alive = true, lastFrame = -1, last = "", cleared = false;
     const still = matchMedia("(prefers-reduced-motion: reduce)");
 
     const init = () => {
@@ -234,10 +308,11 @@ export function Water({ map, night }: Props) {
       const dpr = Math.min(window.devicePixelRatio || 1, 2), W = window.innerWidth, H = window.innerHeight;
       const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
       if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; dirty.current = true; }
-      const step = still.matches ? 0 : Math.floor((now / 1000) * STEPS_PER_S);
+      // With reduced motion the water stands still (one fixed moment); it is redrawn only when the map moves.
+      const frame = still.matches ? 0 : Math.floor((now / 1000) * FPS);
       const key = `${v.x},${v.y},${v.z},${bw},${bh}`;
-      if (step === lastStep && key === last && !dirty.current) return;
-      lastStep = step; last = key; dirty.current = false;
+      if (frame === lastFrame && key === last && !dirty.current) return;
+      lastFrame = frame; last = key; dirty.current = false;
 
       gl.viewport(0, 0, bw, bh);
       if (v.z < MIN_ZOOM) {
@@ -247,11 +322,13 @@ export function Water({ map, night }: Props) {
       cleared = false;
       gl.clear(gl.COLOR_BUFFER_BIT);
       const u = st.u;
+      const t = (frame / FPS) % LOOP_S;
       gl.uniform2f(u.u_view, v.x - info.x0, v.y - info.y0);
       gl.uniform2f(u.u_scale, v.z / (W / 2), v.z / (H / 2));
-      gl.uniform1f(u.u_t, step / STEPS_PER_S);
-      gl.uniform1f(u.u_step, step % 512);
+      gl.uniform1f(u.u_t, t);
+      gl.uniform1f(u.u_step, Math.floor(t * WOBBLE_HZ) % 512);
       gl.uniform1f(u.u_cell, v.z >= 0.6 ? 1 : v.z >= 0.3 ? 2 : 4);
+      gl.uniform1f(u.u_aa, 1 / (v.z * dpr));
       gl.uniform1f(u.u_night, nightRef.current);
       gl.uniform1f(u.u_fade, Math.min(1, (v.z - MIN_ZOOM) / (FADE_TO - MIN_ZOOM)));
       gl.drawArrays(gl.TRIANGLES, 0, st.count);
@@ -278,7 +355,7 @@ export function Water({ map, night }: Props) {
 
     const loop = (now: number) => { raf = requestAnimationFrame(loop); draw(now); };
     raf = requestAnimationFrame(loop);
-    // Also redraw inside the map's own redraw, so the ripples never trail the map while it moves.
+    // Also redraw inside the map's own redraw, so the strokes never trail the map while it moves.
     const off = map.current?.onFrame(() => draw(performance.now()));
     return () => {
       alive = false;
