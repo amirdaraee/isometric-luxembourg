@@ -33,6 +33,7 @@ function release(): Plugin {
       if (off.has("models3d") && existsSync(resolve(dist, "landmarks")))
         for (const slug of readdirSync(resolve(dist, "landmarks"))) rmSync(resolve(dist, "landmarks", slug, "model.bin"), { force: true });
       if (off.has("transit")) rmSync(resolve(dist, "data/transit.json"), { force: true });
+      if (off.has("weather") || off.has("fog")) for (const f of ["fog.png", "fog.json"]) rmSync(resolve(dist, "data", f), { force: true });
       writeFileSync(resolve(dist, ".nojekyll"), "");
       if (process.env.CNAME) writeFileSync(resolve(dist, "CNAME"), `${process.env.CNAME}\n`);
     },

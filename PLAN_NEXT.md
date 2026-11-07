@@ -318,6 +318,91 @@ the expected small softening of the clouds).
 default if in doubt. Half-resolution clouds may show steps at the map edge, so test at `#26000,7000,0.2`.
 **Estimate.** L (harness M, fixes L, split between streams A and C).
 
+**Measurements** (`web/scripts/perf.mjs`; each run's full numbers are in `data/work/perf/<date>-<label>.json` and
+`.md`). How to measure a change: `cd web && node scripts/perf.mjs --build --label <name> --compare baseline --port <yours>`.
+The readout is `?on=perfHud` (`web/src/perf.ts`); `?perftest` collects the same numbers without showing it.
+Layers time themselves with `span("name")` or `time("name", fn)` from `perf.ts`, and add numbers to the readout
+with `gauge("name", fn)`. Stream A: please wrap the overlay's parts (simulation, streets, transit, vehicles, cut)
+in spans, so they show next to `map`, `water`, `clouds` and `pins`. `raf` is every animation-frame callback
+together (the overlay's loop, the water and the clouds), and `mapFrame` is the work done inside the map's own
+redraw (everything that redraws with `map.onFrame`).
+
+Headless Chrome on the M2 Pro draws WebGL on the GPU here (ANGLE Metal), so these numbers include the GPU. Its
+animation frames come at 120 Hz, so an idle page shows about 120 fps. The "mid phone" is the same machine with the
+CPU slowed four times, so it shows main-thread costs, not a phone's GPU.
+
+*Baseline, 7 Nov 2026 (commit 2f72685 plus the harness), every feature on, 21:00 then noon, autumn:*
+
+| Profile | Phase | fps | p50 ms | p95 ms | max ms | main thread ms/frame | long tasks | JS heap MB | KB loaded | tiles |
+|---|---|---|---|---|---|---|---|---|---|---|
+| desktop | start-up: FCP 352 ms, first tile 638 ms, **first view 14.5 s** | | | | | | 39 (max 100 ms) | | 15330 | 126 |
+| desktop | night idle | 118 | 8.3 | 9.2 | 17.5 | 1.0 | 0 | 28 | 0 | 0 |
+| desktop | night pan | **35** | 25 | **57.8** | 91.6 | **22.5** | 5 | 36 | 30420 | 384 |
+| desktop | night zoom | 58 | 16 | 42.4 | 67.4 | 10.3 | 1 | 48 | 8767 | 225 |
+| desktop | noon idle | 120 | 8.3 | 9.0 | 9.4 | 0.8 | 0 | 43 | 0 | 0 |
+| desktop | noon pan | 60 | 15.8 | 33.5 | 150 | 11.7 | 6 | 33 | 3424 | 276 |
+| desktop | noon zoom | 84 | 8.4 | 25.7 | 58.9 | 6.3 | 0 | 33 | 3658 | 184 |
+| phone | start-up: FCP 384 ms, first tile 1.1 s, **first view 8.0 s** | | | | | | 3 (max 487 ms) | | 6309 | 45 |
+| phone | night idle | 120 | 8.3 | 9.2 | 24.2 | 1.6 | 0 | 29 | 0 | 0 |
+| phone | night pan | **28** | 8.8 | **108** | 159 | **34.0** | 1 | 33 | 19754 | 222 |
+| phone | night zoom | 74 | 8.4 | 58.5 | 366 | 10.2 | 1 | 32 | 5757 | 87 |
+| phone | noon idle | 120 | 8.3 | 9.2 | 25.3 | 1.5 | 0 | 29 | 0 | 0 |
+| phone | noon pan | 39 | 8.7 | 75.5 | 108 | 24.3 | 0 | 26 | 3638 | 190 |
+| phone | noon zoom | 78 | 8.4 | 59.0 | 125 | 9.6 | 0 | 38 | 627 | 66 |
+
+Every moving phase is over budget; idle is well inside it. What the baseline shows:
+- **Panning is the problem, not drawing.** The layers' own draw times are small (desktop pan: map 0.4, mapFrame
+  0.9, all animation-frame callbacks 0.5 ms a frame), yet the main thread spends 22 ms a frame. A CPU profile of
+  the night pan puts **two thirds of all main-thread time in one call**: OpenSeadragon's WebGL drawer tests every
+  new tile for cross-origin taint with `getImageData` on a 2D canvas, which stalls for a GPU read-back each time.
+- **Every map version under a full-opacity one is still loaded and drawn.** At 21:00 in autumn the base day map,
+  the autumn version and the night version are all at full opacity: three sets of tiles (30 MB in an 8 s pan).
+- **Map versions are stacked in the order they were first needed**, not in their meaning: at 21:00 in autumn the
+  autumn day version is added after the night one and covers it, so the evening shows the day art (shot
+  `c-perf-old-town-evening`).
+- **Start-up:** 15 MB before the first view is complete on desktop (11.4 MB of tiles at device pixel ratio 2, then
+  `occluders.png` 1.5 MB, the cloud texture 0.65 MB, `lines.json` 0.5 MB, the water mask 0.4 MB). The map's
+  first view takes 14.5 s on fast 4G, against a budget of 2.5 s.
+
+*Stream C's fixes (C2), measured step by step:*
+1. `c2-osd`: OpenSeadragon's taint test skipped (every image is loaded with `crossOrigin="anonymous"`, so none can
+   be tainted), and the map canvas capped at device pixel ratio 2.
+2. `c2-fixes`: map versions stacked by meaning (base, season, golden hour, night, event patches) and a version
+   under a fully opaque, loaded one hidden, so its tiles are neither fetched nor drawn (at start-up, before
+   anything is on screen, it is never fetched at all); versions at 0 for 30 s removed from the map; at most 100
+   cached tiles on touch screens; water at most 1.5 device pixels per CSS pixel; clouds at half the CSS
+   resolution, with their 650 KB texture fetched only when a cloud can show; pin labels without `backdrop-filter`
+   when more than 20 show; water and clouds on the one frame clock (`src/frame.ts`), called in the map's own frame
+   when it moves, so they are drawn once per frame.
+3. `c2-adaptive`: the same with adaptive quality on (the others were measured with `--off adaptiveQuality`).
+
+| Profile | Phase | Baseline p95 / main ms | After (`c2-fixes`) p95 / main ms | Budget p95 / main |
+|---|---|---|---|---|
+| desktop | night pan | 57.8 / 22.5 (35 fps) | **16.7 / 2.7** (110 fps) | 20 / 6 |
+| desktop | night zoom | 42.4 / 10.3 | **16.7 / 2.8** | 20 / 6 |
+| desktop | noon pan | 33.5 / 11.7 | **16.6 / 3.1** | 20 / 6 |
+| desktop | noon zoom | 25.7 / 6.3 | **16.7 / 3.3** | 20 / 6 |
+| phone | night pan | 108 / 34.0 (28 fps) | **24.2 / 7.2** (97 fps) | 40 / 12 |
+| phone | night zoom | 58.5 / 10.2 | **16.1 / 4.9** | 40 / 12 |
+| phone | noon pan | 75.5 / 24.3 | **34.0 / 10.8** | 40 / 12 |
+| phone | noon zoom | 59.0 / 9.6 | **16.8 / 5.8** | 40 / 12 |
+
+| Start-up (fast 4G, cache off) | Baseline | After | Budget |
+|---|---|---|---|
+| desktop: first view complete | 14.5 s, 15.3 MB, 126 tiles, 39 long tasks | **6.4 s, 5.3 MB, 44 tiles, 1 long task** | 2.5 s |
+| phone: first view complete | 8.0 s, 6.3 MB, 45 tiles | **3.7 s, 2.8 MB, 17 tiles** | 2.5 s |
+| night pan, bytes loaded | 30.4 MB, 384 tiles | **7.1 MB, 140 tiles** | |
+
+Every moving phase is now inside its budget on both profiles. Start-up is still over: what is left is mostly the
+tiles themselves (3 MB on desktop) and data loaded on start for the vehicle layer (`lines.json`, `transit.json`,
+`visibility.png`, the sprites), which is stream A's part (I13, lazy `lines.json`). The phone profile slows only the
+CPU, so the GPU savings of the lower quality tiers do not show in it; with adaptive quality on, the phone profile
+steps down to tier 2 during the pans (tile decoding is the main-thread work left), and desktop stays at tier 0.
+Left for stream A, from a CPU profile of the pan: `luxDayMask` in `Transit.ts` is called every frame (about 2% of
+the main thread in development), and the overlay's draw has no spans yet.
+Not done yet: Lighthouse, and a cheaper tilt-shift (it is only switched off on the lower tiers); the `.graded`
+filter is only set for the morning grade, so it was not measured.
+
 ### Item 4. "I can see cars painted in the art"
 
 **Root cause.** Two sources:
@@ -448,6 +533,23 @@ at one per 15 minutes per visitor.
 **Risks.** Full-screen effects can make the map hard to read, so keep intensity moderate by default. Fog may hide
 pins and labels: draw it under the pins (z-index 1) and lower its density at close zoom.
 **Estimate.** L.
+
+**Done (C3, stream C, 7 Nov 2026).** `web/src/weather.ts` (state, live Open-Meteo every 15 min kept in
+`sessionStorage`, blends of 20 s live and 3 s from the picker), `web/src/sky/weatherCore.ts` (kinds, `?weather=`
+text, WMO mapping, amounts; checks in `weatherCore.test.ts`, run with `node src/sky/weatherCore.test.ts`),
+`WeatherControl.tsx` (Live, Clear, Rain, Storm, Fog, Snow and a wind slider with Auto), `Sky.tsx` (overcast wash,
+rain with splashes at z >= 0.6 and warm streaks at night, snow, lightning as two 80 ms pulses every 8 to 25 s and
+none with reduced motion), `Fog.tsx` with `pipeline/build_fog_mask.py` (`fog.png` 197 KB, 1 px = 32 map px), the
+clouds' drift from the wind, and the water's glints from rain and fog. Shots: `data/work/shots/2026-11-07-c3d`.
+Timing with `?weather=rain:0.8,wind:12@250` against the same build with the weather off (`c3-rain3` against
+`c3-control`; the machine was busy with other runs, so both are slower than `c2-fixes`): the sky layer costs 0.1 to
+0.4 ms a frame (p95 under 1 ms), the fog layer under 0.1 ms, and the phases differ by no more than the noise
+between runs.
+Left for the merge points:
+- **M2, stream A:** remove the snow block from `Overlay.tsx`, then set `SNOW_IN_OVERLAY` in `Sky.tsx` to false so
+  the weather layer takes snow over (until then a winter scene snows from the overlay whatever the weather says);
+  birds turn into the wind and are fewer above 10 m/s, read from `currentAmounts()`.
+- **M3:** credit Open-Meteo (CC BY 4.0) in the About panel.
 
 ### Item 6. "The Pfaffenthal Panoramic Lift needs a redesign and repaint, and a 3D lift moving up and down"
 

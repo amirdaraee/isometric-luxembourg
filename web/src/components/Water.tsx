@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import { asset } from "../config";
+import { canvasDpr, onQuality, quality, subscribe } from "../frame";
+import { currentAmounts, onWeather } from "../weather";
 import type { MapHandle } from "./IsometricMap";
 
 /**
@@ -19,7 +21,8 @@ import type { MapHandle } from "./IsometricMap";
  *  - crest flashes: now and then a short bright crest along the flow lights up for a moment, with a dark ink line
  *    under it;
  *  - at night the lines catch warm city light, and broken warm reflections hang below lamps on the banks.
- * The canvas is redrawn at most 30 times a second, and only when the map moves if reduced motion is asked for.
+ * The canvas is redrawn on the frame clock (src/frame.ts) at most 30 times a second (15 on a lower quality tier),
+ * at most 1.5 device pixels per CSS pixel, and only when the map moves if reduced motion is asked for.
  */
 
 interface Props {
@@ -59,7 +62,7 @@ uniform float u_step;    // 6 Hz step number, kept small (night flicker)
 uniform float u_cell;    // pattern size multiplier: 1, 2 or 4 as the map zooms out
 uniform float u_aa;      // map px per device pixel, for smooth stroke edges
 uniform float u_night;   // 0 .. 1
-uniform float u_fade;    // 0 .. 1, fades the effect in as the map zooms in
+uniform float u_fade;    // 0 .. 1, fades the effect in as the map zooms in; up to 1.4 in rain, less in fog
 uniform float u_debug;   // 1: tint the water by flow (?waterdebug in the address)
 
 const float CYCLE = 4.0;  // seconds a stroke lives before the pattern starts again
@@ -194,7 +197,7 @@ void main() {
     }
   }
 
-  acc *= clamp(m * 1.2, 0.0, 1.0) * u_fade;
+  acc = min(acc * clamp(m * 1.2, 0.0, 1.0) * u_fade, vec4(1.0));
   if (u_debug > 0.5) {
     // Hue by downstream direction, brighter mid-stream, so the flow field can be checked against the river.
     vec3 hue = 0.5 + 0.5 * vec3(dir.x, dir.y, -dir.x);
@@ -282,7 +285,8 @@ export function Water({ map, night }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const nightRef = useRef(night);
   const dirty = useRef(true);
-  if (nightRef.current !== night) { nightRef.current = night; dirty.current = true; }
+  const wake = useRef<() => void>(() => {});
+  if (nightRef.current !== night) { nightRef.current = night; dirty.current = true; wake.current(); }
 
   useEffect(() => {
     const cv = canvas.current;
@@ -290,7 +294,7 @@ export function Water({ map, night }: Props) {
     let st: GlState | null = null;
     let info: MaskInfo | null = null;
     let img: HTMLImageElement | null = null;
-    let raf = 0, alive = true, lastFrame = -1, last = "", cleared = false;
+    let alive = true, lastFrame = -1, last = "", cleared = false;
     const still = matchMedia("(prefers-reduced-motion: reduce)");
 
     const init = () => {
@@ -301,15 +305,17 @@ export function Water({ map, night }: Props) {
       dirty.current = true;
     };
 
+    let fps = quality.tier >= 1 ? FPS / 2 : FPS;
     const draw = (now: number) => {
       const v = map.current?.getView();
       if (!st || !info || !v) return;
       const gl = st.gl;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2), W = window.innerWidth, H = window.innerHeight;
+      // the strokes are a pixel or two wide and soft: 1.5 device pixels per CSS pixel are plenty
+      const dpr = canvasDpr(1.5), W = window.innerWidth, H = window.innerHeight;
       const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
       if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; dirty.current = true; }
       // With reduced motion the water stands still (one fixed moment); it is redrawn only when the map moves.
-      const frame = still.matches ? 0 : Math.floor((now / 1000) * FPS);
+      const frame = still.matches ? 0 : Math.floor((now / 1000) * fps);
       const key = `${v.x},${v.y},${v.z},${bw},${bh}`;
       if (frame === lastFrame && key === last && !dirty.current) return;
       lastFrame = frame; last = key; dirty.current = false;
@@ -322,7 +328,7 @@ export function Water({ map, night }: Props) {
       cleared = false;
       gl.clear(gl.COLOR_BUFFER_BIT);
       const u = st.u;
-      const t = (frame / FPS) % LOOP_S;
+      const t = (frame / fps) % LOOP_S;
       gl.uniform2f(u.u_view, v.x - info.x0, v.y - info.y0);
       gl.uniform2f(u.u_scale, v.z / (W / 2), v.z / (H / 2));
       gl.uniform1f(u.u_t, t);
@@ -330,7 +336,9 @@ export function Water({ map, night }: Props) {
       gl.uniform1f(u.u_cell, v.z >= 0.6 ? 1 : v.z >= 0.3 ? 2 : 4);
       gl.uniform1f(u.u_aa, 1 / (v.z * dpr));
       gl.uniform1f(u.u_night, nightRef.current);
-      gl.uniform1f(u.u_fade, Math.min(1, (v.z - MIN_ZOOM) / (FADE_TO - MIN_ZOOM)));
+      // the glints grow stronger in rain and calmer in fog (src/weather.ts)
+      const wx = currentAmounts(), gain = Math.min(1.4, Math.max(0.3, 1 + 0.4 * wx.rain - 0.5 * wx.fog));
+      gl.uniform1f(u.u_fade, Math.min(1, (v.z - MIN_ZOOM) / (FADE_TO - MIN_ZOOM)) * gain);
       gl.drawArrays(gl.TRIANGLES, 0, st.count);
     };
 
@@ -347,20 +355,25 @@ export function Water({ map, night }: Props) {
       info = i as MaskInfo;
       img = im;
       init();
+      wake.current();
     }).catch(() => { /* No mask yet: no water effect. */ });
 
     const lost = (e: Event) => { e.preventDefault(); st = null; };
     cv.addEventListener("webglcontextlost", lost);
     cv.addEventListener("webglcontextrestored", init);
 
-    const loop = (now: number) => { raf = requestAnimationFrame(loop); draw(now); };
-    raf = requestAnimationFrame(loop);
-    // Also redraw inside the map's own redraw, so the strokes never trail the map while it moves.
-    const off = map.current?.onFrame(() => draw(performance.now()));
+    // On the frame clock: 30 times a second (15 on a lower quality tier), and in the same frame as the map whenever
+    // it moves, so the strokes never trail it. With reduced motion only when the map moves or the light changes.
+    const sub = subscribe((t) => draw(t), { fps, still: still.matches, name: "water" });
+    wake.current = sub.wake;
+    const offQ = onQuality((tier) => { fps = tier >= 1 ? FPS / 2 : FPS; sub.setFps(fps); sub.wake(); });
+    const offW = onWeather(() => { dirty.current = true; sub.wake(); });
     return () => {
       alive = false;
-      cancelAnimationFrame(raf);
-      off?.();
+      sub();
+      offQ();
+      offW();
+      wake.current = () => {};
       cv.removeEventListener("webglcontextlost", lost);
       cv.removeEventListener("webglcontextrestored", init);
     };
