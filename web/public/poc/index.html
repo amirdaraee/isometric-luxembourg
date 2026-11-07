@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layered map: progress (local only)</title>
+<style>
+  :root { --bg: #f6f1e6; --ink: #1e2430; --mute: #6b6f78; --line: #d9d0bd; --card: #fffaf0; --ok: #2f7d4f; --run: #b7791f; --todo: #8a8f99; --bad: #b83232; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #141a24; --ink: #e8e4da; --mute: #9aa0aa; --line: #2c3442; --card: #1b2230; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--mute); margin: 0 0 18px; }
+  .bar { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; color: var(--mute); font-size: 14px; }
+  .bar b { color: var(--ink); }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 10px 0; }
+  .head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .head h2 { font-size: 16px; margin: 0; }
+  .pill { font-size: 12px; padding: 2px 9px; border-radius: 999px; color: #fff; }
+  .done { background: var(--ok); } .running { background: var(--run); } .todo { background: var(--todo); } .blocked { background: var(--bad); }
+  .note { margin: 6px 0 0; white-space: pre-wrap; }
+  .imgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; }
+  figure { margin: 0; } figure img { width: 100%; border-radius: 8px; border: 1px solid var(--line); display: block; cursor: zoom-in; }
+  figcaption { font-size: 12px; color: var(--mute); margin-top: 3px; }
+  .log { font-size: 13px; color: var(--mute); }
+  .log li { margin: 2px 0; }
+  #big { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; place-items: center; z-index: 9; cursor: zoom-out; }
+  #big img { max-width: 96vw; max-height: 94vh; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Layered map: proof of concept</h1>
+  <p class="sub">Old town (block b00). Plan: LAYERS_POC.md. This page refreshes itself every 30 seconds.</p>
+  <div class="bar" id="bar"></div>
+  <div id="steps"></div>
+  <h2 style="font-size:16px;margin-top:22px">Log</h2>
+  <ul class="log" id="log"></ul>
+</main>
+<div id="big"><img alt=""></div>
+<script>
+const big = document.getElementById("big");
+big.onclick = () => { big.style.display = "none"; };
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+async function load() {
+  let s;
+  try { s = await (await fetch("status.json?t=" + Date.now())).json(); } catch { return; }
+  const bar = document.getElementById("bar"); bar.replaceChildren();
+  for (const [k, v] of [["Updated", s.updated], ["Spend", "$" + (s.spend ?? 0).toFixed(2) + " of $" + (s.cap ?? 5)], ["Now", s.now || "—"]]) {
+    const span = el("span"); span.append(k + ": "); span.append(el("b", null, v)); bar.append(span);
+  }
+  const box = document.getElementById("steps"); box.replaceChildren();
+  for (const st of s.steps || []) {
+    const c = el("div", "step"), h = el("div", "head");
+    h.append(el("h2", null, st.title)); h.append(el("span", "pill " + (st.state || "todo"), st.state || "todo"));
+    c.append(h);
+    if (st.note) c.append(el("p", "note", st.note));
+    if (st.images && st.images.length) {
+      const g = el("div", "imgs");
+      for (const im of st.images) {
+        const f = el("figure"), i = el("img"); i.src = im.src + "?t=" + (s.updated || ""); i.alt = im.caption || ""; i.loading = "lazy";
+        i.onclick = () => { big.querySelector("img").src = i.src; big.style.display = "grid"; };
+        f.append(i); f.append(el("figcaption", null, im.caption || "")); g.append(f);
+      }
+      c.append(g);
+    }
+    box.append(c);
+  }
+  const log = document.getElementById("log"); log.replaceChildren();
+  for (const l of (s.log || []).slice().reverse()) log.append(el("li", null, l));
+}
+load(); setInterval(load, 30000);
+</script>
+</body>
+</html>

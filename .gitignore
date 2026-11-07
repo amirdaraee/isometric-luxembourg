@@ -11,6 +11,8 @@ web/public/live/
 web/public/style-test/
 web/public/compare/*
 !web/public/compare/index.html
+web/public/poc/*
+!web/public/poc/index.html
 # dependencies and tooling
 node_modules/
 .venv/

@@ -4,7 +4,7 @@ import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 // Work-in-progress pages that live in public/ for local use only and must never be published.
-const LOCAL_ONLY = ["live", "style-test", "compare", "admin"];
+const LOCAL_ONLY = ["live", "style-test", "compare", "admin", "poc"];
 
 /** After a build: drop the local-only folders and the files of switched-off features, add CNAME (custom domain)
  * and .nojekyll for GitHub Pages. */

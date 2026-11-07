@@ -18,7 +18,7 @@ export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME" GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EM
 [ -f public/tiles/meta.json ] || { echo "public/tiles is missing: run pipeline/build_tiles.py first" >&2; exit 1; }
 
 npm run build
-[ ! -e dist/live ] && [ ! -e dist/style-test ] && [ ! -e dist/compare ] && [ ! -e dist/admin ] || { echo "local-only pages leaked into dist" >&2; exit 1; }
+[ ! -e dist/live ] && [ ! -e dist/style-test ] && [ ! -e dist/compare ] && [ ! -e dist/admin ] && [ ! -e dist/poc ] || { echo "local-only pages leaked into dist" >&2; exit 1; }
 SIZE=$(du -sm dist | cut -f1)
 echo "site size: ${SIZE} MB (GitHub Pages limit: 1024 MB)"
 [ "$SIZE" -lt 1000 ] || { echo "too large for GitHub Pages: serve tiles from R2 (TILES_URL)" >&2; exit 1; }
