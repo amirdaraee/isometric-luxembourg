@@ -7,8 +7,10 @@ without seams.
 
   city_blocks.py plan                 -> data/work/city/blocks.json and blocks.jpg (preview)
   city_blocks.py prepare <id>         -> data/work/city/<id>/src.png, kind.png, layout.png (painter inputs)
-  city_blocks.py known <id>           -> data/work/city/<id>/known.png, keep.png from finished blocks (if any)
-  city_blocks.py done <id> <canvas>   -> registers a painted canvas (model scale) as finished
+  city_blocks.py known <id> [version] -> data/work/city/<id>/known[_version].png, keep[_version].png from the
+                                         finished blocks (of that version: night, winter, ...; default the day map)
+  city_blocks.py done <id> <canvas> [version] -> registers a painted canvas as finished
+  city_blocks.py patches <version>   -> data/work/city/patches_<version>.json for build_variant_tiles.py
 """
 import json
 import subprocess
@@ -123,14 +125,18 @@ def prepare(bid):
     print("inputs ready in", out)
 
 
-def known(bid):
+def finished(st, version=None):
+    return st["done"] if not version else st.setdefault("done_v", {}).setdefault(version, {})
+
+
+def known(bid, version=None):
     st, b = get(bid)
     out = CITY / bid
     out.mkdir(parents=True, exist_ok=True)
     canvas = Image.new("RGB", (BLOCK, BLOCK), tuple(int(v) for v in BG))
     keep = Image.new("L", (BLOCK, BLOCK), 0)
     n = 0
-    for oid, path in st["done"].items():
+    for oid, path in finished(st, version).items():
         if oid == bid:
             continue
         o = next(x for x in st["blocks"] if x["id"] == oid)
@@ -144,21 +150,32 @@ def known(bid):
     if not n:
         print(bid, "has no finished neighbours: paint it from scratch")
         return
-    canvas.save(out / "known.png")
-    keep.save(out / "keep.png")
+    sfx = f"_{version}" if version else ""
+    canvas.save(out / f"known{sfx}.png")
+    keep.save(out / f"keep{sfx}.png")
     print(f"{bid}: {n} finished neighbour(s), {np.asarray(keep).mean() / 255:.0%} of the block is held")
 
 
-def done(bid, canvas):
+def done(bid, canvas, version=None):
     st = load()
     p = Path(canvas).resolve()
     assert p.exists(), p
-    st["done"][bid] = str(p)
+    finished(st, version)[bid] = str(p)
     save(st)
-    print(bid, "registered as finished:", p)
+    print(bid, version or "day", "registered as finished:", p)
+
+
+def patches(version):
+    st = load()
+    out = [{"file": path, "x0": b["x0"], "y0": b["y0"], "w": b["w"], "h": b["h"]}
+           for b in st["blocks"] for oid, path in finished(st, version).items() if oid == b["id"]]
+    dest = CITY / f"patches_{version}.json"
+    dest.write_text(json.dumps(out, indent=1))
+    print(dest, len(out), "blocks")
 
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "plan"
-    {"plan": lambda: plan(), "prepare": lambda: prepare(sys.argv[2]), "known": lambda: known(sys.argv[2]),
-     "done": lambda: done(sys.argv[2], sys.argv[3])}[cmd]()
+    opt = lambda i: sys.argv[i] if len(sys.argv) > i else None  # noqa: E731
+    {"plan": lambda: plan(), "prepare": lambda: prepare(sys.argv[2]), "known": lambda: known(sys.argv[2], opt(3)),
+     "done": lambda: done(sys.argv[2], sys.argv[3], opt(4)), "patches": lambda: patches(sys.argv[2])}[cmd]()
