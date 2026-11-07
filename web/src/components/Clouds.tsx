@@ -2,28 +2,21 @@ import { useEffect, useRef } from "react";
 import { asset } from "../config";
 import type { MapHandle } from "./IsometricMap";
 
-// Illustrated clouds round the edge of the map, and a sky in place of the flat background outside the data.
-// Positions come from web/public/data/clouds.json (pipeline/build_clouds.py), sprites from web/public/clouds/.
-// Drawn on one canvas above the map tiles and below the pins; redrawn in the map's own frame (map.onFrame) so it
-// never lags the map, and by a slow animation loop for the drift while any cloud is showing.
-
-interface Cloud {
-  x: number; y: number; w: number;
-  s: number;   // sprite
-  f: number;   // 1: mirrored
-  p: number;   // parallax: 0 sits on the map; higher clouds move a little more than the map when panning
-  v: number;   // drift speed, map px per second
-  ph: number;  // drift phase
-  r: number;   // 0 on the edge of the data, larger further out
-}
-interface CloudData {
-  sprites: number;
-  spriteSize: [number, number];
-  centre: [number, number];
-  width: number;
-  edge: number[];
-  clouds: Cloud[];
-}
+/**
+ * A sea of cloud seen from above, filling everything outside the map data, so the city rises out of it like a
+ * mountain top over a sea of fog.
+ *
+ * Assets from pipeline/build_clouds.py:
+ *  - web/public/clouds/sea.webp: one seamless cloud-top texture, lit like the map (RGB: day colour; A: height);
+ *  - web/public/clouds/mask.png: signed distance to the edge of the data, 1 px = 32 map px;
+ *  - web/public/data/clouds.json: where the mask sits on the map.
+ * Drawn with WebGL on one full-screen canvas above the map tiles and below the pins, in map coordinates, with the
+ * map's own view: a low layer, a higher layer of bigger heads that drifts a little faster and moves a little more
+ * when panning (parallax) and casts its shadow on the low one, and a fine layer that adds detail close up. At the
+ * edge of the data the cloud thins out over the map along its billows, so the edge is soft and irregular.
+ * Redrawn in the map's own frame (map.onFrame) and, for the drift, every animation frame while any cloud is on
+ * screen. With reduced motion the clouds stand still.
+ */
 
 interface Props {
   map: React.RefObject<MapHandle>;
@@ -31,29 +24,112 @@ interface Props {
   night: number;
 }
 
-const DRIFT_PERIOD = 240; // seconds: clouds wander to and fro round their place rather than blowing away
-// Zoom (screen px per map px) over which the clouds fade out: the bank on the edge lasts a little longer.
-const FADE_EDGE: [number, number] = [0.28, 0.5];
-const FADE_SEA: [number, number] = [0.16, 0.34];
-// Sky: [centre, outside], by day and by night.
-const SKY_DAY = [[58, 82, 116], [22, 33, 54]];
-const SKY_NIGHT = [[20, 30, 50], [7, 11, 22]];
+interface CloudInfo {
+  mask: { file: string; x0: number; y0: number; scale: number; w: number; h: number; range: number };
+  texture: { file: string; size: number };
+}
 
-const smooth = (a: number, b: number, x: number) => {
-  const t = Math.min(Math.max((x - a) / (b - a), 0), 1);
-  return t * t * (3 - 2 * t);
-};
-const mixRgb = (a: number[], b: number[], t: number) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",")})`;
+// Map px covered by one repeat of the texture, per layer; the scales are far from simple ratios, so the repeats
+// never line up.
+const SCALE_LOW = 22000;
+const SCALE_HIGH = 13700;
+const SCALE_FINE = 4300;
+const PARALLAX_HIGH = 0.035;  // the higher layer moves this much more than the map when panning
+const PARALLAX_FINE = 0.012;
+const WIND_LOW: [number, number] = [-5, 1.6];   // drift, map px per second
+const WIND_HIGH: [number, number] = [-8, 2.4];
+const FEATHER = 600;          // map px: how far, on average, the cloud reaches in over the data
 
-/** A sprite as a bitmap, and its mirror image. */
-async function load(url: string): Promise<[ImageBitmap, ImageBitmap]> {
+const VS = `
+attribute vec2 a_pos;
+void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
+
+const FS = `
+precision highp float;
+uniform sampler2D u_sea;
+uniform sampler2D u_mask;
+uniform vec2 u_res;        // canvas size, device px
+uniform float u_dpr;
+uniform vec2 u_view;       // map px at the screen centre
+uniform float u_z;         // screen px per map px
+uniform vec2 u_offLow;     // drift of each layer, map px (kept small on the CPU)
+uniform vec2 u_offHigh;
+uniform vec4 u_mask0;      // mask origin (xy, map px), mask size (zw, map px)
+uniform float u_range;     // map px of the distance at the ends of the mask's range
+uniform float u_feather;
+uniform float u_night;
+uniform float u_fine;      // 0 .. 1: weight of the fine layer, which grows as the map zooms in
+
+const float SQUASH = 1.6;  // the cloud tops are seen at a slant, like the map: shorter than they are wide
+
+vec4 sea(vec2 q, float scale) { return texture2D(u_sea, q / scale * vec2(1.0, SQUASH)); }
+
+void main() {
+  vec2 px = vec2(gl_FragCoord.x, u_res.y - gl_FragCoord.y) / u_dpr;
+  vec2 d = (px - u_res / u_dpr * 0.5) / u_z;        // map px from the screen centre
+  vec2 m = u_view + d;
+
+  vec2 mu = (m - u_mask0.xy) / u_mask0.zw;
+  float sd = (texture2D(u_mask, mu).r * 255.0 - 128.0) / 127.0 * u_range;   // > 0 outside the data
+  if (sd < -u_feather * 2.2) { gl_FragColor = vec4(0.0); return; }
+
+  // Low layer: sits on the map.
+  vec4 low = sea(m + u_offLow, ${SCALE_LOW.toFixed(1)});
+  // High layer: bigger heads above it, a little parallax.
+  vec2 mh = u_view + d * (1.0 + ${PARALLAX_HIGH.toFixed(3)});
+  vec4 high = sea(mh + u_offHigh + vec2(5311.0, 2917.0), ${SCALE_HIGH.toFixed(1)});
+  // its shadow on the low layer: the sun is to the upper left, so the shadow falls down and to the right
+  float hs = sea(mh + u_offHigh + vec2(5311.0, 2917.0) - vec2(260.0, 200.0), ${SCALE_HIGH.toFixed(1)}).a;
+  float cover = smoothstep(0.66, 0.80, high.a);
+  float shade = smoothstep(0.60, 0.80, hs) * (1.0 - cover);
+  // the low layer is further down: a little hazier and bluer than the heads above it
+  vec3 col = mix(low.rgb, vec3(0.80, 0.85, 0.93), 0.18) * mix(vec3(1.0), vec3(0.80, 0.84, 0.93), shade * 0.85);
+  col = mix(col, high.rgb, cover);
+  float h = max(low.a * 0.9, high.a * cover);
+
+  // Fine layer: close up, small curls in the light and shade of the big forms.
+  vec4 fine = sea(u_view + d * (1.0 + ${PARALLAX_FINE.toFixed(3)}) + u_offLow * 1.3 + vec2(911.0, 4513.0), ${SCALE_FINE.toFixed(1)});
+  float fl = dot(fine.rgb, vec3(0.3, 0.59, 0.11));
+  col *= mix(1.0, clamp(0.55 + fl * 0.5, 0.75, 1.15), u_fine * 0.55);
+
+  // Broad patches, thousands of map px across, a little brighter or duller: the average of the texture
+  // (a coarse mipmap level) over a much larger repeat.
+  float broad = texture2D(u_sea, (m + u_offLow * 0.5) / 61000.0 * vec2(1.0, SQUASH), 7.0).a;
+  float bn = clamp((broad - 0.42) / 0.16, 0.0, 1.0);
+  col *= 0.95 + 0.09 * bn;
+
+  // Night: deep blue-grey, with a faint moonlit sheen on the highest, brightest tops.
+  float lum = dot(col, vec3(0.3, 0.59, 0.11));
+  vec3 nightCol = mix(vec3(0.05, 0.07, 0.12), vec3(0.26, 0.32, 0.45), pow(lum, 1.7));
+  nightCol += vec3(0.45, 0.53, 0.72) * pow(lum, 6.0) * 0.32 * smoothstep(0.4, 0.9, h);
+  col = mix(col, nightCol, u_night);
+
+  // The edge: the cloud reaches in over the data along its billows, further where the heads are high and the
+  // broad patches thick, so the edge has bays and headlands; it ends in a soft fringe and a faint mist beyond.
+  float wisp = clamp((high.a * 0.45 + low.a * 0.4 + fine.a * 0.15 - 0.3) / 0.45, 0.0, 1.0);
+  float reach = u_feather * (0.62 + 0.48 * (wisp - 0.5) * 2.0 + 0.3 * (bn - 0.5) * 2.0);
+  reach = max(reach, 160.0);   // always over the outline itself, so the background never shows
+  float a = smoothstep(-reach - 110.0, -reach + 110.0, sd);
+  float mist = 0.2 * smoothstep(-reach - 420.0, -reach - 60.0, sd) * smoothstep(0.35, 0.8, fine.a);
+  a = max(a, mist);
+  // a soft shadow of the cloud on the ground just inside it
+  float sh = smoothstep(-reach - 380.0, -reach + 40.0, sd) * (1.0 - a) * mix(0.22, 0.35, u_night);
+  vec3 shCol = mix(vec3(0.10, 0.14, 0.24), vec3(0.01, 0.02, 0.05), u_night);
+  gl_FragColor = vec4(col * a + shCol * sh, a + sh);
+}`;
+
+function compile(gl: WebGLRenderingContext, type: number, src: string) {
+  const s = gl.createShader(type)!;
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? "shader");
+  return s;
+}
+
+async function bitmap(url: string) {
   const blob = await (await fetch(url)).blob();
-  const img = await createImageBitmap(blob);
-  const c = new OffscreenCanvas(img.width, img.height);
-  const g = c.getContext("2d")!;
-  g.scale(-1, 1);
-  g.drawImage(img, -img.width, 0);
-  return [img, c.transferToImageBitmap()];
+  // the alpha channel is the cloud height, not transparency: keep the colours exactly as stored
+  return createImageBitmap(blob, { premultiplyAlpha: "none", colorSpaceConversion: "none" });
 }
 
 export function Clouds({ map, night }: Props) {
@@ -66,123 +142,142 @@ export function Clouds({ map, night }: Props) {
   }, [night]);
 
   useEffect(() => {
-    let data: CloudData | null = null;
-    let day: [ImageBitmap, ImageBitmap][] = [];
-    let dark: [ImageBitmap, ImageBitmap][] = [];
-    let raf = 0;
-    let last = 0;
-    let alive = true;
-    let layer: HTMLCanvasElement | null = null;
+    const cv = canvas.current;
+    if (!cv) return;
+    const gl = cv.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false });
+    if (!gl) return;
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let alive = true;
+    let raf = 0;
+    let info: CloudInfo | null = null;
+    let dist: Uint8Array | null = null;   // the mask on the CPU, to tell whether any cloud is on screen
     const t0 = performance.now();
 
+    const prog = gl.createProgram()!;
+    try {
+      gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VS));
+      gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, FS));
+    } catch (e) {
+      console.warn("clouds:", e);
+      return;
+    }
+    gl.linkProgram(prog);
+    const textures: WebGLTexture[] = [];
+    gl.useProgram(prog);
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const aPos = gl.getAttribLocation(prog, "a_pos");
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    const U = (n: string) => gl.getUniformLocation(prog, n);
+    const u = {
+      res: U("u_res"), dpr: U("u_dpr"), view: U("u_view"), z: U("u_z"), offLow: U("u_offLow"), offHigh: U("u_offHigh"),
+      mask0: U("u_mask0"), range: U("u_range"), feather: U("u_feather"), night: U("u_night"), fine: U("u_fine"),
+    };
+    gl.uniform1i(U("u_sea"), 0);
+    gl.uniform1i(U("u_mask"), 1);
+
+    /** Whether any cloud can show in the view: the furthest point of the view from the data, from the mask. */
+    const visible = (v: { x: number; y: number; z: number }, W: number, H: number) => {
+      if (!info || !dist) return false;
+      const mk = info.mask;
+      const hw = W / 2 / v.z, hh = H / 2 / v.z;
+      const c0 = Math.floor((v.x - hw - mk.x0) / mk.scale) - 1, c1 = Math.ceil((v.x + hw - mk.x0) / mk.scale) + 1;
+      const r0 = Math.floor((v.y - hh - mk.y0) / mk.scale) - 1, r1 = Math.ceil((v.y + hh - mk.y0) / mk.scale) + 1;
+      if (c0 < 0 || r0 < 0 || c1 >= mk.w || r1 >= mk.h) return true;
+      const limit = 128 - (FEATHER * 2.2 / mk.range) * 127;
+      const step = Math.max(1, Math.floor((c1 - c0) / 64));
+      for (let r = r0; r <= r1; r += step)
+        for (let c = c0; c <= c1; c += step) if (dist[r * mk.w + c] > limit) return true;
+      return false;
+    };
+
     const paint = () => {
-      const cv = canvas.current, m = map.current, v = m?.getView();
-      if (!cv || !v || !data) return false;
-      last = performance.now();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const m = map.current, v = m?.getView();
+      if (!v || !info) return false;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       const W = window.innerWidth, H = window.innerHeight;
-      if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) {
-        cv.width = Math.round(W * dpr);
-        cv.height = Math.round(H * dpr);
-      }
-      const g = cv.getContext("2d")!;
-      g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      g.clearRect(0, 0, W, H);
-      const z = v.z, cx = W / 2, cy = H / 2;
-      const sx = (x: number) => (x - v.x) * z + cx;
-      const sy = (y: number) => (y - v.y) * z + cy;
-      const n = nightRef.current;
-
-      // Sky: everything outside the outline of the data.
-      const e = data.edge;
-      const mx = sx(data.centre[0]), my = sy(data.centre[1]);
-      const grad = g.createRadialGradient(mx, my, data.width * z * 0.3, mx, my, data.width * z * 1.4);
-      grad.addColorStop(0, mixRgb(SKY_DAY[0], SKY_NIGHT[0], n));
-      grad.addColorStop(1, mixRgb(SKY_DAY[1], SKY_NIGHT[1], n));
-      g.beginPath();
-      g.rect(0, 0, W, H);
-      g.moveTo(sx(e[0]), sy(e[1]));
-      for (let i = 2; i < e.length; i += 2) g.lineTo(sx(e[i]), sy(e[i + 1]));
-      g.closePath();
-      g.fillStyle = grad;
-      g.fill("evenodd");
-
-      // Clouds.
-      const aEdge = 1 - smooth(FADE_EDGE[0], FADE_EDGE[1], z);
-      const aSea = 1 - smooth(FADE_SEA[0], FADE_SEA[1], z);
-      if (aEdge <= 0.001) return false;
-      // While fading, draw the clouds at full strength on a layer of their own and lay that down faded, so
-      // overlapping clouds don't show through one another.
-      let out = g;
-      if (aEdge < 0.999) {
-        layer ??= document.createElement("canvas");
-        if (layer.width !== cv.width || layer.height !== cv.height) { layer.width = cv.width; layer.height = cv.height; }
-        out = layer.getContext("2d")!;
-        out.setTransform(dpr, 0, 0, dpr, 0, 0);
-        out.clearRect(0, 0, W, H);
-      }
+      const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+      if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
+      gl.viewport(0, 0, bw, bh);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      if (!visible(v, W, H)) return false;
       const t = still ? 0 : (performance.now() - t0) / 1000;
-      const w0 = (2 * Math.PI) / DRIFT_PERIOD;
-      const [SW, SH] = data.spriteSize;
-      for (const c of data.clouds) {
-        // the bank on the edge is solid; out in the open sky the clouds grow fainter
-        const a = (c.r <= 1 ? aEdge : aSea * (1 - Math.min(c.r - 2, 6) * 0.07)) / (out === g ? 1 : aEdge);
-        if (a <= 0.001) continue;
-        const amp = (c.v * DRIFT_PERIOD) / (2 * Math.PI) / 4;
-        const dx = amp * Math.sin(t * w0 + c.ph), dy = amp * 0.3 * Math.cos(t * w0 * 0.7 + c.ph);
-        const k = 1 + c.p;
-        const px = cx + ((c.x + dx - v.x) * z) * k, py = cy + ((c.y + dy - v.y) * z) * k;
-        const w = c.w * z * k, h = (w * SH) / SW;
-        if (px + w / 2 < 0 || px - w / 2 > W || py + h / 2 < 0 || py - h / 2 > H) continue;
-        const pair = c.f ? 1 : 0;
-        if (n < 0.999 && day[c.s]) {
-          out.globalAlpha = a * (1 - n);
-          out.drawImage(day[c.s][pair], px - w / 2, py - h / 2, w, h);
-        }
-        if (n > 0.001 && dark[c.s]) {
-          out.globalAlpha = a * n;
-          out.drawImage(dark[c.s][pair], px - w / 2, py - h / 2, w, h);
-        }
-      }
-      out.globalAlpha = 1;
-      if (out !== g && layer) {
-        g.setTransform(1, 0, 0, 1, 0, 0);
-        g.globalAlpha = aEdge;
-        g.drawImage(layer, 0, 0);
-        g.globalAlpha = 1;
-      }
+      const mk = info.mask;
+      gl.uniform2f(u.res, bw, bh);
+      gl.uniform1f(u.dpr, dpr);
+      gl.uniform2f(u.view, v.x, v.y);
+      gl.uniform1f(u.z, v.z);
+      // drift, wrapped to one repeat of each layer so the numbers stay small
+      gl.uniform2f(u.offLow, (WIND_LOW[0] * t) % SCALE_LOW, (WIND_LOW[1] * t) % (SCALE_LOW / 1.6));
+      gl.uniform2f(u.offHigh, (WIND_HIGH[0] * t) % SCALE_HIGH, (WIND_HIGH[1] * t) % (SCALE_HIGH / 1.6));
+      gl.uniform4f(u.mask0, mk.x0, mk.y0, mk.w * mk.scale, mk.h * mk.scale);
+      gl.uniform1f(u.range, mk.range);
+      gl.uniform1f(u.feather, FEATHER);
+      gl.uniform1f(u.night, nightRef.current);
+      const s = Math.min(Math.max((v.z - 0.08) / (0.35 - 0.08), 0), 1);
+      gl.uniform1f(u.fine, s * s * (3 - 2 * s));
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       return true;
     };
 
-    // The drift needs a steady redraw only while clouds are showing; the map's own frames cover panning.
+    let last = 0, showing = false;
+    const frame = () => { last = performance.now(); showing = paint(); };
     const loop = () => {
       raf = 0;
       if (!alive) return;
-      const showing = performance.now() - last > 12 ? paint() : true;
+      // the map's own frame may already have drawn this one
+      if (performance.now() - last > 8) frame();
       if (showing && !still) raf = requestAnimationFrame(loop);
     };
     const kick = () => {
-      paint();
-      if (!raf && alive && !still) raf = requestAnimationFrame(loop);
+      if (!alive) return;
+      if (!raf) raf = requestAnimationFrame(loop);
     };
     draw.current = kick;
 
     fetch(asset("/data/clouds.json"))
       .then((r) => r.json())
-      .then(async (d: CloudData) => {
-        const ids = Array.from({ length: d.sprites }, (_, i) => i);
-        const [a, b] = await Promise.all([
-          Promise.all(ids.map((i) => load(asset(`/clouds/c${i}.png`)))),
-          Promise.all(ids.map((i) => load(asset(`/clouds/c${i}_n.png`)))),
-        ]);
+      .then(async (d: CloudInfo) => {
+        const [sea, mask] = await Promise.all([bitmap(asset(d.texture.file)), bitmap(asset(d.mask.file))]);
         if (!alive) return;
-        data = d; day = a; dark = b;
+        // the mask's values on the CPU as well
+        const oc = new OffscreenCanvas(mask.width, mask.height);
+        const g = oc.getContext("2d")!;
+        g.drawImage(mask, 0, 0);
+        const px = g.getImageData(0, 0, mask.width, mask.height).data;
+        dist = new Uint8Array(mask.width * mask.height);
+        for (let i = 0; i < dist.length; i++) dist[i] = px[i * 4];
+
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+        const tSea = gl.createTexture()!, tMask = gl.createTexture()!;
+        textures.push(tSea, tMask);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tSea);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sea);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, tMask);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, mask);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        sea.close();
+        mask.close();
+        info = d;
         kick();
       })
-      .catch(() => {});
+      .catch((e) => console.warn("clouds:", e));
 
-    const off = map.current?.onFrame(kick);
+    const off = map.current?.onFrame(() => { frame(); kick(); });
     window.addEventListener("resize", kick);
     return () => {
       alive = false;
@@ -190,6 +285,10 @@ export function Clouds({ map, night }: Props) {
       off?.();
       window.removeEventListener("resize", kick);
       draw.current = () => {};
+      // the canvas (and its context) may be used again by the next mount: free what this one made
+      for (const t of textures) gl.deleteTexture(t);
+      gl.deleteBuffer(buf);
+      gl.deleteProgram(prog);
     };
   }, [map]);
 

@@ -1,302 +1,235 @@
-"""Illustrated clouds around the edge of the map, so the empty background outside the 3D data is not left blank.
+"""A sea of cloud seen from above, filling everything outside the map data, with the city rising out of it.
 
-  build_clouds.py sprites   -> web/public/clouds/c{i}.png and c{i}_n.png (day and night), drawn procedurally
-  build_clouds.py place     -> web/public/data/clouds.json: the edge of the data, and where each cloud sits
+  build_clouds.py texture   -> web/public/clouds/sea.webp: one seamless, tileable cloud-top texture (2048 x 2048)
+  build_clouds.py mask      -> web/public/clouds/mask.png and web/public/data/clouds.json: where the data ends
   build_clouds.py           -> both
 
-The sprites are drawn like the map: flat cel-shaded puffs of cumulus, seen slightly from above, with a thin
-grey-blue ink outline round the whole cloud and finer lines where a front puff overlaps one behind it.
+Texture (procedural, no outside service): a height field of heaped cumulus tops, built on a torus so it repeats
+without seams. Each octave is a field of domes, one per cell of a periodic Voronoi diagram (cKDTree with a box
+size), sunk into soft creases where neighbouring cells meet; smaller octaves sit on the larger ones like the
+heads of a cauliflower, everything is domain-warped by smooth periodic noise, and a broad swell lifts and lowers
+whole fields of billows. The height is then lit like the map, by warm daylight from the upper left: soft wrapped
+diffuse light, shadows cast across the tops (marched along the light), occlusion in the valleys, and cool
+blue-grey in the shade and in the low, hazy hollows. No outlines and no flat steps.
+  RGB: the day colour.  A: the height (0 low .. 1 high), which the viewer uses to lay one layer over another, to
+  cast the upper layer's shadow on the lower and to make the edge over the map follow the billows. Night colours
+  are worked out in the viewer from the day brightness.
 
-Placement: the outline of the data (from the render frames, see city_blocks.data_mask) is walked at an even step.
-A dense bank of clouds sits on that line, overlapping the map's ragged edge a little, and further rings thin out
-into the background, so at the widest view the whole map floats in a sea of cloud. The viewer
-(web/src/components/Clouds.tsx) also fills everything outside the outline with a soft sky gradient.
+Mask: the outline of the data, found in the painted tiles themselves (web/public/tiles/map_files/12, where the
+empty background is #101828). Only the largest connected piece counts, so stray stubs of bridges outside the data
+stay under the clouds. Stored as a signed distance to that outline, 1 px = 32 map px, with a wide border so the
+texture clamps to "far outside":
+  value = 128 + distance / RANGE * 127, distance in map px, positive outside the data, negative inside.
+
+clouds.json: {"mask": {"file", "x0", "y0", "scale", "w", "h", "range"}, "texture": {"file", "size"}}
+(x0, y0: map px of the mask's top-left corner; scale: map px per mask px.)
+The viewer is web/src/components/Clouds.tsx.
 """
 import json
+import os
 import sys
 
 import cv2
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image
+from scipy.spatial import cKDTree
 
-from city_blocks import data_mask
 from common import WEB
 
-OUT_SPRITES = WEB / "public" / "clouds"
+OUT_DIR = WEB / "public" / "clouds"
 OUT_JSON = WEB / "public" / "data" / "clouds.json"
-N_SPRITES = 8
-SW, SH = 560, 340          # sprite size (px)
-SS = 2                     # supersampling while drawing
+TILES = WEB / "public" / "tiles"
+N = 2048                     # texture size
+SEED = 1867
 
-# Day palette, light to dark, and the ink.
-DAY = [(255, 252, 244), (246, 241, 230), (221, 227, 236), (182, 195, 214), (150, 166, 191)]
-DAY_INK = (98, 114, 140)
-DAY_INNER = (150, 164, 188)
-# Night: the same cloud in dark blue-grey, with a pale moonlit rim.
-NIGHT = [(84, 97, 124), (71, 83, 109), (57, 68, 93), (44, 53, 75), (35, 43, 63)]
-NIGHT_INK = (22, 28, 44)
-NIGHT_INNER = (38, 46, 66)
-MOON = (196, 212, 236)
+# --- texture -----------------------------------------------------------------------------------------------------
 
 
-def _puffs(rng, w, h):
-    """Circles (cx, cy, r, z) making one cumulus: small puffs on a flat base, bigger ones heaped behind and on top."""
-    base = h * 0.84
-    span = w * rng.uniform(0.60, 0.72)
-    x0 = (w - span) / 2
-    puffs = []
-    # filler behind everything along the base, so the bank has no holes
-    for i in range(7):
-        puffs.append((x0 + span * (0.06 + 0.88 * i / 6), base - h * 0.13, h * 0.15, 0.0))
-    # crown: two or three big puffs, furthest back (seen from above, the far side shows above the near side)
-    k = int(rng.integers(2, 4))
-    for i in range(k):
-        r = h * rng.uniform(0.20, 0.27)
-        cx = w / 2 + (i - (k - 1) / 2) * span * 0.26 + rng.uniform(-0.05, 0.05) * span
-        puffs.append((cx, base - h * rng.uniform(0.36, 0.54), r, 0.0))
-    # middle row
-    n = int(rng.integers(4, 6))
-    for i in range(n):
-        r = h * rng.uniform(0.13, 0.18)
-        cx = x0 + span * (0.08 + 0.84 * i / (n - 1)) + rng.uniform(-0.03, 0.03) * span
-        lift = 1 - abs(i / (n - 1) - 0.5) * 2
-        puffs.append((cx, base - h * (0.20 + 0.10 * lift) - rng.uniform(0, h * 0.04), r, h * 0.10))
-    # front row on the base line, nearest the viewer, overlapping so the base has no gaps
-    n = int(rng.integers(4, 7))
-    for i in range(n):
-        r = h * rng.uniform(0.11, 0.16)
-        cx = x0 + span * (0.03 + 0.94 * i / (n - 1)) + rng.uniform(-0.03, 0.03) * span
-        puffs.append((cx, base - r * rng.uniform(0.35, 0.75), r, h * 0.20 + rng.uniform(0, h * 0.03)))
-    return puffs, base
+def periodic_noise(rng, n, freq, power=2.0):
+    """Smooth tileable noise: white noise filtered in the frequency domain, about `freq` cycles across the tile."""
+    k = np.fft.fftfreq(n) * n
+    kk = np.hypot(*np.meshgrid(k, k))
+    spec = np.exp(-(kk / freq) ** power)
+    spec[0, 0] = 0
+    f = np.real(np.fft.ifft2(np.fft.fft2(rng.standard_normal((n, n))) * spec))
+    return (f / f.std()).astype(np.float32)
 
 
-def _smoothstep(a, b, x):
-    t = np.clip((x - a) / (b - a), 0, 1)
-    return t * t * (3 - 2 * t)
+def blur_wrap(a, sigma):
+    """Gaussian blur on the torus, so the texture stays seamless."""
+    pad = int(sigma * 3) + 1
+    p = np.pad(a, pad, mode="wrap")
+    return cv2.GaussianBlur(p, (0, 0), sigma)[pad:-pad, pad:-pad]
 
 
-def draw_sprite(seed):
-    rng = np.random.default_rng(seed)
-    w, h = SW * SS, SH * SS
-    puffs, base = _puffs(rng, w, h * 0.92)
-    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    height = np.full((h, w), -1e9, np.float32)
-    owner = np.full((h, w), -1, np.int32)
-    gx = np.zeros((h, w), np.float32)
-    gy = np.zeros((h, w), np.float32)
-    for i, (cx, cy, r, z) in enumerate(puffs):
-        d2 = (xx - cx) ** 2 + ((yy - cy) * 1.08) ** 2
-        inside = d2 < r * r
-        cap = np.sqrt(np.maximum(r * r - d2, 0)) + z
-        take = inside   # puffs come back to front, so a nearer one covers those behind it
-        height[take] = cap[take]
-        owner[take] = i
-        # unit normal of the sphere: (x - cx, y - cy, cap) / r
-        gx[take] = ((xx - cx) / r)[take]
-        gy[take] = ((yy - cy) / r)[take]
-    wobble = np.sin(xx / w * 9 + seed) * h * 0.008
-    solid = (owner >= 0) & (yy < base + wobble)
-    nz = np.sqrt(np.maximum(1 - gx ** 2 - gy ** 2, 0))
+def stamp(h, rng, count, r_range, sink, soft, squash=1.0):
+    """Heap `count` balls of cloud on the surface h (on the torus): each ball sits on the surface where it lands,
+    sunk by `sink` of its radius, and the surface becomes the higher of the two. Returns the new surface."""
+    out = h.copy()
+    for _ in range(count):
+        r = rng.uniform(*r_range)
+        cx, cy = rng.uniform(0, N), rng.uniform(0, N)
+        ix, iy = int(cx), int(cy)
+        z = h[iy % N, ix % N] - sink * r
+        R = int(np.ceil(r)) + 1
+        xs = np.arange(ix - R, ix + R + 1)
+        ys = np.arange(iy - R, iy + R + 1)
+        dx = (xs + 0.5 - cx)[None, :]
+        dy = (ys + 0.5 - cy)[:, None]
+        cap = r * r - dx * dx - dy * dy
+        ball = np.where(cap > 0, z + np.sqrt(np.maximum(cap, 0)) * squash, -1e9)
+        win = np.ix_(ys % N, xs % N)
+        # smooth maximum, so a ball melts into what it sits on instead of meeting it in a hard crease
+        a, k = out[win], soft * r
+        hh = np.clip(0.5 + 0.5 * (ball - a) / k, 0, 1)
+        out[win] = a + (ball - a) * hh + k * hh * (1 - hh)
+    return out
 
-    # Light from the upper left and towards the viewer; the lower part of the cloud is in its own shade.
-    L = np.array([-0.45, -0.75, 0.50])
+
+def height_field(rng):
+    """Heaped cumulus tops, in texture px: a gently swelling floor, big billows on it, heads on the billows,
+    curls on the heads. Balls are united by taking the higher surface, which leaves soft creases between them."""
+    swell = periodic_noise(rng, N, 3.0) * 95 + periodic_noise(rng, N, 9.0) * 22
+    h = swell.astype(np.float32)
+    # (count, radius range px, sink and softness as fractions of the radius)
+    layers = [
+        (110, (150, 260), 0.55, 0.30),
+        (480, (60, 120), 0.58, 0.25),
+        (1700, (24, 50), 0.68, 0.30),
+        (4000, (10, 20), 0.78, 0.45),
+    ]
+    for count, rr, sink, soft in layers:
+        h = stamp(h, rng, count, rr, sink, soft)
+        h = blur_wrap(h, rr[0] * 0.08)             # soften, as a painter would
+    # a faint grain on the surface
+    h += periodic_noise(rng, N, 90) * 0.5
+    return h
+
+
+def shade(hp):
+    """Day colours for a height field (texture px): warm light from the upper left, cool blue-grey shade."""
+    h = (hp - hp.min()) / (hp.max() - hp.min())
+    gx = (np.roll(hp, -1, 1) - np.roll(hp, 1, 1)) / 2
+    gy = (np.roll(hp, -1, 0) - np.roll(hp, 1, 0)) / 2
+    gx, gy = blur_wrap(gx, 1.2), blur_wrap(gy, 1.2)
+    nrm = np.dstack([-gx, -gy, np.ones_like(gx)])
+    nrm /= np.linalg.norm(nrm, axis=2, keepdims=True)
+    # Light from the upper left and a little in front. The viewer squashes the texture vertically by 1.6 for the
+    # oblique view, so the light is a little steeper here to come out at the map's angle on screen.
+    L = np.array([-0.62, -0.78 * 1.3, 0.62])
     L /= np.linalg.norm(L)
-    lit = gx * L[0] + gy * L[1] + nz * L[2]
-    top = yy[solid].min() if solid.any() else 0
-    vert = (yy - top) / max(base - top, 1)
-    tone = 0.26 * lit + 0.74 * (1 - vert) + 0.06
-    tone = cv2.GaussianBlur(tone, (0, 0), SS * 1.5)
-    # cel shading: flat steps with narrow soft edges; the lowest two only on the underside
-    steps = [0.74, 0.50, 0.26, 0.12]
-    idx = np.zeros((h, w), np.float32)
-    for s in steps:
-        idx += 1 - _smoothstep(s - 0.012, s + 0.012, tone)
+    ndl = (nrm @ L).astype(np.float32)
+    diffuse = np.clip((ndl + 0.35) / 1.35, 0, 1) ** 1.3
 
-    drawn = (rng.random(len(puffs)) < 0.35) & (np.arange(len(puffs)) >= 7)  # which puffs get an inner line: not all, so it reads as drawn by hand
+    # Shadows cast across the tops: march towards the light; a higher point in the way shades this one.
+    d2 = L[:2] / np.linalg.norm(L[:2])
+    slope = L[2] / np.linalg.norm(L[:2])          # rise of the light ray per px travelled
+    occ = np.zeros_like(h)
+    for s in range(2, 90, 3):
+        dx, dy = int(round(-d2[0] * s)), int(round(-d2[1] * s))   # roll by -offset samples p + offset
+        ahead = np.roll(hp, (dy, dx), (0, 1))
+        occ = np.maximum(occ, (ahead - hp - s * slope * 0.55) / 10.0)
+    shadow = blur_wrap(np.clip(occ, 0, 1), 3.0)
 
-    def paint(pal, ink, inner, rim):
-        pal = np.array(pal, np.float32)
-        lo = np.clip(np.floor(idx).astype(int), 0, len(pal) - 1)
-        hi = np.clip(lo + 1, 0, len(pal) - 1)
-        f = (idx - np.floor(idx))[..., None]
-        rgb = pal[lo] * (1 - f) + pal[hi] * f
-        a = solid.astype(np.float32)
-        # fine inner lines where a nearer puff overlaps one behind it
-        # (on the upper rim of the nearer puff only, as an artist would draw it)
-        jump = np.zeros((h, w), bool)
-        for dy, dx in ((0, 1), (1, 0), (0, -1), (-1, 0)):
-            o2 = np.roll(owner, (dy, dx), (0, 1))
-            jump |= (o2 >= 0) & (o2 < owner) & (gy < -0.45) & (np.abs(gx) < 0.6) & solid & np.roll(solid, (dy, dx), (0, 1))
-        jump &= drawn[np.maximum(owner, 0)]
-        # drop short scraps, which read as specks rather than lines
-        nl, lab, st, _ = cv2.connectedComponentsWithStats(jump.astype(np.uint8), connectivity=8)
-        jump = np.isin(lab, 1 + np.flatnonzero(st[1:, cv2.CC_STAT_AREA] >= 40 * SS))
-        inner_line = cv2.dilate(jump.astype(np.uint8), np.ones((2 * SS, 2 * SS), np.uint8)) > 0
-        rgb[inner_line] = rgb[inner_line] * 0.3 + np.array(inner, np.float32) * 0.7
-        # outer ink: a band just inside the silhouette
-        k = int(SS * 2.6)
-        eroded = cv2.erode(solid.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k + 1, 2 * k + 1))) > 0
-        if rim is not None:
-            # moonlit rim: a pale band inside the ink on the upper side
-            k2 = int(SS * 7)
-            er2 = cv2.erode(solid.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k2 + 1, 2 * k2 + 1))) > 0
-            band = (solid & ~er2).astype(np.float32)
-            band = cv2.GaussianBlur(band, (0, 0), SS * 1.5) * np.clip(-gy * 0.9 + 0.35 * gx + 0.2, 0, 1) * (1 - vert * 0.8)
-            band = np.clip(band, 0, 1)[..., None] * 0.75
-            rgb = rgb * (1 - band) + np.array(rim, np.float32) * band
-        edge = solid & ~eroded
-        rgb[edge] = np.array(ink, np.float32)
-        img = np.dstack([np.clip(rgb, 0, 255), a * 255]).astype(np.uint8)
-        im = Image.fromarray(img, "RGBA").resize((SW, SH), Image.LANCZOS)
-        # a soft shadow below and to the right, as if on the ground far beneath
-        sh = Image.fromarray((solid * 255).astype(np.uint8)).resize((SW, SH), Image.BILINEAR)
-        sh = sh.transform(sh.size, Image.AFFINE, (1, 0, -SW * 0.03, 0, 1, -SH * 0.07)).filter(ImageFilter.GaussianBlur(SW * 0.018))
-        shadow = Image.new("RGBA", (SW, SH), (14, 20, 36, 0))
-        shadow.putalpha(sh.point(lambda v: int(v * 0.22)))
-        return Image.alpha_composite(shadow, im)
+    # Occlusion: hollows below their surroundings get less sky light.
+    cav = np.clip((blur_wrap(hp, 14) - hp) / 9.0, 0, 1)
+    cav2 = np.clip((blur_wrap(hp, 50) - hp) / 18.0, 0, 1)
+    ao = 1 - 0.45 * cav - 0.35 * cav2
 
-    return paint(DAY, DAY_INK, DAY_INNER, None), paint(NIGHT, NIGHT_INK, NIGHT_INNER, MOON)
+    light = diffuse * (1 - 0.75 * shadow)
+    lit = np.array([255, 249, 236], np.float32)       # warm sunlit tops
+    mid = np.array([226, 230, 238], np.float32)
+    shade_c = np.array([162, 177, 203], np.float32)   # blue-grey shade
+    deep = np.array([112, 128, 162], np.float32)      # hollows
+    t = light[..., None]
+    col = np.where(t > 0.5, mid + (lit - mid) * ((t - 0.5) / 0.5), shade_c + (mid - shade_c) * (t / 0.5))
+    a = ao[..., None]
+    col = deep + (col - deep) * (0.35 + 0.65 * a)
+    # Aerial haze: the low hollows are further away and paler, bluer.
+    low = np.clip(1 - h / 0.45, 0, 1)[..., None] ** 1.5
+    haze = np.array([196, 208, 228], np.float32)
+    col = col + (haze - col) * low * 0.55
+    # A thin warm glow on the edges that face the sun, as light comes through the thin outer fringes.
+    rim = np.clip(ndl - 0.55, 0, 1)[..., None] * (1 - shadow[..., None])
+    col = col + (np.array([255, 236, 205], np.float32) - col) * rim * 0.5
+    return np.clip(col, 0, 255)
 
 
-def sprites():
-    OUT_SPRITES.mkdir(parents=True, exist_ok=True)
-    seeds = [3, 11, 19, 27, 41, 58, 73, 90][:N_SPRITES]
-    total = 0
-    for i, s in enumerate(seeds):
-        day, night = draw_sprite(s)
-        for im, name in ((day, f"c{i}.png"), (night, f"c{i}_n.png")):
-            p = OUT_SPRITES / name
-            im.save(p, optimize=True)
-            total += p.stat().st_size
-    print(f"{2 * len(seeds)} sprites, {total / 1024:.0f} KB")
+def texture():
+    rng = np.random.default_rng(SEED)
+    hp = height_field(rng)
+    rgb = shade(hp)
+    h = (hp - hp.min()) / (hp.max() - hp.min())
+    rgba = np.dstack([rgb, 1 + h * 254]).astype(np.uint8)   # never fully transparent, so no colour is dropped
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    p = OUT_DIR / "sea.webp"
+    Image.fromarray(rgba, "RGBA").save(p, quality=86, alpha_quality=90, method=6, exact=True)
+    print(f"texture {N} x {N}: {p.stat().st_size / 1024:.0f} KB")
+    return rgba
 
 
-# --- placement ---------------------------------------------------------------------------------------------------
+# --- mask --------------------------------------------------------------------------------------------------------
 
-S = 16                  # mask scale
-STEP = 1050             # map px between clouds along the edge
-OVERLAP = 450           # how far the edge bank reaches over the data (map px)
-EDGE_RINGS = [          # (gap beyond the first ring, map px; size range, map px; parallax range)
-    (0, (2000, 2900), (0.00, 0.02)),
-    (800, (2100, 3100), (0.01, 0.03)),
-]
-SEA = 30000             # the sea of clouds reaches this far beyond the data (map px)
-# The visible body of a sprite, as half-axes of an ellipse in units of its width (the puffs fill ~2/3 of the width).
-BODY = (0.34, 0.20)
+LEVEL = 12                   # tile level used for the outline (8 map px per px for the full map)
+MASK_SCALE = 32              # map px per mask px
+BORDER = 96                  # mask px of "far outside" round the map (3072 map px)
+RANGE = 3000                 # map px: the signed distance saturates beyond this
+BG = np.array([16, 24, 40])  # the empty background of the tiles
 
 
-def outline():
-    mask, W, H = data_mask(S)
-    m = mask.astype(np.uint8)
-    m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9)))
-    n, lab, stats, _ = cv2.connectedComponentsWithStats(m)
+def mask():
+    meta = json.loads((TILES / "meta.json").read_text())
+    W, H = meta["width"], meta["height"]
+    d = TILES / "map_files" / str(LEVEL)
+    fs = os.listdir(d)
+    cols = max(int(f.split("_")[0]) for f in fs) + 1
+    rows = max(int(f.split("_")[1].split(".")[0]) for f in fs) + 1
+    ts = meta["tileSize"]
+    img = np.zeros((rows * ts, cols * ts, 3), np.uint8)
+    for f in fs:
+        x, y = (int(v) for v in f.split(".")[0].split("_"))
+        t = np.asarray(Image.open(d / f).convert("RGB"))
+        img[y * ts:y * ts + t.shape[0], x * ts:x * ts + t.shape[1]] = t
+    k = 2 ** (int(np.ceil(np.log2(max(W, H)))) - LEVEL)    # map px per px at this level
+    img = img[:int(np.ceil(H / k)), :int(np.ceil(W / k))]
+    data = (np.abs(img.astype(int) - BG).sum(2) > 24).astype(np.uint8)
+    # tidy: close small gaps, keep the largest piece, fill holes
+    data = cv2.morphologyEx(data, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)))
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(data)
     big = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
-    m = (lab == big).astype(np.uint8)
-    cs, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    c = max(cs, key=cv2.contourArea)[:, 0, :].astype(np.float64) * S + S / 2
-    return c, m, W, H
-
-
-def resample(c, step):
-    seg = np.hypot(*np.diff(np.vstack([c, c[:1]]), axis=0).T)
-    cum = np.concatenate([[0], np.cumsum(seg)])
-    n = int(cum[-1] // step)
-    t = np.linspace(0, cum[-1], n, endpoint=False)
-    closed = np.vstack([c, c[:1]])
-    return np.column_stack([np.interp(t, cum, closed[:, 0]), np.interp(t, cum, closed[:, 1])])
-
-
-def place():
-    c, m, W, H = outline()
-    # a smooth version of the edge to walk along (the raw one zig-zags pixel by pixel)
-    smooth = resample(c, 200)
-    k = 3
-    pad = np.vstack([smooth[-k:], smooth, smooth[:k]])
-    ker = np.ones(2 * k + 1) / (2 * k + 1)
-    smooth = np.column_stack([np.convolve(pad[:, 0], ker, "valid"), np.convolve(pad[:, 1], ker, "valid")])
-    centre = smooth.mean(0)
-
-    rng = np.random.default_rng(1867)
-    clouds = []
-
-    def add(x, y, w, par, ring):
-        clouds.append({
-            "x": round(float(x)), "y": round(float(y)), "w": round(float(w)),
-            "s": int(rng.integers(0, N_SPRITES)),
-            "f": int(rng.random() < 0.5),                         # mirrored
-            "p": round(float(rng.uniform(*par)), 3),              # parallax: 0 on the ground .. higher moves more
-            "v": round(float(rng.uniform(3, 9)), 1),              # drift speed, map px per second
-            "ph": round(float(rng.uniform(0, 6.283)), 2),         # drift phase
-            "r": ring,                                            # 0 on the edge, larger further out
-        })
-
-    # 1. The bank on the edge: walk the outline, each cloud reaching OVERLAP px over the data.
-    pts = resample(smooth, STEP)
-    nxt = np.roll(pts, -1, 0) - np.roll(pts, 1, 0)
-    normal = np.column_stack([nxt[:, 1], -nxt[:, 0]])
-    normal /= np.linalg.norm(normal, axis=1, keepdims=True) + 1e-9
-    flip = ((pts - centre) * normal).sum(1) < 0      # point the normals away from the middle of the map
-    normal[flip] *= -1
-    for ri, (off, size, par) in enumerate(EDGE_RINGS):
-        for p, nrm in zip(pts, normal):
-            w = rng.uniform(*size)
-            # distance from the cloud's centre to its body's edge, towards the map
-            support = w * np.hypot(BODY[0] * nrm[0], BODY[1] * nrm[1])
-            tangent = np.array([-nrm[1], nrm[0]])
-            o = support - OVERLAP + off + rng.uniform(-0.15, 0.3) * max(off, 400)
-            x, y = p + nrm * o + tangent * (rng.uniform(-0.35, 0.35) + ri * 0.5) * STEP
-            add(x, y, w, par, ri)
-
-    # 2. The sea: random darts over a wide field round the map, kept apart by a spacing that grows with the
-    # distance from the data, so the clouds thin out into the open sky.
-    T = 64                                           # field scale, map px per cell
-    pad = SEA // T + 4
-    small = cv2.resize(m, (m.shape[1] * S // T, m.shape[0] * S // T), interpolation=cv2.INTER_AREA)
-    field = np.zeros((small.shape[0] + 2 * pad, small.shape[1] + 2 * pad), np.uint8)
-    field[pad:pad + small.shape[0], pad:pad + small.shape[1]] = small > 0
-    dist = cv2.distanceTransform(1 - field, cv2.DIST_L2, 5) * T
-    # a smooth random field, so the sea gathers into banks and clumps with open sky between them
-    noise = cv2.GaussianBlur(rng.random(field.shape).astype(np.float32), (0, 0), 5000 / T)
-    noise = (noise - noise.min()) / (noise.max() - noise.min())
-    placed = np.array([[c["x"], c["y"]] for c in clouds], float)
-    sea = []
-    for _ in range(150000):
-        gx, gy = rng.uniform(0, field.shape[1]), rng.uniform(0, field.shape[0])
-        d = dist[int(gy), int(gx)]
-        if d < 1600 or d > SEA:
-            continue
-        x, y = (gx - pad) * T, (gy - pad) * T
-        n = noise[int(gy), int(gx)]
-        # near the edge the bank is solid; further out, clouds only where the field is high
-        if d > 3000 and n < 0.45 + 0.25 * min(d / SEA, 1):
-            continue
-        spacing = (1500 + d * 0.32) * (1.6 - n)
-        allp = np.vstack([placed, np.array(sea).reshape(-1, 2)]) if sea else placed
-        dd = np.hypot(allp[:, 0] - x, (allp[:, 1] - y) / 0.6)    # clouds are wide: pack them closer vertically
-        if dd.min() < spacing:
-            continue
-        sea.append((x, y))
-        t = min(d / SEA, 1)
-        w = rng.uniform(1800, 3200) + t * rng.uniform(0, 2000)
-        add(x, y, w, (0.02 + 0.06 * t, 0.04 + 0.08 * t), 2 + int(t * 6))
-
-    # lower (less parallax) first, so higher clouds are drawn over them; the edge ring on top of its neighbours
-    clouds.sort(key=lambda d: (d["p"], -d["r"]))
-    edge = cv2.approxPolyDP(c.astype(np.float32).reshape(-1, 1, 2), 24, True)[:, 0, :]
-    out = {
-        "width": W, "height": H, "sprites": N_SPRITES, "spriteSize": [SW, SH],
-        "centre": [round(float(centre[0])), round(float(centre[1]))],
-        # outline of the data, map px: the sky is painted outside it
-        "edge": [int(v) for v in np.round(edge).reshape(-1)],
-        "clouds": clouds,
+    data = (lab == big).astype(np.uint8)
+    cs, _ = cv2.findContours(data, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    data = np.zeros_like(data)
+    cv2.drawContours(data, cs, -1, 1, -1)
+    # pad with the border and measure signed distance at this resolution, then reduce
+    pb = BORDER * MASK_SCALE // k
+    data = np.pad(data, pb)
+    out_d = cv2.distanceTransform(1 - data, cv2.DIST_L2, 5) * k
+    in_d = cv2.distanceTransform(data, cv2.DIST_L2, 5) * k
+    sd = out_d - in_d
+    r = MASK_SCALE // k
+    hh, ww = sd.shape[0] // r * r, sd.shape[1] // r * r
+    sd = sd[:hh, :ww].reshape(hh // r, r, ww // r, r).mean((1, 3))
+    val = np.clip(128 + sd / RANGE * 127, 0, 255).astype(np.uint8)
+    # the outermost ring is always "far outside", so the texture clamps to clouds beyond it
+    val[[0, -1], :] = 255
+    val[:, [0, -1]] = 255
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    p = OUT_DIR / "mask.png"
+    Image.fromarray(val, "L").save(p, optimize=True)
+    x0 = y0 = -BORDER * MASK_SCALE
+    info = {
+        "mask": {"file": "/clouds/mask.png", "x0": x0, "y0": y0, "scale": MASK_SCALE,
+                 "w": int(val.shape[1]), "h": int(val.shape[0]), "range": RANGE},
+        "texture": {"file": "/clouds/sea.webp", "size": N},
     }
-    OUT_JSON.write_text(json.dumps(out, separators=(",", ":")))
-    print(f"{len(clouds)} clouds, edge of {len(edge)} points, {OUT_JSON.stat().st_size / 1024:.0f} KB")
+    OUT_JSON.write_text(json.dumps(info, separators=(",", ":")))
+    print(f"mask {val.shape[1]} x {val.shape[0]}: {p.stat().st_size / 1024:.0f} KB")
 
 
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
-    if what in ("sprites", "all"):
-        sprites()
-    if what in ("place", "all"):
-        place()
+    if what in ("texture", "all"):
+        texture()
+    if what in ("mask", "all"):
+        mask()
