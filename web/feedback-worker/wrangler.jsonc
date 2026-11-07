@@ -12,7 +12,7 @@
       "binding": "DB",
       "database_name": "isometric-feedback",
       // Replace with the id printed by `npx wrangler d1 create isometric-feedback` before deploying.
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      "database_id": "41b863be-859b-444c-8c20-971e1d4b0eeb"
     }
   ],
   // Cheap first line of defence before any D1 query: per client, per Cloudflare location, approximate.
