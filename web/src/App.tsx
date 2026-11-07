@@ -5,6 +5,7 @@ import { Search } from "./components/Search";
 import { Overlay } from "./components/Overlay";
 import { LandmarkPanel, type Landmark } from "./components/LandmarkPanel";
 import { SceneControl } from "./components/SceneControl";
+import { Feedback, feedbackConfigured } from "./components/Feedback";
 import { christmasOn, mix, seasonOf, sunTimes, type SceneState, type Variant } from "./scene";
 import { luxSeconds } from "./components/Transit";
 import { asset, tilesBase } from "./config";
@@ -38,6 +39,9 @@ export default function App() {
   const [about, setAbout] = useState(false);
   const [streets, setStreets] = useState(false);
   const [lm, setLm] = useState<Landmark | null>(null);
+  const [marking, setMarking] = useState(false);
+  // Marking a spot puts away the place cards, so the map and the note card have the room.
+  useEffect(() => { if (marking) { setLm(null); setActive(null); } }, [marking]);
   useEffect(() => {
     fetch(asset("/data/landmarks.json")).then((r) => r.json()).then((l: Landmark[]) => { landmarksRef.current = l; }).catch(() => {});
   }, []);
@@ -153,6 +157,8 @@ export default function App() {
       {(on("timeOfDay") || on("seasons") || on("christmas")) && <SceneControl scene={scene} live={live} sun={sun} onLive={() => setLive(true)}
         onChange={(c) => { setLive(false); setScene((s) => ({ ...s, ...c, ...(c.christmas ? { season: "winter" as const } : {}) })); }} />}
       {ready && on("pins") && <Pins places={places} view={view} map={map} active={active} onPick={pick} />}
+      {ready && on("comments") && feedbackConfigured && <Feedback map={map} marking={marking} setMarking={setMarking}
+        onToast={(m) => { setToast(m); setTimeout(() => setToast(""), 3200); }} />}
       {on("search") && <Search places={places} onPick={pick} onSurprise={on("surprise") ? surprise : undefined} />}
 
       {lm && <LandmarkPanel key={lm.slug} lm={lm} onClose={() => { setLm(null); setActive(null); }} />}
@@ -175,6 +181,14 @@ export default function App() {
       <div className="tools">
         <button type="button" className="round glass" aria-label="Zoom in" onClick={() => map.current?.zoomBy(1.6)}>+</button>
         <button type="button" className="round glass" aria-label="Zoom out" onClick={() => map.current?.zoomBy(1 / 1.6)}>−</button>
+        {on("comments") && feedbackConfigured && <button type="button" className={`round glass mark${marking ? " on" : ""}`}
+          aria-label="Mark a spot and send a note" title="Mark a spot and send a note (M)" aria-pressed={marking}
+          aria-keyshortcuts="M" onClick={() => setMarking((v) => !v)}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M4 8V5a1 1 0 0 1 1-1h3m8 0h3a1 1 0 0 1 1 1v3m0 8v3a1 1 0 0 1-1 1h-3m-8 0H5a1 1 0 0 1-1-1v-3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M12 9v6m-3-3h6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>}
         {on("share") && <button type="button" className="round share" aria-label="Share this view" onClick={share}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
             <path d="M12 15V4m0 0L8 8m4-4 4 4M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

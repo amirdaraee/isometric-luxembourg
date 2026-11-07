@@ -45,6 +45,8 @@ export const DEFAULTS = {
   photos: true,
   /** "Preview" badge in the corner while the art is not final. */
   previewBadge: true,
+  /** "Mark a spot" button: draw a box on the map and send the author a private note (needs the feedback worker). */
+  comments: true,
 };
 
 export type Feature = keyof typeof DEFAULTS;

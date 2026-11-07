@@ -25,6 +25,10 @@ export interface MapHandle {
   zoomBy: (factor: number) => void;
   getView: () => View | null;
   toScreen: (x: number, y: number) => { x: number; y: number } | null;
+  /** Inverse of toScreen: a point on the screen (CSS px) to map pixels. */
+  toMap: (screenX: number, screenY: number) => { x: number; y: number } | null;
+  /** Turn mouse and touch navigation (pan, zoom) off and back on. */
+  setPanEnabled: (on: boolean) => void;
   /** Show painted versions on top of the day map with these opacities (0 hides). */
   setLayers: (alpha: Record<string, number>) => void;
   /** Small painted patches (events) placed in map px, with opacities. */
@@ -126,6 +130,16 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
       if (!vp || !b) return null;
       const p = vp.pixelFromPoint(b.imageToViewportCoordinates(new OpenSeadragon.Point(x, y)), true);
       return { x: p.x, y: p.y };
+    },
+    toMap(sx, sy) {
+      const vp = viewer.current?.viewport;
+      const b = base();
+      if (!vp || !b) return null;
+      const p = b.viewportToImageCoordinates(vp.pointFromPixel(new OpenSeadragon.Point(sx, sy), true));
+      return { x: p.x, y: p.y };
+    },
+    setPanEnabled(on) {
+      viewer.current?.setMouseNavEnabled(on);
     },
     onFrame(fn) {
       frameFns.current.add(fn);

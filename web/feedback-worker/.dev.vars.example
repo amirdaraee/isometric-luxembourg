@@ -1,0 +1,7 @@
+# Local development only (copy to .dev.vars). Turnstile test secrets: 1x...AA always passes, 2x...AA always fails.
+TURNSTILE_SECRET=1x0000000000000000000000000000000AA
+IP_SALT=local-dev-salt
+ADMIN_TOKEN=local-dev-admin-token
+# Test keys report hostname "example.com", so the hostname check is off locally.
+TURNSTILE_HOSTNAMES=
+ALLOWED_ORIGINS=https://isometric.lu,https://www.isometric.lu,http://localhost:3000,http://localhost:3012

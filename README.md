@@ -67,6 +67,15 @@ such as the other painted versions, the Christmas patches and the 3D models. It 
 its tiles will go to Cloudflare R2. Build with `TILES_URL=https://tiles.example` and serve them through the worker
 in `web/worker/`.
 
+## Notes from visitors
+
+The `comments` switch adds a "Mark a spot" button (shortcut `M`). Visitors draw a box on the map and send the
+author a private note. The notes go to a small Cloudflare Worker with D1 in `web/feedback-worker/`, protected
+by Turnstile and rate limits. Only the author reads them, on the local-only page `web/public/admin/index.html`
+(open it at `http://localhost:3000/admin/index.html`). The switch is off in the public release until the Worker is
+deployed. See [web/feedback-worker/README.md](web/feedback-worker/README.md) for the endpoints, the security
+layers and deployment.
+
 ## How the map is made
 
 The pipeline lives in `pipeline/` (Python 3.11+, `uv venv && uv pip install -r pyproject.toml`).
