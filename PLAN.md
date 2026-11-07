@@ -125,7 +125,13 @@ Download the model on CPU first (`modal_paint.py::download`), so no GPU time is 
 **Decision gate (yours):** which painter, how many steps, and which scale for the city. If the new painter isn't
 better, keep `tiler.py` and add only the per-step resume.
 
-## Phase 3: get the whole city ready (mostly free, 2 to 3 days)
+## Phase 3: get the whole city ready (mostly free) — tools built 7 Nov 2026
+Status: `pipeline/city_blocks.py` plans 15 blocks (b00 is the showcase, about 7 blocks' worth of data, since the
+corners are empty). `plan`, `prepare` (inputs for b03 are ready and checked), `known` and `done` work.
+`gpu_train/paint_city.py` paints the blocks in waves under a spending cap. A dry run gives caps of about $65 at
+25 steps for all 14 remaining blocks. `build_tiles.py` now keeps the other painted versions when it rebuilds the
+day map. Still to do: R2 (needed once the versions cover the whole city).
+
 1. Check that renders, kind, line and height passes, and layout maps exist for the whole map. Render what is
    missing.
 2. Split the city into blocks of about 6000 × 6000 px with 1024 px overlap. Order them outward from the old town:
@@ -148,6 +154,11 @@ Run blocks in parallel on several GPUs when the price per hour is the same. Neig
 painted one after the other.
 
 ## Phase 5: the versions for the whole city (GPU, needs approval)
+Finding (7 Nov): the light LoRA was also trained with about 20% full-window outlined examples (232 of 1164), so
+`mdpaint.py` makes each version from the day art with `--lora <light> --src-cell 512` (1:1 scale), no layout, and
+the prompt from `prompts/<version>.txt`. Check this on the showcase first: one version, then compare it with
+today's.
+
 1. Night at full resolution (also fixes I3), then golden hour, winter, winter night, autumn and spring. Each uses
    the light LoRA with the same painter, from the painted day art.
 2. Rebuild `build_variant_tiles.py` output per block.
@@ -156,9 +167,11 @@ painted one after the other.
 ## Phase 6: life on the map (free, viewer work)
 Each item has its own switch. Do them in this order.
 1. **Car hiding:** cars behind buildings and under trees are hidden using the height pass.
-2. **Water shimmer:** a WebGL layer that moves the map's own water pixels. Use the OpenStreetMap water mask.
+2. **Water shimmer:** done 7 Nov as light glints on the OSM water (switch `water`, off publicly). It uses canvas
+   glints rather than moving the map's own pixels; WebGL pixel displacement remains an option.
 3. **Swaying trees:** split the tree canopy into crowns from the height pass, then sway them with gusts.
-4. **Better traffic:** cars follow each other realistically and stop at traffic lights. Lanes come from the
+4. **Better traffic:** done 7 Nov: car following (IDM) and two-phase lights. Still to do: lanes from the painted
+   roads. Originally planned as: cars follow each other realistically and stop at traffic lights. Lanes come from the
    painted roads, and cars drive on the right.
 5. **Trams and trains** across the whole city. Refresh the timetable on a schedule, for example a monthly GitHub
    Action that rebuilds `transit.json` from the latest GTFS (I7).

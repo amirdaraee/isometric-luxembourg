@@ -19,10 +19,10 @@ The order of work, step by step, is in **[PLAN.md](PLAN.md)**, along with the ru
 | 0 | Tidy up: fix label drift, cap zoom, height pass | free | done 7 Nov |
 | 1 | New painter (`mdpaint.py`): whole-canvas painting with shifted windows, resume, patch repair | free | built 7 Nov, laptop tests pass |
 | 2 | Showcase test on Modal: new painter vs today, 8 vs 25 steps, finer scale | ~$10-15 | next (needs Modal sign-in) |
-| 3 | Whole city ready: renders, block plan, sparse tiles, Cloudflare R2, cost table | mostly free | to do |
+| 3 | Whole city ready: renders, block plan, sparse tiles, Cloudflare R2, cost table | mostly free | tools built 7 Nov; R2 later |
 | 4 | Paint the city by day, block by block, live as each finishes | from Phase 3 | needs approval |
 | 5 | Night (full resolution), golden hour, seasons for the whole city; Christmas regenerated | GPU | needs approval |
-| 6 | Life on the map: car hiding, water shimmer, swaying trees, better traffic, transit refresh, birds | free | to do |
+| 6 | Life on the map: car hiding, water shimmer, swaying trees, better traffic, transit refresh, birds | free | water + traffic done 7 Nov |
 | 7 | Switch features on publicly, one at a time | free | to do |
 | 8 | isometric.lu | domain fee | waiting on purchase |
 | 9 | More events, weather, clouds, easter eggs, height, historic mode | varies | later |
