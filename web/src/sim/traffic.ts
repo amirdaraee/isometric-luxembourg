@@ -13,13 +13,18 @@
 // Public types
 
 /** One projected OSM way, as in lines.json. */
-export interface RoadLine { id: number; k?: string; o?: boolean; b?: boolean; t?: boolean; l?: string | number | null; p: number[] }
+export interface RoadLine { id: number; k?: string; o?: boolean; b?: boolean; t?: boolean; l?: string | number | null;
+  /** Access flags from OSM (pipeline/project_lines.py): 1 cars, 2 buses, 4 cars to a destination only, 8 emergency
+   * vehicles on a call, 16 buses also against the one-way direction. Missing: derived from the kind. */
+  a?: number; p: number[] }
 /** A rectangle in map pixels. */
 export interface Rect { x0: number; y0: number; x1: number; y1: number }
-export type VehicleType = "car" | "van" | "bus";
+export type VehicleType = "car" | "van" | "bus" | "police" | "ambulance" | "fire";
 /** A car to draw: centre in map px, heading in screen terms (atan2 of the map px direction, y down). */
 export interface DrawableCar {
   id: number; x: number; y: number; headingScreenRad: number; type: VehicleType; variant: number; braking: boolean;
+  /** Emergency vehicle on a call: blue lights flashing (always false for other vehicles). */
+  siren: boolean;
   /** On a bridge deck / in a tunnel (for the visibility test). */
   bridge: boolean; tunnel: boolean;
   /** Size in map px. */
@@ -35,6 +40,8 @@ export interface TrafficOptions {
   maxCars?: number;
   /** Metres per map pixel. */
   mpp?: number;
+  /** Police cars, ambulances and fire engines (default true). Off: none, and pedestrian streets are left out. */
+  emergency?: boolean;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -70,6 +77,19 @@ const CYCLE = 70, GREEN = 31, AMBER = 3, PHASE = 35;
 const DEADLOCK_S = 12; // stuck in or at a box this long: removed
 const LONG_WAIT_S = 45; // waiting at a box for a full exit this long (gridlock): removed
 
+// Access flags (RoadLine.a) and who they let through.
+const A_CAR = 1, A_BUS = 2, A_DEST = 4, A_EMG = 8, A_BACK = 16;
+/** Streets carrying traffic besides DRIVE: pedestrian streets (emergency vehicles on a call, buses where signed),
+ * bus-only service roads and busways. */
+const EXTRA = new Set(["pedestrian", "service", "busway"]);
+V0_KMH.pedestrian = 12; V0_KMH.service = 25; V0_KMH.busway = 40;
+
+// Emergency vehicles: about one in EMG_RATE vehicles, a third of them on a call that lasts CALL_S seconds.
+const EMG_RATE = 150, CALL_FRAC = 1 / 3, CALL_S: [number, number] = [60, 120];
+const SIREN_VF = 1.3; // on a call: up to this times the limit
+const YIELD_M = 70; // cars this far ahead of a siren on its lane make way
+const RED_CREEP = 4.5; // m/s: a siren crosses a red light no faster than this
+
 // Why a car may not enter a box yet.
 const Why = { None: 0, Signal: 1, Occupied: 2, Room: 3, Turn: 4 } as const;
 type Why = (typeof Why)[keyof typeof Why];
@@ -82,6 +102,8 @@ interface Edge {
   a: number; b: number; px: Float64Array; py: Float64Array; len: number;
   bx0: number; by0: number; bx1: number; by1: number;
   allowed: boolean; active: boolean; stamp: number; lanes: Lane[];
+  /** Access flags (A_*). */
+  acc: number;
 }
 interface Path { x: Float64Array; y: Float64Array; cum: Float64Array; len: number }
 interface Lane extends Path {
@@ -89,6 +111,8 @@ interface Lane extends Path {
   from: Junction; to: Junction; outs: Conn[]; ins: Conn[];
   v0: number; rank: number; density: number; hStart: number; hEnd: number;
   cars: Car[]; phase: number; entry: boolean; bx0: number; by0: number; bx1: number; by1: number;
+  /** Access flags of this lane (a contraflow bus lane: buses and emergency vehicles only). */
+  acc: number;
 }
 interface Conn extends Path {
   kind: 1; id: number; from: Lane; to: Lane; j: Junction; box: boolean; turn: number; vTurn: number; w: number; cars: Car[];
@@ -113,7 +137,17 @@ interface Car {
   waiting: boolean; waitSince: number; why: Why; blocker: Car | null;
   /** Seconds stuck (deadlock watch) and seconds waiting for room. */
   stall: number; longWait: number; alive: boolean;
+  /** Private car to or from a destination-only street: 0 through traffic, 1 leaving one (may use them until it
+   * reaches a through street), 2 arriving (parks on parkLane at parkS). */
+  dest: number; parkLane: Lane | null; parkS: number;
+  /** Emergency vehicle; on a call (siren) until callEnd. */
+  emg: boolean; siren: boolean; callEnd: number;
+  /** Making way for a siren behind until this time. */
+  yieldUntil: number;
+  /** Drawn sideways offset, metres to the right: easing out of a lane change (lat) and pulling over (pull). */
+  lat: number; pull: number;
 }
+const isEmg = (t: VehicleType) => t === "police" || t === "ambulance" || t === "fire";
 
 // ---------------------------------------------------------------------------------------------------------------
 // Small helpers
@@ -209,7 +243,11 @@ export class Traffic {
   readonly mpp: number;
   readonly maxCars: number;
   /** Counters since construction. */
-  readonly stats = { alive: 0, spawned: 0, left: 0, deadlocks: 0 };
+  readonly stats = { alive: 0, spawned: 0, left: 0, deadlocks: 0, parked: 0, emergency: 0, calls: 0, callsEnded: 0,
+    redCrossed: 0, overtakes: 0 };
+  private readonly emergencyOn: boolean;
+  /** Emergency vehicles alive with the siren on. */
+  private sirens: Car[] = [];
   /** Deadlock removals by cause, for tuning. */
   readonly removedWhy: Record<string, number> = {};
   /** Simulated seconds. */
@@ -238,6 +276,7 @@ export class Traffic {
     this.mpp = opts.mpp ?? 0.25;
     this.maxCars = opts.maxCars ?? 1400;
     this.rnd = mulberry32(opts.seed ?? 20240607);
+    this.emergencyOn = opts.emergency ?? true;
     this.build(roads, opts.areas);
   }
 
@@ -252,7 +291,17 @@ export class Traffic {
     const M = this.mpp;
     const inArea = (x: number, y: number, pad: number) => !areas || areas.some((a) =>
       x >= a.x0 - pad && x <= a.x0 + a.w + pad && y >= a.y0 - pad && y <= a.y0 + a.h + pad);
-    const ways = roads.filter((r) => DRIVE.has(r.k ?? "") && r.p.length >= 4 && (() => {
+    // Who may use a way: its access flags, or for older data everyone on a DRIVE street. Pedestrian streets only
+    // with emergency vehicles about; service roads and busways only when they are for buses alone.
+    const accOf = (r: RoadLine) => r.a ?? (DRIVE.has(r.k ?? "") ? A_CAR | A_BUS | A_EMG : 0);
+    const usable = (r: RoadLine) => {
+      const k = r.k ?? "", a = accOf(r);
+      if (DRIVE.has(k)) return (a & (A_CAR | A_BUS | A_EMG)) !== 0;
+      if (!EXTRA.has(k)) return false;
+      if (k === "pedestrian") return (a & A_BUS) !== 0 || (this.emergencyOn && (a & A_EMG) !== 0);
+      return (a & A_BUS) !== 0 && !(a & A_CAR);
+    };
+    const ways = roads.filter((r) => usable(r) && r.p.length >= 4 && (() => {
       for (let i = 0; i < r.p.length; i += 2) if (inArea(r.p[i], r.p[i + 1], 400)) return true;
       return false;
     })());
@@ -332,7 +381,10 @@ export class Traffic {
         const e: Edge = { id: this.edges.length, kind, oneway, bridge: !!w.b, tunnel: !!w.t, perDir,
           a: ids[0], b: ids[ids.length - 1], px, py, len, bx0, by0, bx1, by1,
           allowed: inArea((px[0] + px[px.length - 1] + px[mid]) / 3, (py[0] + py[py.length - 1] + py[mid]) / 3, 0),
-          active: false, stamp: 0, lanes: [] };
+          active: false, stamp: 0, lanes: [], acc: accOf(w) };
+        // Pedestrian streets and bus-only roads never take private cars, whatever the tags.
+        if (!DRIVE.has(kind)) e.acc &= ~(A_CAR | A_DEST);
+        if (!this.emergencyOn && !(e.acc & (A_CAR | A_BUS))) continue;
         this.edges.push(e);
         nodeEdges[e.a].push({ e, atStart: true });
         nodeEdges[e.b].push({ e, atStart: false });
@@ -340,9 +392,11 @@ export class Traffic {
     }
 
     // 3. Junction boxes: three or more streets, or a change in lane count (a merge). Nearby boxes become one.
-    const half = (e: Edge) => (e.oneway ? e.perDir : 2 * e.perDir) * LANE_W / 2;
-    const into = (e: Edge, atStart: boolean) => (atStart ? (e.oneway ? 0 : e.perDir) : e.perDir);
-    const outOf = (e: Edge, atStart: boolean) => (atStart ? e.perDir : e.oneway ? 0 : e.perDir);
+    // Lanes against the drawn direction: as many as with it, none on a one-way street, one for a contraflow bus lane.
+    const against = (e: Edge) => (!e.oneway ? e.perDir : e.acc & A_BACK ? 1 : 0);
+    const half = (e: Edge) => (e.perDir + against(e)) * LANE_W / 2;
+    const into = (e: Edge, atStart: boolean) => (atStart ? against(e) : e.perDir);
+    const outOf = (e: Edge, atStart: boolean) => (atStart ? e.perDir : against(e));
     const box = new Uint8Array(nx.length), R = new Float64Array(nx.length);
     for (let n = 0; n < nx.length; n++) {
       const list = nodeEdges[n];
@@ -386,11 +440,16 @@ export class Traffic {
       const x = new Float64Array(e.px.length), y = new Float64Array(e.px.length);
       for (let i = 0; i < x.length; i++) { x[i] = e.px[i] * M; y[i] = e.py[i] * M; }
       const rx = x.slice().reverse(), ry = y.slice().reverse();
-      for (const fwd of e.oneway ? [true] : [true, false]) {
-        for (let idx = 0; idx < e.perDir; idx++) {
+      // A one-way street with a contraflow bus lane: the general lanes move half a lane right, the bus lane runs
+      // the other way on their left.
+      const back = e.oneway && (e.acc & A_BACK) !== 0;
+      const f0 = -(e.perDir - 1) / 2 * LANE_W + (e.perDir > 1 ? 0.8 : 0) + (back ? LANE_W / 2 : 0);
+      for (const fwd of e.oneway && !back ? [true] : [true, false]) {
+        const contra = back && !fwd;
+        for (let idx = 0; idx < (contra ? 1 : e.perDir); idx++) {
           // Two-way: lanes to the right of the centreline. One-way: centred on it, nudged right on two-lane
           // carriageways, whose drawn lines tend to sit closer together than the real ones.
-          const off = e.oneway ? (idx - (e.perDir - 1) / 2) * LANE_W + (e.perDir > 1 ? 0.8 : 0) : (idx + 0.5) * LANE_W;
+          const off = contra ? LANE_W - f0 : e.oneway ? f0 + idx * LANE_W : (idx + 0.5) * LANE_W;
           const [ox, oy] = offsetLine(fwd ? x : rx, fwd ? y : ry, off);
           const c0 = cumulative(ox, oy), L = c0[c0.length - 1];
           const nFrom = fwd ? e.a : e.b, nTo = fwd ? e.b : e.a;
@@ -398,9 +457,13 @@ export class Traffic {
           const t0 = from.box ? Math.min(R[nFrom], L * 0.35) : 0, t1 = to.box ? Math.min(R[nTo], L * 0.35) : 0;
           const [lx, ly] = t0 || t1 ? slice(ox, oy, c0, t0, L - t1) : [ox, oy];
           const cum = cumulative(lx, ly);
+          const acc = contra ? A_BUS | A_EMG : e.acc;
+          // Cars per km: as for the kind where cars may drive (half on destination-only streets), a bus now and then
+          // on bus-only lanes, none where only emergency vehicles go.
+          const dens = acc & A_CAR ? (DENSITY[e.kind] ?? 5) * (acc & A_DEST ? 0.5 : 1) : acc & A_BUS ? 1.2 : 0;
           const lane: Lane = { kind: 0, id: this.lanes.length, edge: e, fwd, idx, x: lx, y: ly, cum, len: Math.max(cum[cum.length - 1], 0.05),
-            from, to, outs: [], ins: [], v0: (V0_KMH[e.kind] ?? 30) / 3.6, rank: RANK[e.kind] ?? 1, density: DENSITY[e.kind] ?? 5,
-            hStart: 0, hEnd: 0, cars: [], phase: -1, entry: false, bx0: e.bx0, by0: e.by0, bx1: e.bx1, by1: e.by1 };
+            from, to, outs: [], ins: [], v0: (V0_KMH[e.kind] ?? 30) / 3.6, rank: RANK[e.kind] ?? 1, density: dens,
+            hStart: 0, hEnd: 0, cars: [], phase: -1, entry: false, bx0: e.bx0, by0: e.by0, bx1: e.bx1, by1: e.by1, acc };
           lane.hStart = headingNear(lane, false); lane.hEnd = headingNear(lane, true);
           this.lanes.push(lane); e.lanes.push(lane);
           from.outs.push(lane); to.ins.push(lane);
@@ -410,13 +473,35 @@ export class Traffic {
 
     // 5. Connectors: every allowed move through a junction, as a short curve from lane end to lane start.
     const uturn = (a: Lane, b: Lane) => a.edge === b.edge && a.fwd !== b.fwd;
+    /** Does lane m, followed through plain joins, come back into box j within 30 m? */
+    const loopsBack = (m: Lane, j: Junction) => {
+      let cur = m, len = m.len;
+      for (let k = 0; k < 4 && len < 30; k++) {
+        if (cur.to === j) return true;
+        if (cur.to.box) return false;
+        const nx = cur.to.outs.filter((x) => !uturn(cur, x) && x.idx === cur.idx);
+        if (nx.length !== 1) return false;
+        cur = nx[0]; len += cur.len;
+      }
+      return cur.to === j && len < 30;
+    };
     for (const j of this.junctions) {
       for (const L of j.ins) {
         let cand: Lane[];
         if (!j.box) cand = j.outs.filter((m) => !uturn(L, m) && m.idx === L.idx);
-        else cand = j.outs.filter((m) => !uturn(L, m) && Math.abs(wrap(m.hStart - L.hEnd)) < 2.6 &&
-          (m.edge.perDir !== L.edge.perDir || m.idx === L.idx));
-        if (!cand.length) cand = j.outs.filter((m) => uturn(L, m) && (m.idx === L.idx || m.edge.perDir === 1));
+        else {
+          cand = j.outs.filter((m) => !uturn(L, m) && Math.abs(wrap(m.hStart - L.hEnd)) < 2.6 &&
+            (m.edge.perDir !== L.edge.perDir || m.idx === L.idx));
+          // Not onto a stub that only leads back into the same box (slivers between merged junction nodes): cars
+          // going round such a loop lock it.
+          const keep = cand.filter((m) => !loopsBack(m, j));
+          if (keep.length) cand = keep;
+        }
+        // Turning back only where there is no other way on, for each kind of vehicle the lane carries.
+        for (const cls of [A_CAR, A_BUS, A_EMG]) {
+          if (!(L.acc & cls) || cand.some((m) => m.acc & cls)) continue;
+          for (const m of j.outs) if (uturn(L, m) && (m.idx === L.idx || m.edge.perDir === 1) && !cand.includes(m)) cand.push(m);
+        }
         for (const m of cand) this.connect(L, m, j);
         // Most cars go straight on: the exit with the smallest change of heading is favoured.
         if (L.outs.length) {
@@ -611,28 +696,84 @@ export class Traffic {
   // -------------------------------------------------------------------------------------------------------------
   // Cars
 
-  private makeCar(lane: Lane, s: number, v: number): Car {
-    const r = this.rnd();
-    const type: VehicleType = lane.rank >= 3 && r < 0.05 ? "bus" : r < 0.17 ? "van" : "car";
-    const len = type === "bus" ? 12 : type === "van" ? 5.4 : 4.4;
-    const c: Car = { id: this.nextCar++, el: lane, prev: null, s, v, acc: 0, len, wid: type === "bus" ? 2.55 : type === "van" ? 2 : 1.8,
-      type, variant: Math.floor(this.rnd() * 16), vf: type === "bus" ? 0.85 : 0.85 + this.rnd() * 0.25, route: [],
-      res: null, hold: null, holdS: 0, waiting: false, waitSince: 0, why: Why.None, blocker: null, stall: 0, longWait: 0, alive: true };
+  /** A new vehicle on lane, of a kind the lane may carry. force: make it this emergency vehicle. */
+  private makeCar(lane: Lane, s: number, v: number, force?: { type: VehicleType; siren: boolean }): Car {
+    const r = this.rnd(), a = lane.acc;
+    let type: VehicleType;
+    if (force) type = force.type;
+    else if (this.emergencyOn && a & (A_CAR | A_BUS) && r < 1 / EMG_RATE) {
+      const q = this.rnd();
+      type = q < 0.45 ? "police" : q < 0.8 ? "ambulance" : "fire";
+    } else if (!(a & A_CAR)) type = "bus";
+    else type = a & A_BUS && lane.rank >= 3 && r < 0.05 ? "bus" : r < 0.17 ? "van" : "car";
+    const SIZE: Record<VehicleType, [number, number]> = { car: [4.4, 1.8], van: [5.4, 2], bus: [12, 2.55],
+      police: [4.5, 1.85], ambulance: [5.8, 2.1], fire: [9, 2.5] };
+    const [len, wid] = SIZE[type], emg = isEmg(type);
+    const c: Car = { id: this.nextCar++, el: lane, prev: null, s, v, acc: 0, len, wid,
+      type, variant: Math.floor(this.rnd() * 16), vf: type === "bus" || type === "fire" ? 0.85 : emg ? 0.95 : 0.85 + this.rnd() * 0.25,
+      route: [], res: null, hold: null, holdS: 0, waiting: false, waitSince: 0, why: Why.None, blocker: null, stall: 0, longWait: 0,
+      alive: true, dest: type !== "bus" && !emg && a & A_DEST ? 1 : 0, parkLane: null, parkS: 0,
+      emg, siren: false, callEnd: 0, yieldUntil: 0, lat: 0, pull: 0 };
+    if (emg) {
+      this.stats.emergency++;
+      if (force ? force.siren : this.rnd() < CALL_FRAC) this.startCall(c);
+    }
     this.plan(c);
     this.stats.alive++; this.stats.spawned++;
     return c;
   }
 
-  /** Choose the next few moves ahead. */
+  private startCall(c: Car) {
+    c.siren = true; c.vf = SIREN_VF;
+    c.callEnd = this.t + CALL_S[0] + this.rnd() * (CALL_S[1] - CALL_S[0]);
+    this.sirens.push(c);
+    this.stats.calls++;
+  }
+
+  private endCall(c: Car) {
+    c.siren = false; c.vf = c.type === "fire" ? 0.85 : 0.95;
+    const i = this.sirens.indexOf(c);
+    if (i >= 0) this.sirens.splice(i, 1);
+  }
+
+  /**
+   * How much car c (in destination state dest) would like to drive onto lane m: 0 when it may not. Private cars keep
+   * to car lanes and use destination-only streets just to arrive or leave; buses keep to bus lanes; emergency vehicles
+   * may also use bus lanes, and on a call pedestrian streets (rarely, and slowly).
+   */
+  private allowance(c: Car, m: Lane, from: Lane, dest: number): number {
+    const a = m.acc;
+    if (c.emg) {
+      if (a & (A_CAR | A_BUS)) return 1;
+      if (a & A_EMG && (c.siren || !(from.acc & (A_CAR | A_BUS)))) return 0.15;
+      return 0;
+    }
+    if (c.type === "bus") return a & A_BUS ? 1 : 0;
+    if (!(a & A_CAR)) return 0;
+    if (a & A_DEST && dest !== 1) return 0.3; // arriving: it parks there
+    return 1;
+  }
+
+  /** Choose the next few moves ahead, among those the vehicle may take. */
   private plan(c: Car) {
+    if (c.dest === 2 || c.parkLane) return; // arriving: no further
     let L: Lane = c.route.length ? c.route[c.route.length - 1].to : c.el.kind === 0 ? c.el : c.el.to;
+    let dest = c.dest;
+    for (const cn of c.route) if (!(cn.to.acc & A_DEST)) dest = 0;
+    const w: number[] = [];
     while (c.route.length < 3 && L.edge.active && L.outs.length) {
       let sum = 0;
-      for (const o of L.outs) sum += o.w;
+      w.length = 0;
+      for (const o of L.outs) { const x = o.w * this.allowance(c, o.to, L, dest); w.push(x); sum += x; }
+      if (sum <= 0) break; // no way on for this vehicle: it leaves the streets at the end of the lane
       let t = this.rnd() * sum, pick = L.outs[0];
-      for (const o of L.outs) { t -= o.w; if (t <= 0) { pick = o; break; } }
+      for (let i = 0; i < L.outs.length; i++) { if (!w[i]) continue; pick = L.outs[i]; t -= w[i]; if (t <= 0) break; }
       c.route.push(pick);
       L = pick.to;
+      if (c.type === "car" || c.type === "van") {
+        if (!(L.acc & A_DEST)) dest = 0;
+        else if (dest !== 1) { c.parkLane = L; break; } // arrives here: no further
+      }
     }
   }
 
@@ -645,6 +786,7 @@ export class Traffic {
 
   private reserve(c: Car, cn: Conn) {
     c.res = cn; c.waiting = false; c.why = Why.None; c.stall = 0; c.longWait = 0;
+    if (c.siren && cn.j.sig >= 0 && cn.from.phase >= 0 && this.light(cn.j, cn.from.phase) !== 0) this.stats.redCrossed++;
     cn.j.occCar.push(c); cn.j.occConn.push(cn);
   }
 
@@ -680,6 +822,7 @@ export class Traffic {
     if (c.el.kind === 1 && !arr.length) this.busyConns.delete(c.el);
     if (c.res) this.release(c, c.res);
     if (c.hold) this.release(c, c.hold);
+    if (c.siren) this.endCall(c);
     this.stats.alive--;
     if (deadlock) this.stats.deadlocks++; else this.stats.left++;
   }
@@ -687,7 +830,8 @@ export class Traffic {
   /** May car c (front at dist from the stop line) enter box move cn now? Sets c.why when not. */
   private mayEnter(c: Car, cn: Conn, dist: number): boolean {
     const j = cn.j;
-    if (j.sig >= 0 && cn.from.phase >= 0) {
+    // On a call: through red lights, but only into an empty path (the checks on cars in the box below still apply).
+    if (j.sig >= 0 && cn.from.phase >= 0 && !c.siren) {
       const st = this.light(j, cn.from.phase);
       if (st === 2 || (st === 1 && dist > (c.v * c.v) / (2 * IDM_B) + 1)) { c.why = Why.Signal; return false; }
     }
@@ -710,6 +854,13 @@ export class Traffic {
     }
     for (let i = 0; i < j.occCar.length; i++) if (j.occConn[i] === cn && j.occCar[i] !== c) free -= j.occCar[i].len + IDM_S0;
     if (free < c.len + 1 && !(r && r.v > 3 && free > 0)) { c.why = Why.Room; return false; }
+    if (c.siren) return true; // others wait for it
+    // A siren coming up to this box on another approach goes first.
+    for (const e of this.sirens) {
+      const el = e.el;
+      if (el.kind !== 0 || el.to !== j || el === cn.from || el.cars[0] !== e || el.len - e.s > 50 || !e.route.length) continue;
+      if (this.conflictKind(e.route[0], cn)) { c.why = Why.Turn; return false; }
+    }
     // Take turns: a car already waiting at a crossing move goes first.
     const mine = c.waiting ? c.waitSince : this.t;
     for (const L of j.ins) {
@@ -732,10 +883,17 @@ export class Traffic {
    */
   private accel(c: Car, i: number): number {
     const el = c.el, arr = el.cars;
-    let v0 = c.vf * (el.kind === 0 ? el.v0 : Math.min(el.from.v0, el.to.v0));
+    const limit = el.kind === 0 ? el.v0 : Math.min(el.from.v0, el.to.v0);
+    // On a pedestrian street (no cars or buses) a siren goes no faster than walking-pace traffic.
+    const lane = el.kind === 0 ? el : el.to;
+    let v0 = (lane.acc & (A_CAR | A_BUS) ? c.vf : Math.min(c.vf, 1)) * limit;
     if (el.kind === 1) v0 = Math.min(v0, el.vTurn);
+    // Making way for a siren behind: slow right down where it can pass on another lane, else pull in and ease off.
+    if (c.yieldUntil > this.t) v0 = Math.min(v0, limit * (lane.edge.perDir > 1 ? 0.45 : 0.85));
     let gap = Infinity, lv = 0;
     if (el.kind === 1 && el.box) [gap, lv] = this.mergeLeader(c, el, el.len - c.s);
+    // Arriving at a destination-only street: pull in and stop at the parking spot.
+    if (c.dest === 2 && el === c.parkLane) gap = Math.min(gap, c.parkS - c.s + IDM_S0);
     if (i > 0) { const l = arr[i - 1], g = l.s - l.len - c.s; if (g < gap) { gap = g; lv = l.v; } }
     else {
       let dist = el.len - c.s, cur: El = el, ri = 0;
@@ -747,6 +905,9 @@ export class Traffic {
           const cn = c.route[ri];
           if (!cn || !cn.to.edge.active) break; // leaves the simulated streets here
           v0 = Math.min(v0, Math.sqrt(cn.vTurn * cn.vTurn * c.vf * c.vf + 2 * 1.6 * Math.max(dist, 0)));
+          // A siren slows to a crawl before crossing against the light.
+          if (c.siren && cn.box && cn.j.sig >= 0 && cn.from.phase >= 0 && this.light(cn.j, cn.from.phase) !== 0)
+            v0 = Math.min(v0, Math.sqrt(RED_CREEP * RED_CREEP + 2 * 1.6 * Math.max(dist, 0)));
           if (cn.box && c.res !== cn) {
             // Only the box at the end of the car's own lane is reserved; boxes further on are checked again later.
             const first = el.kind === 0 && ri === 0;
@@ -807,6 +968,9 @@ export class Traffic {
     next.cars.push(c);
     if (el.kind === 0) { c.route.shift(); this.plan(c); this.busyConns.add(next as Conn); }
     else {
+      const L = next as Lane;
+      if (c.parkLane === L) { c.dest = 2; c.parkS = Math.min(L.len - 1, Math.max(over + c.len, L.len * (0.3 + 0.5 * this.rnd()))); }
+      else if (c.dest === 1 && !(L.acc & A_DEST)) c.dest = 0;
       if (!el.cars.length) this.busyConns.delete(el);
       if (el.box && c.res === el) {
         if (c.hold) this.release(c, c.hold);
@@ -844,6 +1008,78 @@ export class Traffic {
     c.v = Math.min(l.v0 * c.vf * vfrac, lead ? lead.v + 2 : 99);
     l.cars.splice(best, 0, c);
     return true;
+  }
+
+  // -------------------------------------------------------------------------------------------------------------
+  // Emergency vehicles
+
+  /** Calls ending, cars ahead of a siren making way, and a siren overtaking on a street with two lanes its way. */
+  private emergencyStep() {
+    for (let k = this.sirens.length - 1; k >= 0; k--) {
+      const e = this.sirens[k];
+      if (this.t > e.callEnd) { this.endCall(e); this.stats.callsEnded++; continue; }
+      const el = e.el;
+      if (el.kind !== 0) continue;
+      const i = el.cars.indexOf(e);
+      for (let m = i - 1; m >= 0 && el.cars[m].s - e.s < YIELD_M; m--) el.cars[m].yieldUntil = this.t + 1.5;
+      const nx = e.route[0]?.to;
+      if (nx && el.len - e.s < YIELD_M) for (const o of nx.cars) if (el.len - e.s + o.s < YIELD_M) o.yieldUntil = this.t + 1.5;
+      // Overtake: the car ahead is close and slower, and the next lane its way has room.
+      const lead = i > 0 ? el.cars[i - 1] : null;
+      if (!lead || lead.s - lead.len - e.s > 25 || lead.v > e.v + 0.5 && lead.v > el.v0 * 0.8 || e.res || e.waiting) continue;
+      for (const m of el.edge.lanes) if (m !== el && m.fwd === el.fwd && Math.abs(m.idx - el.idx) === 1 && this.changeLane(e, el, m)) {
+        this.stats.overtakes++; break;
+      }
+    }
+  }
+
+  /** Moves car c sideways from lane a to the parallel lane b if there is room. */
+  private changeLane(c: Car, a: Lane, b: Lane): boolean {
+    const s = (c.s * b.len) / a.len;
+    if (s < c.len + 1 || s > b.len - 4 || !this.allowance(c, b, a, c.dest)) return false;
+    let i = 0;
+    while (i < b.cars.length && b.cars[i].s > s) i++;
+    const ahead = b.cars[i - 1], behind = b.cars[i];
+    if (ahead && ahead.s - ahead.len - s < IDM_S0 + 3) return false;
+    if (behind && s - c.len - behind.s < IDM_S0 + 2 + behind.v) return false;
+    a.cars.splice(a.cars.indexOf(c), 1);
+    b.cars.splice(i, 0, c);
+    c.el = b; c.s = s;
+    c.lat = (a.idx - b.idx) * LANE_W * (a.fwd === b.fwd ? 1 : -1);
+    c.route.length = 0;
+    this.plan(c);
+    return true;
+  }
+
+  /**
+   * Puts an emergency vehicle on a street near the middle of the view (for testing and demonstrations). False if
+   * there was no room.
+   */
+  spawnEmergency(type: "police" | "ambulance" | "fire" = "police", siren = true): boolean {
+    if (!this.emergencyOn) return false;
+    const v = this.view, cx = (v.x0 + v.x1) / 2, cy = (v.y0 + v.y1) / 2;
+    const o = this.tmp;
+    const cand = this.activeLanes.filter((l) => l.acc & A_CAR && l.len > 40).map((l) => {
+      sample(l, l.len / 2, o);
+      return { l, d: Math.hypot(o.x / this.mpp - cx, o.y / this.mpp - cy) };
+    }).sort((p, q) => p.d - q.d);
+    for (const { l } of cand.slice(0, 40)) {
+      const n = l.cars.length;
+      // The largest gap, as insertInGap.
+      let best = -1, bestGap = 0, front = 0;
+      for (let i = 1; i <= n; i++) {
+        const lead = l.cars[i - 1], back = i < n ? l.cars[i].s : 0, g = lead.s - lead.len - back;
+        if (g > bestGap) { bestGap = g; best = i; front = back; }
+      }
+      if (!n) { best = 0; bestGap = l.len * 0.7; front = l.len * 0.15; }
+      if (best < 0 || bestGap < 2 * (IDM_S0 + 9) + 4) continue;
+      const c = this.makeCar(l, 0, 0, { type, siren });
+      c.s = front + (bestGap + c.len) / 2;
+      c.v = l.v0 * 0.6;
+      l.cars.splice(best, 0, c);
+      return true;
+    }
+    return false;
   }
 
   // -------------------------------------------------------------------------------------------------------------
@@ -887,13 +1123,15 @@ export class Traffic {
       }
     }
 
+    this.emergencyStep();
+
     // Accelerations.
     const els: El[] = this.activeLanes.slice();
     for (const c of this.busyConns) els.push(c);
     for (const el of els) for (let i = 0; i < el.cars.length; i++) el.cars[i].acc = this.accel(el.cars[i], i);
 
     // Integrate, front to back, never into the car ahead.
-    const stuck: Car[] = [];
+    const stuck: Car[] = [], parked: Car[] = [];
     for (const el of els) {
       const arr = el.cars;
       for (let i = 0; i < arr.length; i++) {
@@ -906,6 +1144,11 @@ export class Traffic {
         } else c.v = v;
         c.s += ds;
         if (c.hold) { c.holdS += ds; if (c.holdS > c.len * 0.8) { this.release(c, c.hold); c.hold = null; } }
+        // Drawn sideways offsets ease back (out of a lane change) or out (pulling over for a siren).
+        if (c.lat) c.lat = Math.abs(c.lat) < 0.05 ? 0 : c.lat * Math.exp(-2.5 * dt);
+        const pull = c.yieldUntil > this.t ? 0.9 : 0;
+        if (c.pull !== pull) c.pull += Math.max(-dt, Math.min(dt, pull - c.pull));
+        if (c.dest === 2 && el === c.parkLane && c.s > c.parkS - 1.5 && c.v < 0.8) { parked.push(c); continue; }
         // Deadlock watch: stopped inside a box, or held at one by a box car that is itself stuck. Of two cars waiting
         // on each other, the newer one goes.
         if (c.v < 0.3) {
@@ -929,6 +1172,7 @@ export class Traffic {
       }
     }
     for (const c of stuck) this.remove(c, true);
+    for (const c of parked) if (c.alive) { this.remove(c, false); this.stats.parked++; }
 
     // Moves onto the next lane or through a box.
     for (const el of els) {
@@ -947,9 +1191,11 @@ export class Traffic {
       let el = c.el, s = c.s - c.len / 2;
       if (s < 0 && c.prev) { el = c.prev; s += el.len; }
       sample(el, s, o);
+      const off = c.lat + c.pull; // metres to the right of travel
+      if (off) { o.x -= Math.sin(o.h) * off; o.y += Math.cos(o.h) * off; }
       const lane = el.kind === 0 ? el : el.to, e = lane.edge, e2 = el.kind === 1 ? el.from.edge : e;
       return { id: c.id, x: o.x / M, y: o.y / M, headingScreenRad: o.h, type: c.type, variant: c.variant,
-        braking: c.acc < -0.8 || c.v < 0.5, bridge: e.bridge || e2.bridge, tunnel: e.tunnel && e2.tunnel,
+        braking: c.acc < -0.8 || c.v < 0.5, siren: c.siren, bridge: e.bridge || e2.bridge, tunnel: e.tunnel && e2.tunnel,
         length: c.len / M, width: c.wid / M };
     };
     for (const l of this.activeLanes) for (const c of l.cars) yield one(c);
@@ -986,6 +1232,39 @@ export class Traffic {
       }
     }
     return [...bad];
+  }
+
+  /**
+   * Check for tests: vehicles on a lane (or a junction move onto a lane) they may not use: private cars off car
+   * lanes or passing through a destination-only street, buses off bus lanes, emergency vehicles off theirs. Returns
+   * "id:type:edge" for each.
+   */
+  accessViolations(): string[] {
+    const bad: string[] = [];
+    const check = (c: Car, l: Lane) => {
+      const a = l.acc;
+      let ok: boolean;
+      if (c.emg) ok = (a & (A_CAR | A_BUS | A_EMG)) !== 0;
+      else if (c.type === "bus") ok = (a & A_BUS) !== 0;
+      else ok = (a & A_CAR) !== 0 && (!(a & A_DEST) || c.dest !== 0 || c.parkLane === l);
+      if (!ok) bad.push(`${c.id}:${c.type}:${l.edge.id}`);
+    };
+    for (const l of this.activeLanes) for (const c of l.cars) check(c, l);
+    for (const cn of this.busyConns) for (const c of cn.cars) check(c, cn.to);
+    return bad;
+  }
+
+  /** Emergency vehicles alive, and how many of them have the siren on. */
+  emergencyAlive(): { all: number; siren: number } {
+    let all = 0;
+    for (const l of this.activeLanes) for (const c of l.cars) if (c.emg) all++;
+    for (const cn of this.busyConns) for (const c of cn.cars) if (c.emg) all++;
+    return { all, siren: this.sirens.length };
+  }
+
+  /** Speeds of the emergency vehicles with the siren on, m/s (for tests). */
+  sirenSpeeds(): number[] {
+    return this.sirens.map((c) => c.v);
   }
 
   /** Mean speed of the cars alive, m/s. */

@@ -3,7 +3,8 @@
 Ground features take the terrain height; bridges are interpolated between their two ends (the deck spans
 the valley); tunnels are kept but flagged, so traffic can hide there.
 Writes web/public/data/lines.json:
-  {"roads": [{"id", "n" name, "k" highway kind, "b" bridge, "t" tunnel, "o" oneway, "l" lanes, "p" [x, y, ...]}],
+  {"roads": [{"id", "n" name, "k" highway kind, "b" bridge, "t" tunnel, "o" oneway, "l" lanes,
+              "a" access flags (A_* below), "p" [x, y, ...]}],
    "rail": [...same...], "waterways": [...], "water": [{"id", "p": [...]} polygons]}
 """
 import json
@@ -30,6 +31,52 @@ def to_px(e, n, z):
     return round((sx - m["sx0"]) / m["mpp"]), round((m["sy1"] - sy) / m["mpp"])
 
 
+# Who may drive a road: the "a" field of each road, a sum of these flags (0 = nobody, e.g. footways).
+A_CAR = 1         # private cars and vans
+A_BUS = 2         # buses
+A_DEST = 4        # cars only to reach or leave a place on it, never through traffic
+A_EMERGENCY = 8   # emergency vehicles on a call (slowly, on pedestrian streets)
+A_BUS_BACK = 16   # buses may also drive against the one-way direction (contraflow bus lane)
+
+DRIVABLE = {"motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "residential", "living_street",
+            "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "service", "busway"}
+NO = {"no", "private", "agricultural", "forestry", "delivery", "permit", "emergency", "military", "discouraged"}
+YES = {"yes", "designated", "permissive", "official"}
+
+
+def access_flags(tg):
+    """The "a" flags from OSM highway and access tags. The most specific tag wins (motorcar over motor_vehicle over
+    vehicle over access; bus over psv over the general ones). Conditional tags (delivery hours) are ignored."""
+    k = tg.get("highway", "")
+    if tg.get("area") == "yes" or k not in DRIVABLE | {"pedestrian"}:
+        return A_EMERGENCY if tg.get("emergency") in YES else 0
+    general = next((tg[t] for t in ("vehicle", "access") if t in tg), None)
+    motor = next((tg[t] for t in ("motor_vehicle", "vehicle", "access") if t in tg), None)
+    car_v = next((tg[t] for t in ("motorcar", "motor_vehicle", "vehicle", "access") if t in tg), None)
+    bus_v = next((tg[t] for t in ("bus", "psv") if t in tg), None)
+    bus_only = k == "busway" or tg.get("service") == "bus" or (k == "service" and bus_v == "designated")
+    # Cars: never on pedestrian streets (the old town stays car-free even where deliveries or residents may enter),
+    # nor on bus-only roads; otherwise as tagged.
+    flags = 0
+    if k != "pedestrian" and not bus_only:
+        if car_v is None or car_v in YES:
+            flags |= A_CAR
+        elif car_v in ("destination", "customers"):
+            flags |= A_CAR | A_DEST
+    # Buses: where tagged for them, else wherever motor traffic may pass through (not to a destination only).
+    if bus_v is not None:
+        if bus_v in YES:
+            flags |= A_BUS
+    elif bus_only or (k != "pedestrian" and (motor is None or motor in YES) and (general is None or general in YES)):
+        flags |= A_BUS
+    # Emergency vehicles: any street a vehicle could physically use, unless explicitly not.
+    if tg.get("emergency") != "no":
+        flags |= A_EMERGENCY
+    if flags & A_BUS and tg.get("oneway") == "yes" and "no" in (tg.get("oneway:bus"), tg.get("oneway:psv")):
+        flags |= A_BUS_BACK
+    return flags
+
+
 def project(geom, bridge=False):
     en = [lonlat_to_en(g["lon"], g["lat"]) for g in geom]
     zs = [ground(e, n) for e, n in en]
@@ -54,7 +101,7 @@ for el in els:
         rec = {"id": el["id"], "p": p}
         if "highway" in tg:
             rec.update(n=tg.get("name", ""), k=tg["highway"], b=b, t=tg.get("tunnel", "no") != "no",
-                       o=tg.get("oneway") == "yes", l=tg.get("lanes"))
+                       o=tg.get("oneway") == "yes", l=tg.get("lanes"), a=access_flags(tg))
             out["roads"].append(rec)
         elif "railway" in tg:
             rec.update(n=tg.get("name", ""), k=tg["railway"], b=b, t=tg.get("tunnel", "no") != "no")
