@@ -5,7 +5,8 @@ on (drawn with draw_ground.draw_roads at their measured widths); river banks fro
 Instead of flat vector fills they are drawn as a light touch over the painting:
   - a thin ink line along both edges of every road and path, lane dashes and step treads;
   - rails, sleepers and tram rails in ink, the ballast bed edged;
-  - an ink line along the river banks;
+  - the river's blue on the exact water area (half strength, so the painted ripples show) and an ink line along
+    the banks;
   - an asphalt (or paving) tone only where the painted road surface is missing (the painter put grass, a bush or a
     roof there), so the road is always readable but the painted texture shows through everywhere else.
 The layer is RGBA, drawn over the painted ground and under shadows, buildings and trees.
@@ -62,14 +63,14 @@ def main():
         ref = np.median(P[sel], axis=0)
         dist = np.abs(P - ref).sum(2)
         green = (P[..., 1] - np.maximum(P[..., 0], P[..., 2])) > 10
-        miss = ((dist > 95) | green).astype(np.float32)
+        miss = ((dist > 150) | green).astype(np.float32)
         miss = cv2.GaussianBlur(cv2.morphologyEx(miss, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8)), (0, 0), 1.2)
         t = miss * (mm > 0.5)
         put(t * mm, ref, op)
         tone += t * mm
     # 2. ink along the road and path edges (the casing outside the fill)
     casing = np.clip(m["case"] - fill, 0, 1)
-    put(casing, INK, 0.72)
+    put(casing, INK, 0.45)
     # 3. lane dashes and step treads
     put(m["dash"] * (fill > 0.3), (238, 234, 222), 0.8)
     # 4. rail: ballast bed edge, sleepers, rails; tram rails
@@ -81,6 +82,9 @@ def main():
     wm = np.asarray(Image.open(LAYERS / "b00" / "k85" / "water_mask.png").convert("L"))
     if wm.shape != (S, S):
         wm = cv2.resize(wm, (S, S), interpolation=cv2.INTER_NEAREST)
+    # the river's own colour on the exact water area (the painter turns it olive in places), texture kept
+    inside = cv2.erode((wm > 127).astype(np.uint8), np.ones((3, 3), np.uint8)).astype(np.float32)
+    put(cv2.GaussianBlur(inside, (0, 0), 0.7) * (wm > 127), (34, 98, 122), 0.5)
     bank = cv2.GaussianBlur(ring(wm > 127, 1), (0, 0), 0.5)
     put(bank, (36, 52, 64), 0.6)
     d = v2_dir("ink")

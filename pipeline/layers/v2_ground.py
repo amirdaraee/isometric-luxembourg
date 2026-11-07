@@ -239,30 +239,28 @@ def prep(k):
     print("ground inputs in", d, flush=True)
 
 
-def tree_mask(P, gentle=None):
-    """Where the painter drew trees into the ground: green, and either dark or strongly textured (crowns are
-    dark clumps with light leaves and ink outlines; painted lawns are smooth and lighter)."""
+def tree_mask(P, gentle=None, protect=None):
+    """Where the painter drew trees into the ground: clumps of dark, clearly green paint (painted crowns are dark
+    green with light leaves and ink outlines; painted lawns, hedges and garden beds are lighter or smaller), plus
+    their dark painted shadows on gentle ground. `protect` (roads, rails, water) is never touched."""
     f = P.astype(np.float32)
     r, g, bl = f[..., 0], f[..., 1], f[..., 2]
     lum = f @ np.array((0.3, 0.59, 0.11), np.float32)
-    greenish = (g > r + 4) & (g > bl + 12)
-    m1 = cv2.blur(lum, (7, 7))
-    sd = np.sqrt(np.clip(cv2.blur(lum * lum, (7, 7)) - m1 * m1, 0, None))
-    dark = lum < 78
-    gfrac = cv2.blur(greenish.astype(np.float32), (9, 9))
-    tree = ((gfrac > 0.35) & (dark | (sd > 26)) & (greenish | dark)).astype(np.uint8)
-    tree = cv2.morphologyEx(tree, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
-    tree = cv2.morphologyEx(tree, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
-    n, lab, st, _ = cv2.connectedComponentsWithStats(tree)
-    big = np.zeros(n, bool); big[1:] = st[1:, cv2.CC_STAT_AREA] >= 30
+    core = ((g > r + 8) & (g > bl + 14) & (lum < 92)).astype(np.uint8)
+    core = cv2.morphologyEx(core, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    core = cv2.morphologyEx(core, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    n, lab, st, _ = cv2.connectedComponentsWithStats(core)
+    big = np.zeros(n, bool); big[1:] = st[1:, cv2.CC_STAT_AREA] >= 40
     tree = big[lab].astype(np.uint8)
-    # the trees' painted shadows next to them (dark, within a few px), on gentle ground (not the rock faces)
-    near = cv2.dilate(tree, np.ones((11, 11), np.uint8)) > 0
-    shadow = near & (lum < 80)
+    tree = cv2.dilate(tree, np.ones((5, 5), np.uint8))      # the light leaves and ink round the dark core
+    near = cv2.dilate(tree, np.ones((9, 9), np.uint8)) > 0
+    shadow = near & (lum < 70)
     if gentle is not None:
         shadow &= gentle
-    tree = tree.astype(bool) | shadow
-    return cv2.dilate(tree.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
+    m = tree.astype(bool) | shadow
+    if protect is not None:
+        m &= ~protect
+    return m
 
 
 def untree(P, m, f=4):
@@ -310,14 +308,28 @@ def finish(painted):
 
 
 def clean(P=None):
-    """The ground layer must not contain trees: the trees the painter drew into the ground anyway (and their painted
-    shadows) are found and replaced by the painting's own lawn, a little shaded. -> L1_ground.png, trees_removed.png"""
+    """The ground layer must not show trees: the trees the painter drew into the ground anyway (and their painted
+    shadows) are found where the ground is actually seen (not under a building or a real tree) and replaced by the
+    painting's own lawn, a little shaded. Roads, rails and water are never touched.
+    -> L1_ground.png, trees_removed.png"""
     d = v2_dir("ground")
     if P is None:
         P = np.asarray(Image.open(d / "L1_painted.png").convert("RGB"))
+    S = P.shape[0]
     G = np.load(d / "G_k85.npy")
     gentle = slope_normals(G)[..., 2] > np.cos(np.radians(32))
-    m = tree_mask(P, gentle)
+    mk = np.load(d / "masks.npz")
+    road = np.unpackbits(mk["road"])[:S * S].reshape(S, S).astype(bool)
+    wm = np.asarray(Image.open(LAYERS / "b00" / "k85" / "water_mask.png").convert("L")) > 127
+    protect = cv2.dilate((road | wm).astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
+    seen = np.ones((S, S), bool)
+    cp = v2_dir("canopy") / "canopy_k85.npz"
+    if cp.exists():
+        seen &= np.load(cp)["vis"] == 0
+    for n in ("L7_buildings", "L5_bridges"):
+        seen &= np.asarray(Image.open(LAYERS / "b00" / "objects" / f"{n}.png"))[..., 3] < 128
+    seen = cv2.dilate(seen.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
+    m = tree_mask(P, gentle, protect) & seen
     out = untree(P, m)
     Image.fromarray(out).save(d / "L1_ground.png")
     Image.fromarray((m * 255).astype(np.uint8)).save(d / "trees_removed.png")
