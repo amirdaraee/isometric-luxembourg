@@ -64,6 +64,11 @@ void main(){
   c = vec4(n.x, n.y, vd, win + (is_wall == 1 ? 2. : 0.));
 }"""
 
+# Height pass: the visible surface's height above sea level, in float (same projection as the line pass).
+FS_H = """#version 410
+in vec3 wp; in float vd; out vec4 c;
+void main(){ c = vec4(wp.z, 0., 0., 1.); }"""
+
 
 def merc_px(lon, lat, z):
     t = 2 ** z * 256
@@ -190,6 +195,8 @@ def main():
                     "and a window grid) for the painter")
     ap.add_argument("--kinds", action="store_true", help="also write frames_kind/: white ground (255), grey bridges (128), "
                     "walls (64), roofs (0), so 2D map data (roads, rivers) is only drawn where the ground is really visible")
+    ap.add_argument("--heights", action="store_true", help="also write frames_height/: 16-bit PNG, height of the "
+                    "visible surface above sea level in cm (0 = empty), for car hiding, tree crowns and patch repair")
     args = ap.parse_args()
     t0 = time.time()
     ctx = moderngl.create_standalone_context()
@@ -233,6 +240,7 @@ def main():
     deck_vao = None
     red_vao = None
     solids = []
+    extra_bufs = []  # bridge decks and piers, also drawn in the height pass
     bridges_path = WORK / "bridges.npz"
     if bridges_path.exists():
         br = np.load(bridges_path)
@@ -243,16 +251,20 @@ def main():
             dv = np.column_stack((dp, (dmx - ox) / deck_tex.width, (dmy - oy) / deck_tex.height)).astype("f4")
             deck_buf = ctx.buffer(dv.tobytes())
             deck_vao = ctx.vertex_array(prog, [(deck_buf, "3f 2f", "p", "uv")])
+            extra_bufs.append(deck_buf)
         red_vao = None
         if "deck_red" in br.files and len(br["deck_red"]):
             rv = np.column_stack((br["deck_red"], np.zeros((len(br["deck_red"]), 2)))).astype("f4")
-            red_vao = ctx.vertex_array(prog, [(ctx.buffer(rv.tobytes()), "3f 2f", "p", "uv")])
+            rbuf = ctx.buffer(rv.tobytes())
+            red_vao = ctx.vertex_array(prog, [(rbuf, "3f 2f", "p", "uv")])
+            extra_bufs.append(rbuf)
         sp, sc = br["solid"], br["solid_col"]
         for col in np.unique(sc, axis=0):
             pts = sp[(sc == col).all(axis=1)]
             sv = np.column_stack((pts, np.zeros((len(pts), 2)))).astype("f4")
             sbuf = ctx.buffer(sv.tobytes())
             solids.append((tuple(int(c) for c in col), ctx.vertex_array(prog, [(sbuf, "3f 2f", "p", "uv")])))
+            extra_bufs.append(sbuf)
         print("bridges: deck verts", len(dp), "solid verts", len(sp), flush=True)
 
     d = np.load(WORK / "buildings.npz")
@@ -290,6 +302,29 @@ def main():
         gprog["dr"].value = dr
         g_fbo = ctx.framebuffer(ctx.renderbuffer((FRAME, FRAME), 4, dtype="f4"), ctx.depth_renderbuffer((FRAME, FRAME)))
         g_ter = ctx.vertex_array(gprog, [(tbuf, "3f 2x4", "p")])
+    if args.heights:
+        hprog = ctx.program(vertex_shader=VS_G, fragment_shader=FS_H)
+        hprog["dr"].value = dr
+        h_fbo = ctx.framebuffer(ctx.renderbuffer((FRAME, FRAME), 4, dtype="f4"), ctx.depth_renderbuffer((FRAME, FRAME)))
+        h_static = [ctx.vertex_array(hprog, [(b, "3f 2x4", "p")]) for b in [tbuf] + extra_bufs]
+
+    def draw_heights(fx0, fy0):
+        """Height pass for one frame: cm above sea level of the visible surface, 0 where nothing is drawn."""
+        fx1, fy1 = fx0 + span, fy0 + span
+        hprog["frame"].value = (fx0, fy0, fx1, fy1)
+        h_fbo.use()
+        h_fbo.clear(0, 0, 0, 0)
+        for vao_h in h_static:
+            vao_h.render()
+        hit = np.where((bx1 >= fx0) & (bx0 <= fx1) & (by1 >= fy0) & (by0 <= fy1))[0]
+        if len(hit):
+            buf = ctx.buffer(tris[hit].tobytes())
+            vao = ctx.vertex_array(hprog, [(buf, "3f 2x4", "p")])
+            vao.render()
+            vao.release(); buf.release()
+        z = np.frombuffer(h_fbo.read(components=4, dtype="f4"), np.float32).reshape(FRAME, FRAME, 4)[::-1, :, 0]
+        cm = np.clip(np.round(z * 100), 0, 65535).astype(np.uint16)
+        return Image.fromarray(cm)  # 16-bit greyscale PNG
 
     def draw_lines(fx0, fy0):
         """Straight-line guide for one frame: white paper, black edges, grey windows."""
@@ -381,6 +416,8 @@ def main():
         read().save(WORK / "test.jpg", quality=92)
         if args.lines:
             draw_lines(cx - span / 2, cy - span / 2).save(WORK / "test_lines.png")
+        if args.heights:
+            draw_heights(cx - span / 2, cy - span / 2).save(WORK / "test_height.png")
         print("test frame", f"{time.time() - t0:.0f}s")
         return
 
@@ -392,8 +429,16 @@ def main():
     kout = WORK / "frames_kind"
     if args.kinds:
         kout.mkdir(exist_ok=True)
+    hout = WORK / "frames_height"
+    if args.heights:
+        hout.mkdir(exist_ok=True)
+    only_height = args.heights and (out / "0_0.jpg").exists() and not (args.kinds or args.lines)
     for r in range(rows):
         for c in range(cols):
+            if args.heights:
+                draw_heights(sx0 + c * span, sy1 - (r + 1) * span).save(hout / f"{c}_{r}.png")
+                if only_height:  # colour frames already exist: just add the height pass
+                    continue
             draw(sx0 + c * span, sy1 - (r + 1) * span)
             read().save(out / f"{c}_{r}.jpg", quality=95, subsampling=0)
             if args.kinds:

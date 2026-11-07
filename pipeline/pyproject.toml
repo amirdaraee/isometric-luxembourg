@@ -2,4 +2,8 @@
 name = "isometric-luxembourg-pipeline"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["numpy", "pillow", "pyproj", "lxml", "moderngl", "shapely", "tifffile", "imagecodecs", "mapbox-earcut", "pyvips[binary]", "scipy", "opencv-python-headless"]
+dependencies = ["numpy", "pillow", "pyproj", "lxml", "moderngl", "shapely", "tifffile", "imagecodecs", "mapbox-earcut", "pyvips[binary]", "scipy", "opencv-python-headless", "modal"]
+
+[project.optional-dependencies]
+# laptop tests of the whole-canvas painter core (pipeline/gpu_train/tiles/test_md_core.py)
+test = ["torch"]
