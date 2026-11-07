@@ -94,7 +94,8 @@ export default function App() {
   const pick = useCallback((p: Place) => {
     setActive(p);
     // A landmark with a full card: the nearest one within ~50 m of the pin.
-    let best: Landmark | null = null, bd = 220;
+    // Pins made from a landmark card carry its slug, which wins over distance in crowded places.
+    let best: Landmark | null = (p.s && landmarksRef.current.find((l) => l.slug === p.s)) || null, bd = best ? -1 : 220;
     for (const l of landmarksRef.current) {
       const d = Math.hypot(l.x - p.x, l.y - p.y);
       if (d < bd) { bd = d; best = l; }

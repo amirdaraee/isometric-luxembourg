@@ -1285,5 +1285,725 @@
   "author": "GilPe",
   "licence": "CC BY-SA 4.0",
   "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/charlotte-monument__photo.jpg",
+  "landmark": "Grand Duchess Charlotte Monument",
+  "shows": "Grand Duchess Charlotte Monument",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxemburg_-_Platz_Clairefontaine_-_Gro%C3%9Fherzogin_Charlotte_Monument_-_Place_Clairefontaine_-_Grand_Duchess_Charlotte_Monument_-_panoramio.jpg",
+  "author": "Edgar El",
+  "licence": "CC BY 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by/3.0"
+ },
+ {
+  "file": "images/foreign-ministry__photo.jpg",
+  "landmark": "Ministry of Foreign and European Affairs",
+  "shows": "Ministry of Foreign and European Affairs",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Mansfeld_building_in_Luxembourg_City_01.jpg",
+  "author": "Krzysztof Golik",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/villa-louvigny__photo.jpg",
+  "landmark": "Villa Louvigny",
+  "shows": "Villa Louvigny",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_villa_Louvigny.jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/villa-louvigny__photo-2.jpg",
+  "landmark": "Villa Louvigny",
+  "shows": "Villa Louvigny from the municipal park",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_parc_Louvigny_(104).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/saint-quirin__photo.jpg",
+  "landmark": "Saint-Quirin Chapel",
+  "shows": "Saint-Quirin Chapel",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Greinskapell_01.jpg",
+  "author": "PlayMistyForMe at Luxembourgish Wikipedia",
+  "licence": "CC BY-SA 1.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/1.0"
+ },
+ {
+  "file": "images/saint-quirin__photo-2.jpg",
+  "landmark": "Saint-Quirin Chapel",
+  "shows": "Saint-Quirin Chapel in the Pétrusse valley, seen from above",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Die_kleine_Kirche_in_Fels_-_panoramio.jpg",
+  "author": "tomcio4220",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/theatre-des-capucins__photo.jpg",
+  "landmark": "Théâtre des Capucins",
+  "shows": "Théâtre des Capucins",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_Th%C3%A9%C3%A2tre_des_capucins_01.jpg",
+  "author": "PlayMistyForMe",
+  "licence": "CC BY 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by/3.0"
+ },
+ {
+  "file": "images/city-library__photo.jpg",
+  "landmark": "Lëtzebuerg City Library",
+  "shows": "Lëtzebuerg City Library",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Biblioth%C3%A9ikStadL%C3%ABtzebuerg01.jpg",
+  "author": "Cayambe at lb.wikipedia",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/castle-bridge__photo.jpg",
+  "landmark": "Castle Bridge",
+  "shows": "Castle Bridge",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Pont_du_ch%C3%A2teau_Luxembourg.JPG",
+  "author": "Wolfgang Staudt",
+  "licence": "CC BY 2.0",
+  "licence_url": "https://creativecommons.org/licenses/by/2.0"
+ },
+ {
+  "file": "images/place-de-paris__photo.jpg",
+  "landmark": "Place de Paris",
+  "shows": "Place de Paris and Avenue de la Liberté on an early 20th-century postcard",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Maroldt_-_LUXEMBOURG_-_Place_de_Paris_et_Avenue_de_la_Libertt%C3%A9.jpg",
+  "author": "Scanné par Claude_villetaneuse",
+  "licence": "Public domain",
+  "licence_url": ""
+ },
+ {
+  "file": "images/villa-pauly__photo.jpg",
+  "landmark": "Villa Pauly",
+  "shows": "Villa Pauly",
+  "source_page": "https://commons.wikimedia.org/wiki/File:D%27Villa_Pauly_vun_hannen-101.jpg",
+  "author": "Self-photographed by Jwh",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/court-of-auditors__photo.jpg",
+  "landmark": "European Court of Auditors",
+  "shows": "European Court of Auditors",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Europ%C3%A4ischer_Rechnungshof.jpg",
+  "author": "de:Euseson",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+ },
+ {
+  "file": "images/national-library__photo.jpg",
+  "landmark": "National Library of Luxembourg",
+  "shows": "National Library of Luxembourg",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Biblioth%C3%A8que_nationale_Kirchberg_(101).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/fort-parkhohe__photo.jpg",
+  "landmark": "Fort Parkhöhe",
+  "shows": "Fort Parkhöhe",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Seminairesbierg_(105).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/grand-theatre__photo.jpg",
+  "landmark": "Grand Théâtre de Luxembourg",
+  "shows": "Grand Théâtre de Luxembourg",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Hvplux.jpg",
+  "author": "Hvpuser",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/grand-theatre__photo-2.jpg",
+  "landmark": "Grand Théâtre de Luxembourg",
+  "shows": "Grand Théâtre de Luxembourg, another view",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_fontaine_parvis_Grand_Th%C3%A9%C3%A2tre_(blurred).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/lycee-robert-schuman__photo.jpg",
+  "landmark": "Lycée Robert-Schuman",
+  "shows": "Lycée Robert-Schuman",
+  "source_page": "https://commons.wikimedia.org/wiki/File:L-Rob-Schuman--w.jpg",
+  "author": "Cornischong at Luxembourgish Wikipedia",
+  "licence": "CC BY-SA 1.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/1.0"
+ },
+ {
+  "file": "images/cine-utopia__photo.jpg",
+  "landmark": "Ciné Utopia",
+  "shows": "Ciné Utopia",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Kino_Utopia.jpg",
+  "author": "Otets at lb.wikipedia",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/french-mausoleum__photo.jpg",
+  "landmark": "Mausoleum of the French Soldiers",
+  "shows": "Mausoleum of the French Soldiers",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Mausol%C3%A9e_des_soldats_fran%C3%A7ais_de_la_Grande_Guerre_(1).JPG",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/saint-mathieu__photo.jpg",
+  "landmark": "Saint-Mathieu Church, Pfaffenthal",
+  "shows": "Saint-Mathieu Church, Pfaffenthal",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Kirche_Luxembourg-Pfaffenthal_01.jpg",
+  "author": "MMFE",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/pulvermuhl-viaduct__photo.jpg",
+  "landmark": "Pulvermühl Viaduct",
+  "shows": "The arches of the Pulvermühl viaduct",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxemburg_spoorviaduct_verbreding.JPG",
+  "author": "Smiley.toerist",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/stade-hammerel__photo.jpg",
+  "landmark": "Stade Achille Hammerel",
+  "shows": "Stade Achille Hammerel",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Stade_Achille_Hammerel,_Luxembourg,_2014.jpg",
+  "author": "Bdx",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/cents-church__photo.jpg",
+  "landmark": "Holy Spirit Church, Cents",
+  "shows": "Holy Spirit Church, Cents",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Kirche_Luxembourg-Cents_01.jpg",
+  "author": "MMFE",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/trinity-church__photo.jpg",
+  "landmark": "Trinity Church",
+  "shows": "Trinity Church",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Dreifaltigkeitskirche_Luxbg_2011A.jpg",
+  "author": "Sultan Edijingo at lb.wikipedia",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/council-of-state__photo.jpg",
+  "landmark": "Council of State Building",
+  "shows": "Council of State Building",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Conseil_d%27Etat_Luxembourg.jpg",
+  "author": "Procrastineur49",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/synagogue__photo.jpg",
+  "landmark": "Luxembourg Synagogue",
+  "shows": "Luxembourg Synagogue",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_Synagogue_01a.jpg",
+  "author": "Cayambe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/national-archives__photo.jpg",
+  "landmark": "National Archives of Luxembourg (Plateau du Saint-Esprit)",
+  "shows": "National Archives of Luxembourg (Plateau du Saint-Esprit)",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Archives_nationales_du_Luxembourg_2012-04.jpg",
+  "author": "Zinneke",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/cinematheque__photo.jpg",
+  "landmark": "Cinémathèque of the City of Luxembourg",
+  "shows": "Cinémathèque of the City of Luxembourg",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Cin%C3%A9math%C3%A8que_Luxembourg_01.jpg",
+  "author": "Cayambe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/dent-creuse__photo.jpg",
+  "landmark": "Hollow Tooth",
+  "shows": "Hollow Tooth",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Huelen_Zant_tower,_Luxembourg_City.JPG",
+  "author": "Pudelek (Marcin Szala)",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/rotondes__photo.jpg",
+  "landmark": "Rotondes",
+  "shows": "Rotondes",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Rotonde_sud.jpg",
+  "author": "Robby at lb.wikipedia",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+ },
+ {
+  "file": "images/rotondes__photo-2.jpg",
+  "landmark": "Rotondes",
+  "shows": "Rotunda 1 seen from the street",
+  "source_page": "https://commons.wikimedia.org/wiki/File:20190324_Rotondes_Explorations_culturelles.jpg",
+  "author": "Flocci Nivis",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0"
+ },
+ {
+  "file": "images/arbed-building__photo.jpg",
+  "landmark": "ARBED Building",
+  "shows": "ARBED Building",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Banco_Spuerkeess,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-17,_DD_78.jpg",
+  "author": "Diego Delso",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/eib__photo.jpg",
+  "landmark": "European Investment Bank",
+  "shows": "European Investment Bank",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Lasdun-EIB-Entrance-2006.jpg",
+  "author": "Margin1522",
+  "licence": "CC BY 2.0",
+  "licence_url": "https://creativecommons.org/licenses/by/2.0"
+ },
+ {
+  "file": "images/european-school__photo.jpg",
+  "landmark": "European School Luxembourg I",
+  "shows": "European School Luxembourg I",
+  "source_page": "https://commons.wikimedia.org/wiki/File:European_School_of_Luxembourg_(2003).jpg",
+  "author": "GoodSimon",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/fort-olizy__photo.jpg",
+  "landmark": "Fort Olizy",
+  "shows": "Fort Olizy",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_acc%C3%A8s_casemates_Fort_Olizy_(1).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/fort-rubamprez__photo.jpg",
+  "landmark": "Fort Rubamprez",
+  "shows": "Fort Rubamprez",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_Gun_powder_magazine_Rubamprez_2013-08_--2.JPG",
+  "author": "Zinneke",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/schuman-monument__photo.jpg",
+  "landmark": "Robert Schuman Monument",
+  "shows": "Robert Schuman Monument",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Monument_Robert-Schuman_(2).JPG",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/lycee-arts-et-metiers__photo.jpg",
+  "landmark": "Lycée des Arts et Métiers",
+  "shows": "Lycée des Arts et Métiers",
+  "source_page": "https://commons.wikimedia.org/wiki/File:LTAM_2008.jpg",
+  "author": "Fliedermaus at Luxembourgish Wikipedia",
+  "licence": "CC BY-SA 1.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/1.0"
+ },
+ {
+  "file": "images/orthodox-church__photo.jpg",
+  "landmark": "Russian Orthodox Church of Saints Peter and Paul",
+  "shows": "Russian Orthodox Church of Saints Peter and Paul",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_Russian_Orthodox_Church_02.jpg",
+  "author": "Otets at Luxembourgish Wikipedia",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/mansfeld-castle__photo.jpg",
+  "landmark": "La Fontaine Castle ruins and Mansfeld Park",
+  "shows": "Historic drawing of Count Mansfeld's castle and gardens in Clausen",
+  "source_page": "https://commons.wikimedia.org/wiki/File:SchlossLaFontaine16Jh.jpg",
+  "author": "attributed to Tobie Verhaeght",
+  "licence": "Public domain",
+  "licence_url": ""
+ },
+ {
+  "file": "images/schlaifmillen__photo.jpg",
+  "landmark": "Schläifmillen",
+  "shows": "Schläifmillen",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Schl%C3%A4ifmillen_(105).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/weimerskirch-church__photo.jpg",
+  "landmark": "Saint-Martin Church, Weimerskirch",
+  "shows": "Saint-Martin Church, Weimerskirch",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Kirche_Weimerskirch_01.jpg",
+  "author": "MMFE",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/sport-lycee__photo.jpg",
+  "landmark": "Sportlycée",
+  "shows": "Sportlycée",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Sportlyc%C3%A9e_(101).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/central-post-office__photo.jpg",
+  "landmark": "Central Post Office",
+  "shows": "Central Post Office",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_H%C3%B4tel_des_Postes_2020_(101).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/fort-lambert__photo.jpg",
+  "landmark": "Lambert Redoubt",
+  "shows": "Lambert Redoubt",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_parc_Edmond_Klein(105).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/cite-judiciaire__photo.jpg",
+  "landmark": "Cité judiciaire",
+  "shows": "Cité judiciaire",
+  "source_page": "https://commons.wikimedia.org/wiki/File:20190324_Plateau_du_Saint-Esprit_02.jpg",
+  "author": "Flocci Nivis",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0"
+ },
+ {
+  "file": "images/dicks-lentz-monument__photo.jpg",
+  "landmark": "Dicks-Lentz Monument",
+  "shows": "Dicks-Lentz Monument",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Dicks-Lentz-Monument_(1).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/bains-du-centre__photo.jpg",
+  "landmark": "Badanstalt City Baths",
+  "shows": "Badanstalt City Baths",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Centre_de_relaxation_aquatique_Badanstalt_Luxembourg_City_2012-04.JPG",
+  "author": "Zinneke",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/rham-plateau__photo.jpg",
+  "landmark": "Rham Plateau",
+  "shows": "Rham Plateau",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_City,_Grund_and_Plateau_du_Rahm_in_2010.jpg",
+  "author": "Paasikivi",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/banannefabrik__photo.jpg",
+  "landmark": "Banannefabrik",
+  "shows": "Banannefabrik",
+  "source_page": "https://commons.wikimedia.org/wiki/File:BANANNEFABRIK.jpg",
+  "author": "NorbertData",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/publications-office__photo.jpg",
+  "landmark": "Publications Office of the European Union",
+  "shows": "Publications Office of the European Union",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Office_des_publications_de_l%27Union_-europ%C3%A9enne_08-2023.jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/jean-monnet-2__photo.jpg",
+  "landmark": "Jean Monnet 2 Building",
+  "shows": "Jean Monnet 2 Building",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Jean_Monnet_2_building_construction,_8_March_2026.jpg",
+  "author": "Luxofluxo",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/kinepolis__photo.jpg",
+  "landmark": "Kinepolis Kirchberg",
+  "shows": "Kinepolis Kirchberg",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Kinepolis_Kirchberg.jpg",
+  "author": "Lajmmoore",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/malakoff-tower__photo.jpg",
+  "landmark": "Malakoff Tower",
+  "shows": "Malakoff Tower",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Festung_L%C3%ABtzebuerg_Malakoff-Tuerm.jpg",
+  "author": "Fliedermaus at Luxembourgish Wikipedia",
+  "licence": "CC BY-SA 1.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/1.0"
+ },
+ {
+  "file": "images/fort-rumigny__photo.jpg",
+  "landmark": "Fort Rumigny",
+  "shows": "Fort Rumigny",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Fort_Rumigny_(101).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/glacis__photo.jpg",
+  "landmark": "Glacis",
+  "shows": "The Glacis in 1916, during a wartime potato distribution (historic photograph)",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Kartoffel_Ausgabestelle,_Luxemburg_Glacis,_Kriegsjahr_1916-101.jpg",
+  "author": "Unknown authorUnknown author",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/lycee-technique-centre__photo.jpg",
+  "landmark": "Lycée technique du Centre",
+  "shows": "Lycée technique du Centre",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Ltc1lampertsbierg.jpg",
+  "author": "JimHawk",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+ },
+ {
+  "file": "images/notre-dame-cemetery__photo.jpg",
+  "landmark": "Notre-Dame Cemetery",
+  "shows": "Notre-Dame Cemetery",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Nikloskierfecht,_Schwindt-Goerens-101.jpg",
+  "author": "Jwh",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/rives-de-clausen__photo.jpg",
+  "landmark": "Rives de Clausen",
+  "shows": "Rives de Clausen",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Brauerei_Mousel.jpg",
+  "author": "User:Otets",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/rives-de-clausen__photo-2.jpg",
+  "landmark": "Rives de Clausen",
+  "shows": "Rives de Clausen, another view",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Clausen_Mousel_2012.JPG",
+  "author": "Rombou",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/pfaffenthal-gates__photo.jpg",
+  "landmark": "Eich Gate and Pfaffenthal wall",
+  "shows": "Eich Gate and Pfaffenthal wall",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_porte_des_Bons_Malades_01.jpg",
+  "author": "Cayambe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/dommeldange-church__photo.jpg",
+  "landmark": "Saint-Hubert Church, Dommeldange",
+  "shows": "Saint-Hubert Church, Dommeldange",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Kirche_Dommeldange_02.jpg",
+  "author": "MMFE",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/glacis-chapel__photo.jpg",
+  "landmark": "Glacis Chapel",
+  "shows": "Glacis Chapel",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_Glacis_Chapel_2011.jpg",
+  "author": "Cayambe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/hotel-saint-maximin__photo.jpg",
+  "landmark": "Refuge Saint-Maximin",
+  "shows": "Refuge Saint-Maximin",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Refuge_St_Maximin_Luxembourg_City_2012-04.JPG",
+  "author": "Zinneke",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/central-bank__photo.jpg",
+  "landmark": "Central Bank of Luxembourg",
+  "shows": "Central Bank of Luxembourg",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Banque_centrale_(2).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/solidarity-monument__photo.jpg",
+  "landmark": "National Monument of Luxembourg Solidarity",
+  "shows": "National Monument of Luxembourg Solidarity",
+  "source_page": "https://commons.wikimedia.org/wiki/File:F%C3%A4ndelen_op_hallefmast_um_Kanounenhiwwel-101.jpg",
+  "author": "Jwh",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/saint-alphonse__photo.jpg",
+  "landmark": "Saint-Alphonse Church",
+  "shows": "Saint-Alphonse Church",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_%C3%A9glise_Saint-Alphonse_ext_a.jpg",
+  "author": "Cayambe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/hammelsmarsch-fountain__photo.jpg",
+  "landmark": "Hämmelsmarsch Fountain",
+  "shows": "Hämmelsmarsch Fountain",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_fontaine_H%C3%A4mmelsmarsch_(101).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/maison-de-raville__photo.jpg",
+  "landmark": "Maison de Raville",
+  "shows": "Maison de Raville",
+  "source_page": "https://commons.wikimedia.org/wiki/File:4_rue_de_la_Reine.jpg",
+  "author": "Luxfornow",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/sacre-coeur__photo.jpg",
+  "landmark": "Sacred Heart Church",
+  "shows": "Sacred Heart Church",
+  "source_page": "https://commons.wikimedia.org/wiki/File:L-Luxembourg29.JPG",
+  "author": "Szeder László",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/den-atelier__photo.jpg",
+  "landmark": "Den Atelier",
+  "shows": "A concert inside Den Atelier",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Smashing_Pumpkins_den_Atelier,Luxembourg.JPG",
+  "author": "Schnékert",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+ },
+ {
+  "file": "images/hemicycle__photo.jpg",
+  "landmark": "European Convention Center Luxembourg",
+  "shows": "European Convention Center Luxembourg",
+  "source_page": "https://commons.wikimedia.org/wiki/File:European_Convention_Center_Luxembourg,_external,_1_June_2019_1.jpg",
+  "author": "Etienne Baudon",
+  "licence": "Public domain",
+  "licence_url": ""
+ },
+ {
+  "file": "images/luxexpo__photo.jpg",
+  "landmark": "Luxexpo The Box",
+  "shows": "Luxexpo The Box",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxexpo_The_Box_2021-07.jpg",
+  "author": "Zinneke",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/fort-niedergrunewald__photo.jpg",
+  "landmark": "Fort Niedergrünewald",
+  "shows": "Fort Niedergrünewald",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Fort_Niedergr%C3%BCnewald_pic1.jpg",
+  "author": "Alf van Beem",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/saint-joseph__photo.jpg",
+  "landmark": "Saint-Joseph Church, Limpertsberg",
+  "shows": "Saint-Joseph Church, Limpertsberg",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Kierch_Lampertsbierg.jpg",
+  "author": "MMFE",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/fondation-pescatore__photo.jpg",
+  "landmark": "Fondation J.-P. Pescatore",
+  "shows": "Fondation J.-P. Pescatore",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Fondation_Pescatore_Luxembourg_City_2012-04_--2.jpg",
+  "author": "Zinneke",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/sainte-cunegonde__photo.jpg",
+  "landmark": "Saint Cunigunde Church, Clausen",
+  "shows": "Saint Cunigunde Church, Clausen",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Kirche_Clausen_01.jpg",
+  "author": "MMFE",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/pfaffenthal-viaduct__photo.jpg",
+  "landmark": "Pfaffenthal Viaduct",
+  "shows": "Pfaffenthal Viaduct",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Capital_city_Luxembourg_05.jpg",
+  "author": "Dickelbers",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/hamm-church__photo.jpg",
+  "landmark": "Church of the Exaltation of the Holy Cross, Hamm",
+  "shows": "Church of the Exaltation of the Holy Cross, Hamm",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Kirche_Hamm_01.jpg",
+  "author": "MMFE",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/neudorf-church__photo.jpg",
+  "landmark": "Saint-Henri Church, Neudorf",
+  "shows": "Saint-Henri Church, Neudorf",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Neiduerf_Kierch.jpg",
+  "author": "Jwh",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
  }
 ]

@@ -10,6 +10,7 @@ export interface Place {
   f?: 1;
   q?: 1;
   a?: string;
+  s?: string;
 }
 
 interface Props {

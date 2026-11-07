@@ -40,6 +40,7 @@ kbd { padding: 1px 7px; border: 1px solid var(--line); border-radius: 5px; color
 .pin:hover span { background: #1d2a44; }
 .pin.on span { background: var(--red); border-color: var(--red); color: #fff; }
 .cat-landmark { --pin: #ffd166; } .cat-culture { --pin: #f28482; } .cat-history { --pin: #c9a227; } .cat-bridge { --pin: #7bdff2; } .cat-park { --pin: #3ddc84; } .cat-square { --pin: #f4f1ea; } .cat-transport { --pin: #a0c4ff; } .cat-viewpoint { --pin: #7bdff2; }
+.cat-church, .cat-religion { --pin: #e9c46a; } .cat-government { --pin: #b8c0ff; } .cat-fortification { --pin: #c9a227; } .cat-eu-institution { --pin: #4d8dff; } .cat-education { --pin: #cdb4db; } .cat-sport { --pin: #90e0ef; } .cat-modern { --pin: #e0e1dd; } .cat-museum { --pin: #f28482; }
 .quarter { position: absolute; left: 0; top: 0; }
 .quarter span { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font-size: 13px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; text-shadow: 0 0 3px #101828, 0 0 8px rgba(16, 24, 40, 0.95), 0 1px 3px #000; }
 
@@ -90,6 +91,10 @@ kbd { padding: 1px 7px; border: 1px solid var(--line); border-radius: 5px; color
 .lm-body dt { font-weight: 600; opacity: .75; }
 .lm-body dd { margin: 0; }
 .lm-body .muted { opacity: .7; font-size: 13px; }
+.lm-meta { margin: 0 0 6px; font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; opacity: .65; }
+.lm-facts { margin: 10px 0; padding-left: 18px; }
+.lm-facts li { margin: 2px 0; }
+.lm-sources { font-size: 12px; opacity: .8; }
 .lm-body a { color: #ff7b85; }
 .lm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .lm-grid figure { margin: 0; }
