@@ -70,7 +70,7 @@ def overlaps(a, b):
 def hours_cap(b):
     # windows per step over the data-filled part (empty windows are skipped), x steps x seconds, + 12 min margin
     win = 49 * max(b["fill"], 0.1)
-    return round(win * args.steps * args.sec_per_window / 3600 + 12 / 60, 2)
+    return round(win * args.steps * args.sec_per_window / 3600 + 30 / 60, 2)
 
 
 def paint_block(b):
