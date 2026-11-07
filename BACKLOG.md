@@ -109,6 +109,20 @@ painter), the model may draw shadows or edges that don't match between layers (n
 must stay consistent. Plan: pilot on the old-town block (~$2–3): ground + building + tree layers, compare with today's
 single image, then decide.
 
+## Findings from the owner's screenshots (7 Nov, evening)
+- **Visible edges (B3):** the straight edges at night in Kirchberg and in spring by Villa Pauly were the borders between
+  blocks already painted in that version and blocks still only colour-graded from the day map. Fixed the same evening:
+  `build_variant_tiles.py` fades painted blocks over 600 map px. They disappear entirely once every block of a version
+  is painted (night: all 15 done; golden hour, winter, winter night, autumn and spring still running).
+- **Spring trees (B4):** confirmed, the painted spring canopy is a saturated yellow-green with pink blossom clumps.
+- **Red Bridge (B5):** the deck ends at the Kirchberg-side abutment without joining the road above; cars ride on the
+  deck up to the edge.
+- **Vehicles off the road (B1):** a car on the Hollow Tooth cliff (Bock), cars on the Pfaffenthal rail embankment and on
+  bare sand beside the road, and a van parked against a house in Pfaffenthal. All are places where OSM lanes and the
+  painted road disagree; the drivable-surface work must use the painted road.
+- **Streets layer:** at night a blue outline is drawn round a water polygon near d'Coque that is not visible water;
+  only draw water outlines where the water mask has water.
+
 ## Order proposed
 1. B3 visible edges and B8 slider bugs (most visible, mostly free).
 2. Layered-art pilot (decides how B1, B4, B6 and future seasons are done).
