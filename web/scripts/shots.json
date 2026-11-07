@@ -1,5 +1,9 @@
 [
   {"name": "m0-grund-day", "hash": "8700,6950,0.6", "query": "hour=13", "waitMs": 4000, "size": [1280, 800]},
+  {"name": "a-audit-facade-2196-7064", "hash": "2196,7064,1.0", "query": "hour=13&on=traffic&seed=42", "waitMs": 6000, "size": [1280, 800]},
+  {"name": "a-audit-in-building-8324-7039", "hash": "8324,7039,1.0", "query": "hour=13&on=traffic&seed=42", "waitMs": 6000, "size": [1280, 800]},
+  {"name": "a-audit-in-building-18030-7839", "hash": "18030,7839,1.0", "query": "hour=13&on=traffic&seed=42", "waitMs": 6000, "size": [1280, 800]},
+  {"name": "a-audit-off-road-21590-9052", "hash": "21590,9052,1.0", "query": "hour=13&on=traffic&seed=42", "waitMs": 6000, "size": [1280, 800]},
   {"name": "a-deck-pont-adolphe", "hash": "6274,6194,1.0", "query": "hour=13&on=traffic&seed=42", "waitMs": 6000, "size": [1280, 800]},
   {"name": "a-deck-red-bridge", "hash": "10209,5252,1.0", "query": "hour=13&on=traffic&seed=42", "waitMs": 6000, "size": [1280, 800]},
   {"name": "a-emergency-boulevard-royal", "hash": "7025,5515,0.9", "query": "hour=13&on=traffic,emergency&seed=7&siren=Boulevard%20Royal", "waitMs": 6000, "size": [1280, 800]},

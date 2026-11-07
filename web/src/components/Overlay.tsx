@@ -4,7 +4,7 @@ import { on } from "../features";
 import type { MapHandle, MapMeta } from "./IsometricMap";
 import { drawTransit, luxSeconds, prepareShapes, type TransitData } from "./Transit";
 import { drawLamps, drawVehicle, loadSprites, type Sprites } from "./sprites";
-import { loadOcclusion, type Occlusion } from "./occlusion";
+import { DRIVABLE, loadDrivable, loadOcclusion, type Drivable, type Occlusion } from "./occlusion";
 import { waterPoints } from "./Water";
 import { Traffic, type DrawableCar } from "../sim/traffic";
 import { testParams } from "../testParams";
@@ -183,10 +183,15 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
   const sprites = useRef<Sprites | null>(null);
   const occl = useRef<Occlusion | null>(null);
   const vlayer = useRef<HTMLCanvasElement | null>(null);
+  const drivable = useRef<Drivable | null>(null);
+  // Per car id: how visible it is (0..1, the guard's fade) and the frame it was last seen in.
+  const fades = useRef(new Map<number, { a: number; stamp: number }>());
+  const fadeStamp = useRef(0);
   useEffect(() => {
     if (!on("traffic") && !on("transit")) return;
     loadSprites().then((x) => { sprites.current = x; }).catch(() => {});
     loadOcclusion().then((x) => { occl.current = x; }).catch(() => {});
+    loadDrivable().then((x) => { drivable.current = x; }).catch(() => {});
   }, []);
   const state = useRef<{ lines?: Lines; roads?: Prepared[]; named?: Prepared[]; rail?: Prepared[]; water?: Prepared[];
     waterways?: Prepared[]; flocks?: Flock[]; sim?: Traffic }>({});
@@ -376,7 +381,21 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
           const val = vx >= 0 && vy >= 0 && vx < V.w && vy < V.h ? V.d[vy * V.w + vx] : 0;
           return val === 255 || (val === 128 && bridge);
         };
-        const spr = sprites.current, occ = occl.current;
+        const spr = sprites.current, occ = occl.current, drv = drivable.current;
+        // The guard: where a car's drawn ground point is on water, inside a building, outside the painted art, or
+        // behind a building that the occlusion cut does not hide it behind (it would show on the facade), the car
+        // fades out over 0.3 s (and back in when it leaves). On a modelled deck it is fine. Without drivable data
+        // yet, the old visibility test decides.
+        const show = (c: DrawableCar, gy: number, onDeck: boolean) => {
+          const v = drv ? drv.at(c.x, gy) : -1;
+          if (v < 0) return seen(c.x, c.y, c.bridge);
+          if (v === DRIVABLE.unpainted) return false;
+          if (v === DRIVABLE.water || v === DRIVABLE.building) return onDeck;
+          if (v === DRIVABLE.hidden) return onDeck || (occ ? occ.coverage(c.x, gy, 1.6) >= 0.5 : false);
+          return true;
+        };
+        const fade = fades.current, stamp = ++fadeStamp.current;
+        let guarded = 0;
         const vl = vlayer.current ?? (vlayer.current = document.createElement("canvas"));
         if (vl.width !== cv.width || vl.height !== cv.height) { vl.width = cv.width; vl.height = cv.height; }
         const vg = vl.getContext("2d")!;
@@ -385,27 +404,40 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         // Three passes, shortest vehicles first, each followed by its cut: cars, vans, police cars and ambulances
         // (1.6 m), buses and fire engines (3.2 m), then everything on a bridge deck, lifted onto the modelled deck and
         // cut against the deck layer.
-        const passes: [DrawableCar, number, number][][] = [[], [], []];
+        const passes: [DrawableCar, number, number, number][][] = [[], [], []];
         for (const c of st.sim.cars()) {
-          // Hidden in a tunnel, behind a building, or (for ground roads) under a bridge: don't draw.
+          // In a tunnel: not drawn.
           if (c.tunnel) continue;
           let sx = c.x * z + ox, sy = c.y * z + oy;
-          if (sx < -30 || sx > W + 30 || sy < -30 || sy > H + 30 || !seen(c.x, c.y, c.bridge)) continue;
+          if (sx < -30 || sx > W + 30 || sy < -30 || sy > H + 30) continue;
+          let gy = c.y, pass = c.type === "bus" || c.type === "fire" ? 1 : 0;
           if (c.bridge && occ) {
             const d = occ.deckAt(c.x, c.y);
-            if (d) { sy -= d.lift * z; passes[2].push([c, sx, sy]); continue; }
+            if (d) { sy -= d.lift * z; gy -= d.lift; pass = 2; }
           }
-          passes[c.type === "bus" || c.type === "fire" ? 1 : 0].push([c, sx, sy]);
+          const want = show(c, gy, pass === 2) ? 1 : 0;
+          const f = fade.get(c.id);
+          let a = f ? f.a : want;
+          a = want > a ? Math.min(want, a + dt / 0.3) : Math.max(want, a - dt / 0.3);
+          if (f) { f.a = a; f.stamp = stamp; } else fade.set(c.id, { a, stamp });
+          if (!want) guarded++;
+          if (a <= 0.01) continue;
+          passes[pass].push([c, sx, sy, a]);
         }
+        st.sim.stats.guarded = guarded;
+        if (stamp % 120 === 0) for (const [id, f] of fade) if (f.stamp !== stamp) fade.delete(id);
         const view = { z, ox, oy, w: W, h: H };
+        // Bare crowns in winter hide much less.
+        const canopy = season === "winter" ? 0.4 : 1;
         // Far to near within each pass (by screen y), so a nearer vehicle overlaps the one behind it.
         for (const list of passes) list.sort((a, b) => a[2] - b[2]);
         // Brake lights by day only close up and softer; at night tail lights always on and brake lights brighter.
         const brakeDay = z >= 0.6 ? 0.6 : 0;
         passes.forEach((list, i) => {
           // Headlight beams first, on the ground: the bodies drawn next cover their start, and the cut trims them.
-          if (spr && night > 0.05) for (const [c, sx, sy] of list) drawBeam(vg, c, sx, sy, z, night);
-          for (const [c, sx, sy] of list) {
+          if (spr && night > 0.05) for (const [c, sx, sy, a] of list) { vg.globalAlpha = a; drawBeam(vg, c, sx, sy, z, night); }
+          for (const [c, sx, sy, a] of list) {
+            vg.globalAlpha = a;
             if (spr) {
               drawVehicle(vg, spr, c.type, c.variant, sx, sy, c.headingScreenRad, z);
               drawLamps(vg, spr, c.type, sx, sy, c.headingScreenRad, z,
@@ -413,7 +445,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
             } else drawCarRect(vg, c, sx, sy, z, night);
             if (c.siren) drawSirenLights(vg, c, sx, sy, z, now / 1000, night);
           }
-          if (occ && list.length) occ.cut(vg, view, i === 0 ? 1.6 : i === 1 ? 3.2 : 4.5, i === 2 ? "deck" : "ground");
+          vg.globalAlpha = 1;
+          if (occ && list.length) occ.cut(vg, view, i === 0 ? 1.6 : i === 1 ? 3.2 : 4.5, i === 2 ? "deck" : "ground", canopy);
         });
         g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(vl, 0, 0); g.restore();
         // Small signal heads at the stop lines, when zoomed in.

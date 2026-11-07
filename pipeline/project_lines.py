@@ -4,8 +4,11 @@ Ground features take the terrain height; bridges are interpolated between their 
 the valley); tunnels are kept but flagged, so traffic can hide there.
 Writes web/public/data/lines.json:
   {"roads": [{"id", "n" name, "k" highway kind, "b" bridge, "t" tunnel, "o" oneway, "l" lanes,
-              "a" access flags (A_* below), "p" [x, y, ...]}],
+              "a" access flags (A_* below), "w" carriageway width (m), "c" painted road centre (m to the right of
+              the drawn direction, where it is off the line), "p" [x, y, ...]}],
    "rail": [...same...], "waterways": [...], "water": [{"id", "p": [...]} polygons]}
+"w" and "c" are measured on the drivable map (build_drivable.py, web/public/data/drivable), when it exists; a new
+drivable map measures them again itself.
 """
 import json
 import math
@@ -117,6 +120,10 @@ for el in els:
                 p = project(mem["geometry"])
                 if p:
                     out["water"].append({"id": el["id"], "p": p})
+# Street widths and the painted road's centre, from the drivable map when there is one.
+if (ROOT / "web" / "public" / "data" / "drivable" / "index.json").exists():
+    from build_drivable import add_widths, load_grid, osm_tags
+    add_widths(out, load_grid()[0], osm_tags())
 dest = ROOT / "web" / "public" / "data" / "lines.json"
 dest.write_text(json.dumps(out, separators=(",", ":")))
 print({k: len(v) for k, v in out.items()}, f"{dest.stat().st_size / 1e6:.1f} MB")

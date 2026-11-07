@@ -6,11 +6,18 @@ surface the height pass saw at that screen pixel is higher than the vehicle's bo
   web/public/data/occluders.png   RGB, 1 px = SCALE map px, covering the box in occluders.json.
       R: ground layer. Height in decimetres (0..255, clipped at 25.5 m) of the visible surface above the ground
          that lies behind it along the line of sight (the terrain the ray reaches after passing the surface).
-         Tree canopy picked from the painted art counts as CANOPY_DM. 0 = nothing in front of a road vehicle.
+         0 = nothing in front of a road vehicle. Built things only (the 3D model); trees are in B.
       G: deck layer, only in a band above bridge and viaduct roads and rail: height in decimetres of the visible
          surface above the deck's own smoothed height (road_heights.json). Towers in front of a viaduct, or a
          higher deck crossing over it, show up here; the deck itself and anything behind it are 0.
-      B: unused (0), so the image decodes without premultiplied-alpha damage.
+      B: tree canopy in front of the lanes, soft: 0..255 is how much of a vehicle there is hidden (255 fully). Crowns
+         are found in the painted art at full resolution (colour, and texture: crowns are busy, lawns smooth) on
+         visible ground, kept where they cover a carriageway on screen (the road surface of the drivable map,
+         build_drivable.py, or the lanes' strip from lines.json "w" and "c", which the crown hides in the art):
+         such a tree stands nearer the camera than the lane. Then grown up the screen through the crown above
+         (a vehicle's body rises there) and feathered over about 0.75 m, so that vehicles fade into a crown
+         instead of being cut off. Crowns above a lane on screen that do not cover it stand behind it.
+      (An RGB image, no alpha, so it decodes without premultiplied-alpha damage.)
      Both layers are only filled near roads, rail and tram lines (where vehicles can be); 0 elsewhere.
   web/public/data/occluders.json  {x0, y0, scale, w, h, unit} placing the image on the map.
   web/public/data/road_heights.json  per lines.json way id (bridges and viaducts that carry vehicles, roads and
@@ -23,8 +30,12 @@ Deck heights are a single lowest-cost path through candidate heights (0.5 m step
 faster than 1 in 8, and ways that meet are pulled to the same height at the shared point, so a vehicle's drawn
 height never jumps between the deck, the valley below and a tree in front.
 
+Every bridge or viaduct way that carries vehicles gets a profile: where its OSM geometry cannot be matched, the
+deck runs straight between the terrain at its two ends, as lines.json drew it (dz 0).
+
 Default box: the union of the painted areas in web/public/tiles/meta.json (traffic is only drawn there).
-Usage: python build_occlusion.py [--work DIR] [--data DIR] [--scale 2] [--bbox x0 y0 x1 y1] [--debug]
+Needs web/public/data/drivable (run build_drivable.py first) and the painted tiles (web/public/tiles/map_files).
+Usage: python build_occlusion.py [--work DIR] [--data DIR] [--scale 4] [--bbox x0 y0 x1 y1] [--debug out.jpg]
 """
 import argparse
 import json
@@ -39,7 +50,8 @@ Image.MAX_IMAGE_PIXELS = None
 CE = 0.8660254                       # cos 30 degrees: screen metres per metre of height
 MPP = 0.25
 PX_PER_M_UP = CE / MPP               # map px a point moves up per metre of height (3.46)
-CANOPY_DM = 80                       # tree crowns count as 8 m tall
+CANOPY_CELL = 2                      # map px per cell of the canopy classification
+CANOPY_FEATHER_M = 0.75              # soft edge of the canopy
 BAND_UP_M = 6.0                      # vehicles reach at most this high (double-deck trains 4.6 m, plus slack)
 DRIVE = {"motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "residential", "living_street",
          "service", "busway", "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link",
@@ -128,17 +140,22 @@ def deck_profiles(mos, ter, cam, lines, osm, box):
     x0, y0, x1, y1 = box
     out = {}
     ends = []
+    fallback = []                                                    # carrying bridges whose geometry won't match
     for group in ("roads", "rail"):
         for w in lines[group]:
-            if not w.get("b") or w.get("t") or w["id"] not in geo:
+            if not w.get("b") or w.get("t"):
                 continue
             if w.get("k") not in (DRIVE if group == "roads" else RAIL):
                 continue                                             # footbridges carry no vehicles
+            if w["id"] not in geo:
+                fallback.append(w)
+                continue
             p = np.array(w["p"], float).reshape(-1, 2)
             if p[:, 0].max() < x0 or p[:, 0].min() > x1 or p[:, 1].max() < y0 or p[:, 1].min() > y1:
                 continue
             en = np.array([lonlat_to_en(g["lon"], g["lat"]) for g in geo[w["id"]]], float)
             if len(en) != len(p) or len(en) < 2:
+                fallback.append(w)
                 continue
             seg = np.hypot(*np.diff(en, axis=0).T)
             d = np.r_[0, np.cumsum(seg)]
@@ -222,6 +239,15 @@ def deck_profiles(mos, ter, cam, lines, osm, box):
     for o in out.values():
         o["h"] = o["z"] - ter.bilinear(o["E"], o["N"])
         o["dz"] = o["z"] - o["zl"]
+    # The rest: the deck straight between its ends, exactly where lines.json drew it (no lift, height unknown).
+    for w in fallback:
+        p = np.array(w["p"], float).reshape(-1, 2)
+        s = np.r_[0, np.cumsum(np.hypot(*np.diff(p, axis=0).T))]
+        n = len(p)
+        out[w["id"]] = dict(s=s, z=np.zeros(n), zl=np.zeros(n), E=np.zeros(n), N=np.zeros(n), X=p[:, 0], Y=p[:, 1],
+                            h=np.zeros(n), dz=np.zeros(n))
+    if fallback:
+        print(f"deck profiles: {len(fallback)} bridge way(s) straight between their ends", flush=True)
     return out
 
 
@@ -290,36 +316,92 @@ def ground_hit(zs, X, Y, ter, cam):
     return zt
 
 
-def canopy_mask(art_path, art_box, box, S, H, W):
-    """Tree crowns in the painted art: dark, saturated greens, specks removed and gaps filled."""
-    img = Image.open(art_path).convert("RGB")
-    ax0, ay0, ax1, ay1 = art_box
-    # crop the art to the output box and resample to the output grid
-    kx = img.width / (ax1 - ax0)
-    ky = img.height / (ay1 - ay0)
-    crop = img.crop((int((box[0] - ax0) * kx), int((box[1] - ay0) * ky), int((box[2] - ax0) * kx),
-                     int((box[3] - ay0) * ky))).resize((W, H), Image.BOX)
-    a = np.asarray(crop).astype(np.int16)
-    r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    hsv = cv2.cvtColor(np.asarray(crop), cv2.COLOR_RGB2HSV).astype(np.int16)
-    hue, sat, val = hsv[..., 0], hsv[..., 1], hsv[..., 2]
-    # foliage: hue 35-95 degrees (OpenCV halves hue), saturated, not bright (grass is light yellow-green)
-    leaf = (hue >= 30) & (hue <= 95) & (sat >= 60) & (val <= 150) & (g > r) & (g >= b)
-    # crown interiors include near-black shadows between leaves: accept dark pixels next to foliage
-    dark = (val < 60)
-    m = leaf.astype(np.uint8)
-    near = cv2.dilate(m, np.ones((3, 3), np.uint8))
-    m = (leaf | (dark & near.astype(bool))).astype(np.uint8)
-    # specks out, gaps in; scale the kernels to about 1-2 m on the map
-    k1 = max(1, int(round(4 / S)))
-    k2 = max(1, int(round(8 / S)))
-    m = cv2.morphologyEx(m, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k1 * 2 + 1, k1 * 2 + 1)))
-    m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k2 * 2 + 1, k2 * 2 + 1)))
-    # drop small blobs (single painted bushes, green roofs specks): keep crowns of 3 m across or more
+def art_tile(tiles, tx, ty):
+    """One tile of the painted summer day art at full resolution (512 x 512 RGB), or None."""
+    f = tiles / f"{tx}_{ty}.webp"
+    return np.asarray(Image.open(f).convert("RGB")) if f.exists() else None
+
+
+def crowns(tiles, shape):
+    """Tree crowns in the painted art, per CANOPY_CELL cell: foliage colours (greens through yellow-greens, light and
+    back-lit crowns included) that are busy at full resolution (lawns are smooth), with the dark shadows between
+    leaves; specks out, gaps filled, crowns under about 3 m across dropped."""
+    H, W = shape
+    C = CANOPY_CELL
+    out = np.zeros((H, W), bool)
+    T = 512
+    for f in tiles.glob("*.webp"):
+        tx, ty = map(int, f.stem.split("_"))
+        rgb = np.asarray(Image.open(f).convert("RGB"))
+        hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV).astype(np.int16)
+        hue, sat, val = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+        r, g, b = (rgb[..., i].astype(np.int16) for i in range(3))
+        v = val.astype(np.float32)
+        mean = cv2.blur(v, (5, 5))
+        busy = np.sqrt(np.maximum(cv2.blur(v * v, (5, 5)) - mean * mean, 0)) >= 14
+        leaf = (hue >= 20) & (hue <= 95) & (sat >= 45) & (val <= 215) & (g >= r * 0.92) & (g >= b) & busy
+        dark = (val < 70) & (cv2.dilate(leaf.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0)
+        m = (leaf | dark).astype(np.float32)
+        h, w = m.shape[0] // C * C, m.shape[1] // C * C
+        m = m[:h, :w].reshape(h // C, C, w // C, C).mean(axis=(1, 3)) >= 0.5
+        ys, xs = ty * T // C, tx * T // C
+        hh, ww = min(m.shape[0], H - ys), min(m.shape[1], W - xs)
+        if hh > 0 and ww > 0:
+            out[ys:ys + hh, xs:xs + ww] = m[:hh, :ww]
+    k1, k2 = max(1, round(4 / C)), max(1, round(8 / C))      # about 1 m and 2 m
+    m = cv2.morphologyEx(out.astype(np.uint8), cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k1 + 1,) * 2))
+    m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k2 + 1,) * 2))
     _, lab, st, _ = cv2.connectedComponentsWithStats(m, connectivity=8)
-    keep = st[:, cv2.CC_STAT_AREA] >= max(4, int((12 / S) ** 2))
+    keep = st[:, cv2.CC_STAT_AREA] >= int((12 / C) ** 2)
     keep[0] = False
     return keep[lab]
+
+
+def canopy_layer(tiles, data, ground_px, lines, box, S, H, W):
+    """The B layer: soft coverage (0..255) of tree crowns in front of the lanes, on the output grid."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from build_drivable import VALUES, lane_band, load_grid
+    grid, idx = load_grid(data)
+    assert idx["cell"] == CANOPY_CELL, "the canopy uses the drivable map's grid"
+    C = CANOPY_CELL
+    crown = crowns(tiles, grid.shape)
+    # on visible ground only (the 3D model has no trees: a crown over a wall or roof is painted on the building)
+    crown &= ground_px
+    lanes = (grid == VALUES["road"]) | (grid == VALUES["deck"]) | lane_band(lines, grid.shape)
+    hit = crown & lanes
+    up = int(math.ceil(BAND_UP_M * PX_PER_M_UP / C))
+    for _ in range(up):
+        hit[:-1] |= hit[1:] & crown[:-1]                             # up the screen through the crown above
+    soft = cv2.GaussianBlur(hit.astype(np.float32), (0, 0), CANOPY_FEATHER_M / MPP / C / 2)
+    soft = np.maximum(soft * 2 - 0.5, 0).clip(0, 1) * hit.astype(np.float32) + soft * (1 - hit) * 0.6
+    # onto the output grid (S map px per output px)
+    x0, y0 = box[0] // C, box[1] // C
+    k = S // C
+    blk = soft[y0:y0 + H * k, x0:x0 + W * k]
+    hh, ww = blk.shape[0] // k, blk.shape[1] // k
+    out = np.zeros((H, W), np.float32)
+    out[:hh, :ww] = blk[:hh * k, :ww * k].reshape(hh, k, ww, k).mean(axis=(1, 3))
+    print(f"canopy: crowns {crown.mean():.1%} of the map, over the lanes {hit.mean():.2%}", flush=True)
+    return np.round(out * 255).astype(np.uint8)
+
+
+def kinds_ground(work, shape, C):
+    """Visible ground (kinds pass) per C-map-px cell over the whole map."""
+    H, W = shape
+    mos = json.loads((work / "mosaic.json").read_text())
+    F = mos["frame"]
+    n = F // C
+    out = np.zeros((H, W), bool)
+    for r in range(mos["rows"]):
+        for c in range(mos["cols"]):
+            k = np.asarray(Image.open(work / "frames_kind" / f"{c}_{r}.png").convert("L"))
+            g = (k > 200).reshape(n, C, n, C).mean(axis=(1, 3)) >= 0.5
+            ys, xs = r * n, c * n
+            hh, ww = min(n, H - ys), min(n, W - xs)
+            if hh > 0 and ww > 0:
+                out[ys:ys + hh, xs:xs + ww] = g[:hh, :ww]
+    return out
 
 
 def main():
@@ -329,10 +411,10 @@ def main():
                     "tiles/meta.json")
     ap.add_argument("--raw", type=Path, default=RAW, help="data/raw with osm/lines.json")
     ap.add_argument("--out", type=Path, default=ROOT / "web/public/data")
-    ap.add_argument("--scale", type=int, default=2, help="map px per output px")
+    ap.add_argument("--scale", type=int, default=4, help="map px per output px (even)")
     ap.add_argument("--bbox", type=int, nargs=4, help="map px box x0 y0 x1 y1 (default: the painted areas)")
-    ap.add_argument("--art", type=Path, help="painted art for the canopy (default work/city/b00/canvas_day_s8.png)")
-    ap.add_argument("--art-box", type=int, nargs=4, default=[5500, 3700, 11500, 9700])
+    ap.add_argument("--tiles", type=Path, default=ROOT / "web/public/tiles/map_files/15",
+                    help="the painted summer day art, deepest tile level (for the canopy)")
     ap.add_argument("--debug", type=Path, help="write debug overlays of the painted art, NAME.jpg, NAME_1.jpg, ...")
     ap.add_argument("--debug-box", type=int, nargs="+", default=[5600, 5000, 8400, 7100],
                     help="map px boxes for --debug, four numbers each")
@@ -347,6 +429,9 @@ def main():
         ps = meta["painted"]
         box = [min(p["x0"] for p in ps), min(p["y0"] for p in ps),
                max(p["x0"] + p["w"] for p in ps), max(p["y0"] + p["h"] for p in ps)]
+    mj = json.loads((a.work / "mosaic.json").read_text())   # never past the map's own edges
+    box = [max(0, box[0]) // S * S, max(0, box[1]) // S * S, min(mj["cols"] * mj["frame"], box[2]),
+           min(mj["rows"] * mj["frame"], box[3])]
     box[2] = box[0] + (box[2] - box[0]) // S * S
     box[3] = box[1] + (box[3] - box[1]) // S * S
     W, H = (box[2] - box[0]) // S, (box[3] - box[1]) // S
@@ -397,24 +482,14 @@ def main():
     Rch[Rch < 3] = 0                                                  # under 0.3 m is the road itself
     print("ground layer done", flush=True)
 
-    # 4. canopy from the painted art
-    art = a.art or (a.work / "city" / "b00" / "canvas_day_s8.png")
-    ab = a.art_box
-    ib = [max(box[0], ab[0]), max(box[1], ab[1]), min(box[2], ab[2]), min(box[3], ab[3])]
-    canopy = np.zeros((H, W), bool)
-    if art.exists() and ib[2] > ib[0] and ib[3] > ib[1]:
-        ox, oy = (ib[0] - box[0]) // S, (ib[1] - box[1]) // S
-        cw, chh = (ib[2] - ib[0]) // S, (ib[3] - ib[1]) // S
-        canopy[oy:oy + chh, ox:ox + cw] = canopy_mask(art, ab, ib, S, chh, cw)
-    # A crown counts only where it reaches down over the road itself (a tree in front of the road, or one
-    # overhanging it). Crowns that show above the road on screen but stop short of it stand behind the road
-    # and must not cut the tops off vehicles passing in front of them.
-    hit = canopy & road
-    up = int(math.ceil(BAND_UP_M * PX_PER_M_UP / S))
-    for i in range(1, up + 1):
-        hit[:-i] |= hit[i:] & canopy[:-i]
-    canopy = hit & band
-    Rch = np.where(canopy, np.maximum(Rch, CANOPY_DM), Rch).astype(np.uint8)
+    # 4. canopy from the painted art, soft, in its own channel. A crown counts only where it reaches down over the
+    # lanes (a tree in front of the road, or one overhanging it): crowns that show above the road on screen but stop
+    # short of it stand behind the road and must not hide vehicles passing in front of them.
+    del mos
+    gpx = kinds_ground(a.work, (m["rows"] * m["frame"] // CANOPY_CELL, m["cols"] * m["frame"] // CANOPY_CELL), CANOPY_CELL)
+    Bch = canopy_layer(a.tiles, a.data / "data", gpx, lines, box, S, H, W)
+    del gpx
+    canopy = Bch > 127
 
     # 5. deck layer: surface above the smoothed deck height, near bridges
     zd = deck_band(prof, box, S, H, W)
@@ -424,30 +499,34 @@ def main():
     Gch = np.where(np.isfinite(dz) & ~empty & ~ground, np.clip(np.round(dz * 10), 0, 255), 0).astype(np.uint8)
     Gch[Gch < 3] = 0
 
-    rgb = np.dstack((Rch, Gch, np.zeros_like(Rch)))
+    rgb = np.dstack((Rch, Gch, Bch))
     Image.fromarray(rgb).save(a.out / "occluders.png", optimize=True, compress_level=9)
     (a.out / "occluders.json").write_text(json.dumps({"x0": box[0], "y0": box[1], "scale": S, "w": W, "h": H,
                                                       "unit": 0.1}))
     print("occluders.png", W, H, (a.out / "occluders.png").stat().st_size // 1024, "KB;",
           "road_heights.json", (a.out / "road_heights.json").stat().st_size // 1024, "KB;",
-          f"canopy {canopy.mean():.1%}, ground>1.6 m {(Rch > 16).mean():.1%}, deck>0 {(Gch > 0).mean():.2%}",
+          f"canopy {(Bch > 0).mean():.1%}, ground>1.6 m {(Rch > 16).mean():.1%}, deck>0 {(Gch > 0).mean():.2%}",
           flush=True)
 
     if a.debug:
         for i in range(0, len(a.debug_box) - 3, 4):
             dest = a.debug if i == 0 else a.debug.with_name(f"{a.debug.stem}_{i // 4}{a.debug.suffix}")
-            debug_image(dest, a.debug_box[i:i + 4], box, S, Rch, Gch, canopy, art, ab, prof)
+            debug_image(dest, a.debug_box[i:i + 4], box, S, Rch, Gch, canopy, a.tiles, prof)
 
 
-def debug_image(dest, dbox, box, S, Rch, Gch, canopy, art, ab, prof):
+def debug_image(dest, dbox, box, S, Rch, Gch, canopy, tiles, prof):
     """Painted art with the layers tinted: red = in front of even a 4.5 m train, orange = in front of a 1.6 m
-    car only, magenta = canopy, blue = deck layer over 2 m, cyan lines = smoothed deck lines."""
-    img = Image.open(art).convert("RGB")
-    k = img.width / (ab[2] - ab[0])
+    car only, magenta = canopy (more than half hidden), blue = deck layer over 2 m, cyan lines = smoothed deck
+    lines."""
+    img = Image.new("RGB", (dbox[2] - dbox[0], dbox[3] - dbox[1]))
+    for ty in range(dbox[1] // 512, (dbox[3] - 1) // 512 + 1):
+        for tx in range(dbox[0] // 512, (dbox[2] - 1) // 512 + 1):
+            t = art_tile(tiles, tx, ty)
+            if t is not None:
+                img.paste(Image.fromarray(t), (tx * 512 - dbox[0], ty * 512 - dbox[1]))
     w, h = (dbox[2] - dbox[0]) // S, (dbox[3] - dbox[1]) // S
     up = max(1, 1400 // w)                               # small boxes are shown enlarged
-    c = img.crop((int((dbox[0] - ab[0]) * k), int((dbox[1] - ab[1]) * k), int((dbox[2] - ab[0]) * k),
-                  int((dbox[3] - ab[1]) * k))).resize((w * up, h * up), Image.LANCZOS)
+    c = img.resize((w * up, h * up), Image.LANCZOS)
     a = np.asarray(c).astype(np.float32)
     ox, oy = (dbox[0] - box[0]) // S, (dbox[1] - box[1]) // S
     sl = (slice(oy, oy + h), slice(ox, ox + w))

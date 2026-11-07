@@ -16,7 +16,11 @@
 export interface RoadLine { id: number; k?: string; o?: boolean; b?: boolean; t?: boolean; l?: string | number | null;
   /** Access flags from OSM (pipeline/project_lines.py): 1 cars, 2 buses, 4 cars to a destination only, 8 emergency
    * vehicles on a call, 16 buses also against the one-way direction. Missing: derived from the kind. */
-  a?: number; p: number[] }
+  a?: number;
+  /** Carriageway width in metres, and where the painted road's centre lies across the line (metres to the right of
+   * the drawn direction), both measured on the drivable map (pipeline/build_drivable.py). */
+  w?: number; c?: number;
+  p: number[] }
 /** A rectangle in map pixels. */
 export interface Rect { x0: number; y0: number; x1: number; y1: number }
 export type VehicleType = "car" | "van" | "bus" | "police" | "ambulance" | "fire";
@@ -104,6 +108,8 @@ interface Edge {
   allowed: boolean; active: boolean; stamp: number; lanes: Lane[];
   /** Access flags (A_*). */
   acc: number;
+  /** Carriageway width (m, 0 when unknown) and the painted road's centre, m to the right of the drawn direction. */
+  wid: number; shift: number;
 }
 interface Path { x: Float64Array; y: Float64Array; cum: Float64Array; len: number }
 interface Lane extends Path {
@@ -199,6 +205,31 @@ function headingNear(p: Path, atEnd: boolean): number {
   return Math.atan2(q.y - o.y, q.x - o.x);
 }
 
+/**
+ * Lane centre, metres to the right of the drawn line (in the lane's own direction of travel). Without a measured
+ * width: two-way lanes 1.6 m apart from the line per lane, one-way lanes centred (nudged right on two-lane
+ * carriageways) as before. With the street's width w: two-way lanes spread over their half (one lane each way at
+ * w / 4); on a two-way street narrower than 5 m drivers keep to the middle: each way 0.4 m right of it where the
+ * street is narrower than 3.6 m, else just far enough over (0.95 m) for two cars to pass without overlapping;
+ * no lane centre closer than 1.1 m to the edge; one-way lanes centred, at most w / lanes wide. Then everything moves
+ * across to the painted road's centre.
+ */
+function laneOffset(e: { oneway: boolean; perDir: number; wid: number; shift: number }, idx: number, fwd: boolean,
+  contra: boolean, f0: number): number {
+  const w = e.wid;
+  if (!w) return contra ? LANE_W - f0 : e.oneway ? f0 + idx * LANE_W : (idx + 0.5) * LANE_W;
+  const edge = Math.max(0.4, w / 2 - 1.1);
+  let off: number;
+  if (contra) off = Math.min(LANE_W - f0, edge);
+  else if (!e.oneway) off = w < 5 ? (w < 3.6 ? 0.4 : 0.95) : Math.min(Math.max((idx + 0.5) * (w / 2) / e.perDir, 0.4), edge);
+  else {
+    const lw = Math.min(LANE_W, w / e.perDir), back = f0 - (-(e.perDir - 1) / 2 * LANE_W + (e.perDir > 1 ? 0.8 : 0));
+    off = -(e.perDir - 1) / 2 * lw + idx * lw + back;
+    off = Math.max(-edge, Math.min(edge, off));
+  }
+  return off + (fwd ? e.shift : -e.shift);
+}
+
 /** Polyline moved sideways by off (positive = right of travel, y down). */
 function offsetLine(x: Float64Array, y: Float64Array, off: number): [Float64Array, Float64Array] {
   const n = x.length, ox = new Float64Array(n), oy = new Float64Array(n);
@@ -244,7 +275,9 @@ export class Traffic {
   readonly maxCars: number;
   /** Counters since construction. */
   readonly stats = { alive: 0, spawned: 0, left: 0, deadlocks: 0, parked: 0, emergency: 0, calls: 0, callsEnded: 0,
-    redCrossed: 0, overtakes: 0 };
+    redCrossed: 0, overtakes: 0,
+    /** Set by the viewer: cars near the view it is fading out (drawn on water, in a building, ...). Near zero. */
+    guarded: 0 };
   private readonly emergencyOn: boolean;
   /** Emergency vehicles alive with the siren on. */
   private sirens: Car[] = [];
@@ -381,7 +414,7 @@ export class Traffic {
         const e: Edge = { id: this.edges.length, kind, oneway, bridge: !!w.b, tunnel: !!w.t, perDir,
           a: ids[0], b: ids[ids.length - 1], px, py, len, bx0, by0, bx1, by1,
           allowed: inArea((px[0] + px[px.length - 1] + px[mid]) / 3, (py[0] + py[py.length - 1] + py[mid]) / 3, 0),
-          active: false, stamp: 0, lanes: [], acc: accOf(w) };
+          active: false, stamp: 0, lanes: [], acc: accOf(w), wid: w.w ?? 0, shift: w.c ?? 0 };
         // Pedestrian streets and bus-only roads never take private cars, whatever the tags.
         if (!DRIVE.has(kind)) e.acc &= ~(A_CAR | A_DEST);
         if (!this.emergencyOn && !(e.acc & (A_CAR | A_BUS))) continue;
@@ -449,7 +482,7 @@ export class Traffic {
         for (let idx = 0; idx < (contra ? 1 : e.perDir); idx++) {
           // Two-way: lanes to the right of the centreline. One-way: centred on it, nudged right on two-lane
           // carriageways, whose drawn lines tend to sit closer together than the real ones.
-          const off = contra ? LANE_W - f0 : e.oneway ? f0 + idx * LANE_W : (idx + 0.5) * LANE_W;
+          const off = laneOffset(e, idx, fwd, contra, f0);
           const [ox, oy] = offsetLine(fwd ? x : rx, fwd ? y : ry, off);
           const c0 = cumulative(ox, oy), L = c0[c0.length - 1];
           const nFrom = fwd ? e.a : e.b, nTo = fwd ? e.b : e.a;

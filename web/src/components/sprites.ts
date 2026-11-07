@@ -187,9 +187,10 @@ export function drawLamps(g: CanvasRenderingContext2D, s: Sprites, type: string,
   const x0 = x - t.anchor[0] * k, y0 = y - t.anchor[1] * k;
   const prevOp = g.globalCompositeOperation, prevA = g.globalAlpha;
   g.globalCompositeOperation = "lighter";
+  // strengths multiply the alpha the vehicle itself is drawn with (a vehicle fading out takes its lights along)
   const sheet = (c: HTMLCanvasElement, a: number) => {
     if (a <= 0.01) return;
-    g.globalAlpha = Math.min(1, a);
+    g.globalAlpha = Math.min(1, a) * prevA;
     g.drawImage(c, cx, cy, w, h, x0, y0, w * k, h * k);
   };
   if (k >= DOTS_BELOW) {
@@ -207,7 +208,7 @@ export function drawLamps(g: CanvasRenderingContext2D, s: Sprites, type: string,
         const gr = g.createRadialGradient(px, py, 0, px, py, r);
         gr.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${Math.min(1, a)})`);
         gr.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
-        g.globalAlpha = 1;
+        g.globalAlpha = prevA;
         g.fillStyle = gr;
         g.fillRect(px - r, py - r, 2 * r, 2 * r);
       }
