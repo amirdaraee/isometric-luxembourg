@@ -14,6 +14,7 @@
   {"name": "a-quay-grund", "hash": "8694,6852,1.0", "query": "hour=13&on=traffic&seed=42", "waitMs": 6000, "size": [1280, 800]},
   {"name": "a-quay-pfaffenthal", "hash": "9773,5948,1.0", "query": "hour=13&on=traffic&seed=42", "waitMs": 6000, "size": [1280, 800]},
   {"name": "a-rail-clausen-viaduct", "hash": "9999,7060,0.8", "query": "hour=8.2&on=transit", "waitMs": 6000, "size": [1280, 800]},
+  {"name": "a-rail-gare-station", "hash": "5000,8250,1.0", "query": "hour=8.2&on=transit", "waitMs": 6000, "size": [1280, 800]},
   {"name": "a-rail-gare-throat", "hash": "4950,6904,1.0", "query": "hour=8.2&on=transit", "waitMs": 6000, "size": [1280, 800]},
   {"name": "a-rail-hamm-viaduct", "hash": "15445,11122,0.8", "query": "hour=8.2&on=transit", "waitMs": 6000, "size": [1280, 800]},
   {"name": "a-rail-pafendall-viaduct", "hash": "10116,6588,0.8", "query": "hour=8.2&on=transit", "waitMs": 6000, "size": [1280, 800]},
