@@ -17,6 +17,8 @@ export const DEFAULTS = {
   snow: true,
   /** Cars on the streets. */
   traffic: true,
+  /** Tiny traffic lights at signalised junctions when zoomed in (needs traffic). */
+  signals: true,
   /** Trams and trains on today's timetable (GTFS). */
   transit: true,
   /** Light glinting on the rivers and ponds (animated, drawn over the painted water). */

@@ -3,6 +3,10 @@ import { asset } from "../config";
 import { on } from "../features";
 import type { MapHandle, MapMeta } from "./IsometricMap";
 import { drawTransit, luxSeconds, prepareShapes, type TransitData } from "./Transit";
+import { drawVehicle, loadSprites, type Sprites } from "./sprites";
+import { loadOcclusion, type Occlusion } from "./occlusion";
+import { waterPoints } from "./Water";
+import { Traffic, type DrawableCar } from "../sim/traffic";
 
 // Projected OSM lines (web/public/data/lines.json, from pipeline/project_lines.py), in map image pixels.
 interface Line { id: number; n?: string; k?: string; b?: boolean; t?: boolean; o?: boolean; p: number[] }
@@ -22,15 +26,55 @@ interface Props {
 }
 
 const MPP = 0.25; // metres per image pixel
-const DRIVE = new Set(["motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "residential",
-  "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link", "living_street"]);
-const SPEED_KMH: Record<string, number> = { motorway: 90, trunk: 70, primary: 50, secondary: 50, tertiary: 40,
-  residential: 30, living_street: 15, unclassified: 40 };
 const ROAD_STYLE: Record<string, [string, number]> = {
   motorway: ["#ff6b35", 3], trunk: ["#ff8c42", 3], primary: ["#ffb347", 2.6], secondary: ["#ffd166", 2.2],
   tertiary: ["#fff3b0", 1.8], residential: ["#ffffff", 1.4], unclassified: ["#ffffff", 1.4], living_street: ["#e0f2fe", 1.2],
 };
 const CAR_COLOURS = ["#c0392b", "#2c3e50", "#ecf0f1", "#7f8c8d", "#2980b9", "#f1c40f", "#16a085", "#34495e", "#d35400", "#bdc3c7"];
+const BUS_COLOUR = "#d62839";
+const SIGNAL_COLOURS = { green: "#3ddc6f", amber: "#ffb020", red: "#ff3b30" };
+
+/**
+ * Placeholder drawing of one vehicle (until the sprites arrive, and as their fallback): a shaded rectangle, with
+ * head and tail lights. sx, sy: screen px; z: zoom (screen px per map px).
+ */
+function drawCarRect(g: CanvasRenderingContext2D, c: DrawableCar, sx: number, sy: number, z: number, night: number) {
+  const L = c.length * z, Wd = Math.max(c.width * z, 1.2);
+  g.save(); g.translate(sx, sy); g.rotate(c.headingScreenRad);
+  g.fillStyle = "rgba(0,0,0,.28)"; g.fillRect(-L / 2 + 1, -Wd / 2 + 1.5, L, Wd);
+  g.fillStyle = c.type === "bus" ? BUS_COLOUR : CAR_COLOURS[c.variant % CAR_COLOURS.length]; g.fillRect(-L / 2, -Wd / 2, L, Wd);
+  if (L > 8) { g.fillStyle = "rgba(255,255,255,.45)"; g.fillRect(-L * 0.12, -Wd / 2 + 1, L * 0.3, Wd - 2); }
+  drawCarLights(g, c, L, Wd, night);
+  g.restore();
+}
+
+/** How much a length along the ground shrinks on screen when it points along screen heading h (isometric view:
+ *  full length left-right, half length up-down). */
+function screenShrink(h: number): number {
+  const c = Math.cos(h), sn = Math.sin(h);
+  return 1 / Math.sqrt(c * c + 4 * sn * sn);
+}
+
+/** Headlight beam ahead and tail lights behind, in the car's own frame; brake lights brighter when braking. */
+function drawCarLights(g: CanvasRenderingContext2D, c: DrawableCar, L: number, Wd: number, night: number) {
+  if (night > 0.05) {
+    g.globalAlpha = night;
+    const grd = g.createLinearGradient(L / 2, 0, L / 2 + L * 2.2, 0);
+    grd.addColorStop(0, "rgba(255,236,190,.55)"); grd.addColorStop(1, "rgba(255,236,190,0)");
+    g.fillStyle = grd;
+    g.beginPath(); g.moveTo(L / 2, -Wd / 2); g.lineTo(L / 2 + L * 2.2, -Wd * 1.3); g.lineTo(L / 2 + L * 2.2, Wd * 1.3); g.lineTo(L / 2, Wd / 2); g.fill();
+    g.globalAlpha = 1;
+  }
+  // Tail lights: on at night; brighter brake lights whenever the car brakes or stands (by day only close up).
+  const a = c.braking ? Math.max(night, L > 6 ? 0.9 : 0) : night * 0.7;
+  if (a > 0.05) {
+    g.globalAlpha = a;
+    g.fillStyle = c.braking ? "#ff1a10" : "#c8241c";
+    const tw = c.braking ? 2.4 : 2;
+    g.fillRect(-L / 2 - 1, -Wd / 2, tw, Wd * 0.3); g.fillRect(-L / 2 - 1, Wd / 2 - Wd * 0.3, tw, Wd * 0.3);
+    g.globalAlpha = 1;
+  }
+}
 
 function prepare(l: Line): Prepared {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
@@ -52,7 +96,6 @@ function at(r: Prepared, s: number): [number, number, number] {
   return [r.p[a] + dx * f, r.p[a + 1] + dy * f, Math.atan2(dy, dx)];
 }
 
-interface Car { road: Prepared; s: number; dir: 1 | -1; speed: number; colour: string; len: number; v?: number }
 /** A flock: centre in map px, heading, speed (map px/s), birds as offsets from the centre with a flap phase. */
 interface Flock { x: number; y: number; h: number; v: number; turn: number; birds: { dx: number; dy: number; ph: number }[] }
 
@@ -65,37 +108,20 @@ function newFlock(spawn: Glint[], rnd: () => number): Flock {
 /** A point of light on the water: map px, a phase for its twinkle, a length. */
 interface Glint { x: number; y: number; ph: number; len: number }
 
-// Scatter glints over the water polygons, about one per 22 x 22 map px, in a fixed (seeded) pattern. Scanlines
-// rather than random tries, because a river is one long thin polygon whose bounding box covers the whole city.
-function scatterGlints(water: Prepared[]): Glint[] {
-  let seed = 1867;
-  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  const out: Glint[] = [];
-  const STEP = 22;
-  for (const w of water) {
-    const p = w.p;
-    for (let y = Math.ceil(w.box[1] / STEP) * STEP; y <= w.box[3]; y += STEP) {
-      const xs: number[] = [];
-      for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
-        const yi = p[i + 1], yj = p[j + 1];
-        if ((yi > y) !== (yj > y)) xs.push(p[i] + ((y - yi) * (p[j] - p[i])) / (yj - yi));
-      }
-      xs.sort((m, n) => m - n);
-      for (let k = 0; k + 1 < xs.length; k += 2) {
-        for (let x = xs[k] + rnd() * STEP; x < xs[k + 1]; x += STEP) {
-          out.push({ x, y: y + (rnd() - 0.5) * STEP * 0.8, ph: rnd(), len: 5 + rnd() * 8 });
-        }
-      }
-    }
-  }
-  return out;
-}
 
 export function Overlay({ map, meta, streets, traffic, night, hour, season }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  // Vehicles: 32-heading sprites, the foreground that hides them, and their own layer (cut, then copied over).
+  const sprites = useRef<Sprites | null>(null);
+  const occl = useRef<Occlusion | null>(null);
+  const vlayer = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (!on("traffic") && !on("transit")) return;
+    loadSprites().then((x) => { sprites.current = x; }).catch(() => {});
+    loadOcclusion().then((x) => { occl.current = x; }).catch(() => {});
+  }, []);
   const state = useRef<{ lines?: Lines; roads?: Prepared[]; named?: Prepared[]; rail?: Prepared[]; water?: Prepared[];
-    waterways?: Prepared[]; glints?: Glint[]; flocks?: Flock[]; cars?: Car[]; ends?: Map<string, { road: Prepared; atStart: boolean }[]>;
-    signals?: Map<string, number> }>({});
+    waterways?: Prepared[]; flocks?: Flock[]; sim?: Traffic }>({});
   const flags = useRef({ streets, traffic, night, hour, season });
   flags.current = { streets, traffic, night, hour, season };
 
@@ -127,50 +153,19 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       st.named = st.roads.filter((r) => r.n && r.k !== "footway" && r.k !== "path" && r.k !== "steps" && r.len > 120);
       st.rail = L.rail.filter((r) => !r.t).map(prepare);
       st.water = L.water.map(prepare);
-      st.glints = scatterGlints(st.water);
-      // Birds start over the rivers (the valleys) inside the painted area.
+      // Birds start over the rivers (the painted water mask) inside the painted area.
       const areas0 = meta.painted ?? [];
-      const spawn = st.glints.filter((g) => areas0.some((a) => g.x > a.x0 && g.x < a.x0 + a.w && g.y > a.y0 && g.y < a.y0 + a.h));
       let bseed = 7;
       const brnd = () => ((bseed = (bseed * 48271) % 2147483647) / 2147483647);
-      st.flocks = spawn.length ? Array.from({ length: 14 }, () => newFlock(spawn, brnd)) : [];
-      (st as { spawn?: Glint[] }).spawn = spawn;
+      waterPoints().then((pts) => {
+        const spawn = pts.filter((g) => areas0.some((a) => g.x > a.x0 && g.x < a.x0 + a.w && g.y > a.y0 && g.y < a.y0 + a.h))
+          .map((g) => ({ x: g.x, y: g.y, ph: 0, len: 0 }));
+        st.flocks = spawn.length ? Array.from({ length: 14 }, () => newFlock(spawn, brnd)) : [];
+        (st as { spawn?: Glint[] }).spawn = spawn;
+      }).catch(() => { st.flocks = []; });
       st.waterways = L.waterways.filter((r) => !r.t).map(prepare);
-      // Traffic only where the map is painted, on roads cars use.
-      const areas = meta.painted ?? [];
-      const inPainted = (r: Prepared) => areas.some((a) => r.box[0] >= a.x0 && r.box[2] <= a.x0 + a.w && r.box[1] >= a.y0 && r.box[3] <= a.y0 + a.h);
-      const drive = st.roads.filter((r) => DRIVE.has(r.k ?? "") && inPainted(r) && r.len > 8);
-      const key = (x: number, y: number) => `${Math.round(x / 3)},${Math.round(y / 3)}`;
-      const ends = new Map<string, { road: Prepared; atStart: boolean }[]>();
-      for (const r of drive) {
-        for (const [x, y, atStart] of [[r.p[0], r.p[1], true], [r.p[r.p.length - 2], r.p[r.p.length - 1], false]] as const) {
-          const k = key(x, y);
-          (ends.get(k) ?? ends.set(k, []).get(k)!).push({ road: r, atStart });
-        }
-      }
-      st.ends = ends;
-      // Traffic lights where at least three roads meet and two of them are major; each with its own cycle offset.
-      const MAJOR = new Set(["trunk", "primary", "secondary", "tertiary", "trunk_link", "primary_link"]);
-      const signals = new Map<string, number>();
-      let k = 0;
-      for (const [key, list] of ends) {
-        if (list.length >= 3 && list.filter((e) => MAJOR.has(e.road.k ?? "")).length >= 2) signals.set(key, (k++ * 23.7) % 70);
-      }
-      st.signals = signals;
-      // More cars on bigger roads.
-      const weight = (r: Prepared) => r.len * ({ motorway: 3, trunk: 3, primary: 2.5, secondary: 2, tertiary: 1.5 }[r.k ?? ""] ?? 0.7);
-      const total = drive.reduce((a, r) => a + weight(r), 0);
-      const n = Math.min(900, Math.round(total / 260));
-      const cars: Car[] = [];
-      for (let i = 0; i < n && drive.length; i++) {
-        let t = Math.random() * total, road = drive[0];
-        for (const r of drive) { t -= weight(r); if (t <= 0) { road = r; break; } }
-        const dir: 1 | -1 = road.o || Math.random() < 0.5 ? 1 : -1;
-        cars.push({ road, s: Math.random() * road.len, dir, speed: 0, colour: CAR_COLOURS[i % CAR_COLOURS.length],
-          len: (Math.random() < 0.08 ? 10 : 4.4) / MPP });
-      }
-      for (const c of cars) c.speed = (((SPEED_KMH[c.road.k ?? ""] ?? 30) / 3.6) / MPP) * (0.75 + Math.random() * 0.4);
-      st.cars = cars;
+      // Traffic only where the map is painted (src/sim/traffic.ts: road graph, junctions, signals, car following).
+      if (meta.painted?.length) st.sim = new Traffic(L.roads, { areas: meta.painted, mpp: MPP });
     });
   }, [meta]);
 
@@ -192,9 +187,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       g.clearRect(0, 0, W, H);
       const { streets, traffic, night, hour, season } = flags.current;
       const winter = season === "winter" && on("snow");
-      const glints = on("water") && st.glints && v.z >= 0.12;
       const birds = on("birds") && st.flocks?.length && night < 0.6 && v.z >= 0.1;
-      if (!streets && !traffic && !winter && !glints && !birds) return;
+      if (!streets && !traffic && !winter && !birds) return;
       // image px -> screen px
       const z = v.z, ox = W / 2 - v.x * z, oy = H / 2 - v.y * z;
       const vis = (b: number[]) => b[2] * z + ox > -50 && b[0] * z + ox < W + 50 && b[3] * z + oy > -50 && b[1] * z + oy < H + 50;
@@ -244,30 +238,6 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
             g.fillStyle = "#fff"; g.fillText(r.n!, 0, 0);
             g.restore();
           }
-        }
-      }
-
-      if (glints) {
-        // Light on the water: short horizontal glints that twinkle in steps (6 per second), like ripples catching
-        // the sun; warm reflections at night. Only where the water is really visible from above.
-        const V = vis_.current;
-        const t = Math.floor(now / 1000 * 6) / 6;
-        const col = night > 0.5 ? "255,206,130" : "255,255,255";
-        const peak = night > 0.5 ? 0.7 : 0.95;
-        const wpx = Math.max(1.2, z * 1.8);
-        for (const gl of st.glints!) {
-          const sx = gl.x * z + ox, sy = gl.y * z + oy;
-          if (sx < -10 || sx > W + 10 || sy < -10 || sy > H + 10) continue;
-          if (V) {
-            const vx = gl.x >> 3, vy = gl.y >> 3;
-            if (!(vx >= 0 && vy >= 0 && vx < V.w && vy < V.h && V.d[vy * V.w + vx] === 255)) continue;
-          }
-          const s = Math.sin(t * 1.7 + gl.ph * 6.283);
-          if (s < 0.35) continue;
-          const a = ((s - 0.35) / 0.65) ** 1.5 * peak;
-          const L = Math.max(2, gl.len * z);
-          g.fillStyle = `rgba(${col},${a.toFixed(3)})`;
-          g.fillRect(sx - L / 2, sy, L, wpx);
         }
       }
 
@@ -322,101 +292,65 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         drawTransit(g, transit.current.d, transit.current.shapes, hour === null ? luxSeconds() : hour * 3600, z, ox, oy, W, H, visible, night);
       }
 
-      if (traffic && on("traffic") && st.cars && z >= 0.08) {
-        const lane = 1.6 / MPP; // drive on the right, 1.6 m off the centreline
+      if (traffic && on("traffic") && st.sim && z >= 0.08) {
         // fewer cars late at night and at dawn, rush hours busiest
         const hr = hour === null ? luxSeconds() / 3600 : hour;
         const busy = hr < 5 ? 0.12 : hr < 6.5 ? 0.35 : hr < 9.5 ? 1 : hr < 16 ? 0.75 : hr < 19 ? 1 : hr < 22 ? 0.5 : 0.25;
-        // Car following (Intelligent Driver Model) per lane, and two-phase traffic lights on a 70 s cycle
-        // (31 s green, 3 s amber, 1 s all red per direction).
-        const S0 = 2 / MPP, T = 1.2, A = 1.5 / MPP, B = 2 / MPP;
-        const tsec = now / 1000;
-        const endKey = (c: Car) => {
-          const x = c.dir > 0 ? c.road.p[c.road.p.length - 2] : c.road.p[0];
-          const y = c.dir > 0 ? c.road.p[c.road.p.length - 1] : c.road.p[1];
-          return `${Math.round(x / 3)},${Math.round(y / 3)}`;
+        // Only the streets near the view are simulated; cars come and go at the margins.
+        st.sim.step(dt, { x0: -ox / z, y0: -oy / z, x1: (W - ox) / z, y1: (H - oy) / z }, busy);
+        const V = vis_.current;
+        // Is the ground (or, for a bridge road, the deck) really visible from above here?
+        const seen = (x: number, y: number, bridge: boolean) => {
+          if (!V) return true;
+          const vx = x >> 3, vy = y >> 3;
+          const val = vx >= 0 && vy >= 0 && vx < V.w && vy < V.h ? V.d[vy * V.w + vx] : 0;
+          return val === 255 || (val === 128 && bridge);
         };
-        const mustStop = (c: Car) => {
-          const off = st.signals!.get(endKey(c));
-          if (off === undefined) return false;
-          const n = c.road.p.length;
-          const [ax, ay, bx, by] = c.dir > 0 ? [c.road.p[n - 4], c.road.p[n - 3], c.road.p[n - 2], c.road.p[n - 1]]
-            : [c.road.p[2], c.road.p[3], c.road.p[0], c.road.p[1]];
-          const group = Math.abs(bx - ax) >= Math.abs(by - ay) ? 0 : 1;
-          const ph = (tsec + off) % 70;
-          return group === 0 ? ph >= 31 : !(ph >= 35 && ph < 66);
-        };
-        const active: Car[] = [];
-        let idx = 0;
-        for (const c of st.cars) {
-          idx++;
-          if ((idx * 0.618) % 1 > busy) { c.s += c.speed * dt * c.dir; c.v = c.speed; } else active.push(c);
-        }
-        const lanes = new Map<string, Car[]>();
-        for (const c of active) {
-          const k = `${c.road.id}${c.dir}`;
-          (lanes.get(k) ?? lanes.set(k, []).get(k)!).push(c);
-        }
-        for (const L of lanes.values()) {
-          L.sort((a, b) => (a.s - b.s) * a.dir);
-          for (let i = 0; i < L.length; i++) {
-            const c = L[i], lead = L[i + 1];
-            let v = c.v ?? c.speed, gap = Infinity, dv = 0;
-            if (lead) { gap = Math.abs(lead.s - c.s) - lead.len; dv = v - (lead.v ?? lead.speed); }
-            const toEnd = c.dir > 0 ? c.road.len - c.s : c.s;
-            if (toEnd < 60 / MPP && mustStop(c) && toEnd - 1 / MPP < gap) { gap = toEnd - 1 / MPP; dv = v; }
-            const sStar = S0 + v * T + (v * dv) / (2 * Math.sqrt(A * B));
-            const acc = A * (1 - (v / c.speed) ** 4 - (gap < Infinity ? (Math.max(sStar, 0) / Math.max(gap, 0.5)) ** 2 : 0));
-            v = Math.min(Math.max(0, v + acc * dt), c.speed * 1.1);
-            c.v = v;
-            c.s += v * dt * c.dir;
+        const spr = sprites.current, occ = occl.current;
+        const vl = vlayer.current ?? (vlayer.current = document.createElement("canvas"));
+        if (vl.width !== cv.width || vl.height !== cv.height) { vl.width = cv.width; vl.height = cv.height; }
+        const vg = vl.getContext("2d")!;
+        vg.setTransform(dpr, 0, 0, dpr, 0, 0);
+        vg.clearRect(0, 0, W, H);
+        // Three passes, shortest vehicles first, each followed by its cut: cars and vans (1.6 m), buses (3.2 m),
+        // then everything on a bridge deck, lifted onto the modelled deck and cut against the deck layer.
+        const passes: [DrawableCar, number, number][][] = [[], [], []];
+        for (const c of st.sim.cars()) {
+          // Hidden in a tunnel, behind a building, or (for ground roads) under a bridge: don't draw.
+          if (c.tunnel) continue;
+          let sx = c.x * z + ox, sy = c.y * z + oy;
+          if (sx < -30 || sx > W + 30 || sy < -30 || sy > H + 30 || !seen(c.x, c.y, c.bridge)) continue;
+          if (c.bridge && occ) {
+            const d = occ.deckAt(c.x, c.y);
+            if (d) { sy -= d.lift * z; passes[2].push([c, sx, sy]); continue; }
           }
+          passes[c.type === "bus" ? 1 : 0].push([c, sx, sy]);
         }
-        for (const c of st.cars) {
-          if (c.s > c.road.len || c.s < 0) {
-            // Continue onto a road that starts or ends here; otherwise turn around.
-            const endX = c.dir > 0 ? c.road.p[c.road.p.length - 2] : c.road.p[0];
-            const endY = c.dir > 0 ? c.road.p[c.road.p.length - 1] : c.road.p[1];
-            const opts = (st.ends!.get(`${Math.round(endX / 3)},${Math.round(endY / 3)}`) ?? [])
-              .filter((o) => o.road !== c.road && (o.atStart || !o.road.o));
-            if (opts.length) {
-              const o = opts[Math.floor(Math.random() * opts.length)];
-              c.road = o.road; c.dir = o.atStart ? 1 : -1; c.s = o.atStart ? 0 : o.road.len;
-              c.speed = (((SPEED_KMH[c.road.k ?? ""] ?? 30) / 3.6) / MPP) * (0.75 + Math.random() * 0.4);
-            } else if (!c.road.o) { c.dir = c.dir > 0 ? -1 : 1; c.s = Math.min(Math.max(c.s, 0), c.road.len); }
-            else c.s = 0;
+        const view = { z, ox, oy, w: W, h: H };
+        passes.forEach((list, i) => {
+          for (const [c, sx, sy] of list) {
+            if (spr) {
+              drawVehicle(vg, spr, c.type, c.variant, sx, sy, c.headingScreenRad, z);
+              const k = screenShrink(c.headingScreenRad);
+              vg.save(); vg.translate(sx, sy); vg.rotate(c.headingScreenRad);
+              drawCarLights(vg, c, c.length * z * k, Math.max(c.width * z * 0.7, 1.2), night);
+              vg.restore();
+            } else drawCarRect(vg, c, sx, sy, z, night);
           }
-        }
-        for (const c of active) {
-          if (!vis(c.road.box)) continue;
-          const [x, y, ang] = at(c.road, c.s);
-          // Hidden behind a building (or under a bridge, for ground roads): don't draw.
-          const V = vis_.current;
-          if (V) {
-            const vx = x >> 3, vy = y >> 3;
-            const val = vx >= 0 && vy >= 0 && vx < V.w && vy < V.h ? V.d[vy * V.w + vx] : 0;
-            if (!(val === 255 || (val === 128 && c.road.b))) continue;
+          if (occ && list.length) occ.cut(vg, view, i === 0 ? 1.6 : i === 1 ? 3.2 : 4.5, i === 2 ? "deck" : "ground");
+        });
+        g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(vl, 0, 0); g.restore();
+        // Small signal heads at the stop lines, when zoomed in.
+        if (on("signals") && z > 0.6) {
+          const r = Math.max(1.6, (0.45 / MPP) * z);
+          for (const sg of st.sim.signals()) {
+            if (!seen(sg.x, sg.y, false)) continue;
+            const sx = sg.x * z + ox, sy = sg.y * z + oy;
+            g.fillStyle = "rgba(20,22,28,.85)";
+            g.beginPath(); g.arc(sx, sy, r + 1.2, 0, Math.PI * 2); g.fill();
+            g.fillStyle = SIGNAL_COLOURS[sg.state];
+            g.beginPath(); g.arc(sx, sy, r, 0, Math.PI * 2); g.fill();
           }
-          const h = c.dir > 0 ? ang : ang + Math.PI;
-          const off = c.road.o ? 0 : lane;
-          const sx = (x - Math.sin(h) * off) * z + ox, sy = (y + Math.cos(h) * off) * z + oy; // right-hand side (y is down)
-          const L = c.len * z, Wd = Math.max(1.9 / MPP * z, 1.2);
-          g.save(); g.translate(sx, sy); g.rotate(h);
-          g.fillStyle = "rgba(0,0,0,.28)"; g.fillRect(-L / 2 + 1, -Wd / 2 + 1.5, L, Wd);
-          g.fillStyle = c.colour; g.fillRect(-L / 2, -Wd / 2, L, Wd);
-          if (L > 8) { g.fillStyle = "rgba(255,255,255,.45)"; g.fillRect(-L * 0.12, -Wd / 2 + 1, L * 0.3, Wd - 2); }
-          if (night > 0.05) {
-            // headlight beam ahead, red tail lights behind
-            g.globalAlpha = night;
-            const grd = g.createLinearGradient(L / 2, 0, L / 2 + L * 2.2, 0);
-            grd.addColorStop(0, "rgba(255,236,190,.55)"); grd.addColorStop(1, "rgba(255,236,190,0)");
-            g.fillStyle = grd;
-            g.beginPath(); g.moveTo(L / 2, -Wd / 2); g.lineTo(L / 2 + L * 2.2, -Wd * 1.3); g.lineTo(L / 2 + L * 2.2, Wd * 1.3); g.lineTo(L / 2, Wd / 2); g.fill();
-            g.fillStyle = "#ff2a20";
-            g.fillRect(-L / 2 - 1, -Wd / 2, 2, Wd * 0.3); g.fillRect(-L / 2 - 1, Wd / 2 - Wd * 0.3, 2, Wd * 0.3);
-            g.globalAlpha = 1;
-          }
-          g.restore();
         }
       }
     };
