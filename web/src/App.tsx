@@ -4,6 +4,7 @@ import { Pins, type Place } from "./components/Pins";
 import { Search } from "./components/Search";
 import { Overlay } from "./components/Overlay";
 import { Water } from "./components/Water";
+import { Clouds } from "./components/Clouds";
 import { LandmarkPanel, type Landmark } from "./components/LandmarkPanel";
 import { SceneControl } from "./components/SceneControl";
 import { Feedback, feedbackConfigured } from "./components/Feedback";
@@ -156,6 +157,7 @@ export default function App() {
       </div>
       {ready && on("water") && <Water map={map} night={sceneMix.night} />}
       {ready && <Overlay map={map} meta={meta} streets={streets} traffic={traffic} night={sceneMix.night} hour={live ? null : scene.hour} season={scene.season} />}
+      {ready && on("clouds") && <Clouds map={map} night={sceneMix.night} />}
       {(on("timeOfDay") || on("seasons") || on("christmas")) && <SceneControl scene={scene} live={live} sun={sun} onLive={() => setLive(true)}
         onChange={(c) => { setLive(false); setScene((s) => ({ ...s, ...c, ...(c.christmas ? { season: "winter" as const } : {}) })); }} />}
       {ready && on("pins") && <Pins places={places} view={view} map={map} active={active} onPick={pick} />}
