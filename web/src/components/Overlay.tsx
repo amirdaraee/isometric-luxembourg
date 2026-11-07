@@ -145,6 +145,10 @@ function drawSirenLights(g: CanvasRenderingContext2D, c: DrawableCar, sx: number
   g.restore();
 }
 
+/** ?siren=<street name> (for videos and checks): an emergency vehicle on a call on that street near the middle of the
+ * view, again whenever none is about (needs the emergency switch). */
+const SIREN_STREET = typeof location !== "undefined" ? new URLSearchParams(location.search).get("siren") : null;
+
 /** One thing to draw on the vehicle layer: a road vehicle or a tram or train section, at screen (sx, sy) (its ground
  * centre, lifted onto a deck where it is on one), with an opacity. */
 interface Item { car?: DrawableCar; sec?: Section; sx: number; sy: number; a: number }
@@ -258,6 +262,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
   const vlayer = useRef<HTMLCanvasElement | null>(null);
   // Tram and train sections at a tunnel portal, drawn here and clipped before they join the vehicle layer.
   const portalLayer = useRef<HTMLCanvasElement | null>(null);
+  // When the last ?siren= vehicle was put on its street.
+  const sirenAt = useRef(-1e9);
   const drivable = useRef<Drivable | null>(null);
   // Per car id: how visible it is (0..1, the guard's fade) and the frame it was last seen in.
   const fades = useRef(new Map<number, { a: number; stamp: number }>());
@@ -454,6 +460,11 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
           const busy = hr < 5 ? 0.12 : hr < 6.5 ? 0.35 : hr < 9.5 ? 1 : hr < 16 ? 0.75 : hr < 19 ? 1 : hr < 22 ? 0.5 : 0.25;
           // Only the streets near the view are simulated; cars come and go at the margins.
           sim.step(dt, { x0: -ox / z, y0: -oy / z, x1: (W - ox) / z, y1: (H - oy) / z }, busy);
+          if (SIREN_STREET && on("emergency") && now - sirenAt.current > 4000 && sim.emergencyAlive().siren === 0) {
+            sirenAt.current = now;
+            const kinds = ["ambulance", "police", "fire"] as const;
+            sim.spawnEmergency(kinds[Math.floor(now / 1000) % 3], true, SIREN_STREET);
+          }
           // The guard: where a car's drawn ground point is on water, inside a building, outside the painted art, or
           // behind a building that the occlusion cut does not hide it behind (it would show on the facade), the car
           // fades out over 0.3 s (and back in when it leaves). On a modelled deck it is fine. Without drivable data
