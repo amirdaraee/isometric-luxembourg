@@ -89,8 +89,12 @@ def paint(
     state_path: str | None = None,
     on_step: Callable[[int, int, int], None] | None = None,   # (step, steps, windows run)
     stop: Callable[[], bool] | None = None,  # return True to save and stop early (deadline)
+    init: torch.Tensor | None = None,       # (C, H, W) latent to start from (light repaint, "img2img")
+    first: int = 0,                         # with init: start at this step, from init noised to sigmas[first]
 ) -> torch.Tensor | None:
-    """Run the plan; returns the final latent, or None if `stop` asked to stop (state saved)."""
+    """Run the plan; returns the final latent, or None if `stop` asked to stop (state saved).
+    With `init`, painting starts part-way down the schedule from that image, so it keeps its layout and colours
+    and only takes on the style (the later the first step, the lighter the repaint)."""
     H, W, steps = plan.H, plan.W, len(plan.sigmas) - 1
     assert H % 2 == 0 and W % 2 == 0, "latent size must be even"
     if hold is not None:
@@ -105,8 +109,11 @@ def paint(
         g = torch.Generator().manual_seed(plan.seed)
         noise = torch.randn((channels, H, W), generator=g)
         x = noise.clone()
+        if init is not None:
+            start = first
+            x = (1 - plan.sigmas[first]) * init + plan.sigmas[first] * noise
         if hold is not None:  # sigma_0 is ~1, but keep the held area exactly on the schedule
-            s0 = plan.sigmas[0]
+            s0 = plan.sigmas[start]
             x = hold * ((1 - s0) * known + s0 * noise) + (1 - hold) * x
 
     weights: dict[tuple[int, int], torch.Tensor] = {}

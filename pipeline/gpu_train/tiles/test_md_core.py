@@ -32,6 +32,15 @@ def test_coverage():
     assert set(a) != set(b), "shifted grid must differ"
 
 
+def test_init_light_repaint():
+    """Starting part-way from an image: the result still reaches the model's target, and a first step of
+    the last index leaves the result between the init and the target."""
+    plan = Plan(H=256, W=256, sigmas=SIG)
+    init = torch.full((16, 256, 256), -0.5)
+    x = paint(plan, model(lambda k, s: torch.full(s, 0.3)), init=init, first=4)
+    assert float((x - 0.3).abs().max()) < 1e-4, float((x - 0.3).abs().max())
+
+
 def test_flat():
     plan = Plan(H=256, W=384, sigmas=SIG)
     x = paint(plan, model(lambda k, s: torch.full(s, 0.3)))

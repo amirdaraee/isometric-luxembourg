@@ -8,6 +8,7 @@ Usage:
   mdpaint.py --src src.png [--layout layout.png] --lora luxembourg-ink-v2.safetensors --out canvas_full.png
              [--steps 25] [--cfg 3.0] [--src-cell 600] [--state DIR] [--deadline EPOCH]
              [--known painted.png --keep keep_mask.png [--band 64]]     # neighbours / patch repair
+             [--init start.png --strength 0.4]                          # light repaint of an existing image
 Scale: --src-cell render px become 512 model px (600 = 300 m per 1024 px window, the training scale).
 Repair: --known is an image at the output scale; --keep is white where it must stay. Black areas are repainted,
 with a --band px free margin that is feathered back at the end.
@@ -44,6 +45,9 @@ ap.add_argument("--known")
 ap.add_argument("--keep")
 ap.add_argument("--band", type=int, default=64)
 ap.add_argument("--seed", type=int, default=1867)
+ap.add_argument("--init", help="start from this image instead of pure noise (light repaint); any size, resized")
+ap.add_argument("--strength", type=float, default=0.4, help="with --init: noise level to start at (0 = keep, 1 = "
+                "repaint from scratch); the first step is the one whose noise level is nearest")
 ap.add_argument("--extra-lora", help="optional second LoRA (e.g. Lightning, for fewer steps)")
 ap.add_argument("--mu", type=float, help="fixed schedule shift (Lightning: ln 3 = 1.0986, with --cfg 1 --steps 8); "
                 "default: the pipeline's dynamic shift for one 1024 px window")
@@ -203,6 +207,14 @@ if known_img is not None:
     hold = hold_mask(keep_px, args.band)
     print(f"holding {hold.float().mean() * 100:.0f}% of the canvas", flush=True)
 
+init = None
+first = 0
+if args.init:
+    save_status(state="encoding the start image")
+    init = encode(Image.open(args.init).convert("RGB").resize((Wpx, Hpx), Image.LANCZOS))
+    first = int(np.argmin([abs(s_ - args.strength) for s_ in sigmas[:-1]]))
+    print(f"light repaint: starting at step {first} of {args.steps} (noise {sigmas[first]:.2f})", flush=True)
+
 plan = Plan(H=H, W=W, sigmas=sigmas, size=tsize, stride=tsize * 3 // 4, fade=tsize // 4, seed=args.seed)
 state_path = os.path.join(args.state, "state.pt")
 save_status(state="painting", started=time.time())
@@ -216,7 +228,8 @@ def on_step(i, steps, ran):
 
 
 stop = (lambda: time.time() > args.deadline - 600) if args.deadline else None
-z = paint(plan, velocity, channels=C, known=known, hold=hold, state_path=state_path, on_step=on_step, stop=stop)
+z = paint(plan, velocity, channels=C, known=known, hold=hold, state_path=state_path, on_step=on_step, stop=stop,
+          init=init, first=first)
 if z is None:
     save_status(state="paused")
     print("PAINT PAUSED (deadline): run again with the same --state to resume", flush=True)
