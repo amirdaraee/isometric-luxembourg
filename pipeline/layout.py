@@ -39,6 +39,11 @@ kind = cut("frames_kind", "png", "L", 0)
 line = cut("frames_line", "png", "L", 255)
 ground, deck = kind > 200, (kind > 100) & (kind <= 200)
 wall, roof = (kind > 32) & (kind <= 100), kind <= 32
+# Empty map edge and anything off the map: the visibility pass draws them dark like roofs, so take them from the
+# colour render instead (background colour there).
+rgb = cut("frames", "jpg", "RGB", (16, 24, 40)).astype(np.int16)
+empty = np.abs(rgb - np.array((16, 24, 40))).sum(axis=2) < 20
+roof &= ~empty
 L = json.loads((ROOT / "web/public/data/lines.json").read_text())
 ppm = 4  # mosaic px per metre
 
@@ -146,5 +151,6 @@ img[roof] = (96, 108, 150)
 bld = wall | roof
 img[bld & (line < 160) & (line > 60)] = (70, 60, 50)      # windows
 img[(line < 60) & (bld | deck)] = (20, 18, 16)            # edges
+img[empty] = (16, 24, 40)
 Image.fromarray(img).save(out)
 print(out, img.shape)
