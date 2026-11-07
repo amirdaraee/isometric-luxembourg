@@ -24,8 +24,9 @@ Running side, line by line: Luxtram drives on the right; the CFL network runs on
 /Esch/Thionville, 70 Rodange/Longwy, 90 Bettembourg/Metz, 10 via Pfaffenthal-Kirchberg). RUNNING_SIDE below.
 
 Writes web/public/data/transit.json:
-  {"days", "source", "shapes": [[x, y, ...] map px], "runs": [[[way id, s from, s to], ...] per shape],
+  {"days", "source", "shapes": [[x, y, ...] map px], "runs": [[[way id, s from, s to], ...] per shape], "tunnels",
    "trips": [{"s" shape, "k" "tram"|"train", "n" line, "t" [[arr s, dep s, px along the shape], ...], "d" mask}]}
+  tunnels: the ids of the rail ways in "runs" that are tunnels.
   runs: the shape as consecutive stretches of lines.json rail ways, s in map px along the way's lines.json polyline
   (the same units as road_heights.json and deckLift); a shape that kept its GTFS geometry has no runs ([]).
 Also pipeline/data/rail_ways.json (in git): the rail ways' ground positions (LUREF metres), so that the timetable can be
@@ -532,9 +533,12 @@ def main():
         else:
             merged[key] = tr
     out_trips = list(merged.values())
+    # the tunnel ways the shapes run through (lines.json "t"): the viewer hides the vehicles there
+    tunnels = sorted({r[0] for rr in out_runs for r in rr if ways[r[0]][1]})
     a.out.write_text(json.dumps({"days": [d for d, _, _ in days],
                                  "source": "GTFS, Administration des transports publics / data.public.lu, CC BY",
-                                 "shapes": out_shapes, "runs": out_runs, "trips": out_trips}, separators=(",", ":")))
+                                 "shapes": out_shapes, "runs": out_runs, "tunnels": tunnels, "trips": out_trips},
+                                separators=(",", ":")))
     print("trips", len(out_trips), {k: sum(1 for x in out_trips if x["k"] == k) for k in ("tram", "train")},
           f"{a.out.stat().st_size / 1e6:.2f} MB")
 
