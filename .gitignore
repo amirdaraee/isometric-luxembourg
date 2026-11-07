@@ -8,7 +8,8 @@ web/public/tiles/
 # local work-in-progress pages, never published
 web/public/live/
 web/public/style-test/
-web/public/compare/
+web/public/compare/*
+!web/public/compare/index.html
 # dependencies and tooling
 node_modules/
 .venv/

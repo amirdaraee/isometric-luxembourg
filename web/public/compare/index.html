@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compare painted results (local only)</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #101828; color: #e5e7eb; font: 14px system-ui, sans-serif; overflow: hidden; }
+  header { position: fixed; top: 0; left: 0; right: 0; z-index: 3; display: flex; gap: 12px; align-items: center;
+    padding: 8px 12px; background: rgba(16, 24, 40, .9); }
+  select { font: inherit; padding: 4px 6px; border-radius: 6px; }
+  #view { position: absolute; inset: 0; cursor: grab; touch-action: none; }
+  #view.drag { cursor: grabbing; }
+  .layer { position: absolute; left: 0; top: 0; transform-origin: 0 0; user-select: none; -webkit-user-drag: none; }
+  #right { clip-path: inset(0 0 0 50%); }
+  #bar { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #ef3340; z-index: 2; cursor: ew-resize; }
+  #bar::after { content: "↔"; position: absolute; top: 50%; left: -11px; width: 24px; height: 24px; border-radius: 12px;
+    background: #ef3340; color: #fff; text-align: center; line-height: 24px; }
+  .tag { position: fixed; bottom: 10px; z-index: 3; padding: 4px 8px; border-radius: 6px; background: rgba(0, 0, 0, .6); }
+  #tl { left: 10px; } #tr { right: 10px; }
+  .hint { opacity: .7; margin-left: auto; }
+</style>
+</head>
+<body>
+<header>
+  <label>Left <select id="selL"></select></label>
+  <label>Right <select id="selR"></select></label>
+  <span class="hint">Drag the red bar to compare · scroll to zoom · drag to pan · press 1 / 2 / 3 to zoom 100% / 200% / fit</span>
+</header>
+<div id="view">
+  <img id="left" class="layer" alt="">
+  <img id="right" class="layer" alt="">
+  <div id="bar"></div>
+</div>
+<span class="tag" id="tl"></span><span class="tag" id="tr"></span>
+<script>
+(async () => {
+  const m = await (await fetch("manifest.json")).json();
+  const [W, H] = m.size;
+  const $ = (id) => document.getElementById(id);
+  const view = $("view"), L = $("left"), R = $("right"), bar = $("bar");
+  for (const s of [$("selL"), $("selR")]) for (const it of m.items) s.add(new Option(it.label, it.file));
+  $("selR").selectedIndex = Math.min(1, m.items.length - 1);
+  const pick = () => {
+    L.src = $("selL").value; R.src = $("selR").value;
+    $("tl").textContent = "◀ " + $("selL").selectedOptions[0].text;
+    $("tr").textContent = $("selR").selectedOptions[0].text + " ▶";
+  };
+  $("selL").onchange = $("selR").onchange = pick;
+  pick();
+  let k = Math.min(innerWidth / W, innerHeight / H), x = (innerWidth - W * k) / 2, y = (innerHeight - H * k) / 2, split = 0.5;
+  const draw = () => {
+    for (const im of [L, R]) { im.style.width = W + "px"; im.style.transform = `translate(${x}px,${y}px) scale(${k})`; }
+    const sx = split * innerWidth;
+    bar.style.left = sx + "px";
+    // the clip is in the image's own pixels
+    const ix = Math.min(Math.max((sx - x) / k, 0), W);
+    R.style.clipPath = `inset(0 0 0 ${ix}px)`;
+  };
+  draw();
+  view.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const f = Math.exp(-e.deltaY * 0.0015), nk = Math.min(Math.max(k * f, 0.05), 4);
+    x = e.clientX - (e.clientX - x) * (nk / k); y = e.clientY - (e.clientY - y) * (nk / k); k = nk; draw();
+  }, { passive: false });
+  let mode = null, px = 0, py = 0;
+  view.addEventListener("pointerdown", (e) => {
+    mode = e.target === bar ? "bar" : "pan"; px = e.clientX; py = e.clientY;
+    view.setPointerCapture(e.pointerId); view.classList.add("drag");
+  });
+  view.addEventListener("pointermove", (e) => {
+    if (mode === "pan") { x += e.clientX - px; y += e.clientY - py; px = e.clientX; py = e.clientY; draw(); }
+    else if (mode === "bar") { split = Math.min(Math.max(e.clientX / innerWidth, 0), 1); draw(); }
+  });
+  view.addEventListener("pointerup", () => { mode = null; view.classList.remove("drag"); });
+  addEventListener("keydown", (e) => {
+    const cx = innerWidth / 2, cy = innerHeight / 2, z = { "1": 1, "2": 2 }[e.key];
+    if (z) { x = cx - (cx - x) * (z / k); y = cy - (cy - y) * (z / k); k = z; draw(); }
+    if (e.key === "3") { k = Math.min(innerWidth / W, innerHeight / H); x = (innerWidth - W * k) / 2; y = (innerHeight - H * k) / 2; draw(); }
+  });
+  addEventListener("resize", draw);
+})();
+</script>
+</body>
+</html>
