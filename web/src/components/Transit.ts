@@ -2,6 +2,7 @@
 // Positions come from the clock: each trip lists [arrival s, departure s, distance along its track shape].
 
 import { drawVehicle, spriteLength, type Sprites } from "./sprites";
+import { today } from "../testParams";
 
 export interface TransitData {
   shapes: number[][];
@@ -46,8 +47,8 @@ function easter(y: number): [number, number] {
   return [Math.floor((h + l - 7 * m + 114) / 31), ((h + l - 7 * m + 114) % 31) + 1];
 }
 
-/** Today's day type in Luxembourg: 1 weekday, 2 Saturday, 4 Sunday or public holiday. */
-export function luxDayMask(now = new Date()): number {
+/** Today's day type in Luxembourg (or that of ?date=): 1 weekday, 2 Saturday, 4 Sunday or public holiday. */
+export function luxDayMask(now = today()): number {
   const p = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Luxembourg", year: "numeric", month: "numeric", day: "numeric", weekday: "short" })
     .formatToParts(now).reduce((o, x) => ({ ...o, [x.type]: x.value }), {} as Record<string, string>);
   const y = +p.year, mo = +p.month, da = +p.day;

@@ -1,5 +1,6 @@
 // Time of day and season: which painted map versions to show and how strongly, plus a colour grade for the
 // moments we don't paint separately (morning, noon, blue hour, spring/autumn nights...).
+import { today } from "./testParams";
 
 export type Season = "spring" | "summer" | "autumn" | "winter";
 export type Variant = "day" | "golden" | "night" | "winter" | "winter_night" | "autumn" | "spring";
@@ -9,17 +10,17 @@ export interface SceneState { hour: number; season: Season; christmas: boolean }
 const SUN: [number, number][] = [[8.3, 16.9], [7.7, 17.7], [7.0, 18.5], [6.9, 20.4], [6.1, 21.1], [5.5, 21.7],
   [5.7, 21.6], [6.4, 20.9], [7.2, 19.8], [8.0, 18.7], [7.8, 16.9], [8.4, 16.5]];
 
-export function sunTimes(d = new Date()): [number, number] {
+export function sunTimes(d = today()): [number, number] {
   return SUN[d.getMonth()];
 }
 
-export function seasonOf(d = new Date()): Season {
+export function seasonOf(d = today()): Season {
   const m = d.getMonth();
   return m <= 1 || m === 11 ? "winter" : m <= 4 ? "spring" : m <= 7 ? "summer" : "autumn";
 }
 
 /** Winterlights: Friday before the last Sunday before Advent .. first Sunday of January (research/05-events). */
-export function christmasOn(d = new Date()): boolean {
+export function christmasOn(d = today()): boolean {
   const y = d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear();
   const xmas = new Date(y, 11, 25);
   const advent1 = new Date(y, 11, 25 - ((xmas.getDay() || 7) + 21));   // 4th Sunday before Christmas

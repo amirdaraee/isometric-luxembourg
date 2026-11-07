@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "deploy": "scripts/deploy-pages.sh"
+    "deploy": "scripts/deploy-pages.sh",
+    "shots": "node scripts/shots.mjs"
   },
   "dependencies": {
     "@types/three": "^0.170.0",
@@ -22,6 +23,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "playwright": "^1.58.2",
     "typescript": "^5.6.3",
     "vite": "^6.0.3"
   }

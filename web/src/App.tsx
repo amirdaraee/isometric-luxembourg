@@ -8,18 +8,23 @@ import { Clouds } from "./components/Clouds";
 import { LandmarkPanel, type Landmark } from "./components/LandmarkPanel";
 import { SceneControl } from "./components/SceneControl";
 import { Feedback, feedbackConfigured } from "./components/Feedback";
+import { EventLayer } from "./components/EventLayer";
+import { Sky } from "./components/Sky";
+import { WeatherControl } from "./components/WeatherControl";
 import { christmasOn, mix, seasonOf, sunTimes, type SceneState, type Variant } from "./scene";
 import { luxSeconds } from "./components/Transit";
 import { asset, tilesBase } from "./config";
 import { on } from "./features";
+import { testParams, today } from "./testParams";
 
 const FOCUS_ZOOM = 0.75;
 
-/** The scene for "now" in Luxembourg, limited to the features that are switched on. */
+/** The scene for "now" in Luxembourg (or the ?hour, ?season and ?date test parameters), limited to the features
+ * that are switched on. */
 function liveScene(): SceneState {
   return {
-    hour: on("timeOfDay") ? luxSeconds() / 3600 : 13,
-    season: on("seasons") ? seasonOf() : "summer",
+    hour: on("timeOfDay") ? testParams.hour ?? luxSeconds() / 3600 : 13,
+    season: on("seasons") ? testParams.season ?? seasonOf() : "summer",
     christmas: on("christmas") && christmasOn(),
   };
 }
@@ -49,7 +54,8 @@ export default function App() {
   }, []);
   const [traffic, setTraffic] = useState(true);
   // Time of day and season: live (Luxembourg clock and date) until the person moves a control.
-  const [live, setLive] = useState(true);
+  // ?hour= fixes the clock for tests, as if the person had moved the slider.
+  const [live, setLive] = useState(!(on("timeOfDay") && testParams.hour !== null));
   const [scene, setScene] = useState<SceneState>(liveScene);
   useEffect(() => {
     if (!live) return;
@@ -58,6 +64,7 @@ export default function App() {
     return () => clearInterval(t);
   }, [live]);
   const sun = useMemo(() => sunTimes(), []);
+  const date = useMemo(() => today(), []);
   const [xmas, setXmas] = useState<{ site: string; x0: number; y0: number; w: number }[]>([]);
   useEffect(() => { if (on("christmas")) fetch(asset("/events/xmas/xmas.json")).then((r) => r.json()).then(setXmas).catch(() => {}); }, []);
   const map = useRef<MapHandle>(null);
@@ -157,9 +164,12 @@ export default function App() {
       </div>
       {ready && on("water") && <Water map={map} night={sceneMix.night} />}
       {ready && <Overlay map={map} meta={meta} streets={streets} traffic={traffic} night={sceneMix.night} hour={live ? null : scene.hour} season={scene.season} />}
+      {ready && <EventLayer map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />}
       {ready && on("clouds") && <Clouds map={map} night={sceneMix.night} />}
-      {(on("timeOfDay") || on("seasons") || on("christmas")) && <SceneControl scene={scene} live={live} sun={sun} onLive={() => setLive(true)}
-        onChange={(c) => { setLive(false); setScene((s) => ({ ...s, ...c, ...(c.christmas ? { season: "winter" as const } : {}) })); }} />}
+      {ready && <Sky map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />}
+      {(on("timeOfDay") || on("seasons") || on("christmas") || on("weather")) && <SceneControl scene={scene} live={live} sun={sun} onLive={() => setLive(true)}
+        onChange={(c) => { setLive(false); setScene((s) => ({ ...s, ...c, ...(c.christmas ? { season: "winter" as const } : {}) })); }}
+        extra={<WeatherControl map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />} />}
       {ready && on("pins") && <Pins places={places} view={view} map={map} active={active} onPick={pick} />}
       {ready && on("comments") && feedbackConfigured && <Feedback map={map} marking={marking} setMarking={setMarking}
         onToast={(m) => { setToast(m); setTimeout(() => setToast(""), 3200); }} />}

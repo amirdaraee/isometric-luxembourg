@@ -53,6 +53,49 @@ export const DEFAULTS = {
   previewBadge: true,
   /** "Mark a spot" button: draw a box on the map and send the author a private note (needs the feedback worker). */
   comments: true,
+
+  // Vehicles and rail
+  // (The fixes for cars and trains sit inside traffic, transit and emergency, so they need no new switch.)
+
+  // Art and events
+  /** The moving cabin of the Pfaffenthal Panoramic Lift. */
+  liftCabin: true,
+  /** Moving rides and twinkling lights in event patches (Christmas first). */
+  eventRides: true,
+  /** The event calendar and picker for events other than Christmas (master switch for the events below). */
+  events: true,
+  /** New Year's Eve: Christmas still up, light sparkles at midnight. */
+  newYear: true,
+  /** National Day (22 and 23 June): flags, torches along the procession route, fireworks over the Pétrusse. */
+  nationalDay: true,
+  /** Schueberfouer, the funfair on the Glacis (late August to early September). */
+  schueberfouer: true,
+  /** Octave and its Mäertchen: stalls and a covered terrace on the Knuedler (spring). */
+  octave: true,
+  /** Éimaischen, the Easter Monday pottery and craft market on the Fëschmaart. */
+  emaischen: true,
+  /** ING Night Marathon: a glowing stream of runners through the city. */
+  marathon: true,
+  /** Halloween: pumpkins, an orange-lit Neimënster at night, bats. */
+  halloween: true,
+  /** Buergbrennen: bonfires at dusk, with smoke. */
+  buergbrennen: true,
+  /** Music stages with lighting rigs (Fête de la Musique and Rock um Knuedler). */
+  musicStages: true,
+  /** Firework displays (National Day, Schueberfouer closing night, New Year's Eve). */
+  fireworks: true,
+
+  // Performance, weather and sky
+  /** Rain, storm, wind and snow from the live weather or the picker. */
+  weather: true,
+  /** Valley fog and haze (needs weather). */
+  fog: true,
+  /** Cargolux and Luxair aircraft over the city. */
+  planes: true,
+  /** Automatically lowers the effect quality on slow devices. */
+  adaptiveQuality: true,
+  /** Frame-time readout for testing. Off everywhere unless asked for with ?on=perfHud. */
+  perfHud: false,
 };
 
 export type Feature = keyof typeof DEFAULTS;

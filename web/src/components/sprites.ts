@@ -20,7 +20,7 @@
 // Colours are rendered out in full rather than tinted, so shading and outlines stay right; pick one per vehicle.
 //
 // Use:
-//   const s = await loadSprites();
+//   const s = await loadSprites();                  // or loadSprites("/sprites/planes.json"), "/events/sprites.json"
 //   drawVehicle(g, s, "car", 3, x, y, heading, zoom);
 // x, y: screen px of the vehicle's ground centre. heading: direction of travel on screen, Math.atan2(dy, dx) with
 // y down (the map is drawn unrotated, so the heading in map pixels is the heading on screen). zoom: screen px per
@@ -67,13 +67,14 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Loads sprites.json and every atlas it names. */
-export async function loadSprites(): Promise<Sprites> {
-  const r = await fetch(asset("/sprites/sprites.json"));
-  if (!r.ok) throw new Error(`sprites.json: HTTP ${r.status}`);
+/** Loads a sprite file (a path inside public/) and every atlas it names. Atlas paths are relative to the file. */
+export async function loadSprites(file = "/sprites/sprites.json"): Promise<Sprites> {
+  const r = await fetch(asset(file));
+  if (!r.ok) throw new Error(`${file}: HTTP ${r.status}`);
   const meta = (await r.json()) as Omit<Sprites, "images">;
+  const dir = file.slice(0, file.lastIndexOf("/") + 1);
   const names = Object.keys(meta.types);
-  const imgs = await Promise.all(names.map((n) => loadImage(asset(`/sprites/${meta.types[n].image}`))));
+  const imgs = await Promise.all(names.map((n) => loadImage(asset(`${dir}${meta.types[n].image}`))));
   const images: Record<string, HTMLImageElement> = {};
   names.forEach((n, i) => (images[n] = imgs[i]));
   return { ...meta, images };

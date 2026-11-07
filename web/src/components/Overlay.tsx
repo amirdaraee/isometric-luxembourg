@@ -7,6 +7,7 @@ import { drawVehicle, loadSprites, type Sprites } from "./sprites";
 import { loadOcclusion, type Occlusion } from "./occlusion";
 import { waterPoints } from "./Water";
 import { Traffic, type DrawableCar } from "../sim/traffic";
+import { testParams } from "../testParams";
 
 // Projected OSM lines (web/public/data/lines.json, from pipeline/project_lines.py), in map image pixels.
 interface Line { id: number; n?: string; k?: string; b?: boolean; t?: boolean; o?: boolean; p: number[] }
@@ -219,7 +220,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       }).catch(() => { st.flocks = []; });
       st.waterways = L.waterways.filter((r) => !r.t).map(prepare);
       // Traffic only where the map is painted (src/sim/traffic.ts: road graph, junctions, signals, car following).
-      if (meta.painted?.length) st.sim = new Traffic(L.roads, { areas: meta.painted, mpp: MPP, emergency: on("emergency") });
+      if (meta.painted?.length) st.sim = new Traffic(L.roads, { areas: meta.painted, mpp: MPP, emergency: on("emergency"), seed: testParams.seed ?? undefined });
     });
   }, [meta]);
 

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Season, SceneState } from "../scene";
 import { on } from "../features";
 
@@ -7,6 +8,8 @@ interface Props {
   onChange: (s: Partial<SceneState>) => void;
   onLive: () => void;
   sun: [number, number];
+  /** More controls under the time and season rows (the weather picker). */
+  extra?: ReactNode;
 }
 
 const SEASONS: [Season, string][] = [["spring", "Spring"], ["summer", "Summer"], ["autumn", "Autumn"], ["winter", "Winter"]];
@@ -16,7 +19,7 @@ function hhmm(h: number) {
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
-export function SceneControl({ scene, live, onChange, onLive, sun }: Props) {
+export function SceneControl({ scene, live, onChange, onLive, sun, extra }: Props) {
   const icon = scene.hour < sun[0] - 0.5 || scene.hour > sun[1] + 0.5 ? "🌙" : Math.abs(scene.hour - (sun[1] - 0.6)) < 1 ? "🌇" : "☀️";
   return (
     <div className="scene glass" role="group" aria-label="Time of day and season">
@@ -35,6 +38,7 @@ export function SceneControl({ scene, live, onChange, onLive, sun }: Props) {
         {on("christmas") && <button type="button" className={scene.christmas ? "on xmas" : "xmas"} aria-pressed={scene.christmas}
           onClick={() => onChange({ christmas: !scene.christmas })} title="Winterlights Christmas markets">🎄 Christmas</button>}
       </div>}
+      {extra}
     </div>
   );
 }
