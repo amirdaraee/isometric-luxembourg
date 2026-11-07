@@ -24,7 +24,7 @@ The order of work, step by step, is in **[PLAN.md](PLAN.md)**, along with the ru
 | 5 | Night (full resolution), golden hour, seasons for the whole city; Christmas regenerated | GPU | needs approval |
 | 6 | Life on the map: car hiding, water shimmer, swaying trees, better traffic, transit refresh, birds | free | water + traffic done 7 Nov |
 | 7 | Switch features on publicly, one at a time | free | to do |
-| 8 | isometric.lu | domain fee | waiting on purchase |
+| 8 | isometric.lu | domain fee | done 7 Nov |
 | 9 | More events, weather, clouds, easter eggs, height, historic mode | varies | later |
 
 ## Open issues

@@ -20,7 +20,7 @@ painted next (see [ROADMAP.md](ROADMAP.md)).
   link.
 
 Every optional feature can be switched off. See [Feature switches](#feature-switches). The public release at
-**[luxembourg.amirdaraee.com](https://luxembourg.amirdaraee.com)** starts small, with the summer day map, landmark
+**[isometric.lu](https://isometric.lu)** starts small, with the summer day map, landmark
 cards, search and street names. Time of day, seasons, Christmas, traffic, trams, trains and the 3D models are
 switched on locally and will be switched on publicly one by one.
 
@@ -54,7 +54,7 @@ The site is static. The map tiles are built locally and published together with 
 the `gh-pages` branch, so the main branch's history never carries hundreds of MB of tiles.
 
     cd web
-    CNAME=luxembourg.amirdaraee.com npm run deploy        # the release domain (isometric.lu later)
+    npm run deploy                                        # the release domain, isometric.lu (CNAME=... to change)
     VITE_BASE=/isometric-luxembourg/ npm run deploy       # or https://<user>.github.io/isometric-luxembourg/
 
 Then, in the repository settings under **Pages**, choose "Deploy from a branch" and select `gh-pages` / root.

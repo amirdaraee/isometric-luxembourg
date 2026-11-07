@@ -9,6 +9,7 @@
 #   VITE_BASE=/isometric-luxembourg/ scripts/deploy-pages.sh   # https://<user>.github.io/isometric-luxembourg/
 # Optional: VITE_FEATURES_OFF="christmas,transit" to ship with features switched off. REMOTE (default origin).
 set -euo pipefail
+export CNAME="${CNAME:-isometric.lu}"   # the release domain
 cd "$(dirname "$0")/.."
 REMOTE_URL=$(git remote get-url "${REMOTE:-origin}")
 # commit as the same author as this repo (GitHub refuses pushes that expose a private email)

@@ -14,7 +14,7 @@ the idea list, and points here for the order of work. Update both when a phase f
 6. A public site on isometric.lu where every feature is switched on, one by one, once checked.
 
 ## Where we are (7 Nov 2026)
-- Release 1.0 is live at https://luxembourg.amirdaraee.com: summer day only, old town painted
+- Release 1.0 is live at https://isometric.lu (luxembourg.amirdaraee.com redirects there): summer day only, old town painted
   (6000 × 6000 px of a 26,624 × 14,336 px map, about 10%), landmark cards, search, street names.
 - Built locally but switched off publicly: time of day, seasons, Christmas, snow, traffic, transit, 3D models.
 - Painter: `pipeline/gpu_train/tiles/tiler.py`, window by window with red-box infill and colour-drift correction.
@@ -188,9 +188,10 @@ phone.
 6. 3D models.
 
 ## Phase 8: the domain
-1. Buy isometric.lu (EuroDNS, Gandi, OVH or Netim).
-2. Point DNS at GitHub Pages (or the R2 worker), deploy with `CNAME=isometric.lu`, and enforce HTTPS.
-3. Redirect luxembourg.amirdaraee.com to it.
+Done 7 Nov 2026: isometric.lu is registered at EuroDNS, with its DNS on Cloudflare (zone 4016efba25e0b855196d09c072aa0561):
+apex A/AAAA records to GitHub Pages and `www` to amirdaraee.github.io, all DNS-only, plus SPF/DMARC/DKIM records
+that refuse all mail (the domain sends none). luxembourg.amirdaraee.com redirects to it. WHOIS: the .lu registry hides
+a private holder's details by default (only `ownertype: PRIVATE` and the country are public).
 
 ## Phase 9: more
 Schueberfouer (late August to mid September) and National Day (23 June) as event versions, weather, clouds at the

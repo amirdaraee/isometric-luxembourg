@@ -38,3 +38,6 @@ research/**/*.pdf
 # early style experiments, kept local
 pipeline/style/chatgpt_samples.py
 pipeline/style/build_compare.py
+
+# local agent worktrees and settings
+.claude/
