@@ -7,7 +7,8 @@ front of it, and crowns behind a building or a ridge are trimmed. The crowns are
 left, and then painted by the trained style in place (vegetation_paint), with the painted ground and buildings held
 fixed around them as context.
 
-  v2_canopy.py render [--k K]   -> b00_v2/canopy/canopy_k<K>.npz:
+  v2_canopy.py render [--k K] [--trim 0.85]   -> b00_v2/canopy/canopy_k<K>[_trim85].npz (the trimmed canopy, crowns
+        slightly smaller, is used to cut the painted trees so they hide less of rivers, gardens and buildings):
         vis     the tree drawn at each pixel (index + 1, 0 = none), after the depth test with buildings and terrain
         behind  what the pixel shows without the trees: 1 ground, 2 building or bridge (for the boundary checks and
                 "keep landmarks clear")
@@ -141,13 +142,17 @@ def load_trees(b):
     return out
 
 
-def render(k):
+def render(k, trim=1.0):
     b = block("b00")
     d = v2_dir("canopy")
     trees = load_trees(b)
     e = np.array([t["e"] for t in trees]); n = np.array([t["n"] for t in trees])
     gz = ground_z(e, n)
     par = np.array([crown_params(t) for t in trees], np.float32)
+    if trim != 1.0:  # trimmed canopy: crowns a little smaller, tops kept at the measured height
+        top = par[:, 2] + par[:, 1]
+        par[:, 0] *= trim; par[:, 1] *= trim
+        par[:, 2] = top - par[:, 1]
     rng = np.random.default_rng(17)
     N = len(trees)
     ids = np.arange(1, N + 1, dtype=np.float32)
@@ -278,19 +283,21 @@ def render(k):
             cv2.ellipse(contact, (int(cx * 4), int(cy * 4)), (max(1, int(r * 4)), max(1, int(r * 2))), 0, 0, 360, 1.0, -1,
                         cv2.LINE_AA, shift=2)
     contact = cv2.GaussianBlur(contact, (0, 0), 1.5 * 4 * k)
-    np.savez_compressed(d / f"canopy_k{round(k * 100)}.npz", vis=vis, behind=behind, shade=col.clip(0, 255).astype(np.uint8),
+    np.savez_compressed(d / (f"canopy_k{round(k * 100)}" + (f"_trim{round(trim * 100)}" if trim != 1.0 else "") + ".npz"), vis=vis, behind=behind, shade=col.clip(0, 255).astype(np.uint8),
                         foot=foot, contact=contact.astype(np.float16), crown=crown, trunk=trunk,
                         trees=np.column_stack((e, n, gz, par)).astype(np.float32), k=k)
     print("canopy", f"{crown.mean():.1%} of the block in crowns,", f"{(crown & (behind == 2)).mean():.2%} in front of buildings",
           flush=True)
     sh = col.clip(0, 255).astype(np.uint8)
-    preview(sh, POC_IMG / "v2_s3_canopy_render.jpg")
+    if trim == 1.0:
+        preview(sh, POC_IMG / "v2_s3_canopy_render.jpg")
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd")
     ap.add_argument("--k", type=float, default=PAINT / 6000)
+    ap.add_argument("--trim", type=float, default=1.0, help="crown size factor for the cut (the painting uses 1.0)")
     a = ap.parse_args()
     if a.cmd == "render":
-        render(a.k)
+        render(a.k, a.trim)

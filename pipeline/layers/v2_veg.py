@@ -19,14 +19,15 @@ import numpy as np
 from PIL import Image
 
 from layers_common import LAYERS, POC_IMG, ROOT, block, preview, unshift
-from v2_ground import PAINT, v2_dir
+from v2_ground import PAINT, canopy_path, v2_dir
 
 V1 = LAYERS / "b00"
 CONTACT = (30, 40, 34)
+SUMMER_GAIN = (1.14, 1.09, 1.03)  # a quarter of the way (in log) to today's mean tree colour, per channel
 
 
-def canopy():
-    z = np.load(v2_dir("canopy") / "canopy_k85.npz")
+def canopy(full=False):
+    z = np.load(v2_dir("canopy") / "canopy_k85.npz" if full else canopy_path())
     return {k: z[k] for k in z.files}
 
 
@@ -51,7 +52,7 @@ def context():
 
 def prep(tag, crop):
     d = v2_dir("veg" + (f"_{tag}" if tag else ""))
-    C = canopy()
+    C = canopy(full=True)
     vis = C["vis"] > 0
     ctx = context()
     src = ctx.copy()
@@ -78,7 +79,7 @@ def prep(tag, crop):
     print("veg inputs in", d, f"painting {(~keep).mean():.0%} of the area")
 
 
-def measure_shift(P, ref, vis, tile=384):
+def measure_shift(P, ref, vis, tile=384, need=0.55):
     """The painter's shift, measured only on tiles that are mostly painted trees (held pixels do not move)."""
     def ed(a):
         return cv2.Laplacian(cv2.GaussianBlur(a, (0, 0), 1.5), cv2.CV_32F).astype(np.float64)
@@ -87,7 +88,7 @@ def measure_shift(P, ref, vis, tile=384):
     got = []
     for y in range(0, H - tile, tile // 2):
         for x in range(0, W - tile, tile // 2):
-            if vis[y:y + tile, x:x + tile].mean() < 0.55:
+            if vis[y:y + tile, x:x + tile].mean() < need:
                 continue
             (dx, dy), r = cv2.phaseCorrelate(ed(ref[y:y + tile, x:x + tile]), ed(P[y:y + tile, x:x + tile]), win)
             if r > 0.08 and abs(dx) < 20 and abs(dy) < 20:
@@ -126,15 +127,26 @@ def cut(painted, tag, crop):
     if P.shape[:2] != vis.shape:
         P = np.asarray(Image.open(painted).convert("RGB").resize(vis.shape[::-1], Image.LANCZOS))
     src = np.asarray(Image.open(d / "src.png").convert("L")).astype(np.float32)
-    dx, dy, nt = measure_shift(np.asarray(Image.fromarray(P).convert("L")).astype(np.float32), src, vis)
+    grey = np.asarray(Image.fromarray(P).convert("L")).astype(np.float32)
+    dx, dy, nt = measure_shift(grey, src, vis)
+    if nt < 4:  # a small test area: smaller tiles, fewer trees per tile
+        dx, dy, nt = measure_shift(grey, src, vis, 256, 0.3)
     print(f"painter shift on the trees: dx {dx:.2f}, dy {dy:.2f} px ({nt} tiles); undone", flush=True)
     (d / "shift.txt").write_text(f"{dx} {dy} {nt}\n")
     P = unshift(P, dx, dy).astype(np.float32)
+    if tag:  # season versions: a little darker and less vivid than the light model paints them, to sit with summer
+        g = P.mean(axis=2, keepdims=True)
+        P = (g + (P - g) * 0.8) * 0.9
+    else:  # summer: a little towards today's sunnier yellow-green foliage (measured on the trees both maps share)
+        P = P * np.array(SUMMER_GAIN, np.float32)
     # alpha: 1 inside the visible canopy, fading to 0 over the last 1.5 px INSIDE it; 0 everywhere outside
     dist = cv2.distanceTransform(vis.astype(np.uint8), cv2.DIST_L2, 3)
     a = np.clip(dist / 1.5, 0, 1) * vis
     # tiny crowns (street trees far off) keep their core even if thinner than the soft edge
     a = np.where(vis & (a < 0.45) & (cv2.erode(vis.astype(np.uint8), np.ones((3, 3), np.uint8)) == 0), np.maximum(a, 0.45) * vis, a)
+    # a thin darker rim just inside the cut, like the painting's own ink round each crown
+    rim = np.clip(1 - np.abs(dist - 2.0) / 1.2, 0, 1) * vis
+    P = P * (1 - 0.22 * rim[..., None])
     full_a = np.zeros(vis_id.shape, np.float32); full_a[sl] = a
     full_rgb = np.zeros(vis_id.shape + (3,), np.float32); full_rgb[sl] = P
     if tag:  # outside the crop, keep the summer layer (the test only paints part of the block)

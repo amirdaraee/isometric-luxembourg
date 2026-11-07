@@ -17,7 +17,7 @@ import numpy as np
 from PIL import Image
 
 from layers_common import LAYERS, block
-from v2_ground import v2_dir
+from v2_ground import canopy_path, v2_dir
 
 V1 = LAYERS / "b00"
 SHADOW = (38, 44, 86)
@@ -48,7 +48,7 @@ def main(band=128):
     a_b, a_r = bl[..., 3:], br[..., 3:]
     obj = np.concatenate((np.where(a_r > a_b, br[..., :3], bl[..., :3]), np.maximum(a_b, a_r)), 2).astype(np.uint8)
     foot = np.asarray(Image.open(o / "foot.png")).astype(np.int32)
-    C = np.load(v2_dir("canopy") / "canopy_k85.npz")
+    C = np.load(canopy_path())
     trow = C["foot"].astype(np.int32)
     layers = [("obj", obj, foot)]
     seasons = []

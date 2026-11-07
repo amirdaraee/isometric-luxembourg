@@ -97,3 +97,22 @@ seasons and night become much cheaper afterwards.
 - Cut-outs may look pasted on: mitigated by shared light direction, contact shadows and soft edges.
 - Tree data may be incomplete: fall back to LiDAR or painted canopy mass for woods.
 - More tile layers to load: merge layers into one image at far zoom levels.
+
+## Version 2 (7 Nov 2026)
+The owner's verdict on version 1: buildings and the exact roads and rails were good; trees looked like cardboard
+cut-outs, cliffs were flat, gardens and greenery were missing, and some trees were too big. Version 2 keeps the
+version 1 buildings and changes the rest. Code: `pipeline/layers/v2_*.py`; outputs in `data/work/layers/b00_v2/`;
+viewer: `?layers=v2` (local only; files in `web/public/layers/b00_v2`, a link to `data/work/layers/b00_v2/web`).
+
+| # | Layer | Made by | Notes |
+|---|---|---|---|
+| 1 | Painted ground (`v2_ground.py`) | model | the bare terrain with the aerial photo draped on it; roofs, bridge decks and cars filled from the ground round them, tree crowns and their shadows replaced by a plain sunny lawn; painted like today's map (mdpaint, Lightning, 8 steps); the painter's shift (6.8 px down) undone; trees the painter still draws are removed where the ground is seen |
+| 2 | Ink lines (`v2_ink.py`) | code | from `lines.json` and the water mask: thin ink road and path edges, lane dashes, step treads, rails and sleepers, the river's blue at half strength with an inked bank; an asphalt tone only where the painting lost the road |
+| 3 | Trees (`v2_canopy.py`, `v2_veg.py`) | model on a 3D canopy | every LiDAR tree as a lumpy crown on a trunk at its real size, depth-tested per pixel against terrain and buildings; painted in place with the ground and buildings held; cut by the canopy (crowns 15% smaller than measured) with a soft edge inside it; shade under the crowns; a "keep landmarks clear" variant |
+| — | Buildings and bridges | model (version 1) | unchanged |
+
+Boundary checks (`v2_checks.py`): every layer is clipped to its own area from the data, and the pixels outside it are
+counted (0 for ink lines, buildings, trees and tree shade on b00). `v2_compose.py` stacks the layers and makes the
+comparison pictures; `v2_export.py` writes the viewer files. Spring: only the tree layer is repainted (light season
+model), tested on part of the Grund. Cost on b00: $2.23 (ground $1.29 including a second run, trees $0.61, spring
+test $0.33); the whole map is estimated at about $1.80 per block. Verdict and pictures: the local progress page.

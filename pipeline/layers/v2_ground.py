@@ -34,6 +34,13 @@ ORTHO_Z = 18
 BG = (16, 24, 40)
 
 
+def canopy_path():
+    """The canopy used to cut the trees: the trimmed one if it was rendered, else the full one."""
+    d = LAYERS / "b00_v2" / "canopy"
+    t = d / "canopy_k85_trim85.npz"
+    return t if t.exists() else d / "canopy_k85.npz"
+
+
 def v2_dir(sub=""):
     d = LAYERS / "b00_v2" / sub
     d.mkdir(parents=True, exist_ok=True)
@@ -235,7 +242,7 @@ def prep(k):
     over[m_deck & ok] = over[m_deck & ok] * 0.4 + np.array((80, 120, 255)) * 0.6
     over[road & ok & ~m_bld] = over[road & ok & ~m_bld] * 0.6 + np.array((250, 220, 60)) * 0.4
     trip = np.concatenate([show(photo), show(over.clip(0, 255).astype(np.uint8)), show(src)], 1)
-    preview(trip, POC_IMG / "v2_s1_inputs.jpg", size=2400)
+    preview(trip, POC_IMG / "v2_s1_inputs.jpg")
     print("ground inputs in", d, flush=True)
 
 
@@ -323,7 +330,7 @@ def clean(P=None):
     wm = np.asarray(Image.open(LAYERS / "b00" / "k85" / "water_mask.png").convert("L")) > 127
     protect = cv2.dilate((road | wm).astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
     seen = np.ones((S, S), bool)
-    cp = v2_dir("canopy") / "canopy_k85.npz"
+    cp = canopy_path()
     if cp.exists():
         seen &= np.load(cp)["vis"] == 0
     for n in ("L7_buildings", "L5_bridges"):

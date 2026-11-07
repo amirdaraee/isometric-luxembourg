@@ -20,7 +20,7 @@ import numpy as np
 from PIL import Image
 
 from layers_common import LAYERS, POC_IMG, block, kinds, preview
-from v2_ground import PAINT, v2_dir
+from v2_ground import canopy_path, PAINT, v2_dir
 
 V1 = LAYERS / "b00"
 
@@ -70,7 +70,7 @@ def main():
     highlight(obj, cross, outline_ok, POC_IMG / "v2_check_buildings.jpg",
               f"Buildings and bridges: {int(cross.sum())} px outside the 3D outline (+2 px)")
     # vegetation
-    C = np.load(v2_dir("canopy") / "canopy_k85.npz")
+    C = np.load(canopy_path())
     vis = C["vis"] > 0
     behind = C["behind"]
     vd = v2_dir("veg" + (f"_{a.tag}" if a.tag else ""))
