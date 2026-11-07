@@ -1,6 +1,6 @@
 /**
  * Headless audit of where cars are drawn, against the drivable map (pipeline/build_drivable.py) and the tree
- * canopy (occluders.png).
+ * canopy (the occluder tiles).
  *
  *   node src/sim/audit.ts [minutes] [busy] [--out audit.json] [--dump x0,y0,x1,y1 points.json]
  *
@@ -73,8 +73,17 @@ function drivable(x: number, y: number): number {
   const i = cx % di.tile, j = cy % di.tile;
   return i < t.w && j < t.h ? t.d[j * t.w + i] : 0;
 }
-const om = JSON.parse(readFileSync(PUB + "data/occluders.json", "utf8")) as { x0: number; y0: number; scale: number; w: number; h: number };
-const occ = readPng(PUB + "data/occluders.png");
+const om = JSON.parse(readFileSync(PUB + "data/occluders.json", "utf8")) as
+  { x0: number; y0: number; scale: number; w: number; h: number; tile: number; tiles: string[] };
+// The occluder tiles (data/occluders/<tx>_<ty>.png) put together into one RGB image.
+const occ: Png = { w: om.w, h: om.h, ch: 3, d: new Uint8Array(om.w * om.h * 3) };
+for (const n of om.tiles) {
+  const [tx, ty] = n.split("_").map(Number), t = readPng(`${PUB}data/occluders/${n}.png`);
+  for (let j = 0; j < t.h; j++) for (let i = 0; i < t.w; i++) {
+    const src = (j * t.w + i) * t.ch, dst = ((ty * om.tile + j) * om.w + tx * om.tile + i) * 3;
+    occ.d[dst] = t.d[src]; occ.d[dst + 1] = t.d[src + 1]; occ.d[dst + 2] = t.d[src + 2];
+  }
+}
 /** Tree canopy coverage 0..1 at map px: the B channel where present, else (older data) an R value of exactly 8 m. */
 function canopy(x: number, y: number): number {
   const i = Math.floor((x - om.x0) / om.scale), j = Math.floor((y - om.y0) / om.scale);

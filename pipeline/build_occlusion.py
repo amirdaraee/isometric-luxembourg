@@ -3,7 +3,10 @@
 Along a line of sight in this view, whatever is higher is nearer the camera. So a vehicle pixel is hidden when the
 surface the height pass saw at that screen pixel is higher than the vehicle's body there. This script writes:
 
-  web/public/data/occluders.png   RGB, 1 px = SCALE map px, covering the box in occluders.json.
+  web/public/data/occluders/<tx>_<ty>.png   RGB tiles of OCC_TILE x OCC_TILE px (fewer at the right and bottom
+      edges), 1 px = SCALE map px; tile (tx, ty) starts OCC_TILE * (tx, ty) px into the box in occluders.json. Tiles
+      that are all 0 are not written. The viewer loads only the tiles near the view (issue I13: the whole image used
+      to be decoded at start, about 95 MB). The channels:
       R: ground layer. Height in decimetres (0..255, clipped at 25.5 m) of the visible surface above the ground
          that lies behind it along the line of sight (the terrain the ray reaches after passing the surface).
          0 = nothing in front of a road vehicle. Built things only (the 3D model); trees are in B.
@@ -19,7 +22,8 @@ surface the height pass saw at that screen pixel is higher than the vehicle's bo
          instead of being cut off. Crowns above a lane on screen that do not cover it stand behind it.
       (An RGB image, no alpha, so it decodes without premultiplied-alpha damage.)
      Both layers are only filled near roads, rail and tram lines (where vehicles can be); 0 elsewhere.
-  web/public/data/occluders.json  {x0, y0, scale, w, h, unit} placing the image on the map.
+  web/public/data/occluders.json  {x0, y0, scale, w, h, unit, tile, tiles} placing the image on the map; tiles: the
+      "tx_ty" names written.
   web/public/data/road_heights.json  per lines.json way id (bridges and viaducts that carry vehicles, roads and
       rail): samples about every 4 m along the polyline: x, y (the sample on the lines.json polyline, map px),
       s (distance along the lines.json polyline, map px), z (deck height above sea
@@ -36,6 +40,8 @@ deck runs straight between the terrain at its two ends, as lines.json drew it (d
 Default box: the union of the painted areas in web/public/tiles/meta.json (traffic is only drawn there).
 Needs web/public/data/drivable (run build_drivable.py first) and the painted tiles (web/public/tiles/map_files).
 Usage: python build_occlusion.py [--work DIR] [--data DIR] [--scale 4] [--bbox x0 y0 x1 y1] [--debug out.jpg]
+       python build_occlusion.py --split FILE.png   (tiles from a whole occluders.png of an earlier build, with the
+                                                     x0, y0, scale and unit already in occluders.json)
 """
 import argparse
 import json
@@ -404,6 +410,32 @@ def kinds_ground(work, shape, C):
     return out
 
 
+OCC_TILE = 512
+
+
+def write_tiles(rgb, out, meta):
+    """The occluder image as tiles in out/occluders/ (all-zero tiles left out), and occluders.json."""
+    d = out / "occluders"
+    d.mkdir(parents=True, exist_ok=True)
+    for f in d.glob("*.png"):
+        f.unlink()
+    H, W = rgb.shape[:2]
+    names, size = [], 0
+    for ty in range((H + OCC_TILE - 1) // OCC_TILE):
+        for tx in range((W + OCC_TILE - 1) // OCC_TILE):
+            t = rgb[ty * OCC_TILE:(ty + 1) * OCC_TILE, tx * OCC_TILE:(tx + 1) * OCC_TILE]
+            if not t.any():
+                continue
+            Image.fromarray(np.ascontiguousarray(t)).save(d / f"{tx}_{ty}.png", optimize=True, compress_level=9)
+            size += (d / f"{tx}_{ty}.png").stat().st_size
+            names.append(f"{tx}_{ty}")
+    (out / "occluders.json").write_text(json.dumps({**meta, "w": W, "h": H, "tile": OCC_TILE, "tiles": names}))
+    old = out / "occluders.png"
+    if old.exists():
+        old.unlink()
+    print(f"occluders: {len(names)} tiles of {OCC_TILE} px, {size // 1024} KB", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--work", type=Path, default=WORK, help="data/work with mosaic.json, frames_height, ...")
@@ -418,8 +450,14 @@ def main():
     ap.add_argument("--debug", type=Path, help="write debug overlays of the painted art, NAME.jpg, NAME_1.jpg, ...")
     ap.add_argument("--debug-box", type=int, nargs="+", default=[5600, 5000, 8400, 7100],
                     help="map px boxes for --debug, four numbers each")
+    ap.add_argument("--split", type=Path, help="only cut this whole occluders.png into tiles (see above)")
     a = ap.parse_args()
     S = a.scale
+    if a.split:
+        m = json.loads((a.out / "occluders.json").read_text())
+        write_tiles(np.asarray(Image.open(a.split).convert("RGB")), a.out,
+                    {k: m[k] for k in ("x0", "y0", "scale", "unit")})
+        return
 
     lines = json.loads((a.data / "data" / "lines.json").read_text())
     if a.bbox:
@@ -500,10 +538,8 @@ def main():
     Gch[Gch < 3] = 0
 
     rgb = np.dstack((Rch, Gch, Bch))
-    Image.fromarray(rgb).save(a.out / "occluders.png", optimize=True, compress_level=9)
-    (a.out / "occluders.json").write_text(json.dumps({"x0": box[0], "y0": box[1], "scale": S, "w": W, "h": H,
-                                                      "unit": 0.1}))
-    print("occluders.png", W, H, (a.out / "occluders.png").stat().st_size // 1024, "KB;",
+    write_tiles(rgb, a.out, {"x0": box[0], "y0": box[1], "scale": S, "unit": 0.1})
+    print("occluders", W, H, ";",
           "road_heights.json", (a.out / "road_heights.json").stat().st_size // 1024, "KB;",
           f"canopy {(Bch > 0).mean():.1%}, ground>1.6 m {(Rch > 16).mean():.1%}, deck>0 {(Gch > 0).mean():.2%}",
           flush=True)

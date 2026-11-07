@@ -4,7 +4,8 @@
  * In this view, whatever is higher along a line of sight is nearer the camera. pipeline/build_occlusion.py
  * compares the 3D height pass with the ground behind each surface and bakes, near every road and rail line:
  *
- *   /data/occluders.png  RGB, 1 px = `scale` map px from (x0, y0) in /data/occluders.json:
+ *   /data/occluders/<tx>_<ty>.png  RGB tiles of `tile` px, 1 px = `scale` map px from (x0, y0) in
+ *     /data/occluders.json (tiles not listed there are empty); loaded when the view first needs them:
  *     R  "ground" layer, decimetres: height of the built surface in front, above the ground behind it (buildings,
  *        bridge decks over a valley road). Clipped at 25.5 m.
  *     G  "deck" layer, near bridges and viaducts only, decimetres: height of a built surface above the deck's own
@@ -17,12 +18,15 @@
  *
  * API (all coordinates in map px; a view is screen = map * z + (ox, oy), the same numbers Overlay uses):
  *
- *   loadOcclusion(): Promise<Occlusion>     fetches both assets once; later calls return the same promise.
- *   occ.cut(g, view, heightM, layer?, canopy?)  erases (destination-out) every pixel already on `g` that the
+ *   loadOcclusion(): Promise<Occlusion>     fetches the index and the deck profiles once; later calls return the same
+ *                                           promise. Occluder tiles load on first use: until a tile is in, nothing
+ *                                           there is hidden.
+ *   occ.cut(g, view, heightM, layer?, canopy?, rect?)  erases (destination-out) every pixel already on `g` that the
  *                                           foreground hides for a vehicle `heightM` tall; layer "ground"
  *                                           (default) or "deck". The tree canopy erases by its coverage times
  *                                           `canopy` (default 1; bare winter crowns hide less, 0.4). Draws in g's
- *                                           current transform.
+ *                                           current transform. rect: only the tiles touching this screen
+ *                                           rectangle (x0, y0, x1, y1).
  *   occ.canopyAt(x, y)                      tree canopy coverage 0..1 at a map px.
  *   occ.isHidden(x, y, heightM, layer?)     true when the whole vehicle standing at (x, y) is hidden: every
  *                                           sample up its vertical centre line is behind the foreground.
@@ -55,18 +59,23 @@ export type Layer = "ground" | "deck";
 export interface View { z: number; ox: number; oy: number; w: number; h: number }
 export interface DeckHit { id: number; z: number; dz: number; h: number; lift: number }
 
-interface Meta { x0: number; y0: number; scale: number; w: number; h: number; unit: number }
+interface Meta { x0: number; y0: number; scale: number; w: number; h: number; unit: number; tile: number; tiles: string[] }
 interface Profile { x: number[]; y: number[]; s: number[]; z: number[]; dz: number[]; h: number[] }
+/** One decoded data tile: its size and the three layers. */
+interface DataTile { w: number; h: number; ground: Uint8Array; deck: Uint8Array; crown: Uint8Array }
 
 const MPP = 0.25;
 const CE = 0.8660254;
 const UP = CE / MPP;          // map px a point rises per metre of height
-const TILE = 256;             // mask tiles, in occluder px
+const TILE = 256;             // mask tiles, in occluder px (a data tile holds whole mask tiles)
 const EPS = 0.3;              // m: a surface this close to the vehicle's body counts as level with it
 const CELL = 64;              // deck sample index cell, map px
+const KEEP_DATA = 48;         // decoded data tiles kept (each 0.75 MB), least recently used dropped first
+const KEEP_MASKS = 150;       // mask canvases kept, likewise
 
 export interface Occlusion {
-  cut(g: CanvasRenderingContext2D, view: View, heightM: number, layer?: Layer, canopy?: number): void;
+  cut(g: CanvasRenderingContext2D, view: View, heightM: number, layer?: Layer, canopy?: number,
+    rect?: [number, number, number, number]): void;
   canopyAt(x: number, y: number): number;
   isHidden(x: number, y: number, heightM: number, layer?: Layer): boolean;
   coverage(x: number, y: number, heightM: number, layer?: Layer): number;
@@ -84,34 +93,43 @@ export function loadOcclusion(): Promise<Occlusion> {
 }
 
 async function load(): Promise<Occlusion> {
-  const [meta, profiles, img] = await Promise.all([
+  const [meta, profiles] = await Promise.all([
     fetch(asset("/data/occluders.json")).then((r) => r.json() as Promise<Meta>),
     fetch(asset("/data/road_heights.json")).then((r) => r.json() as Promise<Record<string, Profile>>),
-    fetch(asset("/data/occluders.png")).then((r) => r.blob())
-      .then((b) => createImageBitmap(b, { colorSpaceConversion: "none", premultiplyAlpha: "none" })),
   ]);
-  const { w, h } = meta;
+  return new Occ(meta, profiles);
+}
+
+/** Decodes one occluder tile (RGB, no alpha, so the values come through untouched). */
+async function decodeTile(url: string): Promise<DataTile> {
+  const img = await fetch(url).then((r) => r.blob())
+    .then((b) => createImageBitmap(b, { colorSpaceConversion: "none", premultiplyAlpha: "none" }));
+  const w = img.width, h = img.height;
   const c = document.createElement("canvas");
   c.width = w; c.height = h;
   const cg = c.getContext("2d", { willReadFrequently: true })!;
   cg.drawImage(img, 0, 0);
   img.close();
   const px = cg.getImageData(0, 0, w, h).data;
-  c.width = c.height = 0;  // free the decode canvas
+  c.width = c.height = 0;
   const ground = new Uint8Array(w * h), deck = new Uint8Array(w * h), crown = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i++) { ground[i] = px[i * 4]; deck[i] = px[i * 4 + 1]; crown[i] = px[i * 4 + 2]; }
-  return new Occ(meta, ground, deck, crown, profiles);
+  return { w, h, ground, deck, crown };
 }
 
 class Occ implements Occlusion {
-  private tiles = new Map<string, HTMLCanvasElement | null>();
+  /** Mask canvases by layer, threshold, canopy and tile (null: nothing to cut there), least recently used first. */
+  private masks = new Map<string, HTMLCanvasElement | null>();
+  /** Decoded data tiles, least recently used first; null while loading. Tiles not listed in the meta are empty. */
+  private data = new Map<string, DataTile | null>();
+  private listed: Set<string>;
   private cells = new Map<number, [number, number][]>();   // cell -> [way id, sample index]
 
-  private m: Meta; private ground: Uint8Array; private deck: Uint8Array; private crown: Uint8Array;
+  private m: Meta;
   private prof: Record<string, Profile>;
 
-  constructor(m: Meta, ground: Uint8Array, deck: Uint8Array, crown: Uint8Array, prof: Record<string, Profile>) {
-    this.m = m; this.ground = ground; this.deck = deck; this.crown = crown; this.prof = prof;
+  constructor(m: Meta, prof: Record<string, Profile>) {
+    this.m = m; this.prof = prof; this.listed = new Set(m.tiles);
     for (const [id, p] of Object.entries(prof)) {
       for (let i = 0; i < p.x.length; i++) {
         const k = this.cellKey(Math.floor(p.x[i] / CELL), Math.floor(p.y[i] / CELL));
@@ -124,19 +142,44 @@ class Occ implements Occlusion {
 
   private cellKey(cx: number, cy: number) { return cy * 100000 + cx; }
 
-  private data(layer: Layer) { return layer === "deck" ? this.deck : this.ground; }
+  /** Data tile (dx, dy): the tile, null while loading (it is asked for), or "empty". */
+  private tileData(dx: number, dy: number): DataTile | null | "empty" {
+    const key = `${dx}_${dy}`;
+    if (!this.listed.has(key)) return "empty";
+    const t = this.data.get(key);
+    if (t === undefined) {
+      this.data.set(key, null);
+      decodeTile(asset(`/data/occluders/${key}.png`)).then((d) => {
+        this.data.set(key, d);
+        for (const [k, v] of this.data) {
+          if (this.data.size <= KEEP_DATA) break;
+          if (v) this.data.delete(k);
+        }
+      }).catch(() => this.data.delete(key));
+      return null;
+    }
+    if (t) { this.data.delete(key); this.data.set(key, t); }   // most recently used last
+    return t;
+  }
+
+  /** Layer value at occluder px (i, j), 0 outside the data or while its tile loads. */
+  private at(i: number, j: number, layer: Layer | "crown"): number {
+    const { w, h, tile } = this.m;
+    if (i < 0 || j < 0 || i >= w || j >= h) return 0;
+    const t = this.tileData(Math.floor(i / tile), Math.floor(j / tile));
+    if (!t || t === "empty") return 0;
+    const k = (j % tile) * t.w + (i % tile);
+    return (layer === "deck" ? t.deck : layer === "crown" ? t.crown : t.ground)[k];
+  }
 
   heightAt(x: number, y: number, layer: Layer = "ground"): number {
-    const { x0, y0, scale, w, h, unit } = this.m;
-    const i = Math.floor((x - x0) / scale), j = Math.floor((y - y0) / scale);
-    if (i < 0 || j < 0 || i >= w || j >= h) return 0;
-    return this.data(layer)[j * w + i] * unit;
+    const { x0, y0, scale, unit } = this.m;
+    return this.at(Math.floor((x - x0) / scale), Math.floor((y - y0) / scale), layer) * unit;
   }
 
   canopyAt(x: number, y: number): number {
-    const { x0, y0, scale, w, h } = this.m;
-    const i = Math.floor((x - x0) / scale), j = Math.floor((y - y0) / scale);
-    return i < 0 || j < 0 || i >= w || j >= h ? 0 : this.crown[j * w + i] / 255;
+    const { x0, y0, scale } = this.m;
+    return this.at(Math.floor((x - x0) / scale), Math.floor((y - y0) / scale), "crown") / 255;
   }
 
   coverage(x: number, y: number, heightM: number, layer: Layer = "ground"): number {
@@ -156,16 +199,18 @@ class Occ implements Occlusion {
     return this.coverage(x, y, heightM, layer) >= 1;
   }
 
-  cut(g: CanvasRenderingContext2D, view: View, heightM: number, layer: Layer = "ground", canopy = 1): void {
+  cut(g: CanvasRenderingContext2D, view: View, heightM: number, layer: Layer = "ground", canopy = 1,
+    rect?: [number, number, number, number]): void {
     const { x0, y0, scale, w, h } = this.m;
     const thr = Math.round(heightM * 10);
     const ck = Math.round(Math.min(Math.max(canopy, 0), 1) * 10);   // canopy strength in tenths (cache key)
     const span = TILE * scale * view.z;  // a tile's size on screen
-    // tiles that touch the view
-    const tx0 = Math.max(0, Math.floor((-view.ox / view.z - x0) / scale / TILE));
-    const ty0 = Math.max(0, Math.floor((-view.oy / view.z - y0) / scale / TILE));
-    const tx1 = Math.min(Math.ceil(w / TILE) - 1, Math.floor(((view.w - view.ox) / view.z - x0) / scale / TILE));
-    const ty1 = Math.min(Math.ceil(h / TILE) - 1, Math.floor(((view.h - view.oy) / view.z - y0) / scale / TILE));
+    // tiles that touch the view, or the given screen rectangle (x0, y0, x1, y1) within it
+    const [rx0, ry0, rx1, ry1] = rect ?? [0, 0, view.w, view.h];
+    const tx0 = Math.max(0, Math.floor(((rx0 - view.ox) / view.z - x0) / scale / TILE));
+    const ty0 = Math.max(0, Math.floor(((ry0 - view.oy) / view.z - y0) / scale / TILE));
+    const tx1 = Math.min(Math.ceil(w / TILE) - 1, Math.floor(((rx1 - view.ox) / view.z - x0) / scale / TILE));
+    const ty1 = Math.min(Math.ceil(h / TILE) - 1, Math.floor(((ry1 - view.oy) / view.z - y0) / scale / TILE));
     if (tx1 < tx0 || ty1 < ty0) return;
     g.save();
     g.globalCompositeOperation = "destination-out";
@@ -181,32 +226,39 @@ class Occ implements Occlusion {
     g.restore();
   }
 
-  /** Alpha mask of one tile for a threshold and canopy strength (tenths), built on first use; null when nothing in
-   * it is foreground. */
+  /** Alpha mask of one tile for a threshold and canopy strength (tenths), built on first use once its data tile is
+   * in; null when nothing in it is foreground (or its data is still loading, then not kept). */
   private tile(layer: Layer, thr: number, ck: number, tx: number, ty: number): HTMLCanvasElement | null {
     const key = `${layer}:${thr}:${ck}:${tx}:${ty}`;
-    const hit = this.tiles.get(key);
-    if (hit !== undefined) return hit;
-    const { w, h } = this.m;
-    const d = this.data(layer), cr = this.crown, k = ck / 10;
-    const tw = Math.min(TILE, w - tx * TILE), th = Math.min(TILE, h - ty * TILE);
-    const img = new ImageData(tw, th);
-    const a = img.data;
-    let any = false;
-    for (let j = 0; j < th; j++) {
-      let src = (ty * TILE + j) * w + tx * TILE, dst = j * tw * 4;
-      for (let i = 0; i < tw; i++, src++, dst += 4) {
-        if (d[src] > thr) { a[dst + 3] = 255; any = true; }
-        else if (cr[src] && k) { a[dst + 3] = Math.round(cr[src] * k); any = true; }
+    const hit = this.masks.get(key);
+    if (hit !== undefined) { this.masks.delete(key); this.masks.set(key, hit); return hit; }
+    const { w, h, tile: DT } = this.m;
+    const px0 = tx * TILE, py0 = ty * TILE;
+    const dt = this.tileData(Math.floor(px0 / DT), Math.floor(py0 / DT));
+    if (dt === null) return null;                              // loading: try again next frame
+    let c: HTMLCanvasElement | null = null;
+    if (dt !== "empty") {
+      const d = layer === "deck" ? dt.deck : dt.ground, cr = dt.crown, k = ck / 10;
+      const tw = Math.min(TILE, w - px0), th = Math.min(TILE, h - py0);
+      const ox = px0 % DT, oy = py0 % DT;
+      const img = new ImageData(tw, th);
+      const a = img.data;
+      let any = false;
+      for (let j = 0; j < th; j++) {
+        let src = (oy + j) * dt.w + ox, dst = j * tw * 4;
+        for (let i = 0; i < tw; i++, src++, dst += 4) {
+          if (d[src] > thr) { a[dst + 3] = 255; any = true; }
+          else if (cr[src] && k) { a[dst + 3] = Math.round(cr[src] * k); any = true; }
+        }
+      }
+      if (any) {
+        c = document.createElement("canvas");
+        c.width = tw; c.height = th;
+        c.getContext("2d")!.putImageData(img, 0, 0);
       }
     }
-    let c: HTMLCanvasElement | null = null;
-    if (any) {
-      c = document.createElement("canvas");
-      c.width = tw; c.height = th;
-      c.getContext("2d")!.putImageData(img, 0, 0);
-    }
-    this.tiles.set(key, c);
+    this.masks.set(key, c);
+    if (this.masks.size > KEEP_MASKS) this.masks.delete(this.masks.keys().next().value!);
     return c;
   }
 
