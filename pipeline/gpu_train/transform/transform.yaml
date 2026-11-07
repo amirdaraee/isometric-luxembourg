@@ -1,0 +1,78 @@
+# Light/season model: day drawing -> night, golden hour, seasons (red-box infill, one control image). Based on ai-toolkit's
+# Qwen-Image-Edit-2509 example (MIT) and the settings of the v1 run that worked.
+job: extension
+config:
+  name: luxembourg-light-v1
+  process:
+  - type: sd_trainer
+    training_folder: /workspace/output
+    device: cuda:0
+    network:
+      type: lora
+      linear: 16
+      linear_alpha: 16
+    save:
+      dtype: float16
+      save_every: 500
+      max_step_saves_to_keep: 10
+    logging:
+      log_every: 10
+      verbose: false
+      use_wandb: false
+    datasets:
+    - folder_path: /workspace/data
+      control_path: /workspace/control
+      caption_ext: txt
+      caption_dropout_rate: 0.05
+      resolution:
+      - 1024
+    train:
+      batch_size: 1
+      cache_text_embeddings: false
+      steps: 3000
+      gradient_accumulation: 1
+      timestep_type: weighted
+      train_unet: true
+      train_text_encoder: false
+      gradient_checkpointing: true
+      noise_scheduler: flowmatch
+      optimizer: adamw8bit
+      lr: 0.0001
+      dtype: bf16
+    model:
+      name_or_path: Qwen/Qwen-Image-Edit-2511
+      arch: qwen_image_edit_plus
+      quantize: false
+      low_vram: false
+      model_kwargs:
+        match_target_res: false
+    sample:
+      sampler: flowmatch
+      sample_every: 500
+      width: 1024
+      height: 1024
+      neg: ''
+      seed: 1867
+      walk_seed: false
+      guidance_scale: 3
+      sample_steps: 25
+      samples:
+      - prompt: "Convert the outlined section to the <isometric luxembourg ink> style at night, warm and cozy, with no sun shadows, matching the surrounding image."
+        ctrl_img: /workspace/tests/t1_full.png
+      - prompt: "Convert the outlined section to the <isometric luxembourg ink> style at night, warm and cozy, with no sun shadows, matching the surrounding image."
+        ctrl_img: /workspace/tests/t2_full.png
+      - prompt: "Convert the outlined section to the <isometric luxembourg ink> style on a snowy winter day, matching the surrounding image."
+        ctrl_img: /workspace/tests/t1_full.png
+      - prompt: "Convert the outlined section to the <isometric luxembourg ink> style on a snowy winter day, matching the surrounding image."
+        ctrl_img: /workspace/tests/t2_full.png
+      - prompt: "Convert the outlined section to the <isometric luxembourg ink> style at golden hour, matching the surrounding image."
+        ctrl_img: /workspace/tests/t1_full.png
+      - prompt: "Convert the outlined section to the <isometric luxembourg ink> style at golden hour, matching the surrounding image."
+        ctrl_img: /workspace/tests/t2_full.png
+      - prompt: "Convert the outlined section to the <isometric luxembourg ink> style on a snowy winter night, with no sun shadows, matching the surrounding image."
+        ctrl_img: /workspace/tests/t1_full.png
+      - prompt: "Convert the outlined section to the <isometric luxembourg ink> style on a snowy winter night, with no sun shadows, matching the surrounding image."
+        ctrl_img: /workspace/tests/t2_full.png
+meta:
+  name: luxembourg-light-v1
+  version: '1.0'

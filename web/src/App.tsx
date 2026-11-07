@@ -1,0 +1,218 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { IsometricMap, type MapHandle, type MapMeta, type View } from "./components/IsometricMap";
+import { Pins, type Place } from "./components/Pins";
+import { Search } from "./components/Search";
+import { Overlay } from "./components/Overlay";
+import { LandmarkPanel, type Landmark } from "./components/LandmarkPanel";
+import { SceneControl } from "./components/SceneControl";
+import { christmasOn, mix, seasonOf, sunTimes, type SceneState, type Variant } from "./scene";
+import { luxSeconds } from "./components/Transit";
+import { asset, tilesBase } from "./config";
+import { on } from "./features";
+
+const FOCUS_ZOOM = 0.75;
+
+/** The scene for "now" in Luxembourg, limited to the features that are switched on. */
+function liveScene(): SceneState {
+  return {
+    hour: on("timeOfDay") ? luxSeconds() / 3600 : 13,
+    season: on("seasons") ? seasonOf() : "summer",
+    christmas: on("christmas") && christmasOn(),
+  };
+}
+const OPENING_NAME = "Notre-Dame Cathedral";
+
+function readHash(): View | null {
+  const m = location.hash.match(/^#(-?\d+),(-?\d+),([\d.]+)$/);
+  return m ? { x: +m[1], y: +m[2], z: +m[3] } : null;
+}
+
+export default function App() {
+  const [meta, setMeta] = useState<MapMeta | null>(null);
+  const [places, setPlaces] = useState<Place[] | null>(null);
+  const [error, setError] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [view, setView] = useState<View | null>(null);
+  const [active, setActive] = useState<Place | null>(null);
+  const [toast, setToast] = useState("");
+  const [about, setAbout] = useState(false);
+  const [streets, setStreets] = useState(false);
+  const [lm, setLm] = useState<Landmark | null>(null);
+  useEffect(() => {
+    fetch(asset("/data/landmarks.json")).then((r) => r.json()).then((l: Landmark[]) => { landmarksRef.current = l; }).catch(() => {});
+  }, []);
+  const [traffic, setTraffic] = useState(true);
+  // Time of day and season: live (Luxembourg clock and date) until the person moves a control.
+  const [live, setLive] = useState(true);
+  const [scene, setScene] = useState<SceneState>(liveScene);
+  useEffect(() => {
+    if (!live) return;
+    const t = setInterval(() => setScene((s) => ({ ...s, hour: liveScene().hour })), 20000);
+    setScene(liveScene());
+    return () => clearInterval(t);
+  }, [live]);
+  const sun = useMemo(() => sunTimes(), []);
+  const [xmas, setXmas] = useState<{ site: string; x0: number; y0: number; w: number }[]>([]);
+  useEffect(() => { if (on("christmas")) fetch(asset("/events/xmas/xmas.json")).then((r) => r.json()).then(setXmas).catch(() => {}); }, []);
+  const map = useRef<MapHandle>(null);
+  const landmarksRef = useRef<Landmark[]>([]);
+  const lastSurprise = useRef<Place | null>(null);
+
+  useEffect(() => {
+    Promise.all([fetch(`${tilesBase}/meta.json`).then((r) => r.json()), fetch(asset("/data/places.json")).then((r) => r.json())])
+      .then(([m, p]) => {
+        setMeta(m);
+        setPlaces(p);
+      })
+      .catch(() => setError(true));
+  }, []);
+
+  const initial = useMemo<View | null>(() => {
+    if (!meta || !places) return null;
+    const fromLink = readHash();
+    if (fromLink) return fromLink;
+    const start = places.find((p) => p.n === OPENING_NAME);
+    return start ? { x: start.x, y: start.y, z: 0.55 } : { x: meta.width / 2, y: meta.height / 2, z: 0.2 };
+  }, [meta, places]);
+
+  // Every view has a URL, so any view can be sent to someone.
+  const hashTimer = useRef<ReturnType<typeof setTimeout>>();
+  const onViewChange = useCallback((v: View) => {
+    setView(v);
+    clearTimeout(hashTimer.current);
+    hashTimer.current = setTimeout(() => {
+      history.replaceState(null, "", `#${Math.round(v.x)},${Math.round(v.y)},${v.z.toFixed(3)}`);
+    }, 300);
+  }, []);
+
+  const pick = useCallback((p: Place) => {
+    setActive(p);
+    // A landmark with a full card: the nearest one within ~50 m of the pin.
+    let best: Landmark | null = null, bd = 220;
+    for (const l of landmarksRef.current) {
+      const d = Math.hypot(l.x - p.x, l.y - p.y);
+      if (d < bd) { bd = d; best = l; }
+    }
+    setLm(on("landmarks") ? best : null);
+    map.current?.flyTo(p.x, p.y, p.c === "quarter" ? 0.3 : FOCUS_ZOOM);
+  }, []);
+
+  const surprise = useCallback(() => {
+    const pool = (places ?? []).filter((p) => p.f && p !== lastSurprise.current);
+    if (!pool.length) return;
+    const p = pool[Math.floor(Math.random() * pool.length)];
+    lastSurprise.current = p;
+    pick(p);
+  }, [places, pick]);
+
+  const share = useCallback(async () => {
+    const url = location.href;
+    const title = active ? `${active.n}, Isometric Luxembourg` : "Isometric Luxembourg";
+    try {
+      if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+        await navigator.share({ title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setToast("Link to this view copied");
+        setTimeout(() => setToast(""), 2200);
+      }
+    } catch {
+      /* The person closed the share sheet. */
+    }
+  }, [active]);
+
+  const have = useMemo(() => new Set(Object.keys(meta?.variants ?? {}) as Variant[]), [meta]);
+  const sceneMix = useMemo(() => mix(scene, have, sun), [scene, have, sun]);
+  useEffect(() => {
+    if (!ready) return;
+    const alpha: Record<string, number> = {};
+    for (const v of have) alpha[v] = 0;
+    for (const l of sceneMix.layers) if (l.v !== "day") alpha[l.v] = l.a;
+    if (scene.christmas) {
+      const nightish = sceneMix.night;
+      if (have.has("xmas_day" as Variant)) alpha["xmas_day"] = 1 - nightish;
+      if (have.has("xmas_night" as Variant)) alpha["xmas_night"] = nightish;
+    }
+    map.current?.setLayers(alpha);
+    const n = sceneMix.night;
+    map.current?.setPatches(xmas.flatMap((x) => [
+      { url: asset(`/events/xmas/${x.site}_day.webp`), x0: x.x0, y0: x.y0, w: x.w, a: scene.christmas ? 1 - n : 0 },
+      { url: asset(`/events/xmas/${x.site}_night.webp`), x0: x.x0, y0: x.y0, w: x.w, a: scene.christmas ? n : 0 },
+    ]));
+  }, [sceneMix, ready, have, scene.christmas, xmas]);
+
+  if (error) return <div className="splash">The map couldn't load. Please try refreshing.</div>;
+  if (!meta || !places || !initial) return <div className="splash">Loading Luxembourg</div>;
+
+  return (
+    <div className="app">
+      <div className="graded" style={{ filter: sceneMix.grade || undefined }}>
+      <IsometricMap ref={map} meta={meta} initial={initial} onViewChange={onViewChange} onReady={() => setReady(true)} />
+      </div>
+      {ready && <Overlay map={map} meta={meta} streets={streets} traffic={traffic} night={sceneMix.night} hour={live ? null : scene.hour} season={scene.season} />}
+      {(on("timeOfDay") || on("seasons") || on("christmas")) && <SceneControl scene={scene} live={live} sun={sun} onLive={() => setLive(true)}
+        onChange={(c) => { setLive(false); setScene((s) => ({ ...s, ...c, ...(c.christmas ? { season: "winter" as const } : {}) })); }} />}
+      {ready && on("pins") && <Pins places={places} view={view} map={map} active={active} onPick={pick} />}
+      {on("search") && <Search places={places} onPick={pick} onSurprise={on("surprise") ? surprise : undefined} />}
+
+      {lm && <LandmarkPanel key={lm.slug} lm={lm} onClose={() => { setLm(null); setActive(null); }} />}
+
+      {active && !lm && (
+        <div className="card glass" role="status">
+          <button type="button" className="ibtn close" aria-label="Close" onClick={() => setActive(null)}>×</button>
+          <b>{active.n}</b>
+          {active.d && <p>{active.d}</p>}
+        </div>
+      )}
+
+      {(on("streets") || on("traffic") || on("transit")) && (
+        <div className="layers glass" role="group" aria-label="Map layers">
+          {on("streets") && <button type="button" className={streets ? "on" : ""} aria-pressed={streets} onClick={() => setStreets((v) => !v)}>Streets</button>}
+          {(on("traffic") || on("transit")) && <button type="button" className={traffic ? "on" : ""} aria-pressed={traffic} onClick={() => setTraffic((v) => !v)}>Traffic</button>}
+        </div>
+      )}
+
+      <div className="tools">
+        <button type="button" className="round glass" aria-label="Zoom in" onClick={() => map.current?.zoomBy(1.6)}>+</button>
+        <button type="button" className="round glass" aria-label="Zoom out" onClick={() => map.current?.zoomBy(1 / 1.6)}>−</button>
+        {on("share") && <button type="button" className="round share" aria-label="Share this view" onClick={share}>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M12 15V4m0 0L8 8m4-4 4 4M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>}
+      </div>
+
+      <div className="foot">
+        {on("previewBadge") && meta.art !== "final" && <span className="badge">{meta.art === "painted" ? "Preview: old town painted, the rest is 3D data" : "Preview: 3D data, final art coming"}</span>}
+        <button type="button" className="link" onClick={() => setAbout(true)}>About and credits</button>
+      </div>
+
+      {toast && <div className="toast glass" role="status">{toast}</div>}
+
+      {about && (
+        <div className="about-wrap" onClick={() => setAbout(false)}>
+          <section className="about glass" role="dialog" aria-label="About and credits" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="ibtn close" aria-label="Close" onClick={() => setAbout(false)}>×</button>
+            <h1>Isometric Luxembourg</h1>
+            <p>Luxembourg City seen from the south-east, from its gorges to Kirchberg, drawn as an inked illustration. This first release paints the old town in full, by day and night and through the seasons; the rest of the city is still shown as 3D data and will be painted next.</p>
+            <p>The art is painted tile by tile by an image model trained for this map on the real city: 3D buildings, terrain, streets, rail and rivers decide what goes where.</p>
+            <h2>Data</h2>
+            <ul>
+              <li>3D buildings 2023 and orthophoto 2023: Administration du Cadastre et de la Topographie, CC0</li>
+              <li>Places, streets and addresses: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>, ODbL</li>
+              <li>LiDAR terrain 2019: data.public.lu, CC0</li>
+              <li>Tram and train timetables (GTFS): data.public.lu, CC BY 4.0</li>
+              <li>Landmark photos: Wikimedia Commons, credited with author and licence on each card</li>
+            </ul>
+            <h2>Code</h2>
+            <ul>
+              <li>Viewer built from <a href="https://github.com/cannoneyed/isometric-nyc" target="_blank" rel="noopener">isometric-nyc</a> by Andy Coenen, MIT</li>
+              <li><a href="https://openseadragon.github.io" target="_blank" rel="noopener">OpenSeadragon</a> and <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a></li>
+              <li><a href="https://github.com/amirdaraee/isometric-luxembourg" target="_blank" rel="noopener">Source on GitHub</a>: code MIT, art CC BY-NC 4.0</li>
+            </ul>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}

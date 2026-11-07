@@ -1,0 +1,862 @@
+[
+ {
+  "id": "winterlights",
+  "name": "Winterlights (Christmas markets)",
+  "name_local": "Winterlights; Chrëschtmaart (lb), marchés de Noël (fr)",
+  "rule": "Friday before the last Sunday before Advent (9 days before the 1st Sunday of Advent) to the first Sunday of January",
+  "dates_2026": {
+   "start": "2026-11-20",
+   "end": "2027-01-03",
+   "status": "confirmed (vdl.lu)"
+  },
+  "dates_2027": {
+   "start": "2027-11-19",
+   "end": "2028-01-02",
+   "status": "computed"
+  },
+  "locations": [
+   {
+    "name": "Place d'Armes",
+    "lat": 49.6111,
+    "lon": 6.1301
+   },
+   {
+    "name": "Place de la Constitution (Gëlle Fra)",
+    "lat": 49.6095,
+    "lon": 6.1292
+   },
+   {
+    "name": "Place de Paris",
+    "lat": 49.6031,
+    "lon": 6.1332
+   },
+   {
+    "name": "Kinnekswiss (Parc municipal)",
+    "lat": 49.6127,
+    "lon": 6.1253
+   },
+   {
+    "name": "Place Émile Hamilius",
+    "lat": 49.6119,
+    "lon": 6.1275
+   },
+   {
+    "name": "Place Guillaume II (Knuedler)",
+    "lat": 49.6106,
+    "lon": 6.1322
+   }
+  ],
+  "visual_impact": "high",
+  "layer_idea": "Wooden chalets with white/red roofs and warm string lights on Place d'Armes (ring round the bandstand, 12 m tree, crib) and Place de la Constitution (40 chalets, 32 m big wheel and Christmas pyramid next to the Gëlle Fra); smaller chalet groups on Place de Paris and Hamilius (10 m royal tree); ice rink and food village on the Kinnekswiss; giant slide and carousel on the Knuedler; light garlands over Grand-Rue and the shopping streets; optional snow.",
+  "website": "https://www.vdl.lu/en/visiting/leisure-and-recreation/festivals-fairs-and-events/winterlights-0"
+ },
+ {
+  "id": "new-years-eve",
+  "name": "New Year's Eve",
+  "name_local": "Silvester / Sylvester (lb), Saint-Sylvestre (fr)",
+  "rule": "31 December (night into 1 January)",
+  "dates_2026": {
+   "start": "2026-12-31",
+   "end": "2027-01-01",
+   "status": "fixed date"
+  },
+  "dates_2027": {
+   "start": "2027-12-31",
+   "end": "2028-01-01",
+   "status": "fixed date"
+  },
+  "locations": [
+   {
+    "name": "Place d'Armes",
+    "lat": 49.6111,
+    "lon": 6.1301
+   },
+   {
+    "name": "Place de la Constitution (Gëlle Fra)",
+    "lat": 49.6095,
+    "lon": 6.1292
+   },
+   {
+    "name": "Pont Adolphe",
+    "lat": 49.6077,
+    "lon": 6.1265
+   }
+  ],
+  "visual_impact": "medium",
+  "layer_idea": "Christmas markets still standing (Winterlights runs into January); scattered private-firework bursts in the sky over the residential quarters and the valleys. The city has no official display and bans private fireworks in its territory, so keep it light: a few sparkles and a midnight glow.",
+  "website": ""
+ },
+ {
+  "id": "schueberfouer",
+  "name": "Schueberfouer funfair",
+  "name_local": "Schueberfouer (lb), Schobermesse (de), foire de la Saint-Barthélemy (historic)",
+  "rule": "Opens on the Friday between 20 and 26 August (the Friday on or just before St Bartholomew's week) and runs 20 days to the Wednesday three weeks later",
+  "dates_2026": {
+   "start": "2026-08-21",
+   "end": "2026-09-09",
+   "status": "confirmed (vdl.lu, Chronicle)",
+   "extras": {
+    "Hämmelsmarsch": "2026-08-22",
+    "Fouersonndeg": "2026-08-30",
+    "closing fireworks": "2026-09-09 22:00 from the Red Bridge"
+   }
+  },
+  "dates_2027": {
+   "start": "2027-08-20",
+   "end": "2027-09-08",
+   "status": "computed"
+  },
+  "locations": [
+   {
+    "name": "Champ du Glacis",
+    "lat": 49.6187,
+    "lon": 6.1243
+   },
+   {
+    "name": "Pont Grande-Duchesse Charlotte (Red Bridge)",
+    "lat": 49.6145,
+    "lon": 6.1386
+   },
+   {
+    "name": "Limpertsberg",
+    "lat": 49.6205,
+    "lon": 6.122
+   }
+  ],
+  "visual_impact": "high",
+  "layer_idea": "Fill the 4.4 ha Glacis car park with a dense grid of rides and stalls: a big wheel as the landmark, roller coasters (Wilde Maus), drop tower, chair-o-planes, log flume, ghost trains, coloured canopies, food halls clustered in the north-west part, camelot stalls along allée Scheffer; at night everything glows in neon. Closing-night fireworks from the Red Bridge. Hämmelsmarsch (sheep and brass band) on opening weekend in the old town.",
+  "website": "https://fouer.vdl.lu"
+ },
+ {
+  "id": "national-day",
+  "name": "National Day (Grand Duke's official birthday) and its eve",
+  "name_local": "Nationalfeierdag / Groussherzogsgebuertsdag (lb), Fête nationale (fr)",
+  "rule": "23 June (public holiday); the main city celebrations are on the eve, 22 June",
+  "dates_2026": {
+   "start": "2026-06-22",
+   "end": "2026-06-23",
+   "status": "confirmed (government and city programmes)",
+   "extras": {
+    "torchlight procession": "2026-06-22 21:30",
+    "fireworks": "2026-06-22 23:00 from Pont Adolphe, 17 min",
+    "military parade": "2026-06-23 12:00 avenue de la Liberté",
+    "Te Deum": "2026-06-23 16:30 cathedral"
+   }
+  },
+  "dates_2027": {
+   "start": "2027-06-22",
+   "end": "2027-06-23",
+   "status": "fixed date (programme not yet published)"
+  },
+  "locations": [
+   {
+    "name": "Pont Adolphe",
+    "lat": 49.6077,
+    "lon": 6.1265
+   },
+   {
+    "name": "Place du Théâtre",
+    "lat": 49.6118,
+    "lon": 6.1316
+   },
+   {
+    "name": "Côte d'Eich",
+    "lat": 49.6155,
+    "lon": 6.1325
+   },
+   {
+    "name": "Rue du Fossé",
+    "lat": 49.6109,
+    "lon": 6.1312
+   },
+   {
+    "name": "Place Guillaume II (Knuedler)",
+    "lat": 49.6106,
+    "lon": 6.1322
+   },
+   {
+    "name": "Place Clairefontaine",
+    "lat": 49.6101,
+    "lon": 6.134
+   },
+   {
+    "name": "Place d'Armes",
+    "lat": 49.6111,
+    "lon": 6.1301
+   },
+   {
+    "name": "Champ du Glacis",
+    "lat": 49.6187,
+    "lon": 6.1243
+   },
+   {
+    "name": "Avenue de la Liberté",
+    "lat": 49.6043,
+    "lon": 6.1312
+   },
+   {
+    "name": "Notre-Dame Cathedral",
+    "lat": 49.6097,
+    "lon": 6.1316
+   },
+   {
+    "name": "Grand Ducal Palace",
+    "lat": 49.6106,
+    "lon": 6.1338
+   },
+   {
+    "name": "Philharmonie (Place de l'Europe)",
+    "lat": 49.6186,
+    "lon": 6.1419
+   },
+   {
+    "name": "Fetschenhof (Cents)",
+    "lat": 49.6185,
+    "lon": 6.165
+   },
+   {
+    "name": "Kinnekswiss (Parc municipal)",
+    "lat": 49.6127,
+    "lon": 6.1253
+   }
+  ],
+  "visual_impact": "high",
+  "layer_idea": "Red-white-light-blue flags on every public building and across the old-town streets; a firework show bursting over the Pétrusse valley launched from Pont Adolphe; torches along the procession route (Place du Théâtre, Côte d'Eich, rue du Fossé, Knuedler, Place Clairefontaine); concert stage and crowds on the Glacis; stands on avenue de la Liberté for the military parade with army vehicles and a flypast.",
+  "website": "https://monarchie.lu"
+ },
+ {
+  "id": "octave",
+  "name": "Octave of Our Lady of Consolation and the Mäertchen",
+  "name_local": "Muttergottesoktav / Oktav, Oktavmäertchen (lb), Octave de Notre-Dame (fr)",
+  "rule": "From the Saturday before the 3rd Sunday after Easter to the 5th Sunday after Easter (Easter + 20 to Easter + 35 days); closing procession on the last Sunday",
+  "dates_2026": {
+   "start": "2026-04-25",
+   "end": "2026-05-10",
+   "status": "confirmed (cathol.lu programme, vdl.lu)"
+  },
+  "dates_2027": {
+   "start": "2027-04-17",
+   "end": "2027-05-02",
+   "status": "computed"
+  },
+  "locations": [
+   {
+    "name": "Notre-Dame Cathedral",
+    "lat": 49.6097,
+    "lon": 6.1316
+   },
+   {
+    "name": "Place Guillaume II (Knuedler)",
+    "lat": 49.6106,
+    "lon": 6.1322
+   },
+   {
+    "name": "Place de la Constitution (Gëlle Fra)",
+    "lat": 49.6095,
+    "lon": 6.1292
+   }
+  ],
+  "visual_impact": "medium",
+  "layer_idea": "Mäertchen on the Knuedler: about 50 food and game stalls around a large covered terrace, a few small fairground rides; pilgrim groups with banners at the cathedral; on the closing Sunday a long procession with the statue of the Consolatrix Afflictorum through the old town, flags and flowers on the cathedral portal.",
+  "website": "https://www.cathol.lu"
+ },
+ {
+  "id": "emaischen",
+  "name": "Éimaischen (Easter Monday market)",
+  "name_local": "Éimaischen / Eemaischen (lb), Emaischen",
+  "rule": "Easter Monday",
+  "dates_2026": {
+   "start": "2026-04-06",
+   "end": "2026-04-06",
+   "status": "confirmed (vdl.lu)"
+  },
+  "dates_2027": {
+   "start": "2027-03-29",
+   "end": "2027-03-29",
+   "status": "computed (rule is fixed)"
+  },
+  "locations": [
+   {
+    "name": "Marché-aux-Poissons (Fëschmaart)",
+    "lat": 49.6111,
+    "lon": 6.1366
+   }
+  ],
+  "visual_impact": "medium",
+  "layer_idea": "Stalls with pottery, crafts and colourful clay bird whistles (Péckvillercher) filling the Marché-aux-Poissons and the lanes around the National Museum; a music stage; spring blossom.",
+  "website": "https://www.vdl.lu"
+ },
+ {
+  "id": "buergbrennen",
+  "name": "Buergbrennen bonfires",
+  "name_local": "Buergbrennen, Buergsonndeg (lb), dimanche des Brandons (fr)",
+  "rule": "First Sunday of Lent (Easter - 42 days), some villages on the Saturday before",
+  "dates_2026": {
+   "start": "2026-02-21",
+   "end": "2026-02-22",
+   "status": "confirmed (national listings)"
+  },
+  "dates_2027": {
+   "start": "2027-02-13",
+   "end": "2027-02-14",
+   "status": "computed"
+  },
+  "locations": [
+   {
+    "name": "Cents",
+    "lat": 49.6155,
+    "lon": 6.169
+   },
+   {
+    "name": "Bonnevoie",
+    "lat": 49.599,
+    "lon": 6.14
+   },
+   {
+    "name": "Pétrusse valley (Schlittenhiewel)",
+    "lat": 49.6071,
+    "lon": 6.1255
+   }
+  ],
+  "visual_impact": "medium",
+  "layer_idea": "A few tall bonfires (often with a cross-shaped straw 'castle' on a pole) glowing at dusk on open ground at the city's edges and in the valleys, with sparks and smoke; small crowds and a mulled-wine stand next to each.",
+  "website": ""
+ },
+ {
+  "id": "carnival",
+  "name": "Carnival and cavalcades",
+  "name_local": "Fuesent / Fuesend (lb), Carnaval, cavalcade (fr)",
+  "rule": "Carnival Sunday (Easter - 49) for Diekirch; mid-Lent (Laetare, Easter - 21) for the Pétange cavalcade; city events in the weeks before Ash Wednesday",
+  "dates_2026": {
+   "start": "2026-02-15",
+   "end": "2026-03-15",
+   "status": "Diekirch 15 Feb confirmed by photos; Pétange computed"
+  },
+  "dates_2027": {
+   "start": "2027-02-07",
+   "end": "2027-03-07",
+   "status": "computed"
+  },
+  "locations": [
+   {
+    "name": "Diekirch",
+    "lat": 49.8686,
+    "lon": 6.1594
+   },
+   {
+    "name": "Pétange",
+    "lat": 49.558,
+    "lon": 5.88
+   },
+   {
+    "name": "Esch-sur-Alzette",
+    "lat": 49.4958,
+    "lon": 5.9806
+   }
+  ],
+  "visual_impact": "low",
+  "layer_idea": "Outside the mapped city. If used: confetti, streamers and a short float parade as an easter egg, or masked figures on the Knuedler.",
+  "website": ""
+ },
+ {
+  "id": "fete-de-la-musique",
+  "name": "Fête de la Musique",
+  "name_local": "Fête de la Musique",
+  "rule": "Official day 21 June; Luxembourg City holds its programme on the weekend before (Friday-Sunday)",
+  "dates_2026": {
+   "start": "2026-06-12",
+   "end": "2026-06-14",
+   "status": "confirmed (Chronicle, vdl.lu)"
+  },
+  "dates_2027": {
+   "start": "2027-06-11",
+   "end": "2027-06-13",
+   "status": "computed (guess, city weekend before National Day)"
+  },
+  "locations": [
+   {
+    "name": "Place Guillaume II (Knuedler)",
+    "lat": 49.6106,
+    "lon": 6.1322
+   },
+   {
+    "name": "Place d'Armes",
+    "lat": 49.6111,
+    "lon": 6.1301
+   },
+   {
+    "name": "Place de la Constitution (Gëlle Fra)",
+    "lat": 49.6095,
+    "lon": 6.1292
+   },
+   {
+    "name": "Place du Puits-Rouge",
+    "lat": 49.6113,
+    "lon": 6.1318
+   }
+  ],
+  "visual_impact": "medium",
+  "layer_idea": "Small open-air stages with lighting rigs and crowds on five old-town squares.",
+  "website": "https://www.vdl.lu/en/visiting/leisure-and-recreation/festivals-fairs-and-events/fete-de-la-musique"
+ },
+ {
+  "id": "summer-in-the-city",
+  "name": "Summer in the City",
+  "name_local": "Summer in the City / Summer an der Stad",
+  "rule": "Umbrella programme from mid-June to mid-September, ending with the Schueberfouer",
+  "dates_2026": {
+   "start": "2026-06-12",
+   "end": "2026-09-18",
+   "status": "confirmed (LCTO press release 9 June 2026)"
+  },
+  "dates_2027": {
+   "start": "2027-06",
+   "end": "2027-09",
+   "status": "computed (approximate)"
+  },
+  "locations": [
+   {
+    "name": "Place Guillaume II (Knuedler)",
+    "lat": 49.6106,
+    "lon": 6.1322
+   },
+   {
+    "name": "Kinnekswiss (Parc municipal)",
+    "lat": 49.6127,
+    "lon": 6.1253
+   },
+   {
+    "name": "Champ du Glacis",
+    "lat": 49.6187,
+    "lon": 6.1243
+   }
+  ],
+  "visual_impact": "low",
+  "layer_idea": "Umbrella only: use the individual events (Kinnekswiss loves, Blues'n Jazz Rallye, open-air cinema). Optional: café terraces and parasols across the old-town squares all summer.",
+  "website": "https://summerinthecity.lu"
+ },
+ {
+  "id": "kinnekswiss-loves",
+  "name": "Kinnekswiss loves... (open-air concerts in the municipal park)",
+  "name_local": "Kinnekswiss loves...",
+  "rule": "First weekend of July (Friday-Sunday)",
+  "dates_2026": {
+   "start": "2026-07-03",
+   "end": "2026-07-05",
+   "status": "confirmed (LCTO)"
+  },
+  "dates_2027": {
+   "start": "2027-07-02",
+   "end": "2027-07-04",
+   "status": "computed"
+  },
+  "locations": [
+   {
+    "name": "Kinnekswiss (Parc municipal)",
+    "lat": 49.6127,
+    "lon": 6.1253
+   }
+  ],
+  "visual_impact": "medium",
+  "layer_idea": "A big stage at the bottom of the sloping Kinnekswiss lawn with picnic crowds on the grass, food trucks round the edge.",
+  "website": "https://www.vdl.lu"
+ },
+ {
+  "id": "blues-jazz-rallye",
+  "name": "Blues'n Jazz Rallye",
+  "name_local": "Blues'n Jazz Rallye",
+  "rule": "A Saturday in mid/late July (third Saturday in 2026)",
+  "dates_2026": {
+   "start": "2026-07-18",
+   "end": "2026-07-18",
+   "status": "confirmed (LCTO, Chronicle)"
+  },
+  "dates_2027": {
+   "start": "2027-07-17",
+   "end": "2027-07-17",
+   "status": "computed (guess)"
+  },
+  "locations": [
+   {
+    "name": "Grund (Neimënster)",
+    "lat": 49.6096,
+    "lon": 6.1376
+   },
+   {
+    "name": "Clausen (Rives de Clausen)",
+    "lat": 49.6122,
+    "lon": 6.144
+   },
+   {
+    "name": "Pfaffenthal",
+    "lat": 49.615,
+    "lon": 6.136
+   }
+  ],
+  "visual_impact": "medium",
+  "layer_idea": "Over 40 small stages and brass bands in the valley quarters: stages on the Neimënster forecourt, Rives de Clausen and Pfaffenthal squares, fairy lights strung across the lanes, crowds walking between them at night.",
+  "website": "https://www.summerinthecity.lu"
+ },
+ {
+  "id": "open-air-cinema",
+  "name": "City Open Air Cinema",
+  "name_local": "Ciné en plein air / City Open Air Cinema",
+  "rule": "Late July on the Knuedler, early August on Place Léon XIII (Cinémathèque, about a week each)",
+  "dates_2026": {
+   "start": "2026-07-23",
+   "end": "2026-08-08",
+   "status": "confirmed (Knuedler 23-28 Jul, Place Léon XIII 6-8 Aug)"
+  },
+  "dates_2027": {
+   "start": "2027-07",
+   "end": "2027-08",
+   "status": "computed (approximate)"
+  },
+  "locations": [
+   {
+    "name": "Place Guillaume II (Knuedler)",
+    "lat": 49.6106,
+    "lon": 6.1322
+   },
+   {
+    "name": "Place Léon XIII (Bonnevoie)",
+    "lat": 49.5997,
+    "lon": 6.1393
+   },
+   {
+    "name": "Parc central Kirchberg",
+    "lat": 49.6262,
+    "lon": 6.161
+   }
+  ],
+  "visual_impact": "low",
+  "layer_idea": "A big inflatable screen glowing on the Knuedler at night with rows of chairs; Sunset Cinema screen in Parc Kirchberg.",
+  "website": "https://www.cinematheque.lu"
+ },
+ {
+  "id": "pride",
+  "name": "Luxembourg Pride (Pride Week, Street Fest and Equality March)",
+  "name_local": "Luxembourg Pride",
+  "rule": "First half of July; host city alternates between Luxembourg City and Esch-sur-Alzette",
+  "dates_2026": {
+   "start": "2026-07-04",
+   "end": "2026-07-12",
+   "status": "confirmed (luxembourgpride.lu); Street Fest 10-11 July on Place Guillaume II and Place Clairefontaine"
+  },
+  "dates_2027": {
+   "start": "2027-07",
+   "end": "2027-07",
+   "status": "computed; 2027 expected in Esch-sur-Alzette under the rotation (unconfirmed)"
+  },
+  "locations": [
+   {
+    "name": "Place Guillaume II (Knuedler)",
+    "lat": 49.6106,
+    "lon": 6.1322
+   },
+   {
+    "name": "Place Clairefontaine",
+    "lat": 49.6101,
+    "lon": 6.134
+   }
+  ],
+  "visual_impact": "medium",
+  "layer_idea": "Rainbow flags on the Hôtel de Ville and lamp posts, two stages (Knuedler and Place Clairefontaine), rainbow-coloured march through the old town.",
+  "website": "https://www.luxembourgpride.lu"
+ },
+ {
+  "id": "ing-night-marathon",
+  "name": "ING Night Marathon Luxembourg",
+  "name_local": "ING Night Marathon Luxembourg",
+  "rule": "A Saturday evening in May (not Whitsun weekend)",
+  "dates_2026": {
+   "start": "2026-05-16",
+   "end": "2026-05-16",
+   "status": "confirmed (organiser, VisitLuxembourg)"
+  },
+  "dates_2027": {
+   "start": "2027-05",
+   "end": "2027-05",
+   "status": "not published"
+  },
+  "locations": [
+   {
+    "name": "Luxexpo The Box (Kirchberg)",
+    "lat": 49.6343,
+    "lon": 6.1716
+   },
+   {
+    "name": "Pont Grande-Duchesse Charlotte (Red Bridge)",
+    "lat": 49.6145,
+    "lon": 6.1386
+   },
+   {
+    "name": "Gare district (Avenue de la Gare)",
+    "lat": 49.604,
+    "lon": 6.132
+   },
+   {
+    "name": "Place d'Armes",
+    "lat": 49.6111,
+    "lon": 6.1301
+   }
+  ],
+  "visual_impact": "medium",
+  "layer_idea": "Barriers, kilometre arches and a long glowing stream of runners (lights, high-vis) crossing the Red Bridge and winding through Ville Haute and the Gare quarter; start/finish arch at Luxexpo on Kirchberg; about 18,000 runners in 2026.",
+  "website": "https://www.ing-night-marathon.lu"
+ },
+ {
+  "id": "nuit-des-musees",
+  "name": "Nuit des Musées (Night of the Museums)",
+  "name_local": "Nuit des Musées / Muséesnuecht",
+  "rule": "A Saturday in October (2nd Saturday in 2025 and 2026)",
+  "dates_2026": {
+   "start": "2026-10-10",
+   "end": "2026-10-10",
+   "status": "confirmed (VisitLuxembourg)"
+  },
+  "dates_2027": {
+   "start": "2027-10-09",
+   "end": "2027-10-09",
+   "status": "computed"
+  },
+  "locations": [
+   {
+    "name": "Marché-aux-Poissons (Fëschmaart)",
+    "lat": 49.6111,
+    "lon": 6.1366
+   },
+   {
+    "name": "Grund (Neimënster)",
+    "lat": 49.6096,
+    "lon": 6.1376
+   },
+   {
+    "name": "Philharmonie (Place de l'Europe)",
+    "lat": 49.6186,
+    "lon": 6.1419
+   }
+  ],
+  "visual_impact": "low",
+  "layer_idea": "Museum facades lit in colour after dark, shuttle buses and lanterns along the route between museums (MNHA on the Fëschmaart, Lëtzebuerg City Museum, Villa Vauban, Casino, Mudam and Dräi Eechelen on Kirchberg).",
+  "website": "https://www.nuit-des-musees.lu"
+ },
+ {
+  "id": "tour-de-luxembourg",
+  "name": "Škoda Tour de Luxembourg (cycling)",
+  "name_local": "Tour de Luxembourg / Lëtzebuerg-Ronn",
+  "rule": "Five stages in mid-September (2026: Wednesday-Sunday); city start/finishes vary yearly",
+  "dates_2026": {
+   "start": "2026-09-16",
+   "end": "2026-09-20",
+   "status": "confirmed (skodatour.lu): stage 1 Knuedler to Fëschmaart, stage 5 Mersch to Limpertsberg"
+  },
+  "dates_2027": {
+   "start": "2027-09",
+   "end": "2027-09",
+   "status": "not published"
+  },
+  "locations": [
+   {
+    "name": "Place Guillaume II (Knuedler)",
+    "lat": 49.6106,
+    "lon": 6.1322
+   },
+   {
+    "name": "Marché-aux-Poissons (Fëschmaart)",
+    "lat": 49.6111,
+    "lon": 6.1366
+   },
+   {
+    "name": "Limpertsberg",
+    "lat": 49.6205,
+    "lon": 6.122
+   }
+  ],
+  "visual_impact": "low",
+  "layer_idea": "Finish arch, team buses and sponsor banners near the finish, a peloton sprite on the cobbles of the old town.",
+  "website": "https://skodatour.lu"
+ },
+ {
+  "id": "halloween",
+  "name": "Halloween",
+  "name_local": "Halloween",
+  "rule": "31 October; city events on the weekend before (2026: neimënster Halloween weekend 24-25 October)",
+  "dates_2026": {
+   "start": "2026-10-24",
+   "end": "2026-10-31",
+   "status": "confirmed for neimënster and Philharmonie events"
+  },
+  "dates_2027": {
+   "start": "2027-10-23",
+   "end": "2027-10-31",
+   "status": "computed"
+  },
+  "locations": [
+   {
+    "name": "Grund (Neimënster)",
+    "lat": 49.6096,
+    "lon": 6.1376
+   },
+   {
+    "name": "Philharmonie (Place de l'Europe)",
+    "lat": 49.6186,
+    "lon": 6.1419
+   }
+  ],
+  "visual_impact": "low",
+  "layer_idea": "No big public event changes the city, so this is a playful layer: pumpkins on doorsteps and in windows, a few ghosts around the casemates and the Bock, bats over the Alzette valley, orange-lit Neimënster.",
+  "website": "https://www.neimenster.lu"
+ },
+ {
+  "id": "all-saints",
+  "name": "All Saints' Day",
+  "name_local": "Allerhellgen (lb), Toussaint (fr)",
+  "rule": "1 November (public holiday)",
+  "dates_2026": {
+   "start": "2026-11-01",
+   "end": "2026-11-01",
+   "status": "fixed date"
+  },
+  "dates_2027": {
+   "start": "2027-11-01",
+   "end": "2027-11-01",
+   "status": "fixed date"
+  },
+  "locations": [
+   {
+    "name": "Notre-Dame cemetery (Limpertsberg)",
+    "lat": 49.6165,
+    "lon": 6.121
+   }
+  ],
+  "visual_impact": "low",
+  "layer_idea": "Chrysanthemum pots and red grave candles in the cemeteries (Notre-Dame cemetery in Limpertsberg, Hamm, Bonnevoie).",
+  "website": ""
+ },
+ {
+  "id": "historic-trounwiessel-2025",
+  "name": "Accession of Grand Duke Guillaume (one-off, 2025)",
+  "name_local": "Trounwiessel (lb), avènement au trône (fr)",
+  "rule": "One-off: 3-5 October 2025",
+  "dates_2026": null,
+  "dates_2027": null,
+  "locations": [
+   {
+    "name": "Chamber of Deputies",
+    "lat": 49.6103,
+    "lon": 6.1343
+   },
+   {
+    "name": "Grand Ducal Palace",
+    "lat": 49.6106,
+    "lon": 6.1338
+   },
+   {
+    "name": "Hôtel de Ville",
+    "lat": 49.6108,
+    "lon": 6.1314
+   },
+   {
+    "name": "Champ du Glacis",
+    "lat": 49.6187,
+    "lon": 6.1243
+   },
+   {
+    "name": "Notre-Dame Cathedral",
+    "lat": 49.6097,
+    "lon": 6.1316
+   }
+  ],
+  "visual_impact": "high",
+  "layer_idea": "Easter egg or 'history' layer: red-white-blue bunting and the joint G/S monogram on the palace and old-town streets, big screens, crowds before the palace balcony, the drone show and concert on the Glacis, Te Deum at the cathedral.",
+  "website": "https://www.trounwiessel.lu"
+ },
+ {
+  "id": "historic-royal-wedding-2012",
+  "name": "Wedding of Hereditary Grand Duke Guillaume and Countess Stéphanie de Lannoy (2012)",
+  "name_local": "Royal wedding 2012",
+  "rule": "One-off: civil wedding 19 Oct 2012 (Hôtel de Ville), religious wedding 20 Oct 2012 (cathedral)",
+  "dates_2026": null,
+  "dates_2027": null,
+  "locations": [
+   {
+    "name": "Hôtel de Ville",
+    "lat": 49.6108,
+    "lon": 6.1314
+   },
+   {
+    "name": "Notre-Dame Cathedral",
+    "lat": 49.6097,
+    "lon": 6.1316
+   },
+   {
+    "name": "Grand Ducal Palace",
+    "lat": 49.6106,
+    "lon": 6.1338
+   },
+   {
+    "name": "Cercle Cité",
+    "lat": 49.6113,
+    "lon": 6.1309
+   }
+  ],
+  "visual_impact": "medium",
+  "layer_idea": "Flags and flowers on the old town, crowds on the Knuedler and before the palace, the newly-weds on the palace balcony.",
+  "website": ""
+ },
+ {
+  "id": "historic-liberation-1944",
+  "name": "Liberation of Luxembourg City (10 September 1944)",
+  "name_local": "Befreiung (lb), Libération (fr)",
+  "rule": "Anniversary 10 September",
+  "dates_2026": {
+   "start": "2026-09-10",
+   "end": "2026-09-10",
+   "status": "anniversary"
+  },
+  "dates_2027": {
+   "start": "2027-09-10",
+   "end": "2027-09-10",
+   "status": "anniversary"
+  },
+  "locations": [
+   {
+    "name": "Place d'Armes",
+    "lat": 49.6111,
+    "lon": 6.1301
+   },
+   {
+    "name": "Cercle Cité",
+    "lat": 49.6113,
+    "lon": 6.1309
+   }
+  ],
+  "visual_impact": "low",
+  "layer_idea": "Easter egg: a US Army jeep and flags on Place d'Armes, sepia filter.",
+  "website": ""
+ },
+ {
+  "id": "historic-tram-2017",
+  "name": "Tram opening (10 December 2017)",
+  "name_local": "Tram inauguration",
+  "rule": "One-off: first section Luxexpo - Pont Rouge opened 10 Dec 2017",
+  "dates_2026": null,
+  "dates_2027": null,
+  "locations": [
+   {
+    "name": "Luxexpo The Box (Kirchberg)",
+    "lat": 49.6343,
+    "lon": 6.1716
+   },
+   {
+    "name": "Pont Grande-Duchesse Charlotte (Red Bridge)",
+    "lat": 49.6145,
+    "lon": 6.1386
+   }
+  ],
+  "visual_impact": "low",
+  "layer_idea": "Easter egg: the first tram with a ribbon at Luxexpo, crowds along avenue J.F. Kennedy.",
+  "website": "https://www.luxtram.lu"
+ }
+]

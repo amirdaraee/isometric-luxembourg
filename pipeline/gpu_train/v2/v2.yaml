@@ -1,0 +1,85 @@
+# Style v2: Qwen-Image-Edit-2511, two input images (red-box render, layout map). Based on ai-toolkit's
+# Qwen-Image-Edit-2509 example (MIT) and the settings of the v1 run that worked.
+job: extension
+config:
+  name: luxembourg-ink-v2
+  process:
+  - type: sd_trainer
+    training_folder: /workspace/output
+    device: cuda:0
+    network:
+      type: lora
+      linear: 16
+      linear_alpha: 16
+    save:
+      dtype: float16
+      save_every: 500
+      max_step_saves_to_keep: 10
+    logging:
+      log_every: 10
+      verbose: false
+      use_wandb: false
+    datasets:
+    - folder_path: /workspace/data
+      control_path:
+      - /workspace/control
+      - /workspace/layout
+      caption_ext: txt
+      caption_dropout_rate: 0.05
+      resolution:
+      - 1024
+    train:
+      batch_size: 1
+      cache_text_embeddings: false
+      steps: 3500
+      gradient_accumulation: 1
+      timestep_type: weighted
+      train_unet: true
+      train_text_encoder: false
+      gradient_checkpointing: true
+      noise_scheduler: flowmatch
+      optimizer: adamw8bit
+      lr: 0.0001
+      dtype: bf16
+    model:
+      name_or_path: Qwen/Qwen-Image-Edit-2511
+      arch: qwen_image_edit_plus
+      quantize: false
+      low_vram: false
+      model_kwargs:
+        match_target_res: false
+    sample:
+      sampler: flowmatch
+      sample_every: 500
+      width: 1024
+      height: 1024
+      neg: ''
+      seed: 1867
+      walk_seed: false
+      guidance_scale: 3
+      sample_steps: 25
+      samples:
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
+        ctrl_img_1: /workspace/tests/place_in.png
+        ctrl_img_2: /workspace/tests/place_lay.png
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
+        ctrl_img_1: /workspace/tests/station_in.png
+        ctrl_img_2: /workspace/tests/station_lay.png
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
+        ctrl_img_1: /workspace/tests/grund_in.png
+        ctrl_img_2: /workspace/tests/grund_lay.png
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
+        ctrl_img_1: /workspace/tests/red_in.png
+        ctrl_img_2: /workspace/tests/red_lay.png
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
+        ctrl_img_1: /workspace/tests/glacis_in.png
+        ctrl_img_2: /workspace/tests/glacis_lay.png
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
+        ctrl_img_1: /workspace/tests/kirchberg_in.png
+        ctrl_img_2: /workspace/tests/kirchberg_lay.png
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
+        ctrl_img_1: /workspace/tests/hotel_in.png
+        ctrl_img_2: /workspace/tests/hotel_lay.png
+meta:
+  name: luxembourg-ink-v2
+  version: '1.0'

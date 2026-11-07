@@ -1,0 +1,650 @@
+[
+ {
+  "file": "images/cathedral__nave.jpg",
+  "building": "Notre-Dame Cathedral",
+  "shows": "Nave looking east to the choir: clustered sandstone piers and rib vaults",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Kathedrale_unserer_lieben_Frau_Luxemburg_Innenraum.jpg",
+  "author": "Helmlechner",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/cathedral__choir-windows.jpg",
+  "building": "Notre-Dame Cathedral",
+  "shows": "Choir with its tall stained-glass windows and high altar",
+  "source_page": "https://commons.wikimedia.org/wiki/File:LU_Luxemburgo_0710_(27)_(17042879327).jpg",
+  "author": "Diego Tirira from Quito, Ecuador",
+  "licence": "CC BY-SA 2.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/2.0"
+ },
+ {
+  "file": "images/cathedral__vault-ceiling.jpg",
+  "building": "Notre-Dame Cathedral",
+  "shows": "Looking straight up into the painted late-Gothic star/net rib vault",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Catedral_de_Nuestra_Se%C3%B1ora,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-16,_DD_87-89_HDR.jpg",
+  "author": "Diego Delso",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/cathedral__organ-gallery.jpg",
+  "building": "Notre-Dame Cathedral",
+  "shows": "West organ gallery with carved Renaissance balustrade (Daniel Muller)",
+  "source_page": "https://commons.wikimedia.org/wiki/File:LU_Luxemburgo_0710_(33)_(17250309715).jpg",
+  "author": "Diego Tirira from Quito, Ecuador",
+  "licence": "CC BY-SA 2.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/2.0"
+ },
+ {
+  "file": "images/cathedral__stained-glass.jpg",
+  "building": "Notre-Dame Cathedral",
+  "shows": "Stained-glass windows, detail of figures and colours",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Stained-glass_windows_in_Cath%C3%A9drale_Notre-Dame_de_Luxembourg.jpg",
+  "author": "Pudelek (Marcin Szala)",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/cathedral__crypt-hall.jpg",
+  "building": "Notre-Dame Cathedral",
+  "shows": "Crypt hall (1930s) with columns, looking towards the bronze grille of the grand-ducal vault",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxemburg,_Kathedrale_unserer_lieben_Frau,_Krypta-4.jpg",
+  "author": "Dguendel",
+  "licence": "CC BY 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by/3.0"
+ },
+ {
+  "file": "images/cathedral__crypt-vault-gate.jpg",
+  "building": "Notre-Dame Cathedral",
+  "shows": "Entrance to the grand-ducal burial vault: bronze gate flanked by two lions",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_Crypt_Entry.jpg",
+  "author": "User:Pietz",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/cathedral__crypt-tomb-john-the-blind.jpg",
+  "building": "Notre-Dame Cathedral",
+  "shows": "Tomb of John the Blind, King of Bohemia, in the crypt",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Crypt_of_Notre-Dame_Cathedral,_Luxembourg.jpg",
+  "author": "Dudva",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/cathedral__crypt-chapel.jpg",
+  "building": "Notre-Dame Cathedral",
+  "shows": "Crypt chapel with red chairs and starry-tiled vault",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxemburg,_Kathedrale_unserer_lieben_Frau,_Krypta-2.jpg",
+  "author": "Dguendel",
+  "licence": "CC BY 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by/3.0"
+ },
+ {
+  "file": "images/grand-ducal-palace__ballroom.jpg",
+  "building": "Grand Ducal Palace",
+  "shows": "Ballroom: white and gold panelling, mirrors, chandeliers",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Grand_Ducal_Palace_Ballroom.jpg",
+  "author": "MrSkylarMan",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/grand-ducal-palace__kings-lounge.jpg",
+  "building": "Grand Ducal Palace",
+  "shows": "King's Lounge: painted ceiling, dark panelling, red carpet",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Ducal_Palace_Kings_Lounge.jpg",
+  "author": "MrSkylarMan",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/grand-ducal-palace__state-salon.jpg",
+  "building": "Grand Ducal Palace",
+  "shows": "White-and-gold state salon used for audiences (people in frame)",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Nancy_Pelosi_and_Grand_Duke_Henri_in_2019_(1).jpg",
+  "author": "Office of U.S. House Speaker",
+  "licence": "Public domain",
+  "licence_url": "https://creativecommons.org/publicdomain/mark/1.0/"
+ },
+ {
+  "file": "images/chamber-of-deputies__plenary-hall.jpg",
+  "building": "Chamber of Deputies",
+  "shows": "Plenary hall seen from the public gallery: horseshoe of desks, chandeliers, marble pilasters",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Chambre_des_D%C3%A9put%C3%A9s_(int%C3%A9rieur)_(08).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/chamber-of-deputies__plenary-in-session.jpg",
+  "building": "Chamber of Deputies",
+  "shows": "Plenary hall in session, view along the benches",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Joint_meeting_with_the_Members_of_the_Standing_Committee,_the_Members_of_the_Luxembourg_delegation_to_the_OSCE_PA_and_the_Members_of_the_Committee_on_Foreign_and_European_Affairs,_Cooperation,_Immigration_and_Asylum,_25_March_2019_-_2.jpg",
+  "author": "oscepa",
+  "licence": "CC BY-SA 2.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/2.0"
+ },
+ {
+  "file": "images/chamber-of-deputies__plenary-presidium.jpg",
+  "building": "Chamber of Deputies",
+  "shows": "President's desk and tribune at the head of the plenary hall",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Chambre_des_D%C3%A9put%C3%A9s_(int%C3%A9rieur)_(09).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/chamber-of-deputies__staircase.jpg",
+  "building": "Chamber of Deputies",
+  "shows": "Main staircase with red carpet and carved balustrade",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Chambre_des_D%C3%A9put%C3%A9s_(int%C3%A9rieur)_(03).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/cercle-cite__ballroom.jpg",
+  "building": "Cercle Cité",
+  "shows": "Grande Salle (ballroom): parquet, white stucco, red curtains",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Cercle_Cit%C3%A9_Int%C3%A9rieur_(104).jpg",
+  "author": "Procrastineur49",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/cercle-cite__glass-dome.jpg",
+  "building": "Cercle Cité",
+  "shows": "Stained-glass oval dome over the stair hall",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Cercle_Cit%C3%A9_Int%C3%A9rieur_(101).jpg",
+  "author": "Procrastineur49",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/cercle-cite__gallery.jpg",
+  "building": "Cercle Cité",
+  "shows": "Vaulted gallery / foyer with marble floor",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Cercle_Cit%C3%A9_Int%C3%A9rieur_(106).jpg",
+  "author": "Procrastineur49",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/cercle-cite__stair-landing.jpg",
+  "building": "Cercle Cité",
+  "shows": "Upper landing with wrought-iron balustrade",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Cercle_Cit%C3%A9_Int%C3%A9rieur_(102).jpg",
+  "author": "Procrastineur49",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/philharmonie__grand-auditorium.jpg",
+  "building": "Philharmonie Luxembourg",
+  "shows": "Grand Auditorium: shoebox hall with stacked box 'towers' around the stage",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Philharmonie,_Gro%C3%9Fer_Konzertsaal.jpg",
+  "author": "Clewe2807",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/philharmonie__chamber-music-hall.jpg",
+  "building": "Philharmonie Luxembourg",
+  "shows": "Chamber music hall: curved red walls and suspended canopy with point lights",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Philharmonie,_Kammermusiksaal.jpg",
+  "author": "Clewe2807",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/philharmonie__organ.jpg",
+  "building": "Philharmonie Luxembourg",
+  "shows": "Grand Auditorium organ and stage from the side",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Pipe_organ_Philharmonie_Luxembourg_2024-09.jpg",
+  "author": "Zinneke",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/philharmonie__foyer.jpg",
+  "building": "Philharmonie Luxembourg",
+  "shows": "Foyer between the outer colonnade and the inner hall",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Philharmonie_Luxembourg,_interior.jpg",
+  "author": "EEJCC",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/grand-theatre__foyer.jpg",
+  "building": "Grand Théâtre",
+  "shows": "Main foyer: long glazed hall with chandeliers",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxemburg_Grand_Theatre_4.jpg",
+  "author": "Photo: Andreas Praefcke",
+  "licence": "CC BY 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by/3.0"
+ },
+ {
+  "file": "images/grand-theatre__foyer-wall.jpg",
+  "building": "Grand Théâtre",
+  "shows": "Foyer wall with irregular inset windows and chandeliers",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxemburg_Grand_Theatre_6.jpg",
+  "author": "Photo: Andreas Praefcke",
+  "licence": "CC BY 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by/3.0"
+ },
+ {
+  "file": "images/grand-theatre__foyer-chandeliers.jpg",
+  "building": "Grand Théâtre",
+  "shows": "Foyer chandeliers and glazing",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxemburg_Grand_Theatre_5.jpg",
+  "author": "Photo: Andreas Praefcke",
+  "licence": "CC BY 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by/3.0"
+ },
+ {
+  "file": "images/mudam__grand-hall.jpg",
+  "building": "Mudam",
+  "shows": "Grand Hall under I. M. Pei's glass and steel roof",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Mudam-Hall_8304.jpg",
+  "author": "Cornischong at Luxembourgish Wikipedia",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+ },
+ {
+  "file": "images/mudam__pavilion.jpg",
+  "building": "Mudam",
+  "shows": "Glass-roofed pavilion with limestone walls",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Lussemburgo_MUDAM_luglio_2010_04.jpg",
+  "author": "Marco Musmeci",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/mudam__staircase.jpg",
+  "building": "Mudam",
+  "shows": "Spiral stone staircase with glass balustrade",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Staircase,_Mus%C3%A9e_d%27Art_Moderne_Grand-Duc_Jean.jpg",
+  "author": "Hartmut Schmidt, Heidelberg",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/mudam__roof-structure.jpg",
+  "building": "Mudam",
+  "shows": "Steel and glass roof structure of the Grand Hall",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Lussemburgo_MUDAM_luglio_2010_07.jpg",
+  "author": "Marco Musmeci",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/mnha__prehistory-rock-level.jpg",
+  "building": "Nationalmusée um Fëschmaart (MNAHA)",
+  "shows": "Underground prehistory level cut into the rock",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Nationalmus%C3%A9e_um_F%C3%ABschmaart_05.jpg",
+  "author": "FrDr",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/mnha__vichten-mosaic-room.jpg",
+  "building": "Nationalmusée um Fëschmaart (MNAHA)",
+  "shows": "Room of the Roman Vichten mosaic",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Nationalmus%C3%A9e_um_F%C3%ABschmaart_13.jpg",
+  "author": "FrDr",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/mnha__gallery.jpg",
+  "building": "Nationalmusée um Fëschmaart (MNAHA)",
+  "shows": "Dark exhibition gallery with spot-lit artworks",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_Museum.jpg",
+  "author": "Yourusernamewillbepublic2",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/city-museum__model-room.jpg",
+  "building": "Lëtzebuerg City Museum",
+  "shows": "White room with the city model (UNESCO visitor centre)",
+  "source_page": "https://commons.wikimedia.org/wiki/File:World_Heritage_Luxembourg_09.jpg",
+  "author": "FrDr",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/city-museum__rock-level-reconstruction.jpg",
+  "building": "Lëtzebuerg City Museum",
+  "shows": "Reconstruction in the rock-cut lower level",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Reconstitution_(2)_(Mus%C3%A9e_d%27Histoire_de_la_Ville_de_Luxembourg).jpg",
+  "author": "Van Der Meulen Christofle",
+  "licence": "CC0",
+  "licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+ },
+ {
+  "file": "images/villa-vauban__salon.jpg",
+  "building": "Villa Vauban",
+  "shows": "Villa salon with stucco ceiling rose and parquet, used as gallery",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Villa_Vauban,_int%C3%A9rieur_(104).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/villa-vauban__historic-staircase.jpg",
+  "building": "Villa Vauban",
+  "shows": "19th-century wooden staircase with cast-iron newel",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Villa_Vauban,_int%C3%A9rieur_(102).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/villa-vauban__new-wing-stair.jpg",
+  "building": "Villa Vauban",
+  "shows": "Stair in the 2010 extension: timber, exposed aggregate walls",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Villa_Vauban,_int%C3%A9rieur_(108).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/villa-vauban__new-wing-corridor.jpg",
+  "building": "Villa Vauban",
+  "shows": "Glazed corridor of the 2010 extension",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Villa_Vauban,_int%C3%A9rieur_(109).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/natur-musee__workshop-room.jpg",
+  "building": "Natur Musée",
+  "shows": "Interior room (workshop/education space)",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Nacia_Muzeo_de_Natura_Historio_(Luksemburgo)_08.jpg",
+  "author": "RG72",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/neumunster-abbey__chapel-altar.jpg",
+  "building": "Neimënster Abbey",
+  "shows": "Chapel with baroque altar and stained glass",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Altar_Neim%C3%ABnster_2026-08.jpg",
+  "author": "Zinneke",
+  "licence": "CC BY 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0"
+ },
+ {
+  "file": "images/neumunster-abbey__courtyard-aerial.jpg",
+  "building": "Neimënster Abbey",
+  "shows": "Raised view of the abbey courtyard and wings (layout reference)",
+  "source_page": "https://commons.wikimedia.org/wiki/File:041102-abteineumuenster-luxemburg-hof.jpg",
+  "author": "Martin Röll",
+  "licence": "CC BY-SA 2.0 de",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/2.0/de/deed.en"
+ },
+ {
+  "file": "images/saint-michel__nave.jpg",
+  "building": "Saint-Michel Church",
+  "shows": "Nave looking to the high altar: Gothic vault, baroque altar",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Michaelskirche_Altarfront_8214-131.jpg",
+  "author": "Michael Kramer",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/saint-michel__choir.jpg",
+  "building": "Saint-Michel Church",
+  "shows": "Choir and baroque high altar with stained glass",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Iglesia_de_San_Miguel,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-16,_DD_74-76_HDR.jpg",
+  "author": "Diego Delso",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/saint-michel__organ-gallery.jpg",
+  "building": "Saint-Michel Church",
+  "shows": "West organ gallery on columns",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Interior_of_%C3%89glise_Saint-Michel_(Luxembourg_City)_02.JPG",
+  "author": "Chatsam",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/saint-jean-grund__nave.jpg",
+  "building": "Saint-Jean du Grund",
+  "shows": "Nave with baroque high altar and white vaults",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Iglesia_de_San_Juan,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-16,_DD_31-33_HDR.jpg",
+  "author": "Diego Delso",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/saint-jean-grund__organ-gallery.jpg",
+  "building": "Saint-Jean du Grund",
+  "shows": "Organ gallery (Stumm-type organ case) above the entrance",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Iglesia_de_San_Juan,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-16,_DD_43-45_HDR.jpg",
+  "author": "Diego Delso",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/saint-jean-grund__stained-glass.jpg",
+  "building": "Saint-Jean du Grund",
+  "shows": "Stained-glass window",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Gr%C3%ABnnesch_Kierch_Dafjang_beim_Herodes.jpg",
+  "author": "Jwh",
+  "licence": "CC BY-SA 3.0 lu",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en"
+ },
+ {
+  "file": "images/casino-luxembourg__staircase.jpg",
+  "building": "Casino Luxembourg",
+  "shows": "White modern staircase inside the art centre",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Artgalerio_Casino_Luxembourg_-_Forum_d%27art_contemporain_02.jpg",
+  "author": "RG72",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/gare-centrale__main-hall.jpg",
+  "building": "Gare Centrale",
+  "shows": "Main hall: painted ceiling, arched windows, departure boards",
+  "source_page": "https://commons.wikimedia.org/wiki/File:LuxGare4.jpg",
+  "author": "Basile Alexiou",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/gare-centrale__painted-ceiling.jpg",
+  "building": "Gare Centrale",
+  "shows": "Painted ceiling with the sun motif",
+  "source_page": "https://commons.wikimedia.org/wiki/File:LuxGare10.jpg",
+  "author": "Basile Alexiou",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/gare-centrale__stained-glass-window.jpg",
+  "building": "Gare Centrale",
+  "shows": "Stained-glass window with the silhouette of the city",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Vitrail_Gare_Luxembourg.jpg",
+  "author": "Zoelux",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/3.0"
+ },
+ {
+  "file": "images/gare-centrale__glass-passage.jpg",
+  "building": "Gare Centrale",
+  "shows": "Modern glass-roofed passage",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Hallway_Luxembourg_railway_station.jpg",
+  "author": "EEJCC",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/cjeu__grand-courtroom.jpg",
+  "building": "Court of Justice of the EU",
+  "shows": "Grand courtroom under the gold metal-mesh ceiling",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Palais_de_la_Cour_de_Justice_CJEU_May_2009,_Main_Court_room_of_the_Ancien_Palais.jpg",
+  "author": "Cédric Puisney from Brussels, Belgium",
+  "licence": "CC BY 2.0",
+  "licence_url": "https://creativecommons.org/licenses/by/2.0"
+ },
+ {
+  "file": "images/cjeu__main-courtroom.jpg",
+  "building": "Court of Justice of the EU",
+  "shows": "Main courtroom, wooden benches and judges' bench",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Main_Court_Room_in_Court_of_Justice_of_the_European_Union_2.jpg",
+  "author": "Isderion",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/cjeu__entrance-hall.jpg",
+  "building": "Court of Justice of the EU",
+  "shows": "Entrance hall of the Palais (black steel columns, flags)",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Entrance_Area_of_the_Palais_of_the_Court_of_Justice_of_the_European_Union.jpg",
+  "author": "Isderion",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/cjeu__gallery.jpg",
+  "building": "Court of Justice of the EU",
+  "shows": "Gallery building corridor linking the complex",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Court_of_Justice_of_the_European_Union_Luxembourg_2026_400.jpg",
+  "author": "FrDr",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/cjeu__architectural-model.jpg",
+  "building": "Court of Justice of the EU",
+  "shows": "Architectural model of the whole Palais complex (useful for 3D massing)",
+  "source_page": "https://commons.wikimedia.org/wiki/File:European_Court_of_Justice_model_maquette_(3515859355).jpg",
+  "author": "Cédric Puisney from Brussels, Belgium",
+  "licence": "CC BY 2.0",
+  "licence_url": "https://creativecommons.org/licenses/by/2.0"
+ },
+ {
+  "file": "images/spuerkeess__bank-museum-vault.jpg",
+  "building": "Spuerkeess (BCEE) headquarters",
+  "shows": "Bank museum: old vault/strongroom display",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_Bankmuseum_(1).jpg",
+  "author": "LoKiLeCh",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+ },
+ {
+  "file": "images/spuerkeess__bank-museum-counter.jpg",
+  "building": "Spuerkeess (BCEE) headquarters",
+  "shows": "Bank museum: reconstructed teller counter",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg_Bankmuseum_(9).jpg",
+  "author": "LoKiLeCh",
+  "licence": "CC BY-SA 3.0",
+  "licence_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+ },
+ {
+  "file": "images/bnl-kirchberg__reading-room.jpg",
+  "building": "National Library (BnL), Kirchberg",
+  "shows": "Main reading room seen from above: terraced bookshelves and desks",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Nationalbibliothek_Luxemburg.jpg",
+  "author": "Clewe2807",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/bnl-kirchberg__reading-room-columns.jpg",
+  "building": "National Library (BnL), Kirchberg",
+  "shows": "Reading room with the white tree-like roof columns",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Biblioth%C3%A9que_nationale_Kirchberg_(105).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/bnl-kirchberg__top-floor.jpg",
+  "building": "National Library (BnL), Kirchberg",
+  "shows": "Upper reading deck looking across the hall",
+  "source_page": "https://commons.wikimedia.org/wiki/File:BnLTopFloor.jpg",
+  "author": "Atharva210",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/bnl-kirchberg__foyer.jpg",
+  "building": "National Library (BnL), Kirchberg",
+  "shows": "Ground-floor foyer",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Biblioth%C3%A9que_nationale_Kirchberg_(103).jpg",
+  "author": "GilPe",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/bock-casemates__gallery.jpg",
+  "building": "Bock casemates",
+  "shows": "Rock-cut gallery inside the casemates",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Casemates_du_Bock_Luxembourg_-_L%C3%ABtzebuerg_16.jpg",
+  "author": "FrDr",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/bock-casemates__cannon-embrasure.jpg",
+  "building": "Bock casemates",
+  "shows": "Embrasure with cannon looking out over the Alzette valley",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Casemates_du_Bock_Luxembourg_-_L%C3%ABtzebuerg_27.jpg",
+  "author": "FrDr",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/bock-casemates__archaeological-crypt.jpg",
+  "building": "Bock casemates",
+  "shows": "Archaeological crypt: castle foundations under the Bock",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Casemates_du_Bock_Luxembourg_-_L%C3%ABtzebuerg_09.jpg",
+  "author": "FrDr",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/drai-eechelen__mine-gallery.jpg",
+  "building": "Fort Thüngen / Musée Dräi Eechelen",
+  "shows": "Narrow counter-mine gallery under the fort",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Ekspozicio_de_la_muzeo_Dr%C3%A4i_Eechelen_18.jpg",
+  "author": "RG72",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/drai-eechelen__exhibition-room.jpg",
+  "building": "Fort Thüngen / Musée Dräi Eechelen",
+  "shows": "Exhibition room with cannons",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Ekspozicio_de_la_muzeo_Dr%C3%A4i_Eechelen_02.jpg",
+  "author": "RG72",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/drai-eechelen__auditorium.jpg",
+  "building": "Fort Thüngen / Musée Dräi Eechelen",
+  "shows": "Modern auditorium/exhibition space with glass floor panels",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Mus%C3%A9e_Dr%C3%A4i_Eechelen_Auditorium.jpg",
+  "author": "Hejnjahns",
+  "licence": "CC BY-SA 4.0",
+  "licence_url": "https://creativecommons.org/licenses/by-sa/4.0"
+ },
+ {
+  "file": "images/cathedral__plan-jesuit-college-project.jpg",
+  "building": "Notre-Dame Cathedral",
+  "shows": "17th-c. Jesuit plan (unexecuted variant) of the ground floor of the Jesuit college of Luxembourg, whose church became the cathedral (BnF, Jesuit plans collection)",
+  "source_page": "https://commons.wikimedia.org/wiki/File:Coll%C3%A8ge_de_Luxembourg_-_autre_projet_-_plan_du_rez-de-chauss%C3%A9e_-_dessin,_plan_-_btv1b84487002_(1_of_2).jpg",
+  "author": "Unknown Jesuit draughtsman (17th c.); Bibliothèque nationale de France",
+  "licence": "Public domain",
+  "licence_url": "https://creativecommons.org/publicdomain/mark/1.0/"
+ }
+]

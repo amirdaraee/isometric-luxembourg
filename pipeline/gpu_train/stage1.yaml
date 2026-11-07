@@ -1,0 +1,64 @@
+# Adapted from isometric-nyc's training config (cannoneyed-dark-copper-flea) and ai-toolkit's
+# Qwen-Image-Edit example (both MIT). Full precision, as NYC trained it, so it needs an 80 GB GPU.
+job: extension
+config:
+  name: luxembourg-ink-v1
+  process:
+  - type: sd_trainer
+    training_folder: /workspace/output
+    device: cuda:0
+    network:
+      type: lora
+      linear: 16
+      linear_alpha: 16
+    save:
+      dtype: float16
+      save_every: 250
+      max_step_saves_to_keep: 4
+    logging:
+      log_every: 10
+      verbose: false
+      use_wandb: false
+    datasets:
+    - folder_path: /workspace/data
+      control_path: /workspace/data/control
+      caption_ext: txt
+      caption_dropout_rate: 0.05
+      resolution:
+      - 1024
+    train:
+      batch_size: 1
+      cache_text_embeddings: false
+      steps: 500
+      gradient_accumulation: 1
+      timestep_type: weighted
+      train_unet: true
+      train_text_encoder: false
+      gradient_checkpointing: true
+      noise_scheduler: flowmatch
+      optimizer: adamw8bit
+      lr: 0.0001
+      dtype: bf16
+    model:
+      name_or_path: Qwen/Qwen-Image-Edit
+      arch: qwen_image_edit
+      quantize: false
+      low_vram: false
+    sample:
+      sampler: flowmatch
+      sample_every: 250
+      width: 1024
+      height: 1024
+      neg: ''
+      seed: 1867
+      walk_seed: false
+      guidance_scale: 3
+      sample_steps: 25
+      samples:
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
+        ctrl_img: /workspace/heldout/heldout_0.png
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
+        ctrl_img: /workspace/heldout/heldout_1.png
+meta:
+  name: luxembourg-ink-v1
+  version: '1.0'

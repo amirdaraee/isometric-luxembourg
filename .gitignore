@@ -1,0 +1,38 @@
+# secrets
+.env
+*.env
+# raw downloads, work files, build output
+data/
+web/dist/
+web/public/tiles/
+# local work-in-progress pages, never published
+web/public/live/
+web/public/style-test/
+# dependencies and tooling
+node_modules/
+.venv/
+__pycache__/
+.playwright-mcp/
+.DS_Store
+# third-party checkouts
+third_party/
+# GPU datasets, weights and painting inputs (rebuilt by the pipeline)
+pipeline/gpu_train/**/*.tar
+pipeline/gpu_train/**/*.safetensors
+pipeline/gpu_train/**/*.png
+pipeline/gpu_train/**/*.jpg
+pipeline/gpu_train/**/*.webp
+pipeline/gpu_train/overfit/
+pipeline/gpu_train/full/
+pipeline/gpu_train/v2/samples/
+pipeline/gpu_train/transform/samples/
+# research: keep notes and data, not downloaded images and archives
+research/**/images/
+research/**/*.jpg
+research/**/*.png
+research/**/*.pdf
+# screenshots
+/*.png
+# early style experiments, kept local
+pipeline/style/chatgpt_samples.py
+pipeline/style/build_compare.py
