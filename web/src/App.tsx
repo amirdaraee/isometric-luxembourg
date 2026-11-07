@@ -246,6 +246,7 @@ export default function App() {
               <li>Places, streets and addresses: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>, ODbL</li>
               <li>LiDAR terrain 2019: data.public.lu, CC0</li>
               <li>Tram and train timetables (GTFS): data.public.lu, CC BY 4.0</li>
+              <li>Live weather: Open-Meteo, CC BY 4.0</li>
               <li>Landmark photos: Wikimedia Commons, credited with author and licence on each card</li>
             </ul>
             <h2>Code</h2>
