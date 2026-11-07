@@ -1,7 +1,7 @@
 // Real trams and trains from the national timetable (GTFS, data.public.lu, CC BY), see pipeline/build_transit.py.
 // Positions come from the clock: each trip lists [arrival s, departure s, distance along its track shape].
 
-import { drawVehicle, spriteLength, type Sprites } from "./sprites";
+import { drawLamps, drawVehicle, spriteLength, type Sprites } from "./sprites";
 import { today } from "../testParams";
 
 export interface TransitData {
@@ -74,7 +74,8 @@ export function drawTransit(g: CanvasRenderingContext2D, d: TransitData, shapes:
   ox: number, oy: number, W: number, H: number, visible: (x: number, y: number) => boolean, night: number,
   spr?: Sprites | null) {
   // With sprites, every section is collected first and drawn far to near (by screen y), so nearer ones overlap.
-  const queue: { type: string; sx: number; sy: number; h: number; lit: boolean }[] = [];
+  // end: 1 the leading section (headlamps), -1 the last one (tail lamps), 0 between.
+  const queue: { type: string; sx: number; sy: number; h: number; end: number }[] = [];
   const mask = luxDayMask();
   for (const tr of d.trips) {
     if (tr.d !== undefined && !(tr.d & mask)) continue;
@@ -111,7 +112,7 @@ export function drawTransit(g: CanvasRenderingContext2D, d: TransitData, shapes:
           if (sx < -200 || sx > W + 200 || sy < -200 || sy > H + 200 || !visible(x, y)) return;
           const forward = ang + (dir < 0 ? Math.PI : 0);
           const last = i === types.length - 1;
-          queue.push({ type, sx, sy, h: tr.k === "tram" && last ? forward + Math.PI : forward, lit: night > 0.05 });
+          queue.push({ type, sx, sy, h: tr.k === "tram" && last ? forward + Math.PI : forward, end: i === 0 ? 1 : last ? -1 : 0 });
         });
         continue;
       }
@@ -127,14 +128,13 @@ export function drawTransit(g: CanvasRenderingContext2D, d: TransitData, shapes:
   }
   if (spr && queue.length) {
     queue.sort((a, b) => a.sy - b.sy);
+    // Headlamps on by day as well (as trains run), tail lamps and lit windows at night. Only the lamp and window
+    // pixels the camera sees at each heading light up (the lamp atlas), so nothing shows through the body.
+    const head = Math.max(0.35, night);
     for (const q of queue) {
       drawVehicle(g, spr, q.type, 0, q.sx, q.sy, q.h, z);
-      if (q.lit) {   // lit windows at night: a warm glow over the body
-        g.globalAlpha = night * 0.55;
-        g.fillStyle = "rgba(255,206,130,1)";
-        g.beginPath(); g.ellipse(q.sx, q.sy - 2.2 / MPP * z, Math.max(2, 3.5 / MPP * z), Math.max(1, 1.2 / MPP * z), 0, 0, Math.PI * 2); g.fill();
-        g.globalAlpha = 1;
-      }
+      drawLamps(g, spr, q.type, q.sx, q.sy, q.h, z,
+        { head: q.end === 1 ? head : 0, tail: q.end === -1 ? night : 0, glass: night * 0.8 });
     }
   }
 }

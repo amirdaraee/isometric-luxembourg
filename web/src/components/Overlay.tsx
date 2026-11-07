@@ -3,7 +3,7 @@ import { asset } from "../config";
 import { on } from "../features";
 import type { MapHandle, MapMeta } from "./IsometricMap";
 import { drawTransit, luxSeconds, prepareShapes, type TransitData } from "./Transit";
-import { drawVehicle, loadSprites, type Sprites } from "./sprites";
+import { drawLamps, drawVehicle, loadSprites, type Sprites } from "./sprites";
 import { loadOcclusion, type Occlusion } from "./occlusion";
 import { waterPoints } from "./Water";
 import { Traffic, type DrawableCar } from "../sim/traffic";
@@ -50,14 +50,26 @@ function drawCarRect(g: CanvasRenderingContext2D, c: DrawableCar, sx: number, sy
   g.restore();
 }
 
-/** How much a length along the ground shrinks on screen when it points along screen heading h (isometric view:
- *  full length left-right, half length up-down). */
-function screenShrink(h: number): number {
-  const c = Math.cos(h), sn = Math.sin(h);
-  return 1 / Math.sqrt(c * c + 4 * sn * sn);
+/**
+ * Headlight beam of a vehicle: a soft wedge on the ground ahead of it, drawn in ground metres (forward, right) through
+ * the map's 2:1 view, so it narrows and shortens with the heading like the road itself. sx, sy: screen px of the
+ * vehicle's ground centre; z: screen px per map px.
+ */
+function drawBeam(g: CanvasRenderingContext2D, c: DrawableCar, sx: number, sy: number, z: number, night: number) {
+  const h = c.headingScreenRad, fx = Math.cos(h), fy = 2 * Math.sin(h), n = Math.hypot(fx, fy);
+  const k = z / MPP;   // screen px per ground metre, before the 2:1 squash
+  const half = (c.length * MPP) / 2, w = (c.width * MPP) / 2, reach = 9 + half;
+  g.save();
+  g.transform((fx / n) * k, (fy / n / 2) * k, (-fy / n) * k, (fx / n / 2) * k, sx, sy);
+  const grd = g.createLinearGradient(half - 0.3, 0, reach, 0);
+  grd.addColorStop(0, `rgba(255,236,190,${0.5 * night})`); grd.addColorStop(1, "rgba(255,236,190,0)");
+  g.fillStyle = grd;
+  g.beginPath(); g.moveTo(half - 0.3, -w * 0.9); g.lineTo(reach, -w * 2.4); g.lineTo(reach, w * 2.4); g.lineTo(half - 0.3, w * 0.9); g.fill();
+  g.restore();
 }
 
-/** Headlight beam ahead and tail lights behind, in the car's own frame; brake lights brighter when braking. */
+/** The placeholder rectangle's lights (drawCarRect only; it is flat, so lamps at its ends are right): headlight beam
+ * ahead and tail lights behind, in the car's own frame; brake lights brighter when braking. */
 function drawCarLights(g: CanvasRenderingContext2D, c: DrawableCar, L: number, Wd: number, night: number) {
   if (night > 0.05) {
     g.globalAlpha = night;
@@ -222,6 +234,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       st.waterways = L.waterways.filter((r) => !r.t).map(prepare);
       // Traffic only where the map is painted (src/sim/traffic.ts: road graph, junctions, signals, car following).
       if (meta.painted?.length) st.sim = new Traffic(L.roads, { areas: meta.painted, mpp: MPP, emergency: on("emergency"), seed: testParams.seed ?? undefined });
+      // In development, the simulation is reachable from the console and from headless checks.
+      if (import.meta.env.DEV) (window as unknown as { traffic?: Traffic }).traffic = st.sim;
     });
   }, [meta]);
 
@@ -386,14 +400,16 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         const view = { z, ox, oy, w: W, h: H };
         // Far to near within each pass (by screen y), so a nearer vehicle overlaps the one behind it.
         for (const list of passes) list.sort((a, b) => a[2] - b[2]);
+        // Brake lights by day only close up and softer; at night tail lights always on and brake lights brighter.
+        const brakeDay = z >= 0.6 ? 0.6 : 0;
         passes.forEach((list, i) => {
+          // Headlight beams first, on the ground: the bodies drawn next cover their start, and the cut trims them.
+          if (spr && night > 0.05) for (const [c, sx, sy] of list) drawBeam(vg, c, sx, sy, z, night);
           for (const [c, sx, sy] of list) {
             if (spr) {
               drawVehicle(vg, spr, c.type, c.variant, sx, sy, c.headingScreenRad, z);
-              const k = screenShrink(c.headingScreenRad);
-              vg.save(); vg.translate(sx, sy); vg.rotate(c.headingScreenRad);
-              drawCarLights(vg, c, c.length * z * k, Math.max(c.width * z * 0.7, 1.2), night);
-              vg.restore();
+              drawLamps(vg, spr, c.type, sx, sy, c.headingScreenRad, z,
+                { tail: night * 0.85, brake: c.braking ? Math.max(night, brakeDay) : 0, head: night });
             } else drawCarRect(vg, c, sx, sy, z, night);
             if (c.siren) drawSirenLights(vg, c, sx, sy, z, now / 1000, night);
           }

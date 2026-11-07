@@ -8,8 +8,19 @@ the upper left of the screen, like the painted map.
 
 Output, in web/public/sprites/:
   <type>.png     one atlas per vehicle type: for each colour variant 4 rows of 8 headings
+  <type>_lamps.png  the lamp atlas: for every heading, the lamp pixels the camera really sees (depth-tested
+                 against the body), laid out like the first colour variant's frames. Opaque RGB on black:
+                   R  tail lamps (part 902): 255 on the lamp, a soft halo around it (up to HALO)
+                   G  headlamps (part 901): the same
+                   B  lit window glass of trams and trains (part 903), no halo
   sprites.json   per type: frame size, anchor (sprite px of the ground centre), length in metres, the screen
-                 heading and atlas cell of every frame, and the colour variants
+                 heading and atlas cell of every frame, and the colour variants; for types with lamps also
+                 "lamps" (the lamp atlas, cells as variant 0) and "lamp_dots": per class ("tail", "head") and
+                 heading, the frame px of each visible lamp (one dot per lamp, for drawing when zoomed far out)
+
+Lamp parts: 901 headlamp, 902 tail lamp, 903 window glass lit at night, 915 blue lamp (emergency), 917 a lamp that
+stays dark. The build fails if a lamp shows where the body is nearer the camera, or a tail lamp shows on a heading
+where the rear of the vehicle faces away from the camera (or vanishes where it faces the camera).
 
 Colour variants are rendered out in full (no tinting at run time), so outlines and shading stay right.
 
@@ -23,6 +34,7 @@ from pathlib import Path
 import moderngl
 import numpy as np
 from PIL import Image, ImageFilter
+from scipy.ndimage import gaussian_filter, label
 
 MPP = 0.125          # metres per sprite pixel: twice the map's resolution, so sprites stay sharp zoomed in
 MAP_MPP = 0.25       # metres per map pixel
@@ -131,7 +143,7 @@ def bus(livery):
          box(-1.0, 0, 3.0, 3.2, 1.7, 0.18, (196, 200, 204))]                             # roof air-conditioning
     for x in (-4.6, -2.3, 0.0, 2.3):                                                     # window pillars
         for s in (-1, 1):
-            p.append(box(x, s * 1.255, 1.1, 0.16, 0.06, 1.5, WHITE, part=903))
+            p.append(box(x, s * 1.255, 1.1, 0.16, 0.06, 1.5, WHITE, part=916))
     p.append(box(5.995, 0, 1.0, 0.04, 2.3, 0.12, livery, part=904))                     # band under windscreen
     p += [box(5.99, s * 0.95, 0.55, 0.04, 0.34, 0.14, HEAD, part=901) for s in (-1, 1)]
     p += [box(-5.99, s * 1.0, 0.55, 0.04, 0.3, 0.3, TAIL, part=902) for s in (-1, 1)]
@@ -158,7 +170,7 @@ def tram(end):
     spans = [(x0 + 0.25, doors[0] - 0.8), (doors[0] + 0.8, doors[1] - 0.8), (doors[1] + 0.8, x1 - nose - 0.25)]
     for a, b in spans:
         for s in (-1, 1):
-            p.append(box((a + b) / 2, s * (W / 2 + 0.01), 1.18, b - a, 0.04, 1.22, GLASS, part=920))
+            p.append(box((a + b) / 2, s * (W / 2 + 0.01), 1.18, b - a, 0.04, 1.22, GLASS, part=903))
     for x in doors:                                                                       # doors, turquoise glass
         for s in (-1, 1):
             p.append(box(x, s * (W / 2 + 0.015), 0.52, 1.3, 0.05, 1.95, TURQ, part=907))
@@ -166,7 +178,8 @@ def tram(end):
         # tapered nose: wrap-round windscreen, turquoise mask under it
         p.append(hexa(x1 - nose, x1 - 0.25, -W / 2 + 0.02, W / 2 - 0.02, 1.02, 2.6, GLASS, front=0.55, part=913))
         p.append(hexa(x1 - 0.6, x1 - 0.05, -W / 2 + 0.05, W / 2 - 0.05, 0.62, 1.05, TURQ, front=0.12, part=908))
-        p += [box(x1 - 0.12, s * 0.9, 0.62, 0.06, 0.3, 0.12, HEAD, part=901) for s in (-1, 1)]
+        p += [box(x1 - 0.02, s * 0.9, 0.62, 0.06, 0.3, 0.12, HEAD, part=901) for s in (-1, 1)]
+        p += [box(x1 - 0.02, s * 0.5, 0.62, 0.06, 0.2, 0.12, TAIL, part=902) for s in (-1, 1)]
     else:
         p.append(box(0, 0, 3.2, 3.0, 1.4, 0.4, (150, 156, 164)))                         # roof equipment
     return p
@@ -184,8 +197,8 @@ def coach(cab):
          box(0, 0, 0.55, L, W, 0.5, CFL_RED),                                             # red lower band
          hexa(x0, x1, -W / 2, W / 2, 1.05, 4.25, TRAIN_WHITE, side=0.12),                 # white body
          hexa(x0 + 0.3, x1 - 0.3, -W / 2 + 0.02, W / 2 - 0.02, 4.25, 4.6, (196, 198, 200), side=0.35),  # roof
-         box(0, 0, 1.45, L - 4.6, W + 0.04, 0.72, GLASS, part=909),                       # lower deck windows
-         box(0, 0, 2.95, L - 2.2, W - 0.18, 0.8, GLASS, part=910)]                        # upper deck windows
+         box(0, 0, 1.45, L - 4.6, W + 0.04, 0.72, GLASS, part=903),                       # lower deck windows
+         box(0, 0, 2.95, L - 2.2, W - 0.18, 0.8, GLASS, part=903)]                        # upper deck windows
     for x in (-10.4, 10.4):                                                               # red doors over the bogies
         for s in (-1, 1):
             p.append(box(x, s * (W / 2 + 0.02), 0.6, 1.4, 0.04, 2.2, CFL_RED, part=911))
@@ -193,11 +206,11 @@ def coach(cab):
         nose = 2.4
         p[3] = hexa(x0, x1 - nose, -W / 2, W / 2, 1.05, 4.25, TRAIN_WHITE, side=0.12)
         p[4] = hexa(x0 + 0.3, x1 - nose - 0.3, -W / 2 + 0.02, W / 2 - 0.02, 4.25, 4.6, (196, 198, 200), side=0.35)
-        p[6] = box(-0.9, 0, 2.95, L - 2.2 - 1.8, W - 0.18, 0.8, GLASS, part=910)
+        p[6] = box(-0.9, 0, 2.95, L - 2.2 - 1.8, W - 0.18, 0.8, GLASS, part=903)
         p.append(hexa(x1 - nose, x1, -W / 2, W / 2, 0.55, 3.0, CFL_RED, front=1.2, side=0.15, part=912))  # red nose
         p.append(hexa(x1 - nose, x1 - 1.2, -W / 2 + 0.15, W / 2 - 0.15, 3.0, 4.0, CFL_RED, front=0.6, side=0.15, part=912))
         p.append(hexa(x1 - 1.25, x1 - 0.6, -W / 2 + 0.3, W / 2 - 0.3, 1.9, 3.0, GLASS, front=0.5, part=913))  # windscreen
-        p += [box(x1 - 0.05, s * 1.0, 0.9, 0.08, 0.3, 0.16, HEAD, part=901) for s in (-1, 1)]
+        p += [box(x1 + 0.02, s * 1.0, 0.9, 0.08, 0.3, 0.16, HEAD, part=901) for s in (-1, 1)]
     return p
 
 
@@ -215,8 +228,10 @@ def loco():
     xb, xt = x1 - slope * (2.6 - 0.75) + 0.02, x1 - slope * (3.45 - 0.75) + 0.02
     p.append(hexa(x1 - 0.6, xb, -W / 2 + 0.35, W / 2 - 0.35, 2.6, 3.45, GLASS, front=xb - xt, part=913))
     p.append(hexa(-xb, -(x1 - 0.6), -W / 2 + 0.35, W / 2 - 0.35, 2.6, 3.45, GLASS, back=xb - xt, part=913))
-    for sgn in (-1, 1):
-        p += [box(sgn * (L / 2 - 0.02), s * 1.0, 1.0, 0.06, 0.3, 0.16, HEAD, part=901) for s in (-1, 1)]
+    # Lamps at both ends. In a CFL push-pull set the locomotive is always at the back, its +x end coupled to the
+    # coaches: those lamps stay dark (917), and the -x end, the end of the train, shows red tail lamps.
+    p += [box(L / 2 - 0.02, s * 1.0, 1.0, 0.06, 0.3, 0.16, HEAD, part=917) for s in (-1, 1)]
+    p += [box(-(L / 2 - 0.02), s * 1.0, 1.0, 0.06, 0.3, 0.16, TAIL, part=902) for s in (-1, 1)]
     return p
 
 
@@ -464,7 +479,7 @@ def frame_image(r, tris, w, h, ax, ay):
         else:
             inner[:, :-1] |= j & first_near; inner[:, 1:] |= j & ~first_near
     # lamps glow: no shading and no ink over them (they are only a pixel or two)
-    lamp = (part == 901) | (part == 902) | (part == 915)
+    lamp = (part == 901) | (part == 902) | (part == 915) | (part == 917)
     rgb[lamp] = a[..., :3][lamp]
     inner &= ~lamp
     rgb[inner] *= 0.42
@@ -490,6 +505,64 @@ def shadow_image(r, tris, w, h, ax, ay):
     return sh
 
 
+HALO = 110          # peak of the soft halo around a lamp in the lamp atlas (of 255)
+LAMP_PARTS = {"tail": 902, "head": 901, "glass": 903}
+
+
+def lamp_frame(r, tris, w, h, ax, ay, yaw, sides):
+    """Visible lamp pixels of one frame turned to `yaw`: (h, w, 3) uint8 (R tail, G head, B lit glass, halos
+    included) and the boolean core masks per class. Pixels come from the depth-tested raster, so a lamp behind the
+    body never shows, and only the lamp's lens counts (the face pointing out of its end of the vehicle, `sides`),
+    not the thin top or side of the lamp box."""
+    a, b = r.raster(tris, w, h, ax, ay)
+    filled = a[..., 3] >= 0
+    part = np.where(filled, np.rint(a[..., 3]), -1)
+    masks = {k: part == v for k, v in LAMP_PARTS.items()}
+    fwd = np.array([math.cos(yaw), math.sin(yaw), 0.0])
+    # towards the camera (minus the gradient of the depth in the vertex shader): only faces turned to it can show
+    cam = np.array([R * CE, -R * CE, SE])
+    for k in ("tail", "head"):
+        if sides[k]:
+            masks[k] &= ((b[..., :3] @ fwd) * sides[k] > 0.5) & (b[..., :3] @ cam > 0.02)
+    out = np.zeros((h, w, 3), np.float32)
+    for ch, k in enumerate(("tail", "head")):
+        m = masks[k].astype(np.float32)
+        halo = gaussian_filter(m, 1.5)
+        peak = halo.max()
+        if peak > 0:
+            halo = halo / peak
+        out[..., ch] = np.maximum(m * 255, halo * HALO)
+    out[..., 2] = masks["glass"] * 255
+    return (out + 0.5).astype(np.uint8), masks, b[..., 3], filled
+
+
+def body_depth(r, tris, w, h, ax, ay):
+    """Depth of the body alone (every lamp part left out), 1e3 where empty."""
+    keep = ~np.isin(np.rint(tris[:, 9]), [901, 902, 903, 915, 917])
+    a, b = r.raster(tris[keep], w, h, ax, ay)
+    return np.where(a[..., 3] >= 0, b[..., 3], 1e3)
+
+
+def lamp_dots(mask):
+    """One point per visible lamp (connected group of pixels, the two largest), frame px, or []."""
+    lab, n = label(mask)
+    if not n:
+        return []
+    sizes = np.bincount(lab.ravel())[1:]
+    keep = np.argsort(-sizes)[:2] + 1
+    dots = []
+    for k in sorted(keep):
+        ys, xs = np.nonzero(lab == k)
+        dots.append([round(float(xs.mean()) + 0.5, 1), round(float(ys.mean()) + 0.5, 1)])
+    return dots
+
+
+def lamp_side(parts, pid):
+    """+1 when the lamps of part pid are at the front (+x) of the model, -1 at the back, 0 when there are none."""
+    xs = [v[:, 0].mean() for v, _, part in parts if part == pid]
+    return 0 if not xs else (1 if np.mean(xs) > 0 else -1)
+
+
 def frame_bounds(models, yaws):
     pts = []
     for parts in models:
@@ -504,6 +577,30 @@ def frame_bounds(models, yaws):
     return int(x1 - x0), int(y1 - y0), int(-x0), int(-y0)
 
 
+def check_lamps(name, i, yaw, masks, depth, body, sides, hidden):
+    """The lamp checks of the build. Fails (SystemExit) when a lamp pixel lies where the body is nearer the camera,
+    or when lamps show on a heading where their end of the vehicle faces away from the camera (or vanish where it
+    faces the camera)."""
+    for k, m in masks.items():
+        bad = m & (body < depth - 0.05)
+        if bad.any():
+            raise SystemExit(f"{name} heading {i}: {int(bad.sum())} {k} lamp px behind the body")
+    # The camera looks from the south-east: an end whose outward normal (side * (cos yaw, sin yaw)) has a positive
+    # component along (1, -1) faces it.
+    for k in ("tail", "head"):
+        side = sides[k]
+        if not side:
+            continue
+        facing = side * (math.cos(yaw) - math.sin(yaw)) * R
+        n = int(masks[k].sum())
+        if k == "tail" and n == 0:
+            hidden.setdefault(name, []).append(i)
+        if facing < -0.02 and n:
+            raise SystemExit(f"{name} heading {i}: {n} {k} lamp px show although that end faces away (facing {facing:.2f})")
+        if facing > 0.5 and not n:   # more side-on, a lamp may be thinner than a pixel
+            raise SystemExit(f"{name} heading {i}: {k} lamps hidden although that end faces the camera (facing {facing:.2f})")
+
+
 def build(out: Path):
     out.mkdir(parents=True, exist_ok=True)
     r = Renderer()
@@ -515,11 +612,17 @@ def build(out: Path):
             "heading_note": "screen heading in radians, atan2(dy, dx) with y down; index i is i * 2pi / headings",
             "types": {}}
     total = 0
+    hidden = {}   # type -> headings where its tail lamps are fully hidden
     for name, (length, variants) in TYPES.items():
         models = list(variants.values())
         w, h, ax, ay = frame_bounds(models, yaws)
         atlas = Image.new("RGBA", (w * COLS, h * rows_per * len(models)), (0, 0, 0, 0))
         cells = []
+        # Lamps: the same for every colour variant, so they come from the first model only.
+        has_lamps = any(part in LAMP_PARTS.values() for _, _, part in models[0])
+        lamps = np.zeros((h * rows_per, w * COLS, 3), np.uint8) if has_lamps else None
+        dots = {"tail": [], "head": []}
+        sides = {k: lamp_side(models[0], LAMP_PARTS[k]) for k in ("tail", "head")}
         for vi, parts in enumerate(models):
             tris = triangles(parts)
             vc = []
@@ -532,17 +635,34 @@ def build(out: Path):
                 cx, cy = (i % COLS) * w, (vi * rows_per + i // COLS) * h
                 atlas.paste(img, (cx, cy))
                 vc.append([cx, cy])
+                if vi == 0 and has_lamps:
+                    rgb, masks, depth, _ = lamp_frame(r, t, w, h, ax, ay, yaw, sides)
+                    lamps[cy:cy + h, cx:cx + w] = rgb
+                    for k in ("tail", "head"):
+                        dots[k].append(lamp_dots(masks[k]))
+                    check_lamps(name, i, yaw, masks, depth, body_depth(r, t, w, h, ax, ay), sides, hidden)
             cells.append(vc)
         path = out / f"{name}.png"
         atlas.quantize(colors=255, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).save(path, optimize=True)
         total += path.stat().st_size
+        extra = {}
+        if has_lamps:
+            lp = out / f"{name}_lamps.png"
+            Image.fromarray(lamps, "RGB").save(lp, optimize=True)
+            total += lp.stat().st_size
+            extra = {"lamps": lp.name, "lamp_dots": {k: v for k, v in dots.items() if sides[k]}}
         meta["types"][name] = {
             "image": f"{name}.png", "length_m": length, "frame": [w, h], "anchor": [ax, ay],
-            "variants": list(variants.keys()), "heading": [round(x, 6) for x in heads], "cells": cells,
+            "variants": list(variants.keys()), "heading": [round(x, 6) for x in heads], "cells": cells, **extra,
             **({"note": NOTES[name]} if name in NOTES else {}),
         }
         print(f"{name}: frame {w}x{h}, anchor ({ax}, {ay}), {len(models)} variant(s), {path.stat().st_size // 1024} KB")
+    meta["lamp_note"] = ("<type>_lamps.png: opaque RGB on black, cells as variant 0. R tail lamps, G headlamps "
+                         "(255 on the lamp, a soft halo around it), B window glass lit at night. Only the pixels the "
+                         "camera sees. lamp_dots: frame px of each visible lamp per heading")
     (out / "sprites.json").write_text(json.dumps(meta, separators=(",", ":")))
+    for name, hs in hidden.items():
+        print(f"{name}: tail lamps fully hidden at headings {hs}")
     print(f"total {total // 1024} KB")
 
 
