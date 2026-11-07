@@ -76,6 +76,60 @@ function drawCarLights(g: CanvasRenderingContext2D, c: DrawableCar, L: number, W
   }
 }
 
+/** Blue lamps of each emergency vehicle (as modelled in pipeline/build_sprites.py): metres ahead of the centre,
+ * height, and half the distance between the left and right lamp. */
+const LAMPS: Record<string, [number, number, number][]> = {
+  police: [[-0.35, 1.66, 0.36]],
+  ambulance: [[1.55, 2.46, 0.45], [-2.75, 2.77, 0.85]],
+  fire: [[3.3, 2.9, 0.6], [-4.3, 3.08, 1.0]],
+};
+
+/** Is the lamp on at time t (s)? A double flash, left and right in turn. */
+function lampOn(t: number, right: boolean): boolean {
+  const ph = (t * 1.6 + (right ? 0.5 : 0)) % 1;
+  return ph < 0.1 || (ph > 0.17 && ph < 0.27);
+}
+
+/**
+ * Flashing blue lights of an emergency vehicle on a call, at its lamps on the roof: a small bright core and a halo,
+ * kept modest by day and larger at night, with a faint blue wash on the ground after dark. sx, sy: screen px of the
+ * vehicle's ground centre; z: screen px per map px; t: seconds.
+ */
+function drawSirenLights(g: CanvasRenderingContext2D, c: DrawableCar, sx: number, sy: number, z: number, t: number, night: number) {
+  const lamps = LAMPS[c.type];
+  if (!lamps) return;
+  // Ground directions on screen (the map is drawn 2:1): forward along the heading, sideways across it, per metre.
+  const h = c.headingScreenRad, fx = Math.cos(h), fy = 2 * Math.sin(h), n = Math.hypot(fx, fy);
+  const k = z / MPP, ax = (fx / n) * k, ay = (fy / n / 2) * k, lx = (-fy / n) * k, ly = (fx / n / 2) * k;
+  const up = 0.866 * k; // screen px per metre of height
+  const tt = t + (c.id % 17) * 0.137; // vehicles out of step with each other
+  const core = Math.max(1.4, 0.25 * k), halo = Math.max(5, 1.4 * k) * (1 + night);
+  g.save();
+  g.globalCompositeOperation = "lighter";
+  if (night > 0.05) {
+    const on = lampOn(tt, false) || lampOn(tt, true);
+    const r = Math.max(6, 4.5 * k);
+    const gr = g.createRadialGradient(sx, sy, 0, sx, sy, r);
+    gr.addColorStop(0, `rgba(60,110,255,${(on ? 0.32 : 0.14) * night})`); gr.addColorStop(1, "rgba(60,110,255,0)");
+    g.fillStyle = gr;
+    g.beginPath(); g.ellipse(sx, sy, r, r / 2, 0, 0, Math.PI * 2); g.fill();
+  }
+  for (const [x, ht, w] of lamps) for (const right of [false, true]) {
+    if (!lampOn(tt, right)) continue;
+    const s = right ? -w : w;
+    const px = sx + ax * x + lx * s, py = sy + ay * x + ly * s - up * ht;
+    const gr = g.createRadialGradient(px, py, 0, px, py, halo);
+    gr.addColorStop(0, "rgba(70,130,255,.95)");
+    gr.addColorStop(0.4, `rgba(30,90,255,${0.55 + 0.25 * night})`);
+    gr.addColorStop(1, "rgba(20,70,255,0)");
+    g.fillStyle = gr;
+    g.beginPath(); g.arc(px, py, halo, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "rgb(200,225,255)";
+    g.beginPath(); g.arc(px, py, core, 0, Math.PI * 2); g.fill();
+  }
+  g.restore();
+}
+
 function prepare(l: Line): Prepared {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   const cum = [0];
@@ -165,7 +219,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       }).catch(() => { st.flocks = []; });
       st.waterways = L.waterways.filter((r) => !r.t).map(prepare);
       // Traffic only where the map is painted (src/sim/traffic.ts: road graph, junctions, signals, car following).
-      if (meta.painted?.length) st.sim = new Traffic(L.roads, { areas: meta.painted, mpp: MPP });
+      if (meta.painted?.length) st.sim = new Traffic(L.roads, { areas: meta.painted, mpp: MPP, emergency: on("emergency") });
     });
   }, [meta]);
 
@@ -312,8 +366,9 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         const vg = vl.getContext("2d")!;
         vg.setTransform(dpr, 0, 0, dpr, 0, 0);
         vg.clearRect(0, 0, W, H);
-        // Three passes, shortest vehicles first, each followed by its cut: cars and vans (1.6 m), buses (3.2 m),
-        // then everything on a bridge deck, lifted onto the modelled deck and cut against the deck layer.
+        // Three passes, shortest vehicles first, each followed by its cut: cars, vans, police cars and ambulances
+        // (1.6 m), buses and fire engines (3.2 m), then everything on a bridge deck, lifted onto the modelled deck and
+        // cut against the deck layer.
         const passes: [DrawableCar, number, number][][] = [[], [], []];
         for (const c of st.sim.cars()) {
           // Hidden in a tunnel, behind a building, or (for ground roads) under a bridge: don't draw.
@@ -324,7 +379,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
             const d = occ.deckAt(c.x, c.y);
             if (d) { sy -= d.lift * z; passes[2].push([c, sx, sy]); continue; }
           }
-          passes[c.type === "bus" ? 1 : 0].push([c, sx, sy]);
+          passes[c.type === "bus" || c.type === "fire" ? 1 : 0].push([c, sx, sy]);
         }
         const view = { z, ox, oy, w: W, h: H };
         passes.forEach((list, i) => {
@@ -336,6 +391,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
               drawCarLights(vg, c, c.length * z * k, Math.max(c.width * z * 0.7, 1.2), night);
               vg.restore();
             } else drawCarRect(vg, c, sx, sy, z, night);
+            if (c.siren) drawSirenLights(vg, c, sx, sy, z, now / 1000, night);
           }
           if (occ && list.length) occ.cut(vg, view, i === 0 ? 1.6 : i === 1 ? 3.2 : 4.5, i === 2 ? "deck" : "ground");
         });

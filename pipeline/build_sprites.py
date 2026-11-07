@@ -220,6 +220,103 @@ def loco():
     return p
 
 
+# Emergency vehicles. Lamp parts (901, 902, 915) are left unshaded and uninked; the flashing itself is drawn by the
+# viewer over the blue lamps.
+BLUE_LAMP = (60, 120, 255)
+POLICE_BLUE = (36, 84, 178)
+HI_VIS_YELLOW = (238, 204, 40)
+FIRE_RED = (198, 32, 30)
+MARK_RED = (206, 38, 40)
+MARK_GREEN = (40, 150, 80)
+
+
+def checks(x0, x1, z0, rows, size, half_w, a, b, part):
+    """Battenburg markings: `rows` rows of squares of `size` metres from x0 to x1 and from height z0 up, alternating
+    colours a and b, just proud of both sides."""
+    p = []
+    n = max(1, round((x1 - x0) / size))
+    sx = (x1 - x0) / n
+    for s in (-1, 1):
+        for r in range(rows):
+            for i in range(n):
+                col = a if (i + r) % 2 == 0 else b
+                p.append(box(x0 + (i + 0.5) * sx, s * (half_w + 0.015), z0 + r * size, sx, 0.03, size, col, part=part))
+    return p
+
+
+def police():
+    """Luxembourg Police patrol car: white estate, blue and yellow checks along the sides, blue light bar."""
+    body = WHITE
+    p = [
+        *wheels((-1.4, 1.42), 0.8),
+        hexa(-2.25, 2.25, -0.92, 0.92, 0.28, 1.0, body, front=0.25, back=0.06),
+        hexa(-1.75, 0.85, -0.84, 0.84, 1.0, 1.44, GLASS, front=0.55, back=0.12, side=0.08),   # estate: long glass
+        hexa(-1.62, 0.3, -0.76, 0.76, 1.44, 1.52, body),
+        hexa(1.6, 2.25, -0.93, 0.93, 0.62, 0.86, POLICE_BLUE, front=0.2, part=931),          # blue bonnet band
+        *checks(-2.2, 1.55, 0.44, 2, 0.24, 0.92, POLICE_BLUE, HI_VIS_YELLOW, 930),
+        box(-0.35, 0, 1.52, 0.32, 1.25, 0.13, (36, 40, 52), part=932),                        # light bar base
+        box(-0.35, 0.36, 1.6, 0.26, 0.44, 0.12, BLUE_LAMP, part=915),
+        box(-0.35, -0.36, 1.6, 0.26, 0.44, 0.12, BLUE_LAMP, part=915),
+        box(2.24, 0.6, 0.72, 0.04, 0.32, 0.13, HEAD, part=901), box(2.24, -0.6, 0.72, 0.04, 0.32, 0.13, HEAD, part=901),
+        box(-2.24, 0.64, 0.76, 0.04, 0.3, 0.12, TAIL, part=902), box(-2.24, -0.64, 0.76, 0.04, 0.3, 0.12, TAIL, part=902),
+    ]
+    return p
+
+
+def ambulance(mark):
+    """CGDIS ambulance: white cab and box body, yellow and red (or green) checks, blue lamps at the corners."""
+    L2, W2 = 2.9, 1.05
+    p = [
+        *wheels((-1.75, 1.95), 0.92, d=0.7),
+        hexa(-L2, L2, -W2, W2, 0.32, 1.1, WHITE, front=0.14),                                  # lower body
+        hexa(-L2, 1.2, -W2, W2, 1.1, 2.7, WHITE, side=0.04),                                    # box body
+        hexa(1.2, 2.72, -1.0, 1.0, 1.1, 2.2, GLASS, front=0.72, side=0.06),                     # cab glass
+        hexa(1.2, 1.95, -0.95, 0.95, 2.2, 2.32, WHITE),                                         # cab roof
+        *checks(-2.85, 1.15, 0.62, 2, 0.3, W2, HI_VIS_YELLOW, mark, 930),
+        box(-L2 + 0.03, 0, 1.25, 0.04, 1.6, 0.3, mark, part=931),                               # band on the back
+        box(L2 - 0.04, 0, 0.92, 0.04, 1.7, 0.16, mark, part=931),                               # band on the nose
+        box(1.55, 0, 2.32, 0.3, 1.5, 0.12, (36, 40, 52), part=932),                             # light bar on the cab
+        box(1.55, 0.45, 2.4, 0.24, 0.5, 0.12, BLUE_LAMP, part=915),
+        box(1.55, -0.45, 2.4, 0.24, 0.5, 0.12, BLUE_LAMP, part=915),
+        box(-2.75, 0.85, 2.7, 0.22, 0.22, 0.14, BLUE_LAMP, part=915),                           # rear corner lamps
+        box(-2.75, -0.85, 2.7, 0.22, 0.22, 0.14, BLUE_LAMP, part=915),
+        box(L2 - 0.01, 0.7, 0.84, 0.04, 0.34, 0.16, HEAD, part=901), box(L2 - 0.01, -0.7, 0.84, 0.04, 0.34, 0.16, HEAD, part=901),
+        box(-L2 + 0.01, 0.84, 0.8, 0.04, 0.22, 0.4, TAIL, part=902), box(-L2 + 0.01, -0.84, 0.8, 0.04, 0.22, 0.4, TAIL, part=902),
+    ]
+    return p
+
+
+def fire_engine():
+    """CGDIS fire engine: red, cab in front, equipment body with white stripes, ladder on the roof, blue lamps."""
+    L2, W2 = 4.5, 1.25
+    grey = (150, 154, 160)
+    p = [
+        *wheels((-2.6, -1.3, 2.75), 1.08, d=1.0, w=0.32),
+        hexa(-L2, L2, -W2, W2, 0.42, 1.3, FIRE_RED, front=0.1),                                  # chassis level
+        hexa(-L2, 2.3, -W2, W2, 1.3, 3.0, FIRE_RED, side=0.04),                                   # equipment body
+        hexa(2.3, 4.4, -1.22, 1.22, 1.3, 2.75, FIRE_RED, front=0.35, side=0.05),                  # cab
+        hexa(3.05, 4.42, -1.18, 1.18, 1.75, 2.62, GLASS, front=0.32, part=913),                   # windscreen
+        box(2.75, 0, 1.75, 0.55, W2 * 2 + 0.03, 0.75, GLASS, part=920),                           # cab side windows
+        box(-1.1, 0, 1.0, 6.7, W2 * 2 + 0.04, 0.32, WHITE, part=930),                             # white stripes
+        box(-1.1, 0, 2.62, 6.7, W2 * 2 + 0.04, 0.3, WHITE, part=930),
+        box(3.35, 0, 1.0, 2.2, W2 * 2 + 0.04, 0.32, WHITE, part=930),
+        box(-L2 + 0.04, 0, 1.0, 0.06, W2 * 2 - 0.1, 0.32, WHITE, part=930),
+        # shutters: darker panels between the stripes
+        *[box(x, s * (W2 + 0.012), 1.4, 1.5, 0.03, 1.14, (168, 28, 28), part=934) for x in (-3.4, -1.7, 0.0, 1.55)
+          for s in (-1, 1)],
+        # roof ladder: two rails and rungs
+        box(-1.0, 0.55, 3.0, 6.4, 0.1, 0.16, grey, part=933), box(-1.0, -0.55, 3.0, 6.4, 0.1, 0.16, grey, part=933),
+        *[box(x, 0, 3.02, 0.08, 1.1, 0.1, grey, part=933) for x in np.arange(-4.0, 2.2, 0.55)],
+        box(3.3, 0, 2.75, 0.32, 1.9, 0.12, (36, 40, 52), part=932),                                # light bar on the cab
+        box(3.3, 0.6, 2.83, 0.26, 0.62, 0.13, BLUE_LAMP, part=915),
+        box(3.3, -0.6, 2.83, 0.26, 0.62, 0.13, BLUE_LAMP, part=915),
+        box(-4.3, 1.0, 3.0, 0.22, 0.22, 0.16, BLUE_LAMP, part=915), box(-4.3, -1.0, 3.0, 0.22, 0.22, 0.16, BLUE_LAMP, part=915),
+        box(L2 - 0.01, 0.85, 0.85, 0.04, 0.34, 0.18, HEAD, part=901), box(L2 - 0.01, -0.85, 0.85, 0.04, 0.34, 0.18, HEAD, part=901),
+        box(-L2 + 0.01, 1.0, 0.7, 0.04, 0.24, 0.3, TAIL, part=902), box(-L2 + 0.01, -1.0, 0.7, 0.04, 0.24, 0.3, TAIL, part=902),
+    ]
+    return p
+
+
 CAR_COLOURS = {  # warm, slightly muted: they sit on a painted map
     "red": (196, 52, 46), "blue": (46, 88, 158), "white": (234, 232, 226), "black": (52, 54, 60),
     "silver": (170, 174, 180), "yellow": (226, 178, 52), "green": (58, 120, 84), "teal": (48, 140, 150),
@@ -236,6 +333,9 @@ TYPES = {
     "train_cab": (26.0, {"cfl": coach(True)}),
     "train_coach": (26.0, {"cfl": coach(False)}),
     "train_loco": (19.0, {"cfl": loco()}),
+    "police": (4.5, {"police": police()}),
+    "ambulance": (5.8, {"red": ambulance(MARK_RED), "green": ambulance(MARK_GREEN)}),
+    "fire": (9.0, {"cgdis": fire_engine()}),
 }
 
 NOTES = {
@@ -244,6 +344,9 @@ NOTES = {
     "train_cab": "double-deck driving car, red nose at the front",
     "train_coach": "double-deck middle coach",
     "train_loco": "electric locomotive; symmetric, cabs at both ends",
+    "police": "Luxembourg Police patrol car; blue lamps on the roof at 1.6 m, 0.35 m behind the centre",
+    "ambulance": "CGDIS ambulance; blue lamps on the cab roof (2.4 m, 1.55 m ahead) and at the back corners (2.7 m)",
+    "fire": "CGDIS fire engine; blue lamps on the cab roof (2.8 m, 3.3 m ahead) and at the back corners (3.0 m)",
 }
 
 
@@ -361,7 +464,7 @@ def frame_image(r, tris, w, h, ax, ay):
         else:
             inner[:, :-1] |= j & first_near; inner[:, 1:] |= j & ~first_near
     # lamps glow: no shading and no ink over them (they are only a pixel or two)
-    lamp = (part == 901) | (part == 902)
+    lamp = (part == 901) | (part == 902) | (part == 915)
     rgb[lamp] = a[..., :3][lamp]
     inner &= ~lamp
     rgb[inner] *= 0.42

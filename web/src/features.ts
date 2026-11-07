@@ -17,6 +17,8 @@ export const DEFAULTS = {
   snow: true,
   /** Cars on the streets. */
   traffic: true,
+  /** Police cars, ambulances and fire engines in the traffic, some on a call with blue lights (needs traffic). */
+  emergency: true,
   /** Tiny traffic lights at signalised junctions when zoomed in (needs traffic). */
   signals: true,
   /** Trams and trains on today's timetable (GTFS). */
