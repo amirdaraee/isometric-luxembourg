@@ -41,6 +41,7 @@ The order of work, step by step, is in **[PLAN.md](PLAN.md)**, along with the ru
 | I9 | ~~Unpainted areas show the raw render~~ Fixed 7 Nov: a note says so, and the whole city is painted now. | UX | closed |
 | I13 | The occlusion mask is one 6656 x 3584 image (1 m cuts); split it into tiles loaded on demand for finer cuts and less memory. | perf | 6 |
 | I14 | The map covers the rendered pilot area (about lon 6.115-6.175, lat 49.597-49.637), not the whole commune: Merl, Belair, Cloche d'Or, Gasperich, Cessange, most of Hollerich, Rollingergrund, Beggen and Dommeldange are outside. Extending needs a wider render, new blocks (about 2-3x the area) and tiles on R2. | scope | 3, 4 |
+| I15 | The background of the main menu and panels is not good (raised 7 Nov 2026): the dark blurred glass (`.glass`, `--glass` in `web/src/styles/global.css`) behind the search bar, scene control, layer buttons and cards, and the plain "Loading Luxembourg" splash. Design a better one in the map's inked, warm style (e.g. paper-toned panels with a fine ink border, or a painted vignette for the splash), checked by day and night and on phones. | design | later |
 | I11 | Christmas patches belong to today's winter art and must be redone after any repaint. | process | 5 |
 | I12 | ~~RunPod balance~~ Moved GPU work to Modal (7 Nov). | money | closed |
 
