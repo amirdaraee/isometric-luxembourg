@@ -27,7 +27,7 @@ export const DEFAULTS = {
   water: true,
   /** Flocks of birds over the valleys (by day). */
   birds: true,
-  /** Illustrated clouds round the edge of the map, over a sky instead of the flat background. */
+  /** A soft sea of cloud seen from above, filling everything outside the map. */
   clouds: true,
   /** Tilt-shift: the screen's top and bottom edges softly blurred, like a miniature photo. */
   tiltShift: true,
