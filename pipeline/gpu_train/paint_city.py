@@ -111,6 +111,8 @@ def paint_block(b):
     if rc != 0 or not out.exists():
         print(f"{bid}: no canvas (rc={rc}); see {log}", flush=True)
         return False
+    if not V:  # rivers in the old town's blue, keeping the painted texture
+        sh(PY, "pipeline/water_tone.py", str(out), str(b["x0"]), str(b["y0"]), str(b["w"]), str(b["h"]), str(out), log=log)
     sh(PY, "pipeline/city_blocks.py", "done", bid, str(out), *([V] if V else []), log=log)
     if not V:
         with lock:
