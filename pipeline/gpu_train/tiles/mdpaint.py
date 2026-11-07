@@ -45,6 +45,8 @@ ap.add_argument("--keep")
 ap.add_argument("--band", type=int, default=64)
 ap.add_argument("--seed", type=int, default=1867)
 ap.add_argument("--extra-lora", help="optional second LoRA (e.g. Lightning, for fewer steps)")
+ap.add_argument("--mu", type=float, help="fixed schedule shift (Lightning: ln 3 = 1.0986, with --cfg 1 --steps 8); "
+                "default: the pipeline's dynamic shift for one 1024 px window")
 args = ap.parse_args()
 
 LIVE = os.environ.get("LIVE", "/workspace/live")
@@ -93,6 +95,8 @@ seq = (WIN_PX // 16) ** 2
 sc = pipe.scheduler.config
 mu = calculate_shift(seq, sc.get("base_image_seq_len", 256), sc.get("max_image_seq_len", 4096),
                      sc.get("base_shift", 0.5), sc.get("max_shift", 1.15))
+if args.mu is not None:
+    mu = args.mu
 pipe.scheduler.set_timesteps(sigmas=np.linspace(1.0, 1 / args.steps, args.steps), device=dev, mu=mu)
 sigmas = [float(s) for s in pipe.scheduler.sigmas]
 timesteps = pipe.scheduler.timesteps
@@ -181,9 +185,19 @@ def decode(z: torch.Tensor) -> np.ndarray:
 
 # --- known pixels (finished neighbours or the area outside a repair)
 known = hold = keep_px = known_img = None
+# Empty map edge (no 3D data) is held as background, so windows with nothing in them cost nothing.
+rarr = np.asarray(render, np.int16)
+bg_px = np.abs(rarr - BG).sum(axis=2) < 6
 if args.known:
     known_img = Image.open(args.known).convert("RGB").resize((Wpx, Hpx), Image.LANCZOS)
-    keep_px = torch.from_numpy(np.asarray(Image.open(args.keep).convert("L").resize((Wpx, Hpx), Image.NEAREST)) > 127)
+    keep_np = np.asarray(Image.open(args.keep).convert("L").resize((Wpx, Hpx), Image.NEAREST)) > 127
+elif bg_px.mean() > 0.01:
+    known_img, keep_np = render, np.zeros((Hpx, Wpx), bool)
+if known_img is not None:
+    ka = np.asarray(known_img).copy()
+    ka[bg_px] = BG
+    known_img = Image.fromarray(ka)
+    keep_px = torch.from_numpy(keep_np | bg_px)
     save_status(state="encoding known pixels")
     known = encode(known_img)
     hold = hold_mask(keep_px, args.band)
@@ -210,11 +224,10 @@ if z is None:
 
 save_status(state="decoding")
 out = decode(z)
-if known_img is not None:  # put the known pixels back, feathered across the free band
-    a = feather(keep_px, args.band).numpy()[..., None]
+if args.known:  # put the finished neighbours back, feathered across the free band (background is set below)
+    a = feather(torch.from_numpy(keep_np), args.band).numpy()[..., None]
     out = (np.asarray(known_img) * a + out * (1 - a)).round().astype(np.uint8)
-rarr = np.asarray(render, np.int16)
-out[np.abs(rarr - BG).sum(axis=2) < 6] = BG  # outside the 3D data stays background
+out[bg_px] = BG  # outside the 3D data stays background
 Image.fromarray(out).save(args.out + ".tmp.png")
 os.replace(args.out + ".tmp.png", args.out)
 prev = Image.fromarray(out)

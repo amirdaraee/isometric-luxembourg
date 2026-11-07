@@ -21,16 +21,24 @@ def main():
         im = im.resize(p["w"] / im.width, vscale=p["h"] / im.height, kernel="lanczos3")
         mosaic = mosaic.insert(im.cast(mosaic.format), p["x0"], p["y0"])
         print("painted patch", p["file"], p["x0"], p["y0"])
-    if OUT.exists():
-        shutil.rmtree(OUT)
-    OUT.mkdir(parents=True)
+    # Replace only the day map: the other painted versions (build_variant_tiles.py) live next to it and stay.
+    OUT.mkdir(parents=True, exist_ok=True)
+    old_meta = json.loads((OUT / "meta.json").read_text()) if (OUT / "meta.json").exists() else {}
+    for p in (OUT / "map_files", OUT / "map.dzi"):
+        if p.is_dir():
+            shutil.rmtree(p)
+        elif p.exists():
+            p.unlink()
     mosaic.dzsave(str(OUT / "map"), tile_size=TILE, overlap=0, suffix=".webp[Q=82,effort=4]", layout="dz")
     # Levels below one tile are never requested: the viewer stops at the 512 px level.
     for d in (OUT / "map_files").iterdir():
         if d.is_dir() and int(d.name) < 9:
             shutil.rmtree(d)
-    (OUT / "meta.json").write_text(json.dumps({"width": mosaic.width, "height": mosaic.height, "tileSize": TILE,
-                                               "mpp": m["mpp"], "art": "painted" if painted else "preview", "painted": painted}))
+    meta = {"width": mosaic.width, "height": mosaic.height, "tileSize": TILE, "mpp": m["mpp"],
+            "art": "painted" if painted else "preview", "painted": painted}
+    if old_meta.get("variants"):
+        meta["variants"] = old_meta["variants"]
+    (OUT / "meta.json").write_text(json.dumps(meta))
     print("pyramid", mosaic.width, mosaic.height)
 
 

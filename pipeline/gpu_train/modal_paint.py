@@ -45,10 +45,13 @@ app = modal.App("iso-lux-paint", image=image)
 @app.function(volumes={"/vol": vol}, timeout=2 * 3600, cpu=4)
 def download() -> str:
     """Fetch the base model into the volume on a cheap CPU container, so no GPU time is spent downloading."""
-    from huggingface_hub import snapshot_download
+    from huggingface_hub import hf_hub_download, snapshot_download
     p = snapshot_download("Qwen/Qwen-Image-Edit-2511")
+    os.makedirs("/vol/loras", exist_ok=True)
+    lt = hf_hub_download("lightx2v/Qwen-Image-Edit-2511-Lightning",
+                         "Qwen-Image-Edit-2511-Lightning-8steps-V1.0-bf16.safetensors", local_dir="/vol/loras")
     vol.commit()
-    return p
+    return f"{p}\n{lt}"
 
 
 @app.function(gpu="H200", volumes={"/vol": vol}, timeout=3 * 3600)

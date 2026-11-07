@@ -53,11 +53,39 @@ function at(r: Prepared, s: number): [number, number, number] {
 }
 
 interface Car { road: Prepared; s: number; dir: 1 | -1; speed: number; colour: string; len: number }
+/** A point of light on the water: map px, a phase for its twinkle, a length. */
+interface Glint { x: number; y: number; ph: number; len: number }
+
+// Scatter glints over the water polygons, about one per 22 x 22 map px, in a fixed (seeded) pattern. Scanlines
+// rather than random tries, because a river is one long thin polygon whose bounding box covers the whole city.
+function scatterGlints(water: Prepared[]): Glint[] {
+  let seed = 1867;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const out: Glint[] = [];
+  const STEP = 22;
+  for (const w of water) {
+    const p = w.p;
+    for (let y = Math.ceil(w.box[1] / STEP) * STEP; y <= w.box[3]; y += STEP) {
+      const xs: number[] = [];
+      for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
+        const yi = p[i + 1], yj = p[j + 1];
+        if ((yi > y) !== (yj > y)) xs.push(p[i] + ((y - yi) * (p[j] - p[i])) / (yj - yi));
+      }
+      xs.sort((m, n) => m - n);
+      for (let k = 0; k + 1 < xs.length; k += 2) {
+        for (let x = xs[k] + rnd() * STEP; x < xs[k + 1]; x += STEP) {
+          out.push({ x, y: y + (rnd() - 0.5) * STEP * 0.8, ph: rnd(), len: 5 + rnd() * 8 });
+        }
+      }
+    }
+  }
+  return out;
+}
 
 export function Overlay({ map, meta, streets, traffic, night, hour, season }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const state = useRef<{ lines?: Lines; roads?: Prepared[]; named?: Prepared[]; rail?: Prepared[]; water?: Prepared[];
-    waterways?: Prepared[]; cars?: Car[]; ends?: Map<string, { road: Prepared; atStart: boolean }[]> }>({});
+    waterways?: Prepared[]; glints?: Glint[]; cars?: Car[]; ends?: Map<string, { road: Prepared; atStart: boolean }[]> }>({});
   const flags = useRef({ streets, traffic, night, hour, season });
   flags.current = { streets, traffic, night, hour, season };
 
@@ -89,6 +117,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       st.named = st.roads.filter((r) => r.n && r.k !== "footway" && r.k !== "path" && r.k !== "steps" && r.len > 120);
       st.rail = L.rail.filter((r) => !r.t).map(prepare);
       st.water = L.water.map(prepare);
+      st.glints = scatterGlints(st.water);
       st.waterways = L.waterways.filter((r) => !r.t).map(prepare);
       // Traffic only where the map is painted, on roads cars use.
       const areas = meta.painted ?? [];
@@ -122,8 +151,11 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
 
   useEffect(() => {
     let raf = 0, last = performance.now();
+    const loop = (now: number) => {
+      raf = requestAnimationFrame(loop);
+      draw(now);
+    };
     const draw = (now: number) => {
-      raf = requestAnimationFrame(draw);
       const dt = Math.min((now - last) / 1000, 0.1);
       last = now;
       const cv = canvas.current, v = map.current?.getView(), st = state.current;
@@ -135,7 +167,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       g.clearRect(0, 0, W, H);
       const { streets, traffic, night, hour, season } = flags.current;
       const winter = season === "winter" && on("snow");
-      if (!streets && !traffic && !winter) return;
+      const glints = on("water") && st.glints && v.z >= 0.12;
+      if (!streets && !traffic && !winter && !glints) return;
       // image px -> screen px
       const z = v.z, ox = W / 2 - v.x * z, oy = H / 2 - v.y * z;
       const vis = (b: number[]) => b[2] * z + ox > -50 && b[0] * z + ox < W + 50 && b[3] * z + oy > -50 && b[1] * z + oy < H + 50;
@@ -185,6 +218,30 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
             g.fillStyle = "#fff"; g.fillText(r.n!, 0, 0);
             g.restore();
           }
+        }
+      }
+
+      if (glints) {
+        // Light on the water: short horizontal glints that twinkle in steps (6 per second), like ripples catching
+        // the sun; warm reflections at night. Only where the water is really visible from above.
+        const V = vis_.current;
+        const t = Math.floor(now / 1000 * 6) / 6;
+        const col = night > 0.5 ? "255,206,130" : "255,255,255";
+        const peak = night > 0.5 ? 0.7 : 0.95;
+        const wpx = Math.max(1.2, z * 1.8);
+        for (const gl of st.glints!) {
+          const sx = gl.x * z + ox, sy = gl.y * z + oy;
+          if (sx < -10 || sx > W + 10 || sy < -10 || sy > H + 10) continue;
+          if (V) {
+            const vx = gl.x >> 3, vy = gl.y >> 3;
+            if (!(vx >= 0 && vy >= 0 && vx < V.w && vy < V.h && V.d[vy * V.w + vx] === 255)) continue;
+          }
+          const s = Math.sin(t * 1.7 + gl.ph * 6.283);
+          if (s < 0.35) continue;
+          const a = ((s - 0.35) / 0.65) ** 1.5 * peak;
+          const L = Math.max(2, gl.len * z);
+          g.fillStyle = `rgba(${col},${a.toFixed(3)})`;
+          g.fillRect(sx - L / 2, sy, L, wpx);
         }
       }
 
@@ -265,8 +322,10 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         }
       }
     };
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(loop);
+    // Also redraw inside the map's own redraw, so cars and street lines never trail the map while it moves.
+    const off = map.current?.onFrame(() => draw(performance.now()));
+    return () => { cancelAnimationFrame(raf); off?.(); };
   }, [map]);
 
   return <canvas ref={canvas} className="overlay" aria-hidden="true" />;

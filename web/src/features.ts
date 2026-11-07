@@ -19,6 +19,8 @@ export const DEFAULTS = {
   traffic: true,
   /** Trams and trains on today's timetable (GTFS). */
   transit: true,
+  /** Light glinting on the rivers and ponds (animated, drawn over the painted water). */
+  water: true,
   /** "Streets" layer with street names. */
   streets: true,
   /** Place pins with labels. */
