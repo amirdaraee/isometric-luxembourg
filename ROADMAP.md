@@ -11,21 +11,36 @@ Done:
 - 47 landmark cards with history, interiors, 10 cutaway drawings, 30 3D models and credited photos.
 - Feature switches for every optional part (`web/src/features.ts`). GitHub Pages deploy.
 
-Next, in order:
-1. **The whole city.** Paint the rest at the showcase scale. Speed it up first (see "Faster GPU runs"), then serve
-   the tiles from Cloudflare R2, because the whole city won't fit GitHub Pages' 1 GB.
-2. **Building quality.** See below. v2 improved windows and lines, but dense blocks still go soft at full zoom.
-3. **Transit timetable refresh.** `transit.json` holds one service day. Rebuild it from the latest GTFS on a
-   schedule, or pick the matching weekday in the viewer.
-4. **The night version at full resolution.** Release 1.0's night is upscaled from a 4096 px preview after a pod
-   stopped early. Repaint it with the whole city.
-5. More events (Schueberfouer, National Day), weather, clouds at the edges, easter eggs (ideas below).
-6. **Place labels drift while the map moves** (bad UX, raised 7 Nov 2026). The labels slide slightly against the
-   map while it is dragged or zoomed. Cause: `Pins.tsx` positions them from React state that `onViewChange`
-   updates on every viewport change, so they are drawn a frame or more after the map canvas. Fix: move the labels
-   in the same frame as the map, either inside OpenSeadragon's `update-viewport` / `animation` handler (writing
-   the `transform` directly, with no React render) or as OpenSeadragon overlays. Only re-render on zoom-level
-   changes, which decide which labels show.
+## Next
+The order of work, step by step, is in **[PLAN.md](PLAN.md)**, along with the rules learned so far:
+
+| Phase | What | Cost | Status |
+|---|---|---|---|
+| 0 | Tidy up: fix label drift, cap zoom, height pass | free | to do |
+| 1 | New painter (`mdpaint.py`): whole-canvas painting with shifted windows, resume, patch repair | free | to do |
+| 2 | Showcase test: new painter vs today, 8 vs 25 steps, finer scale | ~$10-15 | needs approval |
+| 3 | Whole city ready: renders, block plan, sparse tiles, Cloudflare R2, cost table | mostly free | to do |
+| 4 | Paint the city by day, block by block, live as each finishes | from Phase 3 | needs approval |
+| 5 | Night (full resolution), golden hour, seasons for the whole city; Christmas regenerated | GPU | needs approval |
+| 6 | Life on the map: car hiding, water shimmer, swaying trees, better traffic, transit refresh, birds | free | to do |
+| 7 | Switch features on publicly, one at a time | free | to do |
+| 8 | isometric.lu | domain fee | waiting on purchase |
+| 9 | More events, weather, clouds, easter eggs, height, historic mode | varies | later |
+
+## Open issues
+| ID | Issue | Type | Phase |
+|---|---|---|---|
+| I1 | **Place labels drift while the map moves** (raised 7 Nov 2026). `Pins.tsx` positions them from React state that `onViewChange` updates, so they are drawn a frame or more after the map. Fix: write `transform` in OpenSeadragon's `update-viewport` handler, and re-render only on zoom-level changes. | bug | 0 |
+| I2 | `http://luxembourg.amirdaraee.com` still serves the page instead of redirecting to `https://` (HTTPS enforced 7 Nov; may need time to apply). | check | 0 |
+| I3 | Night is upscaled from a 4096 px preview after a pod stopped early. | quality | 5 |
+| I4 | Buildings go soft at full zoom; windows are warped and facade lines aren't parallel. See "Building quality" below. | quality | 2, 4 |
+| I5 | Visible seams and slow colour drift from window-by-window painting. | quality | 1, 2 |
+| I6 | The painter sometimes invents trees over streets and small cars on station roads. | quality | 2 (patch repair) |
+| I7 | `transit.json` holds one service day. | data | 6 |
+| I8 | The viewer zooms past the painted resolution and shows upscaled mush. | bug | 0 |
+| I9 | Unpainted areas show the raw 3D render without saying so. | UX | 3 |
+| I11 | Christmas patches belong to today's winter art and must be redone after any repaint. | process | 5 |
+| I12 | RunPod balance is $4.44: top up, or move to another provider, before Phase 2. | money | 2 |
 
 # Feature ideas
 
@@ -85,6 +100,7 @@ The Traffic layer draws cars on roads hidden behind buildings (seen on old-town 
 visibility pass (frames_kind) as a low-res "road visible" mask for the viewer and only draw cars where it is set.
 
 ## Later: faster GPU runs (before the full-city paint)
+Folded into PLAN.md Phases 1 to 3. The new painter's per-step resume also allows cheaper interruptible GPUs.
 - Network volume with the base model + venv cached (~80 GB, ~$5-6/month): pod setup ~1 min instead of ~8.
   Ties pods to that volume's data centre.
 - Parallel GPUs for big jobs: independent blocks per GPU, then one seam pass between blocks.
