@@ -11,14 +11,22 @@ import { on } from "../features";
  * on a canvas above them, in depth bands (far to near, objects then trees in each band), so a tree in front of a
  * house covers it and one behind is hidden. Layer files come from pipeline/layers/export_web.py and live in
  * public/layers/<block>/ (never published).
+ *
+ * ?layers=v2 shows version 2 (public/layers/b00_v2/): painted ground, exact ink lines, soft ground darkening under
+ * the trees, buildings, and painted trees that were already depth-tested against the buildings per pixel (a tree
+ * covers a building only where it stands in front of it). "Keep landmarks clear" swaps in a tree layer with no
+ * canopy over the major landmarks.
  */
 interface Band { i: number; obj?: number[]; [k: string]: number[] | number | undefined }
-interface Meta { x0: number; y0: number; w: number; h: number; size: number; style: string; seasons: string[]; bands: Band[] }
+interface Meta { x0: number; y0: number; w: number; h: number; size: number; style: string; seasons: string[]; bands: Band[]; version?: number }
 
 type Shadow = "off" | "midday" | "evening";
 type Trees = "off" | "summer" | "spring";
-interface Switches { ground: boolean; relief: boolean; water: boolean; roads: boolean; walls: boolean; shadow: Shadow; objects: boolean; trees: Trees }
-const START: Switches = { ground: true, relief: true, water: true, roads: true, walls: true, shadow: "midday", objects: true, trees: "summer" };
+interface Switches { ground: boolean; relief: boolean; water: boolean; roads: boolean; walls: boolean; shadow: Shadow; objects: boolean; trees: Trees; contact: boolean; clear: boolean }
+const START: Switches = { ground: true, relief: true, water: true, roads: true, walls: true, shadow: "midday", objects: true, trees: "summer", contact: true, clear: false };
+const START_V2: Switches = { ...START, shadow: "off" };
+const query = new URLSearchParams(location.search).get("layers") ?? "";
+const V2 = query.split(",").includes("v2");
 
 export const layersPocOn = import.meta.env.DEV && on("layersPoc") && new URLSearchParams(location.search).has("layers");
 
@@ -33,24 +41,25 @@ export function LayersPoc({ map, below }: { map: RefObject<MapHandle>; below: bo
   const canvas = useRef<HTMLCanvasElement>(null);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [sw, setSw] = useState<Switches>(() => {
-    const q = new URLSearchParams(location.search).get("layers");
-    if (!q) return START;
+    const keep = new Set(query.split(",").filter((x) => x && x !== "v2"));
+    if (!keep.size) return V2 ? START_V2 : START;
     // ?layers=ground,roads,objects : only those (shadow and trees take their default version)
-    const keep = new Set(q.split(","));
-    return { ground: keep.has("ground"), relief: keep.has("relief"), water: keep.has("water"), roads: keep.has("roads"),
+    return { contact: keep.has("contact"), clear: keep.has("clear"), ground: keep.has("ground"), relief: keep.has("relief"), water: keep.has("water"), roads: keep.has("roads"),
       walls: keep.has("walls"), shadow: keep.has("evening") ? "evening" : keep.has("shadow") ? "midday" : "off",
       objects: keep.has("objects"), trees: keep.has("spring") ? "spring" : keep.has("trees") ? "summer" : "off" };
   });
   const imgs = useRef<Record<string, HTMLImageElement>>({});
   const swRef = useRef(sw);
   swRef.current = sw;
-  const base = asset("/layers/b00");
+  const base = asset(V2 ? "/layers/b00_v2" : "/layers/b00");
 
   useEffect(() => {
     fetch(`${base}/layers.json`).then((r) => r.json()).then((m: Meta) => {
       const im = imgs.current;
       if (below) {
-        for (const n of ["ground", "relief", "water", "roads", "walls", "shadow_midday", "shadow_evening"]) im[n] = load(`${base}/${n}.webp`);
+        const names = m.version === 2 ? ["ground", "roads", "contact", "shadow_midday", "shadow_evening"]
+          : ["ground", "relief", "water", "roads", "walls", "shadow_midday", "shadow_evening"];
+        for (const n of names) im[n] = load(`${base}/${n}.webp`);
       } else {
         for (const b of m.bands) {
           for (const k of Object.keys(b)) if (k !== "i") im[`${k}_${b.i}`] = load(`${base}/bands/${k}_${b.i}.webp`);
@@ -98,12 +107,13 @@ export function LayersPoc({ map, below }: { map: RefObject<MapHandle>; below: bo
         if (s.relief) put("relief");
         if (s.water) put("water");
         if (s.roads) put("roads");
+        if (meta.version === 2 && s.contact) put("contact");
         if (s.shadow !== "off") put(`shadow_${s.shadow}`);
         if (s.walls) put("walls");
       } else {
         for (const band of meta.bands) {
           if (s.objects && band.obj) put(`obj_${band.i}`, band.obj[0], band.obj[1]);
-          const tk = `trees_${s.trees}`;
+          const tk = `trees_${s.trees}${meta.version === 2 && s.clear ? "_clear" : ""}`;
           const box = band[tk] as number[] | undefined;
           if (s.trees !== "off" && box) put(`${tk}_${band.i}`, box[0], box[1]);
         }
@@ -125,18 +135,29 @@ export function LayersPoc({ map, below }: { map: RefObject<MapHandle>; below: bo
       <canvas ref={canvas} className="overlay" aria-hidden="true" />
       {!below && meta && (
         <div className="layers-poc glass" role="group" aria-label="Layers (proof of concept)">
-          <b>Layers, old town (test)</b>
-          {box("ground", "L1 ground")}
-          {box("relief", "L2 slopes and cliffs")}
-          {box("walls", "L2 walls")}
-          {box("water", "L3 water")}
-          {box("roads", "L4 roads and rails")}
-          <label>L6 shadows <select value={sw.shadow} onChange={(e) => setSw({ ...sw, shadow: e.target.value as Shadow })}>
+          <b>Layers, old town (test{meta.version === 2 ? ", version 2" : ""})</b>
+          {meta.version === 2 ? (
+            <>
+              {box("ground", "1 painted ground")}
+              {box("roads", "2 ink lines: roads, rails, banks")}
+              {box("contact", "shade under trees")}
+            </>
+          ) : (
+            <>
+              {box("ground", "L1 ground")}
+              {box("relief", "L2 slopes and cliffs")}
+              {box("walls", "L2 walls")}
+              {box("water", "L3 water")}
+              {box("roads", "L4 roads and rails")}
+            </>
+          )}
+          <label>{meta.version === 2 ? "sun shadows" : "L6 shadows"} <select value={sw.shadow} onChange={(e) => setSw({ ...sw, shadow: e.target.value as Shadow })}>
             <option value="off">off</option><option value="midday">midday</option><option value="evening">evening</option></select></label>
-          {box("objects", "L5 + L7 bridges and buildings")}
-          <label>L8 trees <select value={sw.trees} onChange={(e) => setSw({ ...sw, trees: e.target.value as Trees })}>
+          {box("objects", meta.version === 2 ? "buildings and bridges" : "L5 + L7 bridges and buildings")}
+          <label>{meta.version === 2 ? "3 trees" : "L8 trees"} <select value={sw.trees} onChange={(e) => setSw({ ...sw, trees: e.target.value as Trees })}>
             <option value="off">off</option>
             {meta.seasons.map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
+          {meta.version === 2 && box("clear", "keep landmarks clear")}
           <small>All off shows today's painting underneath.</small>
         </div>
       )}

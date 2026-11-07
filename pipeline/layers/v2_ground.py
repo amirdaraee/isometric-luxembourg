@@ -11,7 +11,8 @@ That image is painted by the trained style through mdpaint (Modal), exactly like
 layout map. The painter's few-pixel shift is measured against the input and undone.
 
   v2_ground.py prep [--k K]                -> b00_v2/ground/src.png, layout.png, masks.npz, previews
-  v2_ground.py finish <painted.png>        -> b00_v2/ground/L1_painted.png (shift undone), shift.txt
+  v2_ground.py finish <painted.png>        -> b00_v2/ground/L1_painted.png (shift undone), shift.txt, and
+                                              L1_ground.png (trees the painter drew anyway removed)
 K is the scale of the 6000 px block (default 5120/6000, the painted size).
 """
 import argparse
@@ -175,18 +176,31 @@ def prep(k):
     #    the terrain, so the painter paints ground there, not a second tree; crowns over paving, roads and water
     #    are filled from their surroundings like the buildings
     hard = np.isin(lc, [0, 8, 9, 10, 12]) | road
+    # the crowns' own shadows next to them (dark pixels within 4 m of a crown) go too, or they get painted as trees
+    near = cv2.dilate(m_crown.astype(np.uint8), np.ones((int(8 * 4 * k * 0.5) | 1,) * 2, np.uint8)) > 0
+    plum = clean.astype(np.float32) @ np.array((0.3, 0.59, 0.11), np.float32)
+    # (only on gentle ground: on cliffs and walls the dark is the rock face in shade, which must stay)
+    gentle = slope_normals(G)[..., 2] > np.cos(np.radians(32))
+    m_crown = m_crown | (near & (plum < 72) & ~road & gentle)
     green = m_crown & ~hard & ok & ~m_bld & ~m_deck
     gsrc = clean.astype(np.float32)
     lawn_px = np.isin(lc, [1, 4, 5, 6, 7]) & ~m_crown & ~m_bld & ok
-    lawn = np.median(gsrc[lawn_px], axis=0) if lawn_px.sum() > 100 else np.array((120, 134, 80), np.float32)
+    # a sunny lawn (the brighter lawn pixels of the photo), so the painter reads open grass, not a wood
+    if lawn_px.sum() > 100:
+        lp = gsrc[lawn_px]
+        lum = lp @ np.array((0.3, 0.59, 0.11), np.float32)
+        exg = 2 * lp[:, 1] - lp[:, 0] - lp[:, 2]
+        lawn = np.median(lp[(exg > np.percentile(exg, 60)) & (lum > np.percentile(lum, 40))], axis=0)
+    else:
+        lawn = np.array((140, 150, 90), np.float32)
     nrm = slope_normals(G)
     L = np.array((-0.62, 0.25, 0.74), np.float32); L /= np.linalg.norm(L)
-    shade = np.clip(0.8 + 0.6 * ((nrm @ L) - L[2]), 0.45, 1.25)
+    shade = np.clip(0.92 + 0.35 * ((nrm @ L) - L[2]), 0.7, 1.12)
     rng = np.random.default_rng(5)
     def nz(sig, amp):
         return cv2.GaussianBlur(rng.normal(0, 1, (H, W)).astype(np.float32), (0, 0), sig) * amp
-    tex = (nz(1.0 * k * 4, 2.5) + nz(4 * k * 4, 6) + nz(14 * k * 4, 5))[..., None]
-    base = np.where(np.isin(lc, [2, 3])[..., None], lawn * np.array((0.78, 0.82, 0.74), np.float32), lawn)
+    tex = (nz(0.7 * k * 4, 3.5) + nz(3 * k * 4, 3) + nz(14 * k * 4, 3))[..., None]
+    base = np.where(np.isin(lc, [2, 3])[..., None], lawn * np.array((0.97, 0.92, 0.8), np.float32), lawn)
     gfill = (base * shade[..., None] + tex * np.array((0.9, 1.0, 0.7), np.float32)).clip(0, 255)
     ga = cv2.GaussianBlur(green.astype(np.float32), (0, 0), 1.2)[..., None]
     clean = (gsrc * (1 - ga) + gfill * ga).astype(np.uint8)
@@ -201,7 +215,8 @@ def prep(k):
     lay = np.zeros((H, W, 3), np.uint8)
     lay[:] = (226, 218, 198)
     lay[np.isin(lc, [1, 2, 3, 4, 5, 6, 7])] = (110, 170, 90)
-    lay[m_crown & ~np.isin(lc, [8, 9, 12])] = (110, 170, 90)
+    # under the crowns of woods the layout says plain ground: a green layout there makes the painter draw trees
+    lay[m_crown & np.isin(lc, [2, 3])] = (226, 218, 198)
     lay[lc == 9] = (185, 185, 190)
     lay[lc == 12] = (60, 120, 210)
     lay[rm["road"] > 0.5] = (150, 150, 155)
@@ -224,6 +239,59 @@ def prep(k):
     print("ground inputs in", d, flush=True)
 
 
+def tree_mask(P, gentle=None):
+    """Where the painter drew trees into the ground: green, and either dark or strongly textured (crowns are
+    dark clumps with light leaves and ink outlines; painted lawns are smooth and lighter)."""
+    f = P.astype(np.float32)
+    r, g, bl = f[..., 0], f[..., 1], f[..., 2]
+    lum = f @ np.array((0.3, 0.59, 0.11), np.float32)
+    greenish = (g > r + 4) & (g > bl + 12)
+    m1 = cv2.blur(lum, (7, 7))
+    sd = np.sqrt(np.clip(cv2.blur(lum * lum, (7, 7)) - m1 * m1, 0, None))
+    dark = lum < 78
+    gfrac = cv2.blur(greenish.astype(np.float32), (9, 9))
+    tree = ((gfrac > 0.35) & (dark | (sd > 26)) & (greenish | dark)).astype(np.uint8)
+    tree = cv2.morphologyEx(tree, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    tree = cv2.morphologyEx(tree, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    n, lab, st, _ = cv2.connectedComponentsWithStats(tree)
+    big = np.zeros(n, bool); big[1:] = st[1:, cv2.CC_STAT_AREA] >= 30
+    tree = big[lab].astype(np.uint8)
+    # the trees' painted shadows next to them (dark, within a few px), on gentle ground (not the rock faces)
+    near = cv2.dilate(tree, np.ones((11, 11), np.uint8)) > 0
+    shadow = near & (lum < 80)
+    if gentle is not None:
+        shadow &= gentle
+    tree = tree.astype(bool) | shadow
+    return cv2.dilate(tree.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
+
+
+def untree(P, m, f=4):
+    """Replace painted trees by the painting's own lawn: the local average of the smooth green ground round them
+    (or the block's lawn colour where there is none), a little darker (shade under trees), with a fine grain."""
+    h, w = m.shape
+    fp = P.astype(np.float32)
+    lum = fp @ np.array((0.3, 0.59, 0.11), np.float32)
+    m1 = cv2.blur(lum, (7, 7))
+    sd = np.sqrt(np.clip(cv2.blur(lum * lum, (7, 7)) - m1 * m1, 0, None))
+    lawnpx = (~m) & (fp[..., 1] > fp[..., 0] + 4) & (fp[..., 1] > fp[..., 2] + 12) & (sd < 18) & (lum > 85)
+    lawn = np.median(fp[lawnpx], axis=0) if lawnpx.sum() > 500 else np.array((128, 150, 70), np.float32)
+    sm = cv2.resize(fp, (w // f, h // f), interpolation=cv2.INTER_AREA)
+    wv = cv2.resize(lawnpx.astype(np.float32), (w // f, h // f), interpolation=cv2.INTER_AREA)
+    fill = np.zeros_like(sm); acc = np.zeros(wv.shape, bool)
+    for sig in (6.0, 20.0):
+        sp = sig * 4 * (w / 6000) / f
+        num = cv2.GaussianBlur(sm * wv[..., None], (0, 0), sp); den = cv2.GaussianBlur(wv, (0, 0), sp)
+        okk = (den > 0.04) & ~acc
+        fill[okk] = num[okk] / den[okk][..., None]; acc |= okk
+    fill[~acc] = lawn
+    fill = cv2.resize(fill, (w, h), interpolation=cv2.INTER_CUBIC) * 0.93
+    rng = np.random.default_rng(9)
+    gr = cv2.GaussianBlur(rng.normal(0, 1, (h, w)).astype(np.float32), (0, 0), 0.9) * 6
+    fill += gr[..., None] * np.array((0.8, 1.0, 0.6), np.float32)
+    a = cv2.GaussianBlur(m.astype(np.float32), (0, 0), 1.2)[..., None]
+    return (fp * (1 - a) + fill * a).clip(0, 255).astype(np.uint8)
+
+
 def finish(painted):
     d = v2_dir("ground")
     P = np.asarray(Image.open(painted).convert("RGB"))
@@ -238,6 +306,22 @@ def finish(painted):
     print(f"after undoing: dx {dx2:.2f}, dy {dy2:.2f} px", flush=True)
     (d / "shift_after.txt").write_text(f"{dx2} {dy2}\n")
     Image.fromarray(out).save(d / "L1_painted.png")
+    clean(out)
+
+
+def clean(P=None):
+    """The ground layer must not contain trees: the trees the painter drew into the ground anyway (and their painted
+    shadows) are found and replaced by the painting's own lawn, a little shaded. -> L1_ground.png, trees_removed.png"""
+    d = v2_dir("ground")
+    if P is None:
+        P = np.asarray(Image.open(d / "L1_painted.png").convert("RGB"))
+    G = np.load(d / "G_k85.npy")
+    gentle = slope_normals(G)[..., 2] > np.cos(np.radians(32))
+    m = tree_mask(P, gentle)
+    out = untree(P, m)
+    Image.fromarray(out).save(d / "L1_ground.png")
+    Image.fromarray((m * 255).astype(np.uint8)).save(d / "trees_removed.png")
+    print(f"painted trees removed from the ground: {m.mean():.1%} of the block", flush=True)
 
 
 if __name__ == "__main__":
@@ -248,6 +332,8 @@ if __name__ == "__main__":
     a = ap.parse_args()
     if a.cmd == "prep":
         prep(a.k)
+    elif a.cmd == "clean":
+        clean()
     elif a.cmd == "finish":
         finish(a.args[0])
     else:

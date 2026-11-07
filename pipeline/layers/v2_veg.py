@@ -40,7 +40,7 @@ def objects_v1():
 
 def context():
     """Painted ground + ink + version 1 buildings and bridges (what the viewer stacks, without trees)."""
-    g = np.asarray(Image.open(v2_dir("ground") / "L1_painted.png").convert("RGB")).astype(np.float32)
+    g = np.asarray(Image.open(v2_dir("ground") / "L1_ground.png").convert("RGB")).astype(np.float32)
     ink = np.asarray(Image.open(v2_dir("ink") / "L2_ink.png")).astype(np.float32)
     ai = ink[..., 3:] / 255
     img = g * (1 - ai) + ink[..., :3] * ai
