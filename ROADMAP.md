@@ -17,30 +17,31 @@ The order of work, step by step, is in **[PLAN.md](PLAN.md)**, along with the ru
 | Phase | What | Cost | Status |
 |---|---|---|---|
 | 0 | Tidy up: fix label drift, cap zoom, height pass | free | done 7 Nov |
-| 1 | New painter (`mdpaint.py`): whole-canvas painting with shifted windows, resume, patch repair | free | built 7 Nov, laptop tests pass |
-| 2 | Showcase test on Modal: new painter vs today, 8 vs 25 steps, finer scale | ~$10-15 | next (needs Modal sign-in) |
-| 3 | Whole city ready: renders, block plan, sparse tiles, Cloudflare R2, cost table | mostly free | tools built 7 Nov; R2 later |
-| 4 | Paint the city by day, block by block, live as each finishes | from Phase 3 | needs approval |
-| 5 | Night (full resolution), golden hour, seasons for the whole city; Christmas regenerated | GPU | needs approval |
-| 6 | Life on the map: car hiding, water shimmer, swaying trees, better traffic, transit refresh, birds | free | water + traffic done 7 Nov |
+| 1 | New painter (`mdpaint.py`): whole-canvas painting with shifted windows, resume, patch repair | free | done 7 Nov |
+| 2 | Showcase test on Modal: new painter vs today, 8 vs 25 steps | ~$4 spent | done 7 Nov: Lightning 8 steps chosen (sharper, 5 seam spots vs 52, $0.75 per block) |
+| 3 | Whole city ready: renders, block plan, sparse tiles, Cloudflare R2, cost table | mostly free | done 7 Nov (R2 not needed yet: site is 153 MB) |
+| 4 | Paint the city by day, block by block, live as each finishes | about $10 | done 7 Nov: 15 blocks, live on isometric.lu |
+| 5 | Night (full resolution), golden hour, seasons for the whole city; Christmas regenerated | cap $60 approved | in progress 7 Nov: testing night (Lightning too light; trying 15 steps with guidance) |
+| 6 | Life on the map: car hiding, water shimmer, swaying trees, better traffic, transit refresh, birds | free | done 7 Nov except swaying trees: traffic sim, sprites, occlusion, river water, trams/trains, weekday/weekend timetable, birds; access rules + emergency vehicles in progress |
 | 7 | Switch features on publicly, one at a time | free | to do |
 | 8 | isometric.lu | domain fee | done 7 Nov |
-| 9 | More events, weather, clouds, easter eggs, height, historic mode | varies | later |
+| 9 | More events, weather, clouds, easter eggs, height, historic mode | varies | clouds being redone; notes from visitors (API live, hidden) |
 
 ## Open issues
 | ID | Issue | Type | Phase |
 |---|---|---|---|
 | I1 | ~~Place labels drift while the map moves~~ Fixed 7 Nov: labels move in the map's own redraw (`MapHandle.onFrame`); React only picks which show. | bug | 0, fixed |
 | I2 | ~~http did not redirect to https~~ Fixed 7 Nov (redirect is live). | check | 0, fixed |
-| I3 | Night is upscaled from a 4096 px preview after a pod stopped early. | quality | 5 |
+| I3 | Night is upscaled from a 4096 px preview after a pod stopped early. | quality | 5 (being repainted) |
 | I4 | Buildings go soft at full zoom; windows are warped and facade lines aren't parallel. See "Building quality" below. | quality | 2, 4 |
-| I5 | Visible seams and slow colour drift from window-by-window painting. | quality | 1, 2 |
+| I5 | ~~Visible seams and colour drift~~ Fixed 7 Nov by the whole-canvas painter. | quality | closed |
 | I6 | The painter sometimes invents trees over streets and small cars on station roads. | quality | 2 (patch repair) |
-| I7 | `transit.json` holds one service day. | data | 6 |
+| I7 | ~~`transit.json` holds one service day~~ Fixed 7 Nov: weekday, Saturday, Sunday/holiday timetables. | data | closed |
 | I8 | ~~The viewer zooms past the painted resolution~~ Already capped in 1.0 (`maxZoomPixelRatio: 1.25`). | bug | 0, closed |
-| I9 | Unpainted areas show the raw 3D render without saying so. | UX | 3 |
+| I9 | ~~Unpainted areas show the raw render~~ Fixed 7 Nov: a note says so, and the whole city is painted now. | UX | closed |
+| I13 | The occlusion mask is one 6656 x 3584 image (1 m cuts); split it into tiles loaded on demand for finer cuts and less memory. | perf | 6 |
 | I11 | Christmas patches belong to today's winter art and must be redone after any repaint. | process | 5 |
-| I12 | RunPod balance is $4.44: top up, or move to another provider, before Phase 2. | money | 2 |
+| I12 | ~~RunPod balance~~ Moved GPU work to Modal (7 Nov). | money | closed |
 
 # Feature ideas
 
