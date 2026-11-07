@@ -917,6 +917,10 @@ sources: `research/06-city-details/README.md`, "Findel".
 Shots `data/work/shots/2026-11-07-c5-planes3`: the views' hours were picked with `--find` (15.8183 Cargolux departure,
 9.9542 Luxair departure, 22.3053 night departure), with `weather=clear` so that the live wind cannot change the
 runway, and the east-wind view moved to `#12000,8700,0.25`, where the final runs.
+Timing: the planes layer costs 0.01 to 0.05 ms a frame (its canvas is hidden while no aircraft is on screen). The
+machine was heavily loaded by other work during these runs (load average 5 to 8), so whole-app numbers swung by 2 to
+3 times between identical runs; alternating quick phone runs with planes on and off (`c5-ab-on1/off1/on2/off2`)
+show no difference beyond that noise.
 Open: the owner's check of the models and liveries by eye; the Luxair aircraft are small and pale at zoom 0.15;
 departures 06 are not drawn (they leave eastwards, off the map); live ADS-B positions not done (optional).
 

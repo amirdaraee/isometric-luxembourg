@@ -85,9 +85,10 @@ export function Planes({ map, night, hour, date }: PlanesProps) {
       shown.sort((a, b) => Math.hypot(a.sx - W / 2, a.sy - H / 2) - Math.hypot(b.sx - W / 2, b.sy - H / 2));
       shown.length = Math.min(shown.length, MAX_SHOWN);
       if (!shown.length) {
-        if (!clear) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, bw, bh); clear = true; }
+        if (!clear) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, bw, bh); clear = true; cv.style.visibility = "hidden"; }
         return;
       }
+      if (clear) cv.style.visibility = "visible";
       clear = false;
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, W, H);
@@ -111,16 +112,19 @@ export function Planes({ map, night, hour, date }: PlanesProps) {
       }
     };
 
+    // with reduced motion, drawn only when the map moves or the scene changes
+    let dirty = true;
     const sub = subscribe((t, _dt, moved) => {
-      if (!moved && !clear && still.matches) return;
+      if (still.matches && !moved && !dirty) return;
+      dirty = false;
       draw(t);
     }, { fps: 30, name: "planes" });
-    wake.current = () => { clear = false; sub.wake(); };
+    wake.current = () => { dirty = true; sub.wake(); };
     return () => { alive = false; sub(); };
   }, [map]);
 
   return <canvas ref={canvas} aria-hidden="true"
-    style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", pointerEvents: "none", zIndex: 1 }} />;
+    style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", pointerEvents: "none", zIndex: 1, visibility: "hidden" }} />;
 }
 
 /** The lights of one aircraft drawn at (sx, sy): soft dots added on top. t < 0: nothing flashes (reduced motion). */
