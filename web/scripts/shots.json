@@ -58,6 +58,7 @@
   {"name": "c-fireworks-national-day", "hash": "5962,6105,0.4", "query": "date=2027-06-22&hour=23.05&on=events,nationalDay,fireworks", "waitMs": 6000, "size": [1280, 800]},
   {"name": "c-perf-hud", "hash": "7615,5801,0.55", "query": "hour=21&on=perfHud", "waitMs": 4000, "size": [1280, 800]},
   {"name": "c-perf-old-town-evening", "hash": "7615,5801,0.55", "query": "hour=21", "waitMs": 4000, "size": [1280, 800]},
+  {"name": "c-perf-layers-christmas-night", "hash": "7615,5801,1.0", "query": "date=2026-12-10&hour=21", "waitMs": 5000, "size": [1280, 800]},
   {"name": "c-perf-old-town-evening-phone", "hash": "7615,5801,0.55", "query": "hour=21", "waitMs": 4000, "size": [390, 844]},
   {"name": "c-planes-day", "hash": "16000,8000,0.15", "query": "on=planes&hour=10.25&date=2026-11-10", "waitMs": 6000, "size": [1280, 800]},
   {"name": "c-planes-east-wind", "hash": "12000,7000,0.25", "query": "on=planes&hour=10.25&date=2026-11-10&weather=clear,wind:6@80", "waitMs": 6000, "size": [1280, 800]},

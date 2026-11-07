@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { asset } from "../config";
-import { time } from "../perf";
+import { canvasDpr, onQuality, quality, subscribe } from "../frame";
 import type { MapHandle } from "./IsometricMap";
 
 /**
@@ -15,8 +15,9 @@ import type { MapHandle } from "./IsometricMap";
  * map's own view: a low layer, a higher layer of bigger heads that drifts a little faster and moves a little more
  * when panning (parallax) and casts its shadow on the low one, and a fine layer that adds detail close up. At the
  * edge of the data the cloud thins out over the map along its billows, so the edge is soft and irregular.
- * Redrawn in the map's own frame (map.onFrame) and, for the drift, every animation frame while any cloud is on
- * screen. With reduced motion the clouds stand still.
+ * Redrawn on the frame clock (src/frame.ts): in the map's own frame when it moves and, for the drift, every frame
+ * while any cloud is on screen, at half the CSS resolution (the cloud is soft). The cloud texture is fetched the
+ * first time a cloud can show. With reduced motion, and on the lower quality tiers, the clouds stand still.
  */
 
 interface Props {
@@ -137,6 +138,8 @@ export function Clouds({ map, night }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const nightRef = useRef(night);
   const draw = useRef<() => void>(() => {});
+  // drift of the low and the high layer, map px per second
+  const wind = useRef<[[number, number], [number, number]]>([WIND_LOW, WIND_HIGH]);
   useEffect(() => {
     nightRef.current = night;
     draw.current();
@@ -149,10 +152,8 @@ export function Clouds({ map, night }: Props) {
     if (!gl) return;
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
     let alive = true;
-    let raf = 0;
     let info: CloudInfo | null = null;
     let dist: Uint8Array | null = null;   // the mask on the CPU, to tell whether any cloud is on screen
-    const t0 = performance.now();
 
     const prog = gl.createProgram()!;
     try {
@@ -194,26 +195,60 @@ export function Clouds({ map, night }: Props) {
       return false;
     };
 
-    const paint = () => {
+    // The cloud texture (650 KB) is only fetched the first time a cloud can show, not at start-up.
+    let sea: "none" | "loading" | "ready" = "none";
+    const loadSea = () => {
+      if (sea !== "none" || !info) return;
+      sea = "loading";
+      bitmap(asset(info.texture.file)).then((img) => {
+        if (!alive) { img.close(); return; }
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+        const tSea = gl.createTexture()!;
+        textures.push(tSea);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, tSea);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        img.close();
+        sea = "ready";
+        redraw();
+      }).catch((e) => { console.warn("clouds:", e); });
+    };
+
+    // drift so far, map px (added up frame by frame, so a change of wind never makes the clouds jump)
+    const offLow = [0, 0], offHigh = [0, 0];
+    const moving = () => !still && quality.tier < 1;
+    const paint = (dt: number) => {
       const m = map.current, v = m?.getView();
       if (!v || !info) return false;
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      // The cloud is soft: half the CSS resolution is enough, scaled up by the browser.
+      const res = canvasDpr(2) * 0.5;
       const W = window.innerWidth, H = window.innerHeight;
-      const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+      const bw = Math.round(W * res), bh = Math.round(H * res);
       if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
       gl.viewport(0, 0, bw, bh);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       if (!visible(v, W, H)) return false;
-      const t = still ? 0 : (performance.now() - t0) / 1000;
+      if (sea !== "ready") { loadSea(); return false; }
+      if (moving()) {
+        const s = Math.min(dt, 100) / 1000;
+        const [wl, wh] = wind.current;
+        offLow[0] = (offLow[0] + wl[0] * s) % SCALE_LOW; offLow[1] = (offLow[1] + wl[1] * s) % (SCALE_LOW / 1.6);
+        offHigh[0] = (offHigh[0] + wh[0] * s) % SCALE_HIGH; offHigh[1] = (offHigh[1] + wh[1] * s) % (SCALE_HIGH / 1.6);
+      }
       const mk = info.mask;
       gl.uniform2f(u.res, bw, bh);
-      gl.uniform1f(u.dpr, dpr);
+      gl.uniform1f(u.dpr, res);
       gl.uniform2f(u.view, v.x, v.y);
       gl.uniform1f(u.z, v.z);
-      // drift, wrapped to one repeat of each layer so the numbers stay small
-      gl.uniform2f(u.offLow, (WIND_LOW[0] * t) % SCALE_LOW, (WIND_LOW[1] * t) % (SCALE_LOW / 1.6));
-      gl.uniform2f(u.offHigh, (WIND_HIGH[0] * t) % SCALE_HIGH, (WIND_HIGH[1] * t) % (SCALE_HIGH / 1.6));
+      gl.uniform2f(u.offLow, offLow[0], offLow[1]);
+      gl.uniform2f(u.offHigh, offHigh[0], offHigh[1]);
       gl.uniform4f(u.mask0, mk.x0, mk.y0, mk.w * mk.scale, mk.h * mk.scale);
       gl.uniform1f(u.range, mk.range);
       gl.uniform1f(u.feather, FEATHER);
@@ -224,25 +259,22 @@ export function Clouds({ map, night }: Props) {
       return true;
     };
 
-    let last = 0, showing = false;
-    const frame = () => { last = performance.now(); showing = time("clouds", paint); };
-    const loop = () => {
-      raf = 0;
-      if (!alive) return;
-      // the map's own frame may already have drawn this one
-      if (performance.now() - last > 8) frame();
-      if (showing && !still) raf = requestAnimationFrame(loop);
-    };
-    const kick = () => {
-      if (!alive) return;
-      if (!raf) raf = requestAnimationFrame(loop);
-    };
-    draw.current = kick;
+    // On the frame clock: in the map's own frame whenever it moves, and every frame while a cloud is on screen and
+    // drifting. Still with reduced motion, and on the lower quality tiers.
+    let showing = false, dirty = true;
+    const sub = subscribe((_t, dt, moved) => {
+      if (!moved && !dirty && !(showing && moving())) return;
+      dirty = false;
+      showing = paint(dt);
+    }, { name: "clouds" });
+    const redraw = () => { dirty = true; sub.wake(); };
+    draw.current = redraw;
+    const offQ = onQuality(redraw);
 
     fetch(asset("/data/clouds.json"))
       .then((r) => r.json())
       .then(async (d: CloudInfo) => {
-        const [sea, mask] = await Promise.all([bitmap(asset(d.texture.file)), bitmap(asset(d.mask.file))]);
+        const mask = await bitmap(asset(d.mask.file));
         if (!alive) return;
         // the mask's values on the CPU as well
         const oc = new OffscreenCanvas(mask.width, mask.height);
@@ -254,16 +286,8 @@ export function Clouds({ map, night }: Props) {
 
         gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
         gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
-        const tSea = gl.createTexture()!, tMask = gl.createTexture()!;
-        textures.push(tSea, tMask);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, tSea);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sea);
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        const tMask = gl.createTexture()!;
+        textures.push(tMask);
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, tMask);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, mask);
@@ -271,20 +295,18 @@ export function Clouds({ map, night }: Props) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        sea.close();
         mask.close();
         info = d;
-        kick();
+        redraw();
       })
       .catch((e) => console.warn("clouds:", e));
 
-    const off = map.current?.onFrame(() => { frame(); kick(); });
-    window.addEventListener("resize", kick);
+    window.addEventListener("resize", redraw);
     return () => {
       alive = false;
-      cancelAnimationFrame(raf);
-      off?.();
-      window.removeEventListener("resize", kick);
+      sub();
+      offQ();
+      window.removeEventListener("resize", redraw);
       draw.current = () => {};
       // the canvas (and its context) may be used again by the next mount: free what this one made
       for (const t of textures) gl.deleteTexture(t);

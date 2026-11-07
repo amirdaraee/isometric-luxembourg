@@ -88,5 +88,6 @@ export function Pins({ places, view, map, active, onPick }: Props) {
       ),
     );
   }
-  return <div className="pins">{out}</div>;
+  // Many labels at once: plain backgrounds instead of each label blurring what is behind it (costly on phones).
+  return <div className={out.length > 20 ? "pins many" : "pins"}>{out}</div>;
 }

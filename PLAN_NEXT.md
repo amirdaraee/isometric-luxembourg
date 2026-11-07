@@ -364,6 +364,45 @@ Every moving phase is over budget; idle is well inside it. What the baseline sho
   `occluders.png` 1.5 MB, the cloud texture 0.65 MB, `lines.json` 0.5 MB, the water mask 0.4 MB). The map's
   first view takes 14.5 s on fast 4G, against a budget of 2.5 s.
 
+*Stream C's fixes (C2), measured step by step:*
+1. `c2-osd`: OpenSeadragon's taint test skipped (every image is loaded with `crossOrigin="anonymous"`, so none can
+   be tainted), and the map canvas capped at device pixel ratio 2.
+2. `c2-fixes`: map versions stacked by meaning (base, season, golden hour, night, event patches) and a version
+   under a fully opaque, loaded one hidden, so its tiles are neither fetched nor drawn (at start-up, before
+   anything is on screen, it is never fetched at all); versions at 0 for 30 s removed from the map; at most 100
+   cached tiles on touch screens; water at most 1.5 device pixels per CSS pixel; clouds at half the CSS
+   resolution, with their 650 KB texture fetched only when a cloud can show; pin labels without `backdrop-filter`
+   when more than 20 show; water and clouds on the one frame clock (`src/frame.ts`), called in the map's own frame
+   when it moves, so they are drawn once per frame.
+3. `c2-adaptive`: the same with adaptive quality on (the others were measured with `--off adaptiveQuality`).
+
+| Profile | Phase | Baseline p95 / main ms | After (`c2-fixes`) p95 / main ms | Budget p95 / main |
+|---|---|---|---|---|
+| desktop | night pan | 57.8 / 22.5 (35 fps) | **16.7 / 2.7** (110 fps) | 20 / 6 |
+| desktop | night zoom | 42.4 / 10.3 | **16.7 / 2.8** | 20 / 6 |
+| desktop | noon pan | 33.5 / 11.7 | **16.6 / 3.1** | 20 / 6 |
+| desktop | noon zoom | 25.7 / 6.3 | **16.7 / 3.3** | 20 / 6 |
+| phone | night pan | 108 / 34.0 (28 fps) | **24.2 / 7.2** (97 fps) | 40 / 12 |
+| phone | night zoom | 58.5 / 10.2 | **16.1 / 4.9** | 40 / 12 |
+| phone | noon pan | 75.5 / 24.3 | **34.0 / 10.8** | 40 / 12 |
+| phone | noon zoom | 59.0 / 9.6 | **16.8 / 5.8** | 40 / 12 |
+
+| Start-up (fast 4G, cache off) | Baseline | After | Budget |
+|---|---|---|---|
+| desktop: first view complete | 14.5 s, 15.3 MB, 126 tiles, 39 long tasks | **6.4 s, 5.3 MB, 44 tiles, 1 long task** | 2.5 s |
+| phone: first view complete | 8.0 s, 6.3 MB, 45 tiles | **3.7 s, 2.8 MB, 17 tiles** | 2.5 s |
+| night pan, bytes loaded | 30.4 MB, 384 tiles | **7.1 MB, 140 tiles** | |
+
+Every moving phase is now inside its budget on both profiles. Start-up is still over: what is left is mostly the
+tiles themselves (3 MB on desktop) and data loaded on start for the vehicle layer (`lines.json`, `transit.json`,
+`visibility.png`, the sprites), which is stream A's part (I13, lazy `lines.json`). The phone profile slows only the
+CPU, so the GPU savings of the lower quality tiers do not show in it; with adaptive quality on, the phone profile
+steps down to tier 2 during the pans (tile decoding is the main-thread work left), and desktop stays at tier 0.
+Left for stream A, from a CPU profile of the pan: `luxDayMask` in `Transit.ts` is called every frame (about 2% of
+the main thread in development), and the overlay's draw has no spans yet.
+Not done yet: Lighthouse, and a cheaper tilt-shift (it is only switched off on the lower tiers); the `.graded`
+filter is only set for the morning grade, so it was not measured.
+
 ### Item 4. "I can see cars painted in the art"
 
 **Root cause.** Two sources:

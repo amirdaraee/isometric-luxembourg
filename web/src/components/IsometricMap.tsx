@@ -3,6 +3,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import OpenSeadragon from "openseadragon";
 import { tilesBase } from "../config";
 import { gauge, perfOn, span } from "../perf";
+import { markMoved } from "../frame";
 
 export interface MapMeta {
   width: number;
@@ -62,6 +63,52 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
   // With extra layers on the map, convert through the base (day) image, not the viewport.
   const base = () => viewer.current?.world.getItemAt(0) as OpenSeadragon.TiledImage | undefined;
 
+  // Painted versions are stacked by meaning: the base day map, then the season versions, golden hour, the night
+  // versions, and the event patches on top.
+  const rank = useRef(new Map<OpenSeadragon.TiledImage, number>());
+  const loadedOnce = useRef(new Set<string>());
+  const zeroSince = useRef<Record<string, number>>({});
+  /** Start-up mark for the timing harness: the first time a visible map version has its whole view loaded. */
+  const markLoaded = (it: OpenSeadragon.TiledImage) => {
+    if (it.getOpacity() > 0 && !performance.getEntriesByName("map-loaded").length) performance.mark("map-loaded");
+  };
+  const rankOf = (name: string) => (name === "golden" ? 2 : name.includes("night") ? 3 : name.startsWith("xmas") ? 4 : 1);
+
+  /**
+   * Sets each version's opacity. A version under one that is fully opaque and has loaded its first view is hidden
+   * (opacity 0), so OpenSeadragon neither loads nor draws its tiles: at 21:00 in autumn that leaves only the night
+   * map, not the day, autumn and night maps on top of each other. The base day map is hidden the same way, but
+   * stays in the world, since every conversion between screen and map goes through it. A version that has been
+   * at 0 for 30 s is removed (it is added again when needed).
+   * Until the first view has loaded, nothing is on screen to keep, so a version counts as covering as soon as it
+   * is asked for: the versions under it are never fetched at all.
+   */
+  const applyLayers = () => {
+    const v = viewer.current, b = base();
+    if (!v || !b) return;
+    const now = performance.now();
+    const starting = !performance.getEntriesByName("map-loaded").length;
+    let cover = 0; // rank under which everything is hidden
+    for (const [name, it] of Object.entries(layers.current)) {
+      if ((pending.current[name] ?? 0) >= 0.999 && (starting || (it !== "loading" && loadedOnce.current.has(name)))) cover = Math.max(cover, rankOf(name));
+    }
+    b.setOpacity(cover > 0 ? 0 : 1);
+    for (const [name, it] of Object.entries(layers.current)) {
+      if (it === "loading") continue;
+      const a = pending.current[name] ?? 0;
+      it.setOpacity(rankOf(name) < cover ? 0 : a);
+      if (a > 0.001) { delete zeroSince.current[name]; continue; }
+      zeroSince.current[name] ??= now;
+      if (now - zeroSince.current[name] > 30000) {
+        v.world.removeItem(it);
+        rank.current.delete(it);
+        delete layers.current[name];
+        delete zeroSince.current[name];
+        loadedOnce.current.delete(name);
+      }
+    }
+  };
+
   useImperativeHandle(ref, () => ({
     flyTo(x, y, z) {
       const v = viewer.current;
@@ -89,7 +136,7 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
       for (const [name, a] of Object.entries(alpha)) {
         const folder = meta.variants?.[name];
         if (!folder) continue;
-        let item = layers.current[name];
+        const item = layers.current[name];
         if (!item && a > 0.001) {
           // added lazily, the first time a version is needed
           layers.current[name] = "loading";
@@ -97,17 +144,27 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
             tileSource: tileSourceFor(folder),
             opacity: 0,
             success: (e: { item: OpenSeadragon.TiledImage }) => {
-              layers.current[name] = e.item; e.item.setOpacity(pending.current[name] ?? 0);
-              // event patches (Christmas markets) must stay above every map version
-              for (const pt of Object.values(patches.current))
-                if (pt !== "loading") v.world.setItemIndex(pt, v.world.getItemCount() - 1);
+              layers.current[name] = e.item;
+              rank.current.set(e.item, rankOf(name));
+              // in its place by meaning, not by the order versions were first needed; event patches stay on top
+              let at = 0;
+              for (let i = 0; i < v.world.getItemCount(); i++) {
+                const it = v.world.getItemAt(i);
+                if (it !== e.item && (rank.current.get(it) ?? 0) <= rankOf(name)) at++;
+              }
+              v.world.setItemIndex(e.item, Math.min(at, v.world.getItemCount() - 1));
+              e.item.addHandler("fully-loaded-change", (ev: { fullyLoaded: boolean }) => {
+                if (!ev.fullyLoaded) return;
+                markLoaded(e.item);
+                if (!loadedOnce.current.has(name)) { loadedOnce.current.add(name); applyLayers(); }
+              });
+              applyLayers();
             },
           } as unknown as OpenSeadragon.TiledImageOptions);
         }
         pending.current[name] = a;
-        item = layers.current[name];
-        if (item && item !== "loading") (item as OpenSeadragon.TiledImage).setOpacity(a);
       }
+      applyLayers();
     },
     setPatches(list) {
       const v = viewer.current;
@@ -118,7 +175,9 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
           patches.current[p.url] = "loading";
           v.addSimpleImage({
             url: p.url, x: p.x0 / meta.width, y: p.y0 / meta.width, width: p.w / meta.width,
-            success: (e: { item: OpenSeadragon.TiledImage }) => { patches.current[p.url] = e.item; e.item.setOpacity(patchAlpha.current[p.url] ?? p.a); },
+            success: (e: { item: OpenSeadragon.TiledImage }) => {
+              patches.current[p.url] = e.item; rank.current.set(e.item, 99); e.item.setOpacity(patchAlpha.current[p.url] ?? p.a);
+            },
             error: () => { delete patches.current[p.url]; },
           } as unknown as OpenSeadragon.SimpleImageOptions);
         } else if (item && item !== "loading") (item as OpenSeadragon.TiledImage).setOpacity(p.a);
@@ -151,6 +210,17 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
   useEffect(() => {
     if (!host.current || viewer.current) return;
     const { width, height, tileSize, art } = meta;
+    const osd = OpenSeadragon as unknown as { isCanvasTainted: (c: HTMLCanvasElement) => boolean; getCurrentPixelDensityRatio: () => number; pixelDensityRatio: number };
+    // OpenSeadragon's WebGL drawer tests every new tile for cross-origin taint by reading a pixel back from a 2D
+    // canvas, which stalls on the GPU each time: two thirds of the main thread while panning (PLAN_NEXT.md, item 3).
+    // Every image here is loaded with crossOrigin "anonymous" (crossOriginPolicy below), so an image without CORS
+    // fails to load instead of tainting: no tile can be tainted, and the test is skipped.
+    osd.isCanvasTainted = () => false;
+    // At most two device pixels per CSS pixel for the map's canvas: a phone at 3 draws 2.25 times the pixels for
+    // a difference nobody sees in painted art.
+    const density = osd.getCurrentPixelDensityRatio.bind(osd);
+    osd.getCurrentPixelDensityRatio = () => Math.min(density(), 2);
+    osd.pixelDensityRatio = osd.getCurrentPixelDensityRatio();
     const v = OpenSeadragon({
       element: host.current,
       prefixUrl: "",
@@ -175,6 +245,8 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
       constrainDuringPan: true,
       preserveImageSizeOnResize: true,
       placeholderFillStyle: "#172033",
+      // Each cached tile holds its image, a 1 MB canvas and a 1 MB texture: fewer on phones than the default 200.
+      maxImageCacheCount: matchMedia("(pointer: coarse)").matches ? 100 : 200,
       gestureSettingsMouse: { scrollToZoom: true, clickToZoom: false, dblClickToZoom: true, flickEnabled: true },
       gestureSettingsTouch: { pinchToZoom: true, clickToZoom: false, dblClickToZoom: true, flickEnabled: true },
       // Crisp pixels suit the final pixel art; the 3D preview reads better smoothed.
@@ -196,9 +268,10 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
       // start-up marks for the timing harness: the first tile loaded, and the whole first view loaded
       performance.mark("map-open");
       v.addOnceHandler("tile-loaded", () => { performance.mark("map-first-tile"); });
-      b.addHandler("fully-loaded-change", (e: { fullyLoaded: boolean }) => {
-        if (e.fullyLoaded && !performance.getEntriesByName("map-loaded").length) performance.mark("map-loaded");
-      });
+      b.addHandler("fully-loaded-change", (e: { fullyLoaded: boolean }) => { if (e.fullyLoaded) markLoaded(b); });
+      // The base map waits, hidden, for the first setLayers (or a moment), in case a version will cover it.
+      b.setOpacity(0);
+      setTimeout(applyLayers, 250);
       vp.zoomTo(b.imageToViewportZoom(initial.z), undefined, true);
       vp.panTo(b.imageToViewportCoordinates(new OpenSeadragon.Point(initial.x, initial.y)), true);
       onReady();
@@ -214,11 +287,14 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
     // which of them show.
     v.addHandler("update-viewport", () => {
       const end = span("mapFrame");
+      markMoved();
       for (const fn of frameFns.current) fn();
       report();
       end();
     });
     viewer.current = v;
+    // removes versions that have stood at 0 for 30 s, even when nothing else changes
+    const sweep = setInterval(applyLayers, 10000);
     let unGauges: (() => void)[] = [];
     if (perfOn) {
       // The map's own drawing, the versions it holds and its tile cache, for the readout and the harness.
@@ -233,6 +309,7 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
     }
     return () => {
       unGauges.forEach((f) => f());
+      clearInterval(sweep);
       v.destroy();
       viewer.current = null;
     };

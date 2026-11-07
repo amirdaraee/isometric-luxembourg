@@ -11,7 +11,8 @@
 //
 // Other options: --port 3019, --profiles desktop,phone (default both), --headed (a visible Chrome window: real
 // GPU drawing; headless Chrome may draw WebGL in software), --quick (shorter phases, for a smoke test),
-// --query "off=clouds" (added to every address, to measure one layer's share), --force (replace a run).
+// --off clouds,tiltShift (switch features off, to measure their share), --query "hour=8" (added to every address),
+// --force (replace a run).
 // Output: data/work/perf/<date>-<label>.json, and a Markdown table of the main numbers next to it (.md).
 //
 // Profiles: desktop is 1440 x 900 at device pixel ratio 2; "mid phone" is 390 x 844 at ratio 3 with the CPU
@@ -293,10 +294,14 @@ if (opt["compare-only"]) {
     if (opt.build) build();
     if (!existsSync(join(WEB, "dist/index.html"))) throw new Error("no dist/: run with --build, or npm run build first");
     base = `http://localhost:${port}`;
+    // something else on the port (a dev server) would be measured instead of the build
+    if (await fetch(base).then(() => true, () => false)) throw new Error(`port ${port} is already in use: stop that server or pick another --port`);
     server = spawn("npx", ["vite", "preview", "--port", String(port), "--strictPort"], { cwd: WEB, stdio: "ignore", detached: true });
     await waitFor(base, 30000);
   }
-  const query = [`perftest`, `on=${allFeatures().join(",")}`, opt.query ? String(opt.query) : ""].filter(Boolean).join("&");
+  const offList = opt.off ? String(opt.off).split(",") : [];
+  const onList = allFeatures().filter((f) => !offList.includes(f));
+  const query = [`perftest`, `on=${onList.join(",")}`, offList.length ? `off=${offList.join(",")}` : "", opt.query ? String(opt.query) : ""].filter(Boolean).join("&");
   const browser = await chromium.launch({ headless: !opt.headed, args: ["--use-angle=metal", "--ignore-gpu-blocklist", "--enable-precise-memory-info"] });
   const run = { label, date: new Date().toISOString(), base, query, commit: spawnSync("git", ["rev-parse", "--short", "HEAD"], { cwd: WEB }).stdout?.toString().trim(),
     headed: !!opt.headed, quick, profiles: {} };

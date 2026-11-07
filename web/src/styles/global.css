@@ -37,6 +37,7 @@ kbd { padding: 1px 7px; border: 1px solid var(--line); border-radius: 5px; color
 .pin span { position: absolute; left: 0; bottom: 18px; transform: translateX(-50%); padding: 4px 9px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); white-space: nowrap; font-size: 12px; font-weight: 600; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .pin i { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--pin, var(--ink)); border: 2px solid #101828; }
 .pin i::before { content: ""; position: absolute; left: 1px; bottom: 8px; width: 2px; height: 11px; background: rgba(16, 24, 40, 0.85); }
+.pins.many .pin span { background: rgba(16, 24, 40, 0.9); -webkit-backdrop-filter: none; backdrop-filter: none; }
 .pin:hover span { background: #1d2a44; }
 .pin.on span { background: var(--red); border-color: var(--red); color: #fff; }
 .cat-landmark { --pin: #ffd166; } .cat-culture { --pin: #f28482; } .cat-history { --pin: #c9a227; } .cat-bridge { --pin: #7bdff2; } .cat-park { --pin: #3ddc84; } .cat-square { --pin: #f4f1ea; } .cat-transport { --pin: #a0c4ff; } .cat-viewpoint { --pin: #7bdff2; }
@@ -125,6 +126,8 @@ kbd { padding: 1px 7px; border: 1px solid var(--line); border-radius: 5px; color
   backdrop-filter: blur(2.5px); -webkit-backdrop-filter: blur(2.5px); }
 .tilt-top { top: 0; mask-image: linear-gradient(to bottom, #000, transparent); -webkit-mask-image: linear-gradient(to bottom, #000, transparent); }
 .tilt-bottom { bottom: 0; mask-image: linear-gradient(to top, #000, transparent); -webkit-mask-image: linear-gradient(to top, #000, transparent); }
+/* Lower quality tiers (src/frame.ts, adaptive quality): no tilt-shift. */
+:root[data-quality="1"] .tilt, :root[data-quality="2"] .tilt { display: none; }
 
 /* Mark a spot and send a note */
 .round.mark.on { background: var(--red); border-color: var(--red); color: #fff; }
