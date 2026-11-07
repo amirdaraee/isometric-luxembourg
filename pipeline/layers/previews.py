@@ -14,8 +14,9 @@ from layers_common import POC_IMG, block, preview, today
 SPOTS = {  # full-res block px (x, y, size): the owner's problem spots and a few typical places
     "grund": (2600, 2400, 1400),
     "bock": (3700, 2300, 900),
-    "pfaffenthal": (3500, 700, 1300),
-    "redbridge": (3600, 500, 1000),
+    "hollowtooth": (3700, 2600, 800),      # the Hollow Tooth cliff road on the Bock (a car drove on the cliff)
+    "pfaffenthal": (4000, 1500, 1100),     # Pfaffenthal and its rail embankment (cars on the embankment)
+    "redbridge": (4150, 950, 1150),        # the Red Bridge and its ends
     "petrusse": (900, 2300, 1300),
 }
 

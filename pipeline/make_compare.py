@@ -4,6 +4,8 @@
 
 Each image is scaled to the first one's size and saved as a JPEG with a manifest. Open
 http://localhost:3000/compare/index.html : pick left and right, drag the divider, scroll to zoom, drag to pan.
+--out DIR writes a separate comparison (its own manifest and a copy of the page) to DIR, e.g.
+web/public/compare/layers -> http://localhost:3000/compare/layers/index.html
 """
 import json
 import re
@@ -19,6 +21,13 @@ MAX = 6656  # full painted resolution of the showcase; browsers handle it
 
 
 def main(pairs):
+    global OUT
+    if pairs and pairs[0] == "--out":
+        page = OUT / "index.html"
+        OUT = Path(pairs[1]) if Path(pairs[1]).is_absolute() else ROOT / pairs[1]
+        pairs = pairs[2:]
+        OUT.mkdir(parents=True, exist_ok=True)
+        (OUT / "index.html").write_text(page.read_text())
     OUT.mkdir(parents=True, exist_ok=True)
     items, size = [], None
     for arg in pairs:

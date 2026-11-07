@@ -200,6 +200,19 @@ def cut(bid, painted, season, slack=5):
     print(lib, len(out), "sprites")
 
 
+def season_inputs(bid):
+    """Inputs for a season pass of the painted summer sheet (the light model): the sheet padded to the painter's
+    1024 px minimum height with backdrop, the backdrop held."""
+    d = out_dir(bid) / "trees"
+    P = Image.open(d / "painted_sheet.png").convert("RGB")
+    keep = Image.open(d / "sheet_keep.png").convert("L")
+    H = 1024
+    src = Image.new("RGB", (P.width, H), BACKDROP); src.paste(P, (0, 0))
+    kp = Image.new("L", (P.width, H), 255); kp.paste(keep, (0, 0))
+    src.save(d / "season_src.png"); kp.save(d / "season_keep.png")
+    print(d / "season_src.png", src.size)
+
+
 def contact(bid, season):
     d = out_dir(bid) / "trees"
     items = json.loads((d / f"lib_{season}.json").read_text())
@@ -316,6 +329,8 @@ if __name__ == "__main__":
         sheet(bid)
     elif a.cmd == "cut":
         cut(bid, rest[0], rest[1])
+    elif a.cmd == "season_inputs":
+        season_inputs(bid)
     elif a.cmd == "contact":
         contact(bid, rest[0])
     elif a.cmd == "place":

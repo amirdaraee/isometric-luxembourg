@@ -53,6 +53,8 @@ def main():
     ap.add_argument("--max-hours", type=float, default=0.25)
     ap.add_argument("--total-cap", type=float, default=5.0)
     ap.add_argument("--note", default="")
+    ap.add_argument("--version", help="a painted version (spring, autumn...): the light model, its prompt, 15 steps, "
+                    "CFG 3, no Lightning, as paint_city.py --version")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     cap = PRICE[args.gpu] * args.max_hours
@@ -62,7 +64,9 @@ def main():
     if args.max_hours < 0.35:
         print("note: the painter pauses 10 min before its time limit; under ~0.35 h it may pause before finishing")
     files = {"src": args.src, "layout": args.layout, "init": args.init, "known": args.known, "keep": args.keep}
-    extra = ["--extra-lora", LIGHTNING, "--mu", "1.0986"]
+    extra = [] if args.version else ["--extra-lora", LIGHTNING, "--mu", "1.0986"]
+    # the light model is already on the volume (paint_city.py --version puts it there); never overwrite it here,
+    # another job may be reading it
     for name, path in files.items():
         if path:
             if sh(MODAL, "volume", "put", "-f", "iso-lux", path, f"{rem}/{name}.png"):
@@ -72,9 +76,14 @@ def main():
     if args.init:
         extra += ["--init", f"/vol/{rem}/init.png", "--strength", str(args.strength)]
     cmd = [MODAL, "run", "pipeline/gpu_train/modal_paint.py", "--job", args.job, "--src", f"{rem}/src.png",
-           "--lora", "loras/luxembourg-ink-v2.safetensors", "--steps", "8", "--cfg", "1.0", "--gpu", args.gpu,
-           "--src-cell", str(args.src_cell),
-           "--max-hours", str(args.max_hours), "--extra", " ".join(extra)]
+           "--gpu", args.gpu, "--src-cell", str(args.src_cell), "--max-hours", str(args.max_hours)]
+    if args.version:
+        cmd += ["--lora", "loras/luxembourg-light-v1.safetensors", "--steps", "15", "--cfg", "3.0",
+                "--prompt-file", f"pipeline/gpu_train/prompts/{args.version}.txt"]
+    else:
+        cmd += ["--lora", "loras/luxembourg-ink-v2.safetensors", "--steps", "8", "--cfg", "1.0"]
+    if extra:
+        cmd += ["--extra", " ".join(extra)]
     if args.layout:
         cmd += ["--layout", f"{rem}/layout.png"]
     t0 = time.time()
