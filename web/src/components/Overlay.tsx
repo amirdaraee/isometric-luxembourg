@@ -52,7 +52,7 @@ function at(r: Prepared, s: number): [number, number, number] {
   return [r.p[a] + dx * f, r.p[a + 1] + dy * f, Math.atan2(dy, dx)];
 }
 
-interface Car { road: Prepared; s: number; dir: 1 | -1; speed: number; colour: string; len: number }
+interface Car { road: Prepared; s: number; dir: 1 | -1; speed: number; colour: string; len: number; v?: number }
 /** A point of light on the water: map px, a phase for its twinkle, a length. */
 interface Glint { x: number; y: number; ph: number; len: number }
 
@@ -85,7 +85,8 @@ function scatterGlints(water: Prepared[]): Glint[] {
 export function Overlay({ map, meta, streets, traffic, night, hour, season }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const state = useRef<{ lines?: Lines; roads?: Prepared[]; named?: Prepared[]; rail?: Prepared[]; water?: Prepared[];
-    waterways?: Prepared[]; glints?: Glint[]; cars?: Car[]; ends?: Map<string, { road: Prepared; atStart: boolean }[]> }>({});
+    waterways?: Prepared[]; glints?: Glint[]; cars?: Car[]; ends?: Map<string, { road: Prepared; atStart: boolean }[]>;
+    signals?: Map<string, number> }>({});
   const flags = useRef({ streets, traffic, night, hour, season });
   flags.current = { streets, traffic, night, hour, season };
 
@@ -132,6 +133,14 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         }
       }
       st.ends = ends;
+      // Traffic lights where at least three roads meet and two of them are major; each with its own cycle offset.
+      const MAJOR = new Set(["trunk", "primary", "secondary", "tertiary", "trunk_link", "primary_link"]);
+      const signals = new Map<string, number>();
+      let k = 0;
+      for (const [key, list] of ends) {
+        if (list.length >= 3 && list.filter((e) => MAJOR.has(e.road.k ?? "")).length >= 2) signals.set(key, (k++ * 23.7) % 70);
+      }
+      st.signals = signals;
       // More cars on bigger roads.
       const weight = (r: Prepared) => r.len * ({ motorway: 3, trunk: 3, primary: 2.5, secondary: 2, tertiary: 1.5 }[r.k ?? ""] ?? 0.7);
       const total = drive.reduce((a, r) => a + weight(r), 0);
@@ -272,11 +281,52 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         // fewer cars late at night and at dawn, rush hours busiest
         const hr = hour === null ? luxSeconds() / 3600 : hour;
         const busy = hr < 5 ? 0.12 : hr < 6.5 ? 0.35 : hr < 9.5 ? 1 : hr < 16 ? 0.75 : hr < 19 ? 1 : hr < 22 ? 0.5 : 0.25;
+        // Car following (Intelligent Driver Model) per lane, and two-phase traffic lights on a 70 s cycle
+        // (31 s green, 3 s amber, 1 s all red per direction).
+        const S0 = 2 / MPP, T = 1.2, A = 1.5 / MPP, B = 2 / MPP;
+        const tsec = now / 1000;
+        const endKey = (c: Car) => {
+          const x = c.dir > 0 ? c.road.p[c.road.p.length - 2] : c.road.p[0];
+          const y = c.dir > 0 ? c.road.p[c.road.p.length - 1] : c.road.p[1];
+          return `${Math.round(x / 3)},${Math.round(y / 3)}`;
+        };
+        const mustStop = (c: Car) => {
+          const off = st.signals!.get(endKey(c));
+          if (off === undefined) return false;
+          const n = c.road.p.length;
+          const [ax, ay, bx, by] = c.dir > 0 ? [c.road.p[n - 4], c.road.p[n - 3], c.road.p[n - 2], c.road.p[n - 1]]
+            : [c.road.p[2], c.road.p[3], c.road.p[0], c.road.p[1]];
+          const group = Math.abs(bx - ax) >= Math.abs(by - ay) ? 0 : 1;
+          const ph = (tsec + off) % 70;
+          return group === 0 ? ph >= 31 : !(ph >= 35 && ph < 66);
+        };
+        const active: Car[] = [];
         let idx = 0;
         for (const c of st.cars) {
           idx++;
-          c.s += c.speed * dt * c.dir;
-          if ((idx * 0.618) % 1 > busy) continue;
+          if ((idx * 0.618) % 1 > busy) { c.s += c.speed * dt * c.dir; c.v = c.speed; } else active.push(c);
+        }
+        const lanes = new Map<string, Car[]>();
+        for (const c of active) {
+          const k = `${c.road.id}${c.dir}`;
+          (lanes.get(k) ?? lanes.set(k, []).get(k)!).push(c);
+        }
+        for (const L of lanes.values()) {
+          L.sort((a, b) => (a.s - b.s) * a.dir);
+          for (let i = 0; i < L.length; i++) {
+            const c = L[i], lead = L[i + 1];
+            let v = c.v ?? c.speed, gap = Infinity, dv = 0;
+            if (lead) { gap = Math.abs(lead.s - c.s) - lead.len; dv = v - (lead.v ?? lead.speed); }
+            const toEnd = c.dir > 0 ? c.road.len - c.s : c.s;
+            if (toEnd < 60 / MPP && mustStop(c) && toEnd - 1 / MPP < gap) { gap = toEnd - 1 / MPP; dv = v; }
+            const sStar = S0 + v * T + (v * dv) / (2 * Math.sqrt(A * B));
+            const acc = A * (1 - (v / c.speed) ** 4 - (gap < Infinity ? (Math.max(sStar, 0) / Math.max(gap, 0.5)) ** 2 : 0));
+            v = Math.min(Math.max(0, v + acc * dt), c.speed * 1.1);
+            c.v = v;
+            c.s += v * dt * c.dir;
+          }
+        }
+        for (const c of st.cars) {
           if (c.s > c.road.len || c.s < 0) {
             // Continue onto a road that starts or ends here; otherwise turn around.
             const endX = c.dir > 0 ? c.road.p[c.road.p.length - 2] : c.road.p[0];
@@ -290,6 +340,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
             } else if (!c.road.o) { c.dir = c.dir > 0 ? -1 : 1; c.s = Math.min(Math.max(c.s, 0), c.road.len); }
             else c.s = 0;
           }
+        }
+        for (const c of active) {
           if (!vis(c.road.box)) continue;
           const [x, y, ang] = at(c.road, c.s);
           // Hidden behind a building (or under a bridge, for ground roads): don't draw.

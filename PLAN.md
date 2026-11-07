@@ -74,7 +74,7 @@ Files:
   transformer.
 - `md_on_pod.sh`: the RunPod launcher.
 - `modal_paint.py`: the Modal launcher.
-- `prompt_v2.txt`: the exact training prompt.
+- `prompts/`: the exact training prompts (`day.txt` for the style LoRA, one per version for the light LoRA).
 
 Two findings from building it:
 - **Red outline:** full-view training examples (about 20% of the v2 set) have a 2 px red outline round the whole

@@ -76,7 +76,7 @@ def paint(job: str, argv: list[str], prompt: str, deadline: float) -> str:
 
 @app.local_entrypoint()
 def main(job: str, src: str, lora: str, layout: str = "", steps: int = 25, src_cell: int = 600, cfg: float = 3.0,
-         gpu: str = "H200", max_hours: float = 2.0, prompt_file: str = "pipeline/gpu_train/prompt_v2.txt",
+         gpu: str = "H200", max_hours: float = 2.0, prompt_file: str = "pipeline/gpu_train/prompts/day.txt",
          extra: str = ""):
     rate = PRICE_PER_HOUR.get(gpu)
     cap = f"${rate * max_hours:.2f}" if rate else "unknown rate"
