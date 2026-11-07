@@ -36,6 +36,8 @@
   {"name": "b-halo-place-d-armes-13", "hash": "7615,5801,1.2", "query": "event=winterlights&season=winter&hour=13", "waitMs": 4000, "size": [1280, 800]},
   {"name": "b-halo-place-d-armes-17_2", "hash": "7615,5801,1.2", "query": "event=winterlights&season=winter&hour=17.2", "waitMs": 4000, "size": [1280, 800]},
   {"name": "b-halo-place-d-armes-21", "hash": "7615,5801,1.2", "query": "event=winterlights&season=winter&hour=21", "waitMs": 4000, "size": [1280, 800]},
+  {"name": "b-halo-place-d-armes-21-nosnow", "hash": "7615,5801,1.2", "query": "event=winterlights&season=winter&hour=21&off=snow", "waitMs": 4000, "size": [1280, 800]},
+  {"name": "b-halo-wheel-0_3", "hash": "7052,6150,0.3", "query": "event=winterlights&season=winter&hour=17.2", "waitMs": 4000, "size": [1280, 800]},
   {"name": "b-halo-wheel-13", "hash": "7052,6150,1.2", "query": "event=winterlights&season=winter&hour=13", "waitMs": 4000, "size": [1280, 800]},
   {"name": "b-halo-wheel-17_2", "hash": "7052,6150,1.2", "query": "event=winterlights&season=winter&hour=17.2", "waitMs": 4000, "size": [1280, 800]},
   {"name": "b-halo-wheel-21", "hash": "7052,6150,1.2", "query": "event=winterlights&season=winter&hour=21", "waitMs": 4000, "size": [1280, 800]},

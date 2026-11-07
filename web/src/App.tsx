@@ -22,10 +22,13 @@ const FOCUS_ZOOM = 0.75;
 /** The scene for "now" in Luxembourg (or the ?hour, ?season and ?date test parameters), limited to the features
  * that are switched on. */
 function liveScene(): SceneState {
+  const christmas = on("christmas") && (christmasOn() || testParams.event === "winterlights");
   return {
     hour: on("timeOfDay") ? testParams.hour ?? luxSeconds() / 3600 : 13,
-    season: on("seasons") ? testParams.season ?? seasonOf() : "summer",
-    christmas: on("christmas") && christmasOn(),
+    // The Christmas markets are painted on the winter art, so Winterlights brings winter with it (late November
+    // would otherwise still be autumn).
+    season: on("seasons") && testParams.season ? testParams.season : christmas ? "winter" : on("seasons") ? seasonOf() : "summer",
+    christmas,
   };
 }
 const OPENING_NAME = "Notre-Dame Cathedral";
@@ -148,12 +151,16 @@ export default function App() {
       if (have.has("xmas_night" as Variant)) alpha["xmas_night"] = nightish;
     }
     map.current?.setLayers(alpha);
+    // The patches are opaque cut-outs of the winter art with the markets in, so they show only over winter.
+    const xmasShown = scene.christmas && scene.season === "winter";
+    // The day patch stays fully on and the night patch fades in over it (both share one opaque region), so the
+    // map never shows through a patch halfway through dusk.
     const n = sceneMix.night;
     map.current?.setPatches(xmas.flatMap((x) => [
-      { url: asset(`/events/xmas/${x.site}_day.webp`), x0: x.x0, y0: x.y0, w: x.w, a: scene.christmas ? 1 - n : 0 },
-      { url: asset(`/events/xmas/${x.site}_night.webp`), x0: x.x0, y0: x.y0, w: x.w, a: scene.christmas ? n : 0 },
+      { url: asset(`/events/xmas/${x.site}_day.webp`), x0: x.x0, y0: x.y0, w: x.w, a: xmasShown ? 1 : 0 },
+      { url: asset(`/events/xmas/${x.site}_night.webp`), x0: x.x0, y0: x.y0, w: x.w, a: xmasShown ? n : 0 },
     ]));
-  }, [sceneMix, ready, have, scene.christmas, xmas]);
+  }, [sceneMix, ready, have, scene.christmas, scene.season, xmas]);
 
   if (error) return <div className="splash">The map couldn't load. Please try refreshing.</div>;
   if (!meta || !places || !initial) return <div className="splash">Loading Luxembourg</div>;
