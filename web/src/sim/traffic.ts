@@ -1184,22 +1184,35 @@ export class Traffic {
   // -------------------------------------------------------------------------------------------------------------
   // Output
 
-  /** Every car near the view, centre and heading in map px. */
-  *cars(): IterableIterator<DrawableCar> {
-    const o = this.tmp, M = this.mpp;
-    const one = (c: Car): DrawableCar => {
+  /** Drawable cars, reused from one call of cars() to the next (no new objects every frame). */
+  private pool: DrawableCar[] = [];
+  private drawn: DrawableCar[] = [];
+
+  /**
+   * Every car near the view, centre and heading in map px. The array and its objects are reused: they are valid
+   * until the next call, so copy anything that has to be kept.
+   */
+  cars(): readonly DrawableCar[] {
+    const o = this.tmp, M = this.mpp, out = this.drawn;
+    let n = 0;
+    const one = (c: Car) => {
       let el = c.el, s = c.s - c.len / 2;
       if (s < 0 && c.prev) { el = c.prev; s += el.len; }
       sample(el, s, o);
       const off = c.lat + c.pull; // metres to the right of travel
       if (off) { o.x -= Math.sin(o.h) * off; o.y += Math.cos(o.h) * off; }
       const lane = el.kind === 0 ? el : el.to, e = lane.edge, e2 = el.kind === 1 ? el.from.edge : e;
-      return { id: c.id, x: o.x / M, y: o.y / M, headingScreenRad: o.h, type: c.type, variant: c.variant,
-        braking: c.acc < -0.8 || c.v < 0.5, siren: c.siren, bridge: e.bridge || e2.bridge, tunnel: e.tunnel && e2.tunnel,
-        length: c.len / M, width: c.wid / M };
+      const d = this.pool[n] ?? (this.pool[n] = { id: 0, x: 0, y: 0, headingScreenRad: 0, type: "car", variant: 0,
+        braking: false, siren: false, bridge: false, tunnel: false, length: 0, width: 0 });
+      d.id = c.id; d.x = o.x / M; d.y = o.y / M; d.headingScreenRad = o.h; d.type = c.type; d.variant = c.variant;
+      d.braking = c.acc < -0.8 || c.v < 0.5; d.siren = c.siren; d.bridge = e.bridge || e2.bridge;
+      d.tunnel = e.tunnel && e2.tunnel; d.length = c.len / M; d.width = c.wid / M;
+      out[n++] = d;
     };
-    for (const l of this.activeLanes) for (const c of l.cars) yield one(c);
-    for (const cn of this.busyConns) for (const c of cn.cars) yield one(c);
+    for (const l of this.activeLanes) for (const c of l.cars) one(c);
+    for (const cn of this.busyConns) for (const c of cn.cars) one(c);
+    out.length = n;
+    return out;
   }
 
   /** Check for tests: ids of cars overlapping the car ahead on the same lane or move (should never happen). */
@@ -1220,7 +1233,7 @@ export class Traffic {
    */
   closeCalls(dist = 1.5): number[] {
     const bad = new Set<number>();
-    const pts = [...this.cars()];
+    const pts = this.cars();
     const g = new Map<number, DrawableCar[]>(), cs = 8; // px
     for (const p of pts) { const kk = Math.floor(p.x / cs) * 100000 + Math.floor(p.y / cs); (g.get(kk) ?? g.set(kk, []).get(kk)!).push(p); }
     const lim = dist / this.mpp;

@@ -8,6 +8,7 @@ import { loadOcclusion, type Occlusion } from "./occlusion";
 import { waterPoints } from "./Water";
 import { Traffic, type DrawableCar } from "../sim/traffic";
 import { testParams } from "../testParams";
+import { subscribe } from "../frame";
 
 // Projected OSM lines (web/public/data/lines.json, from pipeline/project_lines.py), in map image pixels.
 interface Line { id: number; n?: string; k?: string; b?: boolean; t?: boolean; o?: boolean; p: number[] }
@@ -225,14 +226,14 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
   }, [meta]);
 
   useEffect(() => {
-    let raf = 0, last = performance.now();
-    const loop = (now: number) => {
-      raf = requestAnimationFrame(loop);
-      draw(now);
-    };
+    let last = performance.now();
+    // Draw once per frame. While the map moves, OpenSeadragon's own frame ("update-viewport") draws, so cars and
+    // street lines never trail the map; the frame clock then skips its draw. When the map is still, the frame clock
+    // draws. (A guard until frame.ts merges the map's frame into its own.)
+    let lastMapDraw = -1e9;
     const draw = (now: number) => {
-      const dt = Math.min((now - last) / 1000, 0.1);
-      last = now;
+      const dt = Math.min(Math.max(now - last, 0) / 1000, 0.1);
+      last = Math.max(last, now);
       const cv = canvas.current, v = map.current?.getView(), st = state.current;
       if (!cv || !v || !st.roads) return;
       const dpr = window.devicePixelRatio || 1, W = window.innerWidth, H = window.innerHeight;
@@ -383,6 +384,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
           passes[c.type === "bus" || c.type === "fire" ? 1 : 0].push([c, sx, sy]);
         }
         const view = { z, ox, oy, w: W, h: H };
+        // Far to near within each pass (by screen y), so a nearer vehicle overlaps the one behind it.
+        for (const list of passes) list.sort((a, b) => a[2] - b[2]);
         passes.forEach((list, i) => {
           for (const [c, sx, sy] of list) {
             if (spr) {
@@ -411,10 +414,9 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         }
       }
     };
-    raf = requestAnimationFrame(loop);
-    // Also redraw inside the map's own redraw, so cars and street lines never trail the map while it moves.
-    const off = map.current?.onFrame(() => draw(performance.now()));
-    return () => { cancelAnimationFrame(raf); off?.(); };
+    const stop = subscribe((t) => { if (t - lastMapDraw > 40) draw(t); });
+    const off = map.current?.onFrame(() => { const t = performance.now(); lastMapDraw = t; draw(t); });
+    return () => { stop(); off?.(); };
   }, [map]);
 
   return <canvas ref={canvas} className="overlay" aria-hidden="true" />;
