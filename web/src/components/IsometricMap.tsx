@@ -2,6 +2,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import OpenSeadragon from "openseadragon";
 import { tilesBase } from "../config";
+import { gauge, perfOn, span } from "../perf";
 
 export interface MapMeta {
   width: number;
@@ -192,6 +193,12 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
     v.addHandler("open", () => {
       const vp = v.viewport;
       const b = v.world.getItemAt(0);
+      // start-up marks for the timing harness: the first tile loaded, and the whole first view loaded
+      performance.mark("map-open");
+      v.addOnceHandler("tile-loaded", () => { performance.mark("map-first-tile"); });
+      b.addHandler("fully-loaded-change", (e: { fullyLoaded: boolean }) => {
+        if (e.fullyLoaded && !performance.getEntriesByName("map-loaded").length) performance.mark("map-loaded");
+      });
       vp.zoomTo(b.imageToViewportZoom(initial.z), undefined, true);
       vp.panTo(b.imageToViewportCoordinates(new OpenSeadragon.Point(initial.x, initial.y)), true);
       onReady();
@@ -205,9 +212,27 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
     };
     // Things pinned to the map (labels) move here, in the same frame as the map is drawn; React only decides
     // which of them show.
-    v.addHandler("update-viewport", () => { for (const fn of frameFns.current) fn(); report(); });
+    v.addHandler("update-viewport", () => {
+      const end = span("mapFrame");
+      for (const fn of frameFns.current) fn();
+      report();
+      end();
+    });
     viewer.current = v;
+    let unGauges: (() => void)[] = [];
+    if (perfOn) {
+      // The map's own drawing, the versions it holds and its tile cache, for the readout and the harness.
+      const world = v.world as unknown as { draw: () => void };
+      const drawWorld = world.draw.bind(world);
+      world.draw = () => { const end = span("map"); drawWorld(); end(); };
+      unGauges = [
+        gauge("osdItems", () => v.world.getItemCount()),
+        gauge("tilesCached", () => (v as unknown as { tileCache: { numTilesLoaded: () => number } }).tileCache.numTilesLoaded()),
+      ];
+      (window as unknown as { __iso: unknown }).__iso = { viewer: v, OpenSeadragon, drawer: () => (v.drawer as unknown as { getType?: () => string })?.getType?.() };
+    }
     return () => {
+      unGauges.forEach((f) => f());
       v.destroy();
       viewer.current = null;
     };

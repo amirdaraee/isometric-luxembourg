@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { asset } from "../config";
+import { time } from "../perf";
 import type { MapHandle } from "./IsometricMap";
 
 /**
@@ -301,7 +302,8 @@ export function Water({ map, night }: Props) {
       dirty.current = true;
     };
 
-    const draw = (now: number) => {
+    const draw = (now: number) => time("water", () => drawNow(now));
+    const drawNow = (now: number) => {
       const v = map.current?.getView();
       if (!st || !info || !v) return;
       const gl = st.gl;

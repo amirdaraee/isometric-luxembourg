@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { asset } from "../config";
+import { time } from "../perf";
 import type { MapHandle } from "./IsometricMap";
 
 /**
@@ -224,7 +225,7 @@ export function Clouds({ map, night }: Props) {
     };
 
     let last = 0, showing = false;
-    const frame = () => { last = performance.now(); showing = paint(); };
+    const frame = () => { last = performance.now(); showing = time("clouds", paint); };
     const loop = () => {
       raf = 0;
       if (!alive) return;

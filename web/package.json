@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "deploy": "scripts/deploy-pages.sh",
-    "shots": "node scripts/shots.mjs"
+    "shots": "node scripts/shots.mjs",
+    "perf": "node scripts/perf.mjs"
   },
   "dependencies": {
     "@types/three": "^0.170.0",

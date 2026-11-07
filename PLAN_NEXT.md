@@ -318,6 +318,52 @@ the expected small softening of the clouds).
 default if in doubt. Half-resolution clouds may show steps at the map edge, so test at `#26000,7000,0.2`.
 **Estimate.** L (harness M, fixes L, split between streams A and C).
 
+**Measurements** (`web/scripts/perf.mjs`; each run's full numbers are in `data/work/perf/<date>-<label>.json` and
+`.md`). How to measure a change: `cd web && node scripts/perf.mjs --build --label <name> --compare baseline --port <yours>`.
+The readout is `?on=perfHud` (`web/src/perf.ts`); `?perftest` collects the same numbers without showing it.
+Layers time themselves with `span("name")` or `time("name", fn)` from `perf.ts`, and add numbers to the readout
+with `gauge("name", fn)`. Stream A: please wrap the overlay's parts (simulation, streets, transit, vehicles, cut)
+in spans, so they show next to `map`, `water`, `clouds` and `pins`. `raf` is every animation-frame callback
+together (the overlay's loop, the water and the clouds), and `mapFrame` is the work done inside the map's own
+redraw (everything that redraws with `map.onFrame`).
+
+Headless Chrome on the M2 Pro draws WebGL on the GPU here (ANGLE Metal), so these numbers include the GPU. Its
+animation frames come at 120 Hz, so an idle page shows about 120 fps. The "mid phone" is the same machine with the
+CPU slowed four times, so it shows main-thread costs, not a phone's GPU.
+
+*Baseline, 7 Nov 2026 (commit 2f72685 plus the harness), every feature on, 21:00 then noon, autumn:*
+
+| Profile | Phase | fps | p50 ms | p95 ms | max ms | main thread ms/frame | long tasks | JS heap MB | KB loaded | tiles |
+|---|---|---|---|---|---|---|---|---|---|---|
+| desktop | start-up: FCP 352 ms, first tile 638 ms, **first view 14.5 s** | | | | | | 39 (max 100 ms) | | 15330 | 126 |
+| desktop | night idle | 118 | 8.3 | 9.2 | 17.5 | 1.0 | 0 | 28 | 0 | 0 |
+| desktop | night pan | **35** | 25 | **57.8** | 91.6 | **22.5** | 5 | 36 | 30420 | 384 |
+| desktop | night zoom | 58 | 16 | 42.4 | 67.4 | 10.3 | 1 | 48 | 8767 | 225 |
+| desktop | noon idle | 120 | 8.3 | 9.0 | 9.4 | 0.8 | 0 | 43 | 0 | 0 |
+| desktop | noon pan | 60 | 15.8 | 33.5 | 150 | 11.7 | 6 | 33 | 3424 | 276 |
+| desktop | noon zoom | 84 | 8.4 | 25.7 | 58.9 | 6.3 | 0 | 33 | 3658 | 184 |
+| phone | start-up: FCP 384 ms, first tile 1.1 s, **first view 8.0 s** | | | | | | 3 (max 487 ms) | | 6309 | 45 |
+| phone | night idle | 120 | 8.3 | 9.2 | 24.2 | 1.6 | 0 | 29 | 0 | 0 |
+| phone | night pan | **28** | 8.8 | **108** | 159 | **34.0** | 1 | 33 | 19754 | 222 |
+| phone | night zoom | 74 | 8.4 | 58.5 | 366 | 10.2 | 1 | 32 | 5757 | 87 |
+| phone | noon idle | 120 | 8.3 | 9.2 | 25.3 | 1.5 | 0 | 29 | 0 | 0 |
+| phone | noon pan | 39 | 8.7 | 75.5 | 108 | 24.3 | 0 | 26 | 3638 | 190 |
+| phone | noon zoom | 78 | 8.4 | 59.0 | 125 | 9.6 | 0 | 38 | 627 | 66 |
+
+Every moving phase is over budget; idle is well inside it. What the baseline shows:
+- **Panning is the problem, not drawing.** The layers' own draw times are small (desktop pan: map 0.4, mapFrame
+  0.9, all animation-frame callbacks 0.5 ms a frame), yet the main thread spends 22 ms a frame. A CPU profile of
+  the night pan puts **two thirds of all main-thread time in one call**: OpenSeadragon's WebGL drawer tests every
+  new tile for cross-origin taint with `getImageData` on a 2D canvas, which stalls for a GPU read-back each time.
+- **Every map version under a full-opacity one is still loaded and drawn.** At 21:00 in autumn the base day map,
+  the autumn version and the night version are all at full opacity: three sets of tiles (30 MB in an 8 s pan).
+- **Map versions are stacked in the order they were first needed**, not in their meaning: at 21:00 in autumn the
+  autumn day version is added after the night one and covers it, so the evening shows the day art (shot
+  `c-perf-old-town-evening`).
+- **Start-up:** 15 MB before the first view is complete on desktop (11.4 MB of tiles at device pixel ratio 2, then
+  `occluders.png` 1.5 MB, the cloud texture 0.65 MB, `lines.json` 0.5 MB, the water mask 0.4 MB). The map's
+  first view takes 14.5 s on fast 4G, against a budget of 2.5 s.
+
 ### Item 4. "I can see cars painted in the art"
 
 **Root cause.** Two sources:

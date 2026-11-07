@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { MapHandle, View } from "./IsometricMap";
+import { gauge, span } from "../perf";
 
 export interface Place {
   n: string;
@@ -34,11 +35,14 @@ export function Pins({ places, view, map, active, onPick }: Props) {
   const place = useRef(() => {
     const m = map.current;
     if (!m) return;
+    const end = span("pins");
     for (const { el, p } of els.current.values()) {
       const s = m.toScreen(p.x, p.y);
       if (s) el.style.transform = `translate(${s.x}px,${s.y}px)`;
     }
+    end();
   }).current;
+  useEffect(() => gauge("pins", () => els.current.size), []);
   useLayoutEffect(place); // newly shown labels get their position before the browser paints
   useEffect(() => map.current?.onFrame(place), [map, place]);
 
