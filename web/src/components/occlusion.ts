@@ -26,7 +26,8 @@
  *                                           (default) or "deck". The tree canopy erases by its coverage times
  *                                           `canopy` (default 1; bare winter crowns hide less, 0.4). Draws in g's
  *                                           current transform. rect: only the tiles touching this screen
- *                                           rectangle (x0, y0, x1, y1).
+ *                                           rectangle (x0, y0, x1, y1), or touching any of a list of them
+ *                                           (each tile drawn once, so partial canopy is not erased twice).
  *   occ.canopyAt(x, y)                      tree canopy coverage 0..1 at a map px.
  *   occ.isHidden(x, y, heightM, layer?)     true when the whole vehicle standing at (x, y) is hidden: every
  *                                           sample up its vertical centre line is behind the foreground.
@@ -57,6 +58,8 @@ import { asset } from "../config";
 
 export type Layer = "ground" | "deck";
 export interface View { z: number; ox: number; oy: number; w: number; h: number }
+/** A screen rectangle: x0, y0, x1, y1. */
+export type Rect = [number, number, number, number];
 export interface DeckHit { id: number; z: number; dz: number; h: number; lift: number }
 
 interface Meta { x0: number; y0: number; scale: number; w: number; h: number; unit: number; tile: number; tiles: string[] }
@@ -75,7 +78,7 @@ const KEEP_MASKS = 150;       // mask canvases kept, likewise
 
 export interface Occlusion {
   cut(g: CanvasRenderingContext2D, view: View, heightM: number, layer?: Layer, canopy?: number,
-    rect?: [number, number, number, number]): void;
+    rect?: Rect | Rect[]): void;
   canopyAt(x: number, y: number): number;
   isHidden(x: number, y: number, heightM: number, layer?: Layer): boolean;
   coverage(x: number, y: number, heightM: number, layer?: Layer): number;
@@ -200,27 +203,31 @@ class Occ implements Occlusion {
   }
 
   cut(g: CanvasRenderingContext2D, view: View, heightM: number, layer: Layer = "ground", canopy = 1,
-    rect?: [number, number, number, number]): void {
+    rect?: Rect | Rect[]): void {
     const { x0, y0, scale, w, h } = this.m;
     const thr = Math.round(heightM * 10);
     const ck = Math.round(Math.min(Math.max(canopy, 0), 1) * 10);   // canopy strength in tenths (cache key)
     const span = TILE * scale * view.z;  // a tile's size on screen
-    // tiles that touch the view, or the given screen rectangle (x0, y0, x1, y1) within it
-    const [rx0, ry0, rx1, ry1] = rect ?? [0, 0, view.w, view.h];
-    const tx0 = Math.max(0, Math.floor(((rx0 - view.ox) / view.z - x0) / scale / TILE));
-    const ty0 = Math.max(0, Math.floor(((ry0 - view.oy) / view.z - y0) / scale / TILE));
-    const tx1 = Math.min(Math.ceil(w / TILE) - 1, Math.floor(((rx1 - view.ox) / view.z - x0) / scale / TILE));
-    const ty1 = Math.min(Math.ceil(h / TILE) - 1, Math.floor(((ry1 - view.oy) / view.z - y0) / scale / TILE));
-    if (tx1 < tx0 || ty1 < ty0) return;
+    // tiles that touch the view, or the given screen rectangles within it (each tile once)
+    const rects: Rect[] = !rect ? [[0, 0, view.w, view.h]] : typeof rect[0] === "number" ? [rect as Rect] : rect as Rect[];
+    const ntx = Math.ceil(w / TILE);
+    const done = rects.length > 1 ? new Set<number>() : null;
     g.save();
     g.globalCompositeOperation = "destination-out";
     g.imageSmoothingEnabled = true;  // soft edges when zoomed in past the mask's resolution
-    for (let ty = ty0; ty <= ty1; ty++) {
-      for (let tx = tx0; tx <= tx1; tx++) {
-        const t = this.tile(layer, thr, ck, tx, ty);
-        if (!t) continue;
-        const sx = (x0 + tx * TILE * scale) * view.z + view.ox, sy = (y0 + ty * TILE * scale) * view.z + view.oy;
-        g.drawImage(t, sx, sy, (t.width / TILE) * span, (t.height / TILE) * span);
+    for (const [rx0, ry0, rx1, ry1] of rects) {
+      const tx0 = Math.max(0, Math.floor(((rx0 - view.ox) / view.z - x0) / scale / TILE));
+      const ty0 = Math.max(0, Math.floor(((ry0 - view.oy) / view.z - y0) / scale / TILE));
+      const tx1 = Math.min(ntx - 1, Math.floor(((rx1 - view.ox) / view.z - x0) / scale / TILE));
+      const ty1 = Math.min(Math.ceil(h / TILE) - 1, Math.floor(((ry1 - view.oy) / view.z - y0) / scale / TILE));
+      for (let ty = ty0; ty <= ty1; ty++) {
+        for (let tx = tx0; tx <= tx1; tx++) {
+          if (done) { const k = ty * ntx + tx; if (done.has(k)) continue; done.add(k); }
+          const t = this.tile(layer, thr, ck, tx, ty);
+          if (!t) continue;
+          const sx = (x0 + tx * TILE * scale) * view.z + view.ox, sy = (y0 + ty * TILE * scale) * view.z + view.oy;
+          g.drawImage(t, sx, sy, (t.width / TILE) * span, (t.height / TILE) * span);
+        }
       }
     }
     g.restore();

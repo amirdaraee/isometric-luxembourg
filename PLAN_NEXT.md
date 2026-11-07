@@ -403,6 +403,35 @@ the main thread in development), and the overlay's draw has no spans yet.
 Not done yet: Lighthouse, and a cheaper tilt-shift (it is only switched off on the lower tiers); the `.graded`
 filter is only set for the morning grade, so it was not measured.
 
+*The rest of item 3 (C4a, stream C, after streams A and B merged):* the overlay is drawn by the frame clock alone
+(`subscribe(draw, {name: "overlay"})`; the map's `onFrame` call and the 40 ms guard are gone), at most 2 device pixels
+per CSS pixel (1 on tier 2), with spans `sim`, `streets`, `birds`, `transit`, `vehicles` and `cut`; tier 2 halves the
+cars and hides the birds; `luxDayMask` is worked out once a minute instead of every frame. The occlusion cut draws
+only the mask tiles under each pass's vehicles (`occ.cut` takes a list of rectangles, each tile once), instead of
+every tile in the box round all of them. The snow block left the overlay: `Sky.tsx` draws snow (weather snow, or
+winter with `snow` when the weather is off). Birds turn into the wind, drift back with it, and thin out from 6 m/s to
+3 flocks above 10 m/s; with reduced motion they are not drawn.
+Whole app, every feature on, `c5-before` (main after the stream A and B merges) against `c5-cut` (these changes):
+
+| Profile | Phase | Before p95 / main ms (fps) | After p95 / main ms (fps) | Budget p95 / main |
+|---|---|---|---|---|
+| desktop | night pan | 16.8 / 3.15 (105) | 16.7 / 3.02 (108) | 20 / 6 |
+| desktop | night zoom | 16.9 / 5.12 (88) | 17.0 / **3.42** (104) | 20 / 6 |
+| desktop | noon pan | 16.7 / 3.39 (108) | 16.7 / 3.39 (109) | 20 / 6 |
+| desktop | noon zoom | 18.0 / 5.05 (94) | 16.6 / **3.36** (109) | 20 / 6 |
+| phone | night pan | 26.8 / 8.92 (86) | 25.4 / 8.22 (91) | 40 / 12 |
+| phone | night zoom | 18.3 / 5.39 | 17.8 / 5.54 | 40 / 12 |
+| phone | noon pan | 41.8 / 12.63 (66) | 42.1 / 13.57 (65) | 40 / 12 |
+| phone | noon zoom | 25.1 / 6.42 | 24.7 / 6.57 | 40 / 12 |
+| both | idle, main ms | 0.91 to 1.58 | 0.71 to 1.30 | |
+
+Start-up: desktop first view 5.9 s (5.9 MB, 44 tiles), phone 3.5 s (3.3 MB, 17 tiles), unchanged within noise; JS
+heap 24 to 75 MB across phases (it varies with the collector more than with these changes). The cut fell from 1.7 to
+0.1 ms a frame while zooming on desktop. The phone's noon pan stays at the edge of its budget, before and after (it
+was 34 to 42 ms in earlier runs too): the overlay is 1.4 ms of its 13 ms, and the rest is the map decoding and drawing
+the larger noon tiles, which the CPU-slowed profile magnifies. Runs: `data/work/perf/2026-11-07-c5-*`; shots
+`data/work/shots/2026-11-07-c5-a` and `-c5-a-vehicles` (vehicles unchanged against `a6-after`).
+
 ### Item 4. "I can see cars painted in the art"
 
 **Root cause.** Two sources:
@@ -546,9 +575,8 @@ Timing with `?weather=rain:0.8,wind:12@250` against the same build with the weat
 0.4 ms a frame (p95 under 1 ms), the fog layer under 0.1 ms, and the phases differ by no more than the noise
 between runs.
 Left for the merge points:
-- **M2, stream A:** remove the snow block from `Overlay.tsx`, then set `SNOW_IN_OVERLAY` in `Sky.tsx` to false so
-  the weather layer takes snow over (until then a winter scene snows from the overlay whatever the weather says);
-  birds turn into the wind and are fewer above 10 m/s, read from `currentAmounts()`.
+- *Done in C4a:* the snow block left `Overlay.tsx` and `Sky.tsx` draws all snow; birds turn into the wind and are
+  fewer above 10 m/s.
 - **M3:** credit Open-Meteo (CC BY 4.0) in the About panel.
 
 ### Item 6. "The Pfaffenthal Panoramic Lift needs a redesign and repaint, and a 3D lift moving up and down"

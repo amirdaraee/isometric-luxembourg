@@ -31,15 +31,10 @@ export interface SkyProps {
  * With reduced motion the rain and snow stand still. Snow falls when the weather says snow or, with the weather
  * switched off, in winter with the snow switch on.
  */
-/**
- * How much snow falls: what the weather says, with the weather switched on. With it off, the old rule (winter with
- * the snow switch on) applies, but that snow is still drawn by Overlay.tsx until stream A removes its snow block
- * (merge point M2); set SNOW_IN_OVERLAY to false then, and this layer takes it over.
- */
-const SNOW_IN_OVERLAY = true;
+/** How much snow falls: what the weather says, with the weather switched on; with it off, winter with the snow switch on. */
 function snowAmount(weatherSnow: number, season: Season): number {
   if (on("weather")) return weatherSnow;
-  return !SNOW_IN_OVERLAY && season === "winter" && on("snow") ? 0.5 : 0;
+  return season === "winter" && on("snow") ? 0.5 : 0;
 }
 
 export function Sky({ map, night, season }: SkyProps) {
@@ -226,7 +221,7 @@ export function Sky({ map, night, season }: SkyProps) {
       {on("weather") && on("fog") && <Fog map={map} night={night} />}
       {on("weather") && <div ref={wash} aria-hidden="true"
         style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, background: "rgb(52,64,86)", opacity: 0 }} />}
-      {(on("weather") || (!SNOW_IN_OVERLAY && on("snow"))) && <canvas ref={canvas} aria-hidden="true"
+      {(on("weather") || on("snow")) && <canvas ref={canvas} aria-hidden="true"
         style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", pointerEvents: "none", zIndex: 1 }} />}
       {on("weather") && <div ref={flash} aria-hidden="true"
         style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, background: "#eef3ff", opacity: 0 }} />}

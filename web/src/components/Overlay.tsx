@@ -5,11 +5,14 @@ import type { MapHandle, MapMeta } from "./IsometricMap";
 import { luxDayMask, luxSeconds, prepareShapes, stretch, transitSections, TRANSIT_HEIGHT_M, type Section, type Shape,
   type TransitData } from "./Transit";
 import { drawLamps, drawVehicle, loadSprites, spriteLength, type Sprites } from "./sprites";
-import { DRIVABLE, loadDrivable, loadOcclusion, type Drivable, type Occlusion } from "./occlusion";
+import { DRIVABLE, loadDrivable, loadOcclusion, type Drivable, type Occlusion, type Rect } from "./occlusion";
 import { waterPoints } from "./Water";
 import { Traffic, type DrawableCar } from "../sim/traffic";
 import { testParams } from "../testParams";
-import { subscribe } from "../frame";
+import { canvasDpr, quality, subscribe } from "../frame";
+import { span as perfSpan } from "../perf";
+import { currentAmounts } from "../weather";
+import { groundToScreen } from "../sky/weatherCore";
 
 // Projected OSM lines (web/public/data/lines.json, from pipeline/project_lines.py), in map image pixels.
 interface Line { id: number; n?: string; k?: string; b?: boolean; t?: boolean; o?: boolean; p: number[] }
@@ -264,6 +267,20 @@ function newFlock(spawn: Glint[], rnd: () => number): Flock {
   const birds = Array.from({ length: n }, () => ({ dx: (rnd() - 0.5) * 70, dy: (rnd() - 0.5) * 40, ph: rnd() * 6.28 }));
   return { x: at.x, y: at.y - 60, h: rnd() * 6.28, v: 28 + rnd() * 20, turn: (rnd() - 0.5) * 0.3, birds };
 }
+
+/** Flocks flying at a wind of `speed` m/s: all 14 up to 6 m/s, then fewer, and only 3 above 10 m/s. */
+export function flocksForWind(speed: number, all = 14): number {
+  if (speed <= 6) return all;
+  if (speed >= 10) return 3;
+  return Math.round(all - ((speed - 6) / 4) * (all - 3));
+}
+
+/** Turns heading `h` (screen radians of the map, y down) towards `goal` by at most `max` radians. */
+function turnTowards(h: number, goal: number, max: number): number {
+  let d = goal - h;
+  d = Math.atan2(Math.sin(d), Math.cos(d));
+  return h + Math.max(-max, Math.min(max, d));
+}
 /** A point of light on the water: map px, a phase for its twinkle, a length. */
 interface Glint { x: number; y: number; ph: number; len: number }
 
@@ -357,29 +374,32 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
 
   useEffect(() => {
     let last = performance.now();
-    // Draw once per frame. While the map moves, OpenSeadragon's own frame ("update-viewport") draws, so cars and
-    // street lines never trail the map; the frame clock then skips its draw. When the map is still, the frame clock
-    // draws. (A guard until frame.ts merges the map's frame into its own.)
-    let lastMapDraw = -1e9;
+    // Drawn once per frame by the frame clock (src/frame.ts). While the map moves, the clock calls it straight after
+    // the map's own redraw, so cars and street lines never trail the map, and never draw twice in a frame.
+    const still = matchMedia("(prefers-reduced-motion: reduce)");
+    const dayMask = { at: -1e9, v: 1 };
     const draw = (now: number) => {
       const dt = Math.min(Math.max(now - last, 0) / 1000, 0.1);
       last = Math.max(last, now);
       const cv = canvas.current, v = map.current?.getView(), st = state.current;
       if (!cv || !v) return;
-      const dpr = window.devicePixelRatio || 1, W = window.innerWidth, H = window.innerHeight;
-      if (cv.width !== W * dpr || cv.height !== H * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
+      // at most 2 device pixels per CSS pixel, and 1 on the lowest quality tier
+      const dpr = canvasDpr(2), W = window.innerWidth, H = window.innerHeight;
+      const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
+      if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; vbox.current = null; }
       const g = cv.getContext("2d")!;
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, W, H);
       const { streets, traffic, night, hour, season } = flags.current;
-      const winter = season === "winter" && on("snow");
-      const birds = on("birds") && st.flocks?.length && night < 0.6 && v.z >= 0.1;
-      if (!streets && !traffic && !winter && !birds) return;
+      // Birds by day, not on the lowest quality tier, and not with reduced motion (they would only hang in the air).
+      const birds = on("birds") && st.flocks?.length && night < 0.6 && v.z >= 0.1 && quality.tier < 2 && !still.matches;
+      if (!streets && !traffic && !birds) return;
       // image px -> screen px
       const z = v.z, ox = W / 2 - v.x * z, oy = H / 2 - v.y * z;
       const vis = (b: number[]) => b[2] * z + ox > -50 && b[0] * z + ox < W + 50 && b[3] * z + oy > -50 && b[1] * z + oy < H + 50;
 
       if (streets && st.roads) {
+        const endStreets = perfSpan("streets");
         // Cached paths in map px, drawn through the view (line widths and dashes are in screen px, hence / z).
         g.setTransform(dpr * z, 0, 0, dpr * z, dpr * ox, dpr * oy);
         g.lineJoin = "round"; g.lineCap = "round";
@@ -423,21 +443,33 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
             g.restore();
           }
         }
+        endStreets();
       }
 
       if (birds) {
         // Inked birds: two short wing strokes that flap; flocks drift and turn slowly, and start again over a river
-        // when they leave the painted area.
+        // when they leave the painted area. In a wind they turn to face it (birds fly into the wind, and are carried
+        // back a little by it), and above 10 m/s only a few flocks are out.
+        const endBirds = perfSpan("birds");
         const t = now / 1000;
         const areas = meta.painted ?? [];
         const spawn = (st as { spawn?: Glint[] }).spawn!;
+        const wa = currentAmounts();
+        const wind = Math.hypot(wa.windE, wa.windN);
+        // the air's movement on the map, map px/s (a flock's heading is in a frame with y stretched twice)
+        const [wx, wy] = groundToScreen(wa.windE, wa.windN);
+        const into = Math.atan2(-wy * 2, -wx);
+        const pull = Math.min(1, Math.max(0, (wind - 2) / 6));
+        const flying = flocksForWind(wind, st.flocks!.length);
         g.strokeStyle = "rgba(28,30,40,.85)"; g.lineCap = "round";
         g.lineWidth = Math.max(1.4, z * 2.2);
         const span = Math.max(5, 11 * z);
-        for (let i = 0; i < st.flocks!.length; i++) {
+        for (let i = 0; i < flying; i++) {
           const f = st.flocks![i];
-          f.h += (f.turn + Math.sin(t * 0.13 + i) * 0.25) * dt;
-          f.x += Math.cos(f.h) * f.v * dt; f.y += Math.sin(f.h) * f.v * 0.5 * dt;
+          f.h += (f.turn + Math.sin(t * 0.13 + i) * 0.25) * dt * (1 - 0.7 * pull);
+          if (pull > 0) f.h = turnTowards(f.h, into + Math.sin(t * 0.1 + i) * 0.5, pull * 0.6 * dt);
+          // a strong wind holds the flock back: it drifts with the air at a fifth of the air's speed
+          f.x += (Math.cos(f.h) * f.v + wx * 0.2 * pull) * dt; f.y += (Math.sin(f.h) * f.v * 0.5 + wy * 0.2 * pull) * dt;
           if (!areas.some((a) => f.x > a.x0 && f.x < a.x0 + a.w && f.y > a.y0 && f.y < a.y0 + a.h)) {
             st.flocks![i] = newFlock(spawn, Math.random);
             continue;
@@ -452,17 +484,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
             g.stroke();
           }
         }
-      }
-
-      if (winter) {
-        const t = now / 1000;
-        g.fillStyle = "rgba(255,255,255,.85)";
-        for (let i = 0; i < 260; i++) {
-          const sx = ((i * 97.13 + Math.sin(t * 0.7 + i) * 18 + t * 12) % (W + 20) + W + 20) % (W + 20) - 10;
-          const sy = ((i * 53.71 + t * (28 + (i % 7) * 6)) % (H + 20)) - 10;
-          const r = 0.8 + (i % 3) * 0.6;
-          g.beginPath(); g.arc(sx, sy, r, 0, Math.PI * 2); g.fill();
-        }
+        endBirds();
       }
 
       const doCars = traffic && on("traffic") && !!st.sim && z >= 0.08;
@@ -487,7 +509,10 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
           const hr = hour === null ? luxSeconds() / 3600 : hour;
           const busy = hr < 5 ? 0.12 : hr < 6.5 ? 0.35 : hr < 9.5 ? 1 : hr < 16 ? 0.75 : hr < 19 ? 1 : hr < 22 ? 0.5 : 0.25;
           // Only the streets near the view are simulated; cars come and go at the margins.
-          sim.step(dt, { x0: -ox / z, y0: -oy / z, x1: (W - ox) / z, y1: (H - oy) / z }, busy);
+          // (half as many on the lowest quality tier)
+          const endSim = perfSpan("sim");
+          sim.step(dt, { x0: -ox / z, y0: -oy / z, x1: (W - ox) / z, y1: (H - oy) / z }, quality.tier >= 2 ? busy * 0.5 : busy);
+          endSim();
           if (SIREN_STREET && on("emergency") && now - sirenAt.current > 4000 && sim.emergencyAlive().siren === 0) {
             sirenAt.current = now;
             const kinds = ["ambulance", "police", "fire"] as const;
@@ -533,9 +558,12 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
           // Trams and trains: on the OSM rail ways the painting followed. In a tunnel they are not drawn (a section
           // at a portal is clipped there); on a viaduct or bridge they are lifted onto the modelled deck; everywhere
           // they are cut against the foreground like the cars. Outside the painted art they are not drawn.
+          const endTransit = perfSpan("transit");
           const tc = transit.current!;
           const m = 300 / z;
-          const secs = transitSections(tc.d, tc.shapes, hour === null ? luxSeconds() : hour * 3600, luxDayMask(),
+          // which timetable runs today (weekday, Saturday, Sunday or holiday): worked out once a minute
+          if (now - dayMask.at > 60000) { dayMask.at = now; dayMask.v = luxDayMask(); }
+          const secs = transitSections(tc.d, tc.shapes, hour === null ? luxSeconds() : hour * 3600, dayMask.v,
             [-ox / z - m, -oy / z - m, (W - ox) / z + m, (H - oy) / z + m], spr ? (t) => spriteLength(spr, t) : undefined);
           for (const q of secs) {
             if (drv && drv.at(q.x, q.y) === DRIVABLE.unpainted) continue;
@@ -548,8 +576,10 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
             if (sx < -300 || sx > W + 300 || sy < -300 || sy > H + 300) continue;
             passes[pass].push({ sec: q, sx, sy, a: 1 });
           }
+          endTransit();
         }
         if (passes.some((l) => l.length)) {
+          const endVehicles = perfSpan("vehicles");
           const vl = vlayer.current ?? (vlayer.current = document.createElement("canvas"));
           if (vl.width !== cv.width || vl.height !== cv.height) { vl.width = cv.width; vl.height = cv.height; }
           const vg = vl.getContext("2d")!;
@@ -607,10 +637,18 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
               const [px, py, pw, ph] = [box[0] * dpr, box[1] * dpr, (box[2] - box[0]) * dpr, (box[3] - box[1]) * dpr];
               if (pw > 0 && ph > 0) { vg.save(); vg.setTransform(1, 0, 0, 1, 0, 0); vg.drawImage(pl, px, py, pw, ph, px, py, pw, ph); vg.restore(); }
             }
-            if (occ && list.length) occ.cut(vg, view, PASS_HEIGHT_M[i], i === 3 ? "deck" : "ground", canopy, box);
+            if (occ && list.length) {
+              // only the mask tiles under this pass's vehicles (zoomed out, the box round all of them can hold most
+              // of the city's tiles, while the vehicles touch a few)
+              const endCut = perfSpan("cut");
+              occ.cut(vg, view, PASS_HEIGHT_M[i], i === 3 ? "deck" : "ground", canopy,
+                list.map((it): Rect => [it.sx - m, it.sy - m, it.sx + m, it.sy + m]));
+              endCut();
+            }
           });
           const [qx, qy, qw, qh] = [box[0] * dpr, box[1] * dpr, (box[2] - box[0]) * dpr, (box[3] - box[1]) * dpr];
           if (qw > 0 && qh > 0) { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(vl, qx, qy, qw, qh, qx, qy, qw, qh); g.restore(); }
+          endVehicles();
         }
         // Small signal heads at the stop lines, when zoomed in.
         if (doCars && on("signals") && z > 0.6) {
@@ -626,9 +664,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         }
       }
     };
-    const stop = subscribe((t) => { if (t - lastMapDraw > 40) draw(t); });
-    const off = map.current?.onFrame(() => { const t = performance.now(); lastMapDraw = t; draw(t); });
-    return () => { stop(); off?.(); };
+    const stop = subscribe(draw, { name: "overlay" });
+    return () => { stop(); };
   }, [map]);
 
   return <canvas ref={canvas} className="overlay" aria-hidden="true" />;
