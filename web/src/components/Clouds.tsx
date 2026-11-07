@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
 import { asset } from "../config";
 import { canvasDpr, onQuality, quality, subscribe } from "../frame";
+import { on } from "../features";
+import { currentAmounts } from "../weather";
+import { groundToScreen } from "../sky/weatherCore";
 import type { MapHandle } from "./IsometricMap";
 
 /**
@@ -238,6 +241,14 @@ export function Clouds({ map, night }: Props) {
       if (sea !== "ready") { loadSea(); return false; }
       if (moving()) {
         const s = Math.min(dt, 100) / 1000;
+        if (on("weather")) {
+          // drift with the wind (the high layer faster), as it moves across the map, kept within reason
+          const a = currentAmounts();
+          let [x, y] = groundToScreen(a.windE, a.windN);
+          const m = Math.hypot(x, y), lim = Math.min(Math.max(m * 0.35, 2), 20);
+          if (m > 1e-6) { x = x / m * lim; y = y / m * lim; }
+          wind.current = [[x, y], [x * 1.55, y * 1.55]];
+        }
         const [wl, wh] = wind.current;
         offLow[0] = (offLow[0] + wl[0] * s) % SCALE_LOW; offLow[1] = (offLow[1] + wl[1] * s) % (SCALE_LOW / 1.6);
         offHigh[0] = (offHigh[0] + wh[0] * s) % SCALE_HIGH; offHigh[1] = (offHigh[1] + wh[1] * s) % (SCALE_HIGH / 1.6);

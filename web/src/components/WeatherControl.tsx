@@ -1,6 +1,8 @@
-import type { RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import type { MapHandle } from "./IsometricMap";
 import type { Season } from "../scene";
+import { on } from "../features";
+import { onWeather, setWeatherMode, setWind, weather, weatherFixed, weatherMode, windSetting, type Mode } from "../weather";
 
 export interface WeatherControlProps {
   map: RefObject<MapHandle>;
@@ -13,7 +15,39 @@ export interface WeatherControlProps {
   date: Date;
 }
 
-/** Weather picker, shown as an extra row in SceneControl. Stream C fills it in. For now it renders nothing. */
+const MODES: [Mode, string, string][] = [
+  ["live", "Live", "The weather in Luxembourg now (Open-Meteo)"],
+  ["clear", "Clear", "Clear sky"],
+  ["rain", "Rain", "Rain"],
+  ["storm", "Storm", "Thunderstorm, with lightning"],
+  ["fog", "Fog", "Fog in the valleys"],
+  ["snow", "Snow", "Snow"],
+];
+
+/** Weather picker, an extra row under the time and season rows: Live or a kind of weather, and the wind. */
 export function WeatherControl(_props: WeatherControlProps) {
-  return null;
+  const [, tick] = useState(0);
+  useEffect(() => onWeather(() => tick((n) => n + 1)), []);
+  if (!on("weather")) return null;
+  const mode = weatherFixed ? weather().kind : weatherMode();
+  const w = weather();
+  const wind = windSetting() ?? Math.round(w.wind.speed);
+  return (
+    <>
+      <div className="scene-row" role="group" aria-label="Weather">
+        {MODES.map(([m, label, title]) => (
+          <button key={m} type="button" className={mode === m ? "on" : ""} aria-pressed={mode === m} title={title}
+            onClick={() => setWeatherMode(m)}>{label}</button>
+        ))}
+      </div>
+      <div className="scene-row">
+        <label className="scene-wind" htmlFor="wind">Wind</label>
+        <input id="wind" type="range" min={0} max={20} step={1} value={wind} aria-valuetext={`${wind} metres per second`}
+          onChange={(e) => setWind(+e.target.value)} />
+        <output className="scene-time" htmlFor="wind">{wind} m/s</output>
+        <button type="button" className={windSetting() === null ? "on" : ""} aria-pressed={windSetting() === null}
+          title="The weather's own wind" onClick={() => setWind(null)}>Auto</button>
+      </div>
+    </>
+  );
 }

@@ -111,6 +111,7 @@ kbd { padding: 1px 7px; border: 1px solid var(--line); border-radius: 5px; color
 .scene-row { display: flex; align-items: center; gap: 6px; justify-content: center; }
 .scene input[type=range] { width: min(320px, 46vw); accent-color: #ef3340; }
 .scene-time { font: 600 13px/1 system-ui, sans-serif; font-variant-numeric: tabular-nums; min-width: 42px; }
+.scene-wind { font: 600 12px/1 system-ui, sans-serif; color: var(--mute); }
 .scene button { border: 0; background: transparent; color: inherit; font: 600 12px/1 system-ui, sans-serif; padding: 6px 10px; border-radius: 999px; cursor: pointer; }
 .scene button.on { background: #ef3340; color: #fff; }
 .scene button.xmas.on { background: #1f7a3d; }

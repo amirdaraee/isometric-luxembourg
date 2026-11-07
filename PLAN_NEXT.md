@@ -534,6 +534,23 @@ at one per 15 minutes per visitor.
 pins and labels: draw it under the pins (z-index 1) and lower its density at close zoom.
 **Estimate.** L.
 
+**Done (C3, stream C, 7 Nov 2026).** `web/src/weather.ts` (state, live Open-Meteo every 15 min kept in
+`sessionStorage`, blends of 20 s live and 3 s from the picker), `web/src/sky/weatherCore.ts` (kinds, `?weather=`
+text, WMO mapping, amounts; checks in `weatherCore.test.ts`, run with `node src/sky/weatherCore.test.ts`),
+`WeatherControl.tsx` (Live, Clear, Rain, Storm, Fog, Snow and a wind slider with Auto), `Sky.tsx` (overcast wash,
+rain with splashes at z >= 0.6 and warm streaks at night, snow, lightning as two 80 ms pulses every 8 to 25 s and
+none with reduced motion), `Fog.tsx` with `pipeline/build_fog_mask.py` (`fog.png` 197 KB, 1 px = 32 map px), the
+clouds' drift from the wind, and the water's glints from rain and fog. Shots: `data/work/shots/2026-11-07-c3d`.
+Timing with `?weather=rain:0.8,wind:12@250` against the same build with the weather off (`c3-rain3` against
+`c3-control`; the machine was busy with other runs, so both are slower than `c2-fixes`): the sky layer costs 0.1 to
+0.4 ms a frame (p95 under 1 ms), the fog layer under 0.1 ms, and the phases differ by no more than the noise
+between runs.
+Left for the merge points:
+- **M2, stream A:** remove the snow block from `Overlay.tsx`, then set `SNOW_IN_OVERLAY` in `Sky.tsx` to false so
+  the weather layer takes snow over (until then a winter scene snows from the overlay whatever the weather says);
+  birds turn into the wind and are fewer above 10 m/s, read from `currentAmounts()`.
+- **M3:** credit Open-Meteo (CC BY 4.0) in the About panel.
+
 ### Item 6. "The Pfaffenthal Panoramic Lift needs a redesign and repaint, and a 3D lift moving up and down"
 
 **Today.** The lift is a landmark (`pfaffenthal-panoramic-lift`, pin at `9293,5432`, 3D model

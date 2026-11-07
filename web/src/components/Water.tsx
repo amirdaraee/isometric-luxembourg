@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { asset } from "../config";
 import { canvasDpr, onQuality, quality, subscribe } from "../frame";
+import { currentAmounts, onWeather } from "../weather";
 import type { MapHandle } from "./IsometricMap";
 
 /**
@@ -61,7 +62,7 @@ uniform float u_step;    // 6 Hz step number, kept small (night flicker)
 uniform float u_cell;    // pattern size multiplier: 1, 2 or 4 as the map zooms out
 uniform float u_aa;      // map px per device pixel, for smooth stroke edges
 uniform float u_night;   // 0 .. 1
-uniform float u_fade;    // 0 .. 1, fades the effect in as the map zooms in
+uniform float u_fade;    // 0 .. 1, fades the effect in as the map zooms in; up to 1.4 in rain, less in fog
 uniform float u_debug;   // 1: tint the water by flow (?waterdebug in the address)
 
 const float CYCLE = 4.0;  // seconds a stroke lives before the pattern starts again
@@ -196,7 +197,7 @@ void main() {
     }
   }
 
-  acc *= clamp(m * 1.2, 0.0, 1.0) * u_fade;
+  acc = min(acc * clamp(m * 1.2, 0.0, 1.0) * u_fade, vec4(1.0));
   if (u_debug > 0.5) {
     // Hue by downstream direction, brighter mid-stream, so the flow field can be checked against the river.
     vec3 hue = 0.5 + 0.5 * vec3(dir.x, dir.y, -dir.x);
@@ -335,7 +336,9 @@ export function Water({ map, night }: Props) {
       gl.uniform1f(u.u_cell, v.z >= 0.6 ? 1 : v.z >= 0.3 ? 2 : 4);
       gl.uniform1f(u.u_aa, 1 / (v.z * dpr));
       gl.uniform1f(u.u_night, nightRef.current);
-      gl.uniform1f(u.u_fade, Math.min(1, (v.z - MIN_ZOOM) / (FADE_TO - MIN_ZOOM)));
+      // the glints grow stronger in rain and calmer in fog (src/weather.ts)
+      const wx = currentAmounts(), gain = Math.min(1.4, Math.max(0.3, 1 + 0.4 * wx.rain - 0.5 * wx.fog));
+      gl.uniform1f(u.u_fade, Math.min(1, (v.z - MIN_ZOOM) / (FADE_TO - MIN_ZOOM)) * gain);
       gl.drawArrays(gl.TRIANGLES, 0, st.count);
     };
 
@@ -364,10 +367,12 @@ export function Water({ map, night }: Props) {
     const sub = subscribe((t) => draw(t), { fps, still: still.matches, name: "water" });
     wake.current = sub.wake;
     const offQ = onQuality((tier) => { fps = tier >= 1 ? FPS / 2 : FPS; sub.setFps(fps); sub.wake(); });
+    const offW = onWeather(() => { dirty.current = true; sub.wake(); });
     return () => {
       alive = false;
       sub();
       offQ();
+      offW();
       wake.current = () => {};
       cv.removeEventListener("webglcontextlost", lost);
       cv.removeEventListener("webglcontextrestored", init);
