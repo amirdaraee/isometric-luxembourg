@@ -5,7 +5,8 @@ import { drawVehicle, spriteLength, type Sprites } from "./sprites";
 
 export interface TransitData {
   shapes: number[][];
-  trips: { s: number; k: "tram" | "train"; n: string; t: [number, number, number][] }[];
+  /** d: day types the trip runs on (1 weekday, 2 Saturday, 4 Sunday and public holidays). */
+  trips: { s: number; k: "tram" | "train"; n: string; t: [number, number, number][]; d?: number }[];
 }
 interface Shape { p: number[]; cum: number[]; len: number; box: [number, number, number, number] }
 
@@ -37,6 +38,27 @@ export function luxSeconds(now = new Date()): number {
   return +parts.hour * 3600 + +parts.minute * 60 + +parts.second + now.getMilliseconds() / 1000;
 }
 
+/** Easter Sunday (Gregorian), as [month 1-12, day]. */
+function easter(y: number): [number, number] {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  return [Math.floor((h + l - 7 * m + 114) / 31), ((h + l - 7 * m + 114) % 31) + 1];
+}
+
+/** Today's day type in Luxembourg: 1 weekday, 2 Saturday, 4 Sunday or public holiday. */
+export function luxDayMask(now = new Date()): number {
+  const p = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Luxembourg", year: "numeric", month: "numeric", day: "numeric", weekday: "short" })
+    .formatToParts(now).reduce((o, x) => ({ ...o, [x.type]: x.value }), {} as Record<string, string>);
+  const y = +p.year, mo = +p.month, da = +p.day;
+  const [em, ed] = easter(y);
+  const eDay = Date.UTC(y, em - 1, ed), today = Date.UTC(y, mo - 1, da), day = 86400000;
+  const fixed = ["1-1", "5-1", "5-9", "6-23", "8-15", "11-1", "12-25", "12-26"];   // incl. Europe Day and National Day
+  const moving = [1, 39, 50].map((n) => eDay + n * day);                           // Easter Monday, Ascension, Whit Monday
+  if (fixed.includes(`${mo}-${da}`) || moving.includes(today) || p.weekday === "Sun") return 4;
+  return p.weekday === "Sat" ? 2 : 1;
+}
+
 const MPP = 0.25;
 /** How much a ground length shrinks on screen along screen heading h (full left-right, half up-down). */
 function shrink(h: number): number {
@@ -52,7 +74,9 @@ export function drawTransit(g: CanvasRenderingContext2D, d: TransitData, shapes:
   spr?: Sprites | null) {
   // With sprites, every section is collected first and drawn far to near (by screen y), so nearer ones overlap.
   const queue: { type: string; sx: number; sy: number; h: number; lit: boolean }[] = [];
+  const mask = luxDayMask();
   for (const tr of d.trips) {
+    if (tr.d !== undefined && !(tr.d & mask)) continue;
     const t = tr.t;
     for (const s2 of [sec, sec + 86400]) {   // trips after midnight are stored with times > 24 h
       if (s2 < t[0][0] || s2 > t[t.length - 1][1]) continue;

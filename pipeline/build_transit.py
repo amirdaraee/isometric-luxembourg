@@ -1,8 +1,11 @@
 """Real trams and trains for the viewer, from the national GTFS timetable (data.public.lu, CC BY).
 
-For one representative weekday: every tram (Luxtram T1) and train trip that passes through the map, as its track
+For three representative days (a weekday, a Saturday and a Sunday): every tram (Luxtram T1) and train trip that
+passes through the map, as its track
 shape (map px, with deck height on bridges/viaducts taken from the OSM rail model) and its stop times as distances
-along that shape. The viewer interpolates each vehicle's position from the clock.
+along that shape, plus `d`, a mask of the day types it runs on (1 weekday, 2 Saturday, 4 Sunday; trips identical
+on several day types are stored once). The viewer interpolates each vehicle's position from the clock and keeps
+the trips of today's day type (Sundays and public holidays: 4).
 Writes web/public/data/transit.json.
 """
 import csv
@@ -15,7 +18,7 @@ import numpy as np
 from common import ROOT, RAW, WORK, ORIGIN_E, ORIGIN_N, R, ELEV, lonlat_to_en, PILOT_LONLAT
 
 G = RAW / "gtfs" / "20261104" / "gtfs"
-DAY = "20261110"  # a Tuesday inside the feed's validity
+DAYS = [("20261110", 1, 1), ("20261114", 5, 2), ("20261115", 6, 4)]  # (date, weekday index, mask): Tue, Sat, Sun
 m = json.loads((WORK / "mosaic.json").read_text())
 W, H = m["cols"] * m["frame"], m["rows"] * m["frame"]
 t = np.load(WORK / "terrain.npz")
@@ -61,16 +64,19 @@ def rows(name):
 
 
 routes = {r["route_id"]: r for r in rows("routes.txt") if r["route_type"] in ("0", "2")}
-services = set()
-dow = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"][1]
-for c in rows("calendar.txt"):
-    if c["start_date"] <= DAY <= c["end_date"] and c[dow] == "1":
-        services.add(c["service_id"])
-for c in rows("calendar_dates.txt"):
-    if c["date"] == DAY:
-        (services.add if c["exception_type"] == "1" else services.discard)(c["service_id"])
-trips = {t["trip_id"]: t for t in rows("trips.txt") if t["route_id"] in routes and t["service_id"] in services}
-print("trips today", len(trips))
+cal = list(rows("calendar.txt"))
+cal_dates = list(rows("calendar_dates.txt"))
+DOW = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+day_mask = defaultdict(int)          # service_id -> day types it runs on
+for day, wd, bit in DAYS:
+    services = {c["service_id"] for c in cal if c["start_date"] <= day <= c["end_date"] and c[DOW[wd]] == "1"}
+    for c in cal_dates:
+        if c["date"] == day:
+            (services.add if c["exception_type"] == "1" else services.discard)(c["service_id"])
+    for sv in services:
+        day_mask[sv] |= bit
+trips = {t["trip_id"]: t for t in rows("trips.txt") if t["route_id"] in routes and t["service_id"] in day_mask}
+print("trips on the three days", len(trips))
 W0, S0, E0, N0 = PILOT_LONLAT
 pad = 0.01
 stops = {s["stop_id"]: (float(s["stop_lon"]), float(s["stop_lat"]), s["stop_name"]) for s in rows("stops.txt")}
@@ -121,8 +127,18 @@ for tid, seq in st.items():
             break
     if len(pts_t) >= 2 and pts_t[-1][2] != pts_t[0][2]:
         r = routes[tr["route_id"]]
-        out_trips.append({"s": k, "k": "tram" if r["route_type"] == "0" else "train", "n": r["route_short_name"], "t": pts_t})
+        out_trips.append({"s": k, "k": "tram" if r["route_type"] == "0" else "train", "n": r["route_short_name"], "t": pts_t,
+                          "d": day_mask[tr["service_id"]]})
+# the same trip on several day types (same track and times) is stored once with the masks combined
+merged = {}
+for tr in out_trips:
+    key = (tr["s"], tr["k"], tr["n"], json.dumps(tr["t"]))
+    if key in merged:
+        merged[key]["d"] |= tr["d"]
+    else:
+        merged[key] = tr
+out_trips = list(merged.values())
 dest = ROOT / "web/public/data/transit.json"
-dest.write_text(json.dumps({"day": DAY, "source": "GTFS, Administration des transports publics / data.public.lu, CC BY",
+dest.write_text(json.dumps({"days": [d for d, _, _ in DAYS], "source": "GTFS, Administration des transports publics / data.public.lu, CC BY",
                             "shapes": out_shapes, "trips": out_trips}, separators=(",", ":")))
 print("trips", len(out_trips), {k: sum(1 for x in out_trips if x["k"] == k) for k in ("tram", "train")}, f"{dest.stat().st_size / 1e6:.1f} MB")
