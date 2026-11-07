@@ -130,7 +130,7 @@ export function Search({ places, onPick, onSurprise }: Props) {
             <li key={`${r.n}-${r.x}-${r.y}`} role="option" aria-selected={i === sel}>
               <button type="button" className={i === sel ? "on" : ""} onMouseDown={() => pick(r)}>
                 <span className="name">{r.n}</span>
-                <span className="sub">{r.sub ?? r.c}</span>
+                <span className="sub">{r.sub ?? r.c.replace("-", " ")}</span>
               </button>
             </li>
           ))}

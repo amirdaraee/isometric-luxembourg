@@ -1,10 +1,10 @@
-"""Landmarks, streets and addresses, placed on the map's pixels, for pins and search."""
+"""Landmarks, streets and addresses, placed on the map's pixels, for pins and search. Run after build_landmarks.py."""
 import json
 import math
 import re
 from collections import defaultdict
 import numpy as np
-from common import ROOT, RAW, WORK, PILOT_LONLAT, ORIGIN_E, ORIGIN_N, ELEV, R, lonlat_to_en
+from common import ROOT, RAW, WORK, PILOT_LONLAT, ORIGIN_E, ORIGIN_N, ELEV, R, lonlat_to_en, landmark_slug, readme_sections
 
 OUT = ROOT / "web" / "public" / "data"
 
@@ -98,6 +98,22 @@ def main():
         places.append({"n": label, "c": cat, "d": desc, "x": p[0], "y": p[1], "f": 1, "a": osm})
         used.add(osm)
         used.add(label)
+    # Landmark cards with a 'Pin' row in research/01-landmarks ("label · rank", rank 1 most important) become featured
+    # pins too, at the card's own position and carrying its slug, so the pin always opens that card. They come after
+    # FEATURED, best rank first: Pins.tsx keeps labels in this order and drops those that collide.
+    lm_path = OUT / "landmarks.json"
+    cards = {c["slug"]: c for c in json.loads(lm_path.read_text())} if lm_path.exists() else {}
+    pins = []
+    for title, rows, _ in readme_sections((ROOT / "research/01-landmarks/README.md").read_text()):
+        c = cards.get(landmark_slug(title.split("(")[0]))
+        if "Pin" in rows and c:
+            label, _, rank = rows["Pin"].partition(" · ")
+            pins.append((int(rank or 3), label.strip(), c, rows.get("OSM name", "").strip("`")))
+    for rank, label, c, osm in sorted(pins, key=lambda p: p[0]):
+        if label in used:
+            continue
+        places.append({"n": label, "c": c["category"], "x": c["x"], "y": c["y"], "f": 1, "s": c["slug"], **({"a": osm} if osm else {})})
+        used.update({label, osm, c["name"]})
     for name in QUARTERS:
         hits = [h for h in by_name.get(name, []) if "place" in h[0] and inside(h[1], h[2])]
         if hits:

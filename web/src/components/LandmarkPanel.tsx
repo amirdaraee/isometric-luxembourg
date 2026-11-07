@@ -8,9 +8,17 @@ export interface Photo { src: string; caption: string; author?: string; licence?
 export interface Landmark {
   slug: string; name: string; local: string; category: string; x: number; y: number; about: string;
   photos: Photo[]; model: string | null; wikipedia: string | null; cutaway?: string; hero?: string;
+  quarter?: string; facts?: string[]; visiting?: string; sources?: { title: string; url: string }[];
   interior: null | { architects?: string; dates?: string; style?: string; layout?: string; main_spaces?: string;
     materials_colours?: string; access?: string; official_site?: string; photos: Photo[] };
 }
+
+const CATEGORY: Record<string, string> = {
+  landmark: "Landmark", culture: "Culture", history: "History", bridge: "Bridge", park: "Park", square: "Square",
+  transport: "Transport", viewpoint: "Viewpoint", church: "Church", religion: "Place of worship", government: "Government",
+  fortification: "Fortification", "eu-institution": "EU institution", education: "Education", sport: "Sport",
+  modern: "Modern architecture", museum: "Museum",
+};
 
 type Tab = "story" | "inside" | "3d" | "photos";
 
@@ -52,7 +60,9 @@ export function LandmarkPanel({ lm, onClose }: { lm: Landmark; onClose: () => vo
       <div className="lm-body">
         {tab === "story" && (
           <>
+            {(lm.category || lm.quarter) && <p className="lm-meta">{[CATEGORY[lm.category] ?? lm.category, lm.quarter].filter(Boolean).join(" · ")}</p>}
             <p>{lm.about}</p>
+            {lm.facts && lm.facts.length > 0 && <ul className="lm-facts">{lm.facts.map((f) => <li key={f} dangerouslySetInnerHTML={md(f)} />)}</ul>}
             {it && (
               <dl>
                 {it.dates && (<><dt>Dates</dt><dd dangerouslySetInnerHTML={md(it.dates)} /></>)}
@@ -61,7 +71,10 @@ export function LandmarkPanel({ lm, onClose }: { lm: Landmark; onClose: () => vo
                 {it.access && (<><dt>Visiting</dt><dd dangerouslySetInnerHTML={md(it.access)} /></>)}
               </dl>
             )}
-            {lm.wikipedia && <p><a href={lm.wikipedia} target="_blank" rel="noopener">Read more on Wikipedia</a></p>}
+            {lm.visiting && <p className="muted"><b>Visiting:</b> {lm.visiting}</p>}
+            {lm.sources && lm.sources.length > 0 ? (
+              <p className="lm-sources">Sources: {lm.sources.map((s, i) => <span key={s.url}>{i > 0 && " · "}<a href={s.url} target="_blank" rel="noopener">{s.title}</a></span>)}</p>
+            ) : lm.wikipedia && <p><a href={lm.wikipedia} target="_blank" rel="noopener">Read more on Wikipedia</a></p>}
           </>
         )}
         {tab === "inside" && (

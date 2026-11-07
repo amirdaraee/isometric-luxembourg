@@ -2532,5 +2532,3357 @@
 "interior": null,
 "model": null,
 "wikipedia": "https://en.wikipedia.org/wiki/Kirchberg,_Luxembourg"
+},
+{
+"slug": "grand-duchess-charlotte-monument",
+"name": "Grand Duchess Charlotte Monument",
+"local": "Monument Grande-Duchesse Charlotte / Groussherzogin-Charlotte-Monument",
+"category": "landmark",
+"x": 7854,
+"y": 6372,
+"about": "This bronze figure on Place Clairefontaine honours Grand Duchess Charlotte, who reigned from 1919 to 1964 and whose wartime radio broadcasts from exile made her a symbol of Luxembourg's independence. The Parisian sculptor Jean Cardot designed it, and it was unveiled in 1990 in the presence of the grand-ducal family. The simplified figure stands wrapped in a long cloak, one arm raised with the palm turned upwards, on a low round plinth in the middle of the square.",
+"photos": [
+{
+"src": "/landmarks/grand-duchess-charlotte-monument/photo.webp",
+"caption": "Grand Duchess Charlotte Monument",
+"author": "Edgar El",
+"licence": "CC BY 3.0",
+"licence_url": "https://creativecommons.org/licenses/by/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxemburg_-_Platz_Clairefontaine_-_Gro%C3%9Fherzogin_Charlotte_Monument_-_Place_Clairefontaine_-_Grand_Duchess_Charlotte_Monument_-_panoramio.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://de.wikipedia.org/wiki/Denkmal_der_Gro%C3%9Fherzogin_Charlotte",
+"quarter": "Ville Haute",
+"visiting": "Open-air monument on a public square, accessible at all times.",
+"facts": [
+"Unveiled: 29 April 1990",
+"Sculptor: Jean Cardot",
+"Material: bronze",
+"Height: 2.75 m",
+"Cast by: Fonderie de Coubertin"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Denkmal_der_Gro%C3%9Fherzogin_Charlotte"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Groussherzogin-Charlotte-Monument_%28Stad_L%C3%ABtzebuerg%29"
+}
+]
+},
+{
+"slug": "ministry-of-foreign-and-european-affairs",
+"name": "Ministry of Foreign and European Affairs",
+"local": "Ministère des Affaires étrangères et européennes / Bâtiment Mansfeld",
+"category": "government",
+"x": 8748,
+"y": 6083,
+"about": "Luxembourg's foreign ministry works from the restored Mansfeld building on Rue du Palais de Justice, a manor house that served as the residence of the Spanish-era governors in the 16th century and briefly lodged Louis XIV in 1687. From the 1790s until 2008 it was the city's courthouse, which gave the street its name. After a four-year restoration the ministry moved in around 2017, and the old house keeps painted walls, fireplaces and a 19th-century wooden staircase under a steep timber-framed roof.",
+"photos": [
+{
+"src": "/landmarks/ministry-of-foreign-and-european-affairs/photo.webp",
+"caption": "Ministry of Foreign and European Affairs",
+"author": "Krzysztof Golik",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Mansfeld_building_in_Luxembourg_City_01.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/ministry-of-foreign-and-european-affairs/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Minist%C3%A8re_des_Affaires_%C3%A9trang%C3%A8res_et_europ%C3%A9ennes",
+"quarter": "Ville Haute",
+"visiting": "Government offices; the interior is not normally open to the public, apart from occasional heritage days.",
+"facts": [
+"Origins: 16th-century manor house",
+"Former uses: governor's residence; courthouse (1790s-2008)",
+"Restoration: about 2013-2017",
+"Use: Ministry of Foreign and European Affairs",
+"Address: 9 rue du Palais de Justice"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Minist%C3%A8re_des_Affaires_%C3%A9trang%C3%A8res_et_europ%C3%A9ennes"
+},
+{
+"title": "Paperjam",
+"url": "https://paperjam.lu/article/batiment-mansfeld-restaure"
+},
+{
+"title": "Official site",
+"url": "https://maee.gouvernement.lu/"
+}
+]
+},
+{
+"slug": "villa-louvigny",
+"name": "Villa Louvigny",
+"local": "Villa Louvigny",
+"category": "landmark",
+"x": 6264,
+"y": 5159,
+"about": "Villa Louvigny stands in the Municipal Park on the site of the old Fort Louvigny, named after the Count of Louvigny, who ran the fortress works in the 1670s. Built around 1920, it was rented and then bought by the Luxembourg broadcasting company, forerunner of RTL, which turned it into radio studios by 1939 and later hosted the Eurovision Song Contest here in 1962 and 1966. Broadcasting left for Kirchberg in the 1990s, and since 2000 the large, pale building among the park's trees has been the main seat of the Ministry of Health.",
+"photos": [
+{
+"src": "/landmarks/villa-louvigny/photo.webp",
+"caption": "Villa Louvigny",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_villa_Louvigny.jpg"
+},
+{
+"src": "/landmarks/villa-louvigny/photo-2.webp",
+"caption": "Villa Louvigny from the municipal park",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_parc_Louvigny_(104).jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/villa-louvigny/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Villa_Louvigny",
+"quarter": "Ville Haute",
+"visiting": "Government offices; seen from the paths of the Municipal Park.",
+"facts": [
+"Built: around 1920",
+"Converted to studios: 1936-1939",
+"Former use: headquarters of Radio Luxembourg / CLT",
+"Eurovision hosts: 1962 and 1966",
+"Use: Ministry of Health (since 2000)",
+"Heritage status: national monument"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Villa_Louvigny"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Villa_Louvigny"
+}
+]
+},
+{
+"slug": "theatre-des-capucins",
+"name": "Théâtre des Capucins",
+"local": "Théâtre des Capucins / Kapuzinertheater",
+"category": "culture",
+"x": 8252,
+"y": 5683,
+"about": "This intimate theatre in the old town occupies buildings put up in 1623 for a Capuchin friary, which survived until 1795. During the French Revolutionary period the convent became an arms depot and grain store, and from 1869 to 1964 its former church served as the city's main theatre. After renovation it reopened in 1985 with a hall of about 270 seats and is now run together with the Grand Théâtre, staging plays in Luxembourgish, French and German.",
+"photos": [
+{
+"src": "/landmarks/theatre-des-capucins/photo.webp",
+"caption": "Théâtre des Capucins",
+"author": "PlayMistyForMe",
+"licence": "CC BY 3.0",
+"licence_url": "https://creativecommons.org/licenses/by/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Th%C3%A9%C3%A2tre_des_capucins_01.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/theatre-des-capucins/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Th%C3%A9%C3%A2tre_des_Capucins",
+"quarter": "Ville Haute",
+"visiting": "Open for performances; see the Théâtres de la Ville de Luxembourg programme.",
+"facts": [
+"Built: 1623, as a Capuchin friary",
+"Theatre use: 1869-1964, reopened 1985",
+"Capacity: about 270 seats",
+"Operator: Théâtres de la Ville de Luxembourg",
+"Use: drama theatre"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Th%C3%A9%C3%A2tre_des_Capucins"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Th%C3%A9%C3%A2tre_des_Capucins"
+},
+{
+"title": "Official site",
+"url": "http://www.theatres.lu/"
+}
+]
+},
+{
+"slug": "letzebuerg-city-library",
+"name": "Lëtzebuerg City Library",
+"local": "Lëtzebuerg City Bibliothèque",
+"category": "culture",
+"x": 7959,
+"y": 5850,
+"about": "The city's public lending library sits in the Cité cultural building on Rue Génistre, a few steps from Place d'Armes, in what was once the Ciné Cité cinema. Founded in 1967 with a gift of books from the National Library, it moved several times before opening here in September 2008 after a conversion. Reading areas fill the ground floor with shelves on two levels below, and the upper floors hold a lounge bar and a conference room; the library took its present name in 2024.",
+"photos": [
+{
+"src": "/landmarks/letzebuerg-city-library/photo.webp",
+"caption": "Lëtzebuerg City Library",
+"author": "Cayambe at lb.wikipedia",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Biblioth%C3%A9ikStadL%C3%ABtzebuerg01.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/letzebuerg-city-library/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/L%C3%ABtzebuerg_City_Biblioth%C3%A8que",
+"quarter": "Ville Haute",
+"visiting": "Public library, free to enter during opening hours.",
+"facts": [
+"Founded: 1967",
+"Current premises: opened 2008, renovated 2018",
+"Former name: Cité Bibliothèque (2008-2024)",
+"Building: former Ciné Cité, Rue Génistre",
+"Use: municipal public library"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/L%C3%ABtzebuerg_City_Biblioth%C3%A8que"
+},
+{
+"title": "Official site",
+"url": "https://citybiblio.lu"
+}
+]
+},
+{
+"slug": "trinity-church",
+"name": "Trinity Church",
+"local": "Église protestante de la Trinité / Dräifaltegkeetskierch",
+"category": "church",
+"x": 7604,
+"y": 6503,
+"about": "A chapel stood on this spot on Rue de la Congrégation from the 14th century, later passing to the Dominicans and then, in 1628, to the Canonesses of Notre-Dame, who ran a girls' school. Their church was wrecked in the French siege of 1684; its replacement, begun in 1737 and consecrated in 1745, was the city's first large Baroque building. Under Prussian garrison rule it was handed to the Protestants, and it remains the country's main Protestant church.",
+"photos": [
+{
+"src": "/landmarks/trinity-church/photo.webp",
+"caption": "Trinity Church",
+"author": "Sultan Edijingo at lb.wikipedia",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Dreifaltigkeitskirche_Luxbg_2011A.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/trinity-church/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Trinity_Church%2C_Luxembourg",
+"quarter": "Ville Haute",
+"visiting": "Open to the public during services and church events.",
+"facts": [
+"Built: 1737-1745",
+"Style: Baroque",
+"Consecrated: 1745, to the Holy Trinity",
+"Protestant use: since the early 19th century (garrison church for Prussian troops)",
+"Use: Protestant church"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Trinity_Church%2C_Luxembourg"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/%C3%89glise_de_la_Trinit%C3%A9_de_Luxembourg"
+}
+]
+},
+{
+"slug": "council-of-state-building",
+"name": "Council of State Building",
+"local": "Hôtel du Conseil d'État / Staatsrot",
+"category": "government",
+"x": 8889,
+"y": 6383,
+"about": "The seat of the Council of State, Luxembourg's advisory body on legislation, stands at the corner of Rue Sigefroi and Boulevard Victor Thorn, where the Villa Werling once stood. The state bought and demolished the villa after the Second World War, and a new building by Constant Gillardin went up in its place, opening in January 1960. Its design deliberately blends modern architecture with features of the old houses of the nearby Fish Market, and a tower on the north side screens a neighbouring building.",
+"photos": [
+{
+"src": "/landmarks/council-of-state-building/photo.webp",
+"caption": "Council of State Building",
+"author": "Procrastineur49",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Conseil_d%27Etat_Luxembourg.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/council-of-state-building/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Staatsrot_%28Gebai%29",
+"quarter": "Ville Haute",
+"visiting": "Outside only.",
+"facts": [
+"Opened: 28 January 1960",
+"Architect: Constant Gillardin (under Hubert Schumacher)",
+"Use: seat of the Council of State",
+"Location: corner of Rue Sigefroi and Boulevard Victor Thorn"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Staatsrot_%28Gebai%29"
+}
+]
+},
+{
+"slug": "luxembourg-synagogue",
+"name": "Luxembourg Synagogue",
+"local": "Synagogue de Luxembourg / Synagog Stad Lëtzebuerg",
+"category": "religion",
+"x": 5582,
+"y": 5312,
+"about": "The city's main synagogue on Avenue Monterey replaced the Moorish Revival synagogue of 1894 near Rue Notre-Dame, which the Nazi occupiers desecrated in 1941 and pulled down by 1943. Work on the new building began in 1951 to plans by Victor Engels and René Mailliet, and it was consecrated in June 1953 in the presence of Grand Duke Jean. Its stained-glass windows are the work of Frantz Kinnen.",
+"photos": [
+{
+"src": "/landmarks/luxembourg-synagogue/photo.webp",
+"caption": "Luxembourg Synagogue",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_Synagogue_01a.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/luxembourg-synagogue/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Luxembourg_Synagogue",
+"quarter": "Ville Haute",
+"visiting": "A place of worship; visits by arrangement with the Jewish community.",
+"facts": [
+"Built: 1951-1953",
+"Consecrated: 28 June 1953",
+"Architects: Victor Engels and René Mailliet",
+"Windows: Frantz Kinnen",
+"Use: Orthodox Jewish synagogue"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Luxembourg_Synagogue"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Synagogue_de_Luxembourg"
+},
+{
+"title": "Official site",
+"url": "https://synagogue.lu/"
+}
+]
+},
+{
+"slug": "national-archives-of-luxembourg",
+"name": "National Archives of Luxembourg",
+"local": "Archives nationales de Luxembourg / Nationalarchiven",
+"category": "culture",
+"x": 7778,
+"y": 6892,
+"about": "From 1968 the National Archives, keepers of the country's political, religious and economic records, occupied the former barracks of the Volunteer Company on the Plateau du Saint-Esprit, a building first put up as a military hospital. In 2026 the archives moved to a new building at Belval in Esch-sur-Alzette, designed by Paul Bretz, leaving this historic block above the Pétrusse valley.",
+"photos": [
+{
+"src": "/landmarks/national-archives-of-luxembourg/photo.webp",
+"caption": "National Archives of Luxembourg (Plateau du Saint-Esprit)",
+"author": "Zinneke",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Archives_nationales_du_Luxembourg_2012-04.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/national-archives-of-luxembourg/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/L%C3%ABtzebuerger_Nationalarchiven",
+"quarter": "Ville Haute",
+"visiting": "Outside only.",
+"facts": [
+"Archives here: 1968-2026",
+"Original use: military hospital, later barracks of the Volunteer Company",
+"Institution: state cultural institute under the Ministry of Culture",
+"New home: Belval, Esch-sur-Alzette (2026)"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/L%C3%ABtzebuerger_Nationalarchiven"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Archives_nationales_de_Luxembourg"
+},
+{
+"title": "Official site",
+"url": "https://anlux.gouvernement.lu/en/service.html"
+}
+]
+},
+{
+"slug": "old-athenee",
+"name": "Old Athénée",
+"local": "Ancien Athénée / Al Nationalbibliothéik",
+"category": "education",
+"x": 7432,
+"y": 6258,
+"about": "This long block on Boulevard Roosevelt, next to the cathedral, grew out of the Jesuit college founded in 1603, whose church is now Notre-Dame Cathedral. After the Jesuits it housed the Athénée, the country's oldest secondary school, until the school moved to new premises in 1964. From 1973 the National Library used the restored building, until it moved to Kirchberg in 2019. The state now plans to convert it for court and other public offices, with public space on the ground floor.",
+"photos": [],
+"interior": null,
+"model": "/landmarks/old-athenee/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Ath%C3%A9n%C3%A9e_de_Luxembourg",
+"quarter": "Ville Haute",
+"visiting": "Outside only; the building has been closed since the library left.",
+"facts": [
+"Founded: 1603, as the Jesuit college",
+"Athénée school here: until 1964",
+"National Library: 1973-2019",
+"Planned use: commercial chambers of the District Court and other public offices"
+],
+"sources": [
+{
+"title": "Wikipedia (en): Athénée de Luxembourg",
+"url": "https://en.wikipedia.org/wiki/Ath%C3%A9n%C3%A9e_de_Luxembourg"
+},
+{
+"title": "National Library of Luxembourg",
+"url": "https://bnl.public.lu/dam-assets/publications/presentation/2023-entrez-et-dcouvrez.pdf"
+},
+{
+"title": "DP: future of the former Athénée buildings",
+"url": "https://dp.lu/what-will-be-the-future-of-the-former-buildings-of-the-athenee-de-luxembourg/?lang=en"
+}
+]
+},
+{
+"slug": "cinematheque-of-the-city-of-luxembourg",
+"name": "Cinémathèque of the City of Luxembourg",
+"local": "Cinémathèque de la Ville de Luxembourg / Stater Cinemathéik",
+"category": "culture",
+"x": 8551,
+"y": 5660,
+"about": "The city's film archive and repertory cinema screens in the former Ciné Vox on Place du Théâtre, the only cinema in the Ville Haute. Founded by Fred Junck in the mid-1970s and taken over by the city in 1977, it holds more than 13,000 films and is strong on film noir, classic Hollywood and French cinema of the 1930s and 1940s. The building is due for a four-year renovation and extension from 2026, with screenings moving next door to the Théâtre des Capucins in the meantime.",
+"photos": [
+{
+"src": "/landmarks/cinematheque-of-the-city-of-luxembourg/photo.webp",
+"caption": "Cinémathèque of the City of Luxembourg",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Cin%C3%A9math%C3%A8que_Luxembourg_01.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/cinematheque-of-the-city-of-luxembourg/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Cin%C3%A9math%C3%A8que_de_la_Ville_de_Luxembourg",
+"quarter": "Ville Haute",
+"visiting": "Public screenings most days; during the renovation from 2026 screenings move to the Théâtre des Capucins.",
+"facts": [
+"Founded: 1975 by Fred Junck; city service since 1977",
+"Collection: more than 13,000 films",
+"Building: former Ciné Vox, Place du Théâtre",
+"Use: film archive and repertory cinema"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Cin%C3%A9math%C3%A8que_de_la_Ville_de_Luxembourg"
+},
+{
+"title": "City of Luxembourg",
+"url": "https://vdl.lu/en/news/renovation-and-extension-luxembourg-city-cinematheque"
+},
+{
+"title": "Luxembourg City Tourist Office",
+"url": "https://www.luxembourg-city.com/en/place/cinema/cinematheque-film-library-luxembourg"
+}
+]
+},
+{
+"slug": "hotel-de-bourgogne",
+"name": "Hôtel de Bourgogne",
+"local": "Hôtel de Bourgogne / Maison de Bourgogne",
+"category": "government",
+"x": 7691,
+"y": 6382,
+"about": "One of the oldest surviving houses in the city, the Hôtel de Bourgogne is first recorded in 1447 on ground once used by the counts of Luxembourg for minting coins. It soon belonged to Claude de Neufchâtel, governor of the duchy in the late 15th century, and later passed through several noble families and the Congregation of Notre-Dame. From 1975 to 2019 it housed the Ministry of State, the Prime Minister's office. Its stair tower still shows brick columns and pointed arches from the shift between Gothic and Renaissance.",
+"photos": [],
+"interior": null,
+"model": "/landmarks/hotel-de-bourgogne/model.bin",
+"wikipedia": "https://fr.wikipedia.org/wiki/Minist%C3%A8re_d%27%C3%89tat_%28Luxembourg%29",
+"quarter": "Ville Haute",
+"visiting": "Government building; seen from outside only.",
+"facts": [
+"First recorded: 1447",
+"Address: 4 rue de la Congrégation",
+"Style: late Gothic to Renaissance",
+"Use: Ministry of State (Prime Minister's office), 1975-2019",
+"Earlier names: Maison du Fay, Berbourg, Metternich"
+],
+"sources": [
+{
+"title": "Luxembourg City Tourist Office",
+"url": "https://www.luxembourg-city.com/en/place/monument/hotel-de-bourgogne"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Minist%C3%A8re_d%27%C3%89tat_%28Luxembourg%29"
+}
+]
+},
+{
+"slug": "central-post-office",
+"name": "Central Post Office",
+"local": "Hôtel des Postes / Postgebai",
+"category": "landmark",
+"x": 7211,
+"y": 5674,
+"about": "The city's grand post office was raised between 1908 and 1910 to plans by state architect Sosthène Weis, who replaced his predecessor's Art Nouveau steel-and-glass scheme with a Neo-Renaissance design echoing the Grand Ducal Palace. Its sandstone façades, quarried at Ernzen, Dillingen and Bour, carry sculpture by Pierre Federspiel, Jean Mich, Claus Cito and Jean-Baptiste Wercollier. The building faces Place Hamilius and served as the main post office from 1910 until 2017, when the post moved to a new head office by the station.",
+"photos": [
+{
+"src": "/landmarks/central-post-office/photo.webp",
+"caption": "Central Post Office",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_H%C3%B4tel_des_Postes_2020_(101).jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/central-post-office/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Postgebai_Stad_L%C3%ABtzebuerg",
+"quarter": "Ville Haute",
+"facts": [
+"Built: 1908-1910",
+"Architect: Sosthène Weis",
+"Style: Neo-Renaissance",
+"Materials: sandstone façades",
+"Use: main post office, 1910-2017"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Postgebai_Stad_L%C3%ABtzebuerg"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/H%C3%B4tel_des_Postes_de_Luxembourg"
+}
+]
+},
+{
+"slug": "lambert-redoubt",
+"name": "Lambert Redoubt",
+"local": "Réduit Lambert / Fort Lambert",
+"category": "fortification",
+"x": 6064,
+"y": 5471,
+"about": "The Lambert Redoubt was the core of Fort Lambert, built in 1685 on the open plateau west of the old town when the French engineer Vauban strengthened the fortress. It was given a roof in 1835-36, but the whole fort was razed when the fortress was dismantled between 1868 and 1874. Its stone remains lay forgotten until digging for the Monterey underground car park uncovered them, and they were kept as a sunken ruin at the edge of the Municipal Park.",
+"photos": [
+{
+"src": "/landmarks/lambert-redoubt/photo.webp",
+"caption": "Lambert Redoubt",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_parc_Edmond_Klein(105).jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Lambert_Redoubt",
+"quarter": "Ville Haute",
+"visiting": "Visible from above on Avenue Monterey and from the Municipal Park.",
+"facts": [
+"Built: 1685",
+"Engineer: Vauban (attributed)",
+"Demolished: 1868-1874",
+"Rediscovered: during building of the Monterey car park (1990s)",
+"Setting: Municipal Park, Avenue Monterey"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Lambert_Redoubt"
+},
+{
+"title": "Luxembourg City Tourist Office",
+"url": "https://www.luxembourg-city.com/fr/adresse/fortification/reduit-lambert"
+}
+]
+},
+{
+"slug": "cite-judiciaire",
+"name": "Cité judiciaire",
+"local": "Cité judiciaire / Geriichtsgebaier",
+"category": "government",
+"x": 7576,
+"y": 6902,
+"about": "Luxembourg's law courts were brought together on the Plateau du Saint-Esprit, a rocky spur above the Pétrusse and Alzette valleys that once held a convent of Poor Clares and later a citadel and barracks. Planned from the early 1990s to designs by Rob Krier, the complex had its first stone laid in October 2003 and opened in October 2008. Its cluster of pale blocks with steep slate roofs, set around squares and lanes, was meant to blend with the historic townscape.",
+"photos": [
+{
+"src": "/landmarks/cite-judiciaire/photo.webp",
+"caption": "Cité judiciaire",
+"author": "Flocci Nivis",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:20190324_Plateau_du_Saint-Esprit_02.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/cite-judiciaire/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Judiciary_City",
+"quarter": "Ville Haute",
+"visiting": "Open courtyards can be crossed on foot; buildings for court business only.",
+"facts": [
+"Opened: 6 October 2008",
+"First stone: 7 October 2003",
+"Architect: Rob Krier (with Léon Krier)",
+"Size: about 43,000 m², 16 courtrooms",
+"Use: national courts and legal offices"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Judiciary_City"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Helleg-Geescht-Plateau"
+},
+{
+"title": "Luxembourg City Tourist Office",
+"url": "https://www.luxembourg-city.com/en/place/monument/justice-quarter"
+}
+]
+},
+{
+"slug": "dicks-lentz-monument",
+"name": "Dicks-Lentz Monument",
+"local": "Monument Dicks-Lentz / Dicks-Lentz-Monument",
+"category": "landmark",
+"x": 7521,
+"y": 5744,
+"about": "Unveiled on 11 October 1903, this monument honours two founders of Luxembourgish-language writing: Edmond de la Fontaine, known as Dicks, and Michel Lentz, author of the patriotic song 'De Feierwon'. Georges Traus drew up the design and Pierre Federspiel made the sculptures. A column on a round, stepped base is crowned by a bronze lion holding the Luxembourg arms, flanked by a singing blacksmith and a woman arranging flowers. It stands in Square Jan Palach beside Place d'Armes.",
+"photos": [
+{
+"src": "/landmarks/dicks-lentz-monument/photo.webp",
+"caption": "Dicks-Lentz Monument",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Dicks-Lentz-Monument_(1).jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Dicks-Lentz-Monument",
+"quarter": "Ville Haute",
+"visiting": "Public square, open at all times.",
+"facts": [
+"Inaugurated: 11 October 1903",
+"Design: Georges Traus",
+"Sculptor: Pierre Federspiel",
+"Honours: poets Dicks and Michel Lentz",
+"Setting: Square Jan Palach, by Place d'Armes"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Dicks-Lentz-Monument"
+}
+]
+},
+{
+"slug": "badanstalt-city-baths",
+"name": "Badanstalt City Baths",
+"local": "Badanstalt / Bains du Centre",
+"category": "sport",
+"x": 8329,
+"y": 5368,
+"about": "The Badanstalt is the city's historic bathhouse on Rue des Bains, built between 1873 and 1875 by the architect Pierre Funck together with his father-in-law Jean-François Eydt. Once a place where townspeople came to wash, it now runs as a small relaxation pool. Inside are a medium-sized indoor pool with whirlpools and water jets, saunas, a Turkish bath and a fitness room.",
+"photos": [
+{
+"src": "/landmarks/badanstalt-city-baths/photo.webp",
+"caption": "Badanstalt City Baths",
+"author": "Zinneke",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Centre_de_relaxation_aquatique_Badanstalt_Luxembourg_City_2012-04.JPG"
+}
+],
+"interior": null,
+"model": "/landmarks/badanstalt-city-baths/model.bin",
+"wikipedia": "https://fr.wikipedia.org/wiki/Badanstalt",
+"quarter": "Ville Haute",
+"visiting": "Public pool run by the city; open most days.",
+"facts": [
+"Built: 1873-1875",
+"Architects: Pierre Funck and Jean-François Eydt",
+"Use: public indoor pool and wellness centre",
+"Address: Rue des Bains"
+],
+"sources": [
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Badanstalt"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Badanstalt_%28Stad_L%C3%ABtzebuerg%29"
+}
+]
+},
+{
+"slug": "refuge-saint-maximin",
+"name": "Refuge Saint-Maximin",
+"local": "Refuge Saint-Maximin / Hôtel Saint-Maximin",
+"category": "government",
+"x": 7793,
+"y": 6308,
+"about": "This was the town house of the Benedictine abbey of Saint Maximin in Trier, the monastery from which Count Siegfried acquired the rock of Luxembourg in 963. Abbot Wilibrord Scheffer had the present three-storey Baroque building put up in 1751 on the corner of Rue Notre-Dame and Place Clairefontaine, beside the cathedral. After secularisation it passed through private hands, the German Confederation and, from 1867, the Luxembourg government. The Foreign Ministry left in 2017, and since 2019 it has housed the Prime Minister and the Ministry of State.",
+"photos": [
+{
+"src": "/landmarks/refuge-saint-maximin/photo.webp",
+"caption": "Refuge Saint-Maximin",
+"author": "Zinneke",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Refuge_St_Maximin_Luxembourg_City_2012-04.JPG"
+}
+],
+"interior": null,
+"model": "/landmarks/refuge-saint-maximin/model.bin",
+"wikipedia": "https://fr.wikipedia.org/wiki/Refuge_Saint-Maximin",
+"quarter": "Ville Haute",
+"visiting": "Government offices; seen from outside only.",
+"facts": [
+"Built: 1751",
+"Style: Baroque",
+"Commissioned by: Abbot Wilibrord Scheffer of Saint Maximin, Trier",
+"Address: 5 Rue Notre-Dame",
+"Use: Ministry of State and office of the Prime Minister (since 2019)",
+"Former use: Ministry of Foreign and European Affairs (until 2017)"
+],
+"sources": [
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Refuge_Saint-Maximin"
+},
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Refugium_St._Maximin"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Refuge_Sankt_Maximin"
+}
+]
+},
+{
+"slug": "central-bank-of-luxembourg",
+"name": "Central Bank of Luxembourg",
+"local": "Banque centrale du Luxembourg / Zentralbank vu Lëtzebuerg",
+"category": "government",
+"x": 8810,
+"y": 5298,
+"about": "Luxembourg's central bank was set up in 1998 as the country's member of the Eurosystem, taking over from the Institut Monétaire Luxembourgeois. Its seat at 2 Boulevard Royal, on the corner of the Côte d'Eich, was the head office of the Banque Internationale: a Neoclassical stone bank of 1901–1902 by Pierre and Paul Funck, joined to a 1962 office block. The central bank raised the 1962 wing, gave it a new façade and named it the Pierre Werner Building after the 'father of the euro'.",
+"photos": [
+{
+"src": "/landmarks/central-bank-of-luxembourg/photo.webp",
+"caption": "Central Bank of Luxembourg",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Banque_centrale_(2).jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/central-bank-of-luxembourg/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Central_Bank_of_Luxembourg",
+"quarter": "Ville Haute",
+"visiting": "Working offices; seen from outside only.",
+"facts": [
+"Founded: 1998",
+"Main building: 1901–1902, architects Pierre and Paul Funck",
+"Style: Neoclassical",
+"Annex: 1962 office block, now the Pierre Werner Building",
+"Address: 2 Boulevard Royal",
+"Use: national central bank in the Eurosystem"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Central_Bank_of_Luxembourg"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Banque_centrale_du_Luxembourg"
+},
+{
+"title": "BCL: history of the head office (René Link)",
+"url": "https://www.bcl.lu/fr/publications/autres_publications/BCL_HISTORIQUE_SIEGE.pdf"
+}
+]
+},
+{
+"slug": "national-monument-of-luxembourg-solidarity",
+"name": "National Monument of Luxembourg Solidarity",
+"local": "Monument national de la Solidarité luxembourgeoise / Nationalmonument vun der Lëtzebuerger Solidaritéit",
+"category": "landmark",
+"x": 7303,
+"y": 7000,
+"about": "Standing on the Kanounenhiwwel above the Pétrusse valley, this memorial honours the dead of the Second World War, the resistance and the nation's solidarity against the Nazi occupation. Prime Minister Pierre Werner launched the project in 1968; a jury chose the design by artist François Gillen and architect René Mailliet. Built in a few months, it was inaugurated on 10 October 1971, anniversary of the 1941 census that the population had defied. An eternal flame burns before it, and a crypt holds an unhewn stone for the victims.",
+"photos": [
+{
+"src": "/landmarks/national-monument-of-luxembourg-solidarity/photo.webp",
+"caption": "National Monument of Luxembourg Solidarity",
+"author": "Jwh",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:F%C3%A4ndelen_op_hallefmast_um_Kanounenhiwwel-101.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Nationalmonument_vun_der_L%C3%ABtzebuerger_Solidarit%C3%A9it",
+"quarter": "Ville Haute",
+"visiting": "Outside only; the flame and forecourt can be seen at any time.",
+"facts": [
+"Built: May–October 1971",
+"Inaugurated: 10 October 1971",
+"Architect: René Mailliet",
+"Artist: François Gillen",
+"Features: eternal flame, paved inner court and crypt",
+"Use: national war memorial"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Nationalmonument_vun_der_L%C3%ABtzebuerger_Solidarit%C3%A9it"
+}
+]
+},
+{
+"slug": "saint-alphonse-church",
+"name": "Saint-Alphonse Church",
+"local": "Église Saint-Alphonse / Paterekierch",
+"category": "church",
+"x": 8455,
+"y": 5602,
+"about": "Known locally as the Paterekierch, this is the church of the Redemptorist Fathers, dedicated to their founder Alphonsus Liguori and standing on the corner of Rue des Capucins and Rue Beaumont beside their monastery. Antoine Hartmann designed it in the Neo-Romanesque style; work began in 1856 and it was consecrated in 1858. Because it stood right by the fortress wall its two towers had to be kept low, while the nave rises unusually high to catch light in the crowded old town.",
+"photos": [
+{
+"src": "/landmarks/saint-alphonse-church/photo.webp",
+"caption": "Saint-Alphonse Church",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_%C3%A9glise_Saint-Alphonse_ext_a.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/saint-alphonse-church/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Kierch_Saint-Alphonse_vu_L%C3%ABtzebuerg",
+"quarter": "Ville Haute",
+"visiting": "Open to the public during services.",
+"facts": [
+"Built: 1856–1858",
+"Architect: Antoine Hartmann",
+"Style: Neo-Romanesque",
+"Use: Redemptorist church",
+"Heritage status: national monument (2018)"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Kierch_Saint-Alphonse_vu_L%C3%ABtzebuerg"
+}
+]
+},
+{
+"slug": "hammelsmarsch-fountain",
+"name": "Hämmelsmarsch Fountain",
+"local": "Hämmelsmarsch-Buer / Fontaine Hämmelsmarsch",
+"category": "landmark",
+"x": 8225,
+"y": 5903,
+"about": "This bronze fountain on the Roude Pëtz celebrates the Hämmelsmarsch, the procession of musicians and sheep that goes round town at the parish fair. Sculptor Wil Lofy made it in 1981–1982, putting himself in the group as the accordion player; four musicians, five sheep and two children stand on a six-sided plinth, with water flowing from the instruments into a hexagonal basin. It was unveiled in August 1982 at the opening of the Schueberfouer, and was restored in France in 2023–2024.",
+"photos": [
+{
+"src": "/landmarks/hammelsmarsch-fountain/photo.webp",
+"caption": "Hämmelsmarsch Fountain",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_fontaine_H%C3%A4mmelsmarsch_(101).jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://de.wikipedia.org/wiki/H%C3%A4mmelsmarsch-Brunnen",
+"quarter": "Ville Haute",
+"visiting": "In a pedestrian square; open at all times.",
+"facts": [
+"Sculptor: Wil Lofy",
+"Made: 1981–1982",
+"Unveiled: August 1982",
+"Material: bronze on a stone plinth",
+"Restored: 2023–2024"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/H%C3%A4mmelsmarsch-Brunnen"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/H%C3%A4mmelsmarsch-Buer"
+}
+]
+},
+{
+"slug": "maison-de-raville",
+"name": "Maison de Raville",
+"local": "Maison de Raville",
+"category": "landmark",
+"x": 8076,
+"y": 6203,
+"about": "Jacques de Raville, of a noble Luxembourg family, built this Renaissance-era town house at 4 Rue de la Reine around 1575. Over the centuries it belonged to the lords of Ierwerleng, Orval Abbey and a string of wealthy families before banks bought it in 1975 and 1998 and renovated it in depth. The state later bought it along with the neighbouring Maison Wiltheim, and since 2012 the complex has housed the Luxembourg regulator ILR as well as parliamentary and government offices.",
+"photos": [
+{
+"src": "/landmarks/maison-de-raville/photo.webp",
+"caption": "Maison de Raville",
+"author": "Luxfornow",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:4_rue_de_la_Reine.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/maison-de-raville/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Maison_de_Raville",
+"quarter": "Ville Haute",
+"visiting": "Offices; seen from outside only.",
+"facts": [
+"Built: around 1575",
+"Built for: Jacques de Raville",
+"Address: 4 Rue de la Reine",
+"Use: offices of the Institut luxembourgeois de régulation (since 2012)",
+"Heritage status: supplementary inventory (1975)"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Maison_de_Raville"
+}
+]
+},
+{
+"slug": "castle-bridge",
+"name": "Castle Bridge",
+"local": "Pont du Château / Schlassbréck",
+"category": "bridge",
+"x": 9116,
+"y": 6563,
+"about": "The Castle Bridge links the Fish Market in the old town with the Bock promontory, where Luxembourg's first castle stood in the 10th century. The original was built in 1735 by the Kintzelé brothers, master builders from Bridel, and was widened in 1933. In 1993 it was demolished and rebuilt to the old design but wider, using red local sandstone: one tall arch carries the road over the Corniche, with a row of five smaller arches above it and a casemate tunnel running between the two levels.",
+"photos": [
+{
+"src": "/landmarks/castle-bridge/photo.webp",
+"caption": "Castle Bridge",
+"author": "Wolfgang Staudt",
+"licence": "CC BY 2.0",
+"licence_url": "https://creativecommons.org/licenses/by/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:Pont_du_ch%C3%A2teau_Luxembourg.JPG"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://de.wikipedia.org/wiki/Schlossbr%C3%BCcke_%28Luxemburg%29",
+"quarter": "Bock",
+"visiting": "Public road bridge, open at all times; best seen from the Corniche below.",
+"facts": [
+"Original built: 1735, by the Kintzelé brothers",
+"Rebuilt: 1993, as a widened replica",
+"Material: red Luxembourg sandstone",
+"Width: 8.6 m",
+"Carries: national road N1 over Rue Sosthène-Weis"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Schlossbr%C3%BCcke_%28Luxemburg%29"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Schlassbr%C3%A9ck_%28Stad_L%C3%ABtzebuerg%29"
+}
+]
+},
+{
+"slug": "hollow-tooth",
+"name": "Hollow Tooth",
+"local": "Dent creuse / Huelen Zant",
+"category": "fortification",
+"x": 9604,
+"y": 6685,
+"about": "The jagged stump of masonry on the Bock rock is often taken for a relic of Count Siegfried's castle, but it is in fact the left-hand tower of the fortress's second gate. When the citadel on the Bock was dismantled in 1874, state architect Charles Arendt had this tower deliberately reshaped as a mock ruin and left standing, as the romantic taste of the day liked.",
+"photos": [
+{
+"src": "/landmarks/hollow-tooth/photo.webp",
+"caption": "Hollow Tooth",
+"author": "Pudelek (Marcin Szala)",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Huelen_Zant_tower,_Luxembourg_City.JPG"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Huelen_Zant",
+"quarter": "Bock",
+"visiting": "Seen from the Montée de Clausen and the Bock area; open-air site.",
+"facts": [
+"Origin: tower of the second gate of the Bock fortifications",
+"Made a ruin: 1874, by Charles Arendt",
+"Type: deliberate mock ruin",
+"Setting: Bock promontory above the Alzette"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Huelen_Zant"
+}
+]
+},
+{
+"slug": "rham-plateau",
+"name": "Rham Plateau",
+"local": "Plateau du Rham / Rumm",
+"category": "fortification",
+"x": 8946,
+"y": 7132,
+"about": "The Rham Plateau is a height ringed on three sides by a loop of the Alzette, settled early and drawn into the fortress when the Wenceslas Wall was built around the turn of the 15th century. Its old name, Dinsel, probably comes from the Latin for island. In the late 17th century Vauban had five long military barracks built here; since the late 19th century they have housed social institutions, and today an old people's home. The front of the plateau looks across to the Saint-Esprit citadel and the Corniche.",
+"photos": [
+{
+"src": "/landmarks/rham-plateau/photo.webp",
+"caption": "Rham Plateau",
+"author": "Paasikivi",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City,_Grund_and_Plateau_du_Rahm_in_2010.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://de.wikipedia.org/wiki/Rham-Plateau",
+"quarter": "Grund",
+"visiting": "Outside only; views from the surrounding streets and the Corniche opposite.",
+"facts": [
+"Fortified: from the late 14th / 15th century",
+"Barracks: five, built under Vauban, late 17th century",
+"Use: retirement home",
+"Setting: in a loop of the Alzette above Grund"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Rham-Plateau"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Rumm-Befestegungen"
+}
+]
+},
+{
+"slug": "saint-quirin-chapel",
+"name": "Saint-Quirin Chapel",
+"local": "Chapelle Saint-Quirin / Gräinskapell",
+"category": "church",
+"x": 7080,
+"y": 7449,
+"about": "Tucked against the rock face of the Pétrusse valley, this small chapel grew up beside a spring long believed to heal, and the site is thought to have been a place of worship since late Roman times. It was dedicated to the martyr Quirinus of Neuss in the 11th century. Part of the chapel is cut into the cliff itself, fronted by a Gothic façade of 1355, while the roof and little bell turret were added in the 19th century.",
+"photos": [
+{
+"src": "/landmarks/saint-quirin-chapel/photo.webp",
+"caption": "Saint-Quirin Chapel",
+"author": "PlayMistyForMe at Luxembourgish Wikipedia",
+"licence": "CC BY-SA 1.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/1.0",
+"source": "https://commons.wikimedia.org/wiki/File:Greinskapell_01.jpg"
+},
+{
+"src": "/landmarks/saint-quirin-chapel/photo-2.webp",
+"caption": "Saint-Quirin Chapel in the Pétrusse valley, seen from above",
+"author": "tomcio4220",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Die_kleine_Kirche_in_Fels_-_panoramio.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/saint-quirin-chapel/model.bin",
+"wikipedia": "https://fr.wikipedia.org/wiki/Chapelle_Saint-Quirin_%28Luxembourg%29",
+"quarter": "Pétrusse valley",
+"visiting": "The outside can be seen from the footpaths of the Pétrusse valley.",
+"facts": [
+"Façade: 1355, Gothic",
+"Dedicated: 11th century, to Quirinus of Neuss",
+"Roof and bell turret: 19th century",
+"Setting: partly carved into the rock beside a spring"
+],
+"sources": [
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Chapelle_Saint-Quirin_%28Luxembourg%29"
+},
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Quirinuskapelle_%28Luxemburg%29"
+}
+]
+},
+{
+"slug": "place-de-paris",
+"name": "Place de Paris",
+"local": "Place de Paris / Paräisser Plaz",
+"category": "square",
+"x": 5474,
+"y": 7243,
+"about": "Place de Paris was laid out by the state after the Adolphe Bridge was built, on ground once taken up by the fortress, and got its name in 1907 from the Hôtel de Paris that went up beside it in 1909-1912. Until 1920 it marked the boundary with the commune of Hollerich, where a small toll pavilion collected duty on goods entering the city. Avenue de la Liberté runs through it, and when the tram reached the station the square was remade as an open plaza with 18 new plane trees, reopening in 2021.",
+"photos": [
+{
+"src": "/landmarks/place-de-paris/photo.webp",
+"caption": "Place de Paris and Avenue de la Liberté on an early 20th-century postcard",
+"author": "Scanné par Claude_villetaneuse",
+"licence": "Public domain",
+"licence_url": "",
+"source": "https://commons.wikimedia.org/wiki/File:Maroldt_-_LUXEMBOURG_-_Place_de_Paris_et_Avenue_de_la_Libertt%C3%A9.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://fr.wikipedia.org/wiki/Place_de_Paris_%28Luxembourg%29",
+"quarter": "Gare",
+"visiting": "Public square, open at all times; served by the tram.",
+"facts": [
+"Named: 5 December 1907",
+"Former name: Place de l'Éventail",
+"Redesigned: opened 26 June 2021",
+"Landmark building: Hôtel de Paris (1909-1912)",
+"Use: public square and tram stop"
+],
+"sources": [
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Place_de_Paris_%28Luxembourg%29"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Place_de_Paris_%28Stad_L%C3%ABtzebuerg%29"
+}
+]
+},
+{
+"slug": "villa-pauly",
+"name": "Villa Pauly",
+"local": "Villa Pauly",
+"category": "landmark",
+"x": 5152,
+"y": 6276,
+"about": "Villa Pauly on Boulevard de la Pétrusse was built in 1923 for the surgeon Norbert Pauly to designs by Mathias Martin, in an eclectic style whose corner towers recall late medieval and Renaissance castles. From 1940 to 1944 it was the Gestapo's headquarters in Luxembourg, and thousands of people were questioned here, many tortured in its cellars. Since 2001 it has housed the documentation and research centre on the Resistance, and it was listed as a national monument in 1989.",
+"photos": [
+{
+"src": "/landmarks/villa-pauly/photo.webp",
+"caption": "Villa Pauly",
+"author": "Self-photographed by Jwh",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:D%27Villa_Pauly_vun_hannen-101.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/villa-pauly/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Villa_Pauly",
+"quarter": "Gare",
+"facts": [
+"Built: 1923",
+"Architect: Mathias Martin",
+"Style: eclectic, castle-like corner towers",
+"Wartime use: Gestapo headquarters, 1940-1944",
+"Use: Resistance documentation and research centre",
+"Heritage status: national monument (1989)"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Villa_Pauly"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Villa_Pauly"
+}
+]
+},
+{
+"slug": "arbed-building",
+"name": "ARBED Building",
+"local": "Bâtiment ARBED / Arbedsgebai (19 Liberté)",
+"category": "landmark",
+"x": 5995,
+"y": 6797,
+"about": "The former head office of the ARBED steel company, later ArcelorMittal, faces the rose garden on Avenue de la Liberté. Designed by the French architect René Théry and completed around 1922, it borrows from 17th- and 18th-century French châteaux: a steel and concrete frame behind sandstone façades, with a sculpture by René Rozet of Victory crowning Mercury over the entrance. Since 2014 it has belonged to Spuerkeess, which reopened it in 2016 as '19 Liberté'.",
+"photos": [
+{
+"src": "/landmarks/arbed-building/photo.webp",
+"caption": "ARBED Building",
+"author": "Diego Delso",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Banco_Spuerkeess,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-17,_DD_78.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/arbed-building/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/ARBED_building",
+"quarter": "Gare",
+"visiting": "Outside only.",
+"facts": [
+"Completed: c. 1922",
+"Architect: René Théry (works led by Sosthène Weis)",
+"Style: inspired by French châteaux",
+"Materials: steel and reinforced concrete, sandstone façade",
+"Use: offices and event rooms of Spuerkeess ('19 Liberté', since 2016)"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/ARBED_building"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Arbedsgebai"
+}
+]
+},
+{
+"slug": "publications-office-of-the-european-union",
+"name": "Publications Office of the European Union",
+"local": "Office des publications de l'Union européenne",
+"category": "eu-institution",
+"x": 4256,
+"y": 7820,
+"about": "Set up in 1969, the Publications Office is the EU's official publisher, issuing the Official Journal daily in all the Union's languages and running services such as EUR-Lex and the EU's open data portal. Its headquarters is now the Mercier-POST building near the station, the former offices of the Luxembourg post, refitted for the European Commission and inaugurated in March 2024. The building offers about 15,000 m² of open, shared workspace, which it also shares with part of DG CONNECT.",
+"photos": [
+{
+"src": "/landmarks/publications-office-of-the-european-union/photo.webp",
+"caption": "Publications Office of the European Union",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Office_des_publications_de_l%27Union_-europ%C3%A9enne_08-2023.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/publications-office-of-the-european-union/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Publications_Office_of_the_European_Union",
+"quarter": "Gare",
+"visiting": "Office building; not open to visitors.",
+"facts": [
+"Founded: 16 January 1969",
+"Building: Mercier-POST, inaugurated 2024",
+"Former use: offices of POST Luxembourg",
+"Size: about 15,000 m², 670 workstations",
+"Use: EU publishing, Official Journal, EUR-Lex"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Publications_Office_of_the_European_Union"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Office_des_publications_de_l%27Union_europ%C3%A9enne"
+},
+{
+"title": "Official site",
+"url": "https://op.europa.eu/"
+},
+{
+"title": "Chronicle.lu",
+"url": "https://chronicle.lu/category/at-home/49091-commissioner-hahn-hrh-grand-duke-henri-inaugurate-new-commission-building-in-luxembourg"
+}
+]
+},
+{
+"slug": "sacred-heart-church",
+"name": "Sacred Heart Church",
+"local": "Église du Sacré-Cœur / Garer Kierch",
+"category": "church",
+"x": 5942,
+"y": 7149,
+"about": "The parish church of the station quarter stands on the Plateau Bourbon, where Rue Dicks meets the Boulevard de la Pétrusse. It was designed by city architect Nicolas Petit, with the future bishop Léon Lommel involved in its planning; the foundation stone was laid in 1930, it was blessed in 1932 and solemnly consecrated in 1936. The interior is largely the work of the German artist Otto Linnemann, whose frescoes were restored in 2008–2010.",
+"photos": [
+{
+"src": "/landmarks/sacred-heart-church/photo.webp",
+"caption": "Sacred Heart Church",
+"author": "Szeder László",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:L-Luxembourg29.JPG"
+}
+],
+"interior": null,
+"model": "/landmarks/sacred-heart-church/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Gare",
+"quarter": "Gare",
+"visiting": "Open to the public during services.",
+"facts": [
+"Built: 1930–1932",
+"Consecrated: 30 April 1936",
+"Architect: Nicolas Petit",
+"Interior and frescoes: Otto Linnemann",
+"Use: parish church of the Gare quarter"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Gare"
+}
+]
+},
+{
+"slug": "rotondes",
+"name": "Rotondes",
+"local": "Rotondes / Rotonden",
+"category": "culture",
+"x": 6016,
+"y": 8175,
+"about": "Two round railway engine sheds, each 52 metres across and 15 metres high, built in 1877 beside the tracks in Bonnevoie to house and service steam locomotives, 18 to a shed. They lost their railway role after 1907 and later served as a warehouse and a bus garage. Listed as national monuments in 1991, they were used for the 2007 Capital of Culture year and, after renovation from 2013, became a cultural centre with a theatre, exhibitions, concerts and a bistro.",
+"photos": [
+{
+"src": "/landmarks/rotondes/photo.webp",
+"caption": "Rotondes",
+"author": "Robby at lb.wikipedia",
+"licence": "CC BY-SA 3.0",
+"licence_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Rotonde_sud.jpg"
+},
+{
+"src": "/landmarks/rotondes/photo-2.webp",
+"caption": "Rotunda 1 seen from the street",
+"author": "Flocci Nivis",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:20190324_Rotondes_Explorations_culturelles.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Rotondes_%28Luxembourg%29",
+"quarter": "Bonnevoie",
+"visiting": "Open for performances, concerts and events; bistro open to the public.",
+"facts": [
+"Built: 1877",
+"Size: 52 m diameter, 15 m high each",
+"Original use: steam locomotive roundhouses (18 engines each)",
+"Heritage status: national monument (1991)",
+"Use: cultural centre"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Rotondes_%28Luxembourg%29"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Rotonden"
+},
+{
+"title": "Official site",
+"url": "http://rotondes.lu/"
+}
+]
+},
+{
+"slug": "banannefabrik",
+"name": "Banannefabrik",
+"local": "Banannefabrik / Centre de production et de création artistique",
+"category": "culture",
+"x": 4847,
+"y": 8620,
+"about": "This arts centre in Rue du Puits takes its nickname, the 'banana factory', from its past as a fruit warehouse. The fruit and vegetable wholesaler Coprilux had it built in 1960 to plans by Robert-F. Heintz-Sturm, and it later served La Provençale until 1979. After years of decline, a group from the cultural scene saw its potential in the early 1990s, and it was turned into a centre for artistic production, now run by the Banannefabrik non-profit association.",
+"photos": [
+{
+"src": "/landmarks/banannefabrik/photo.webp",
+"caption": "Banannefabrik",
+"author": "NorbertData",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:BANANNEFABRIK.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/banannefabrik/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Banannefabrik",
+"quarter": "Bonnevoie",
+"visiting": "Open to the public for performances and events.",
+"facts": [
+"Built: 1960",
+"Architect: Robert-F. Heintz-Sturm",
+"Former use: fruit and vegetable warehouse",
+"Use: artistic production and creation centre (CPCA)",
+"Address: Rue du Puits, Bonnevoie"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Banannefabrik"
+},
+{
+"title": "Official site",
+"url": "https://www.banannefabrik.lu/"
+}
+]
+},
+{
+"slug": "den-atelier",
+"name": "Den Atelier",
+"local": "Den Atelier",
+"category": "culture",
+"x": 3079,
+"y": 7561,
+"about": "Den Atelier is Luxembourg's best-known club venue for rock, indie and pop concerts, holding about 1,200 people. Its name means 'the workshop' in Luxembourgish, because it occupies a former Renault lorry garage on Rue de Hollerich. Its founders wanted a stage like Brussels's Ancienne Belgique or Amsterdam's Paradiso, and since opening in October 1995 it has hosted acts from Muse and Placebo to Kraftwerk and Arctic Monkeys.",
+"photos": [
+{
+"src": "/landmarks/den-atelier/photo.webp",
+"caption": "A concert inside Den Atelier",
+"author": "Schnékert",
+"licence": "CC BY-SA 3.0",
+"licence_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Smashing_Pumpkins_den_Atelier,Luxembourg.JPG"
+}
+],
+"interior": null,
+"model": "/landmarks/den-atelier/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Den_Atelier",
+"quarter": "Hollerich",
+"visiting": "Open for concerts; see the venue's programme.",
+"facts": [
+"Opened: 23 October 1995",
+"Capacity: about 1,200",
+"Former use: Renault lorry garage",
+"Use: concert venue",
+"Address: Rue de Hollerich"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Den_Atelier"
+}
+]
+},
+{
+"slug": "stade-achille-hammerel",
+"name": "Stade Achille Hammerel",
+"local": "Stade Achille-Hammerel",
+"category": "sport",
+"x": 7873,
+"y": 8028,
+"about": "This football ground in the Verlorenkost area of Bonnevoie is the home of Racing FC Union Luxembourg and, until 2005, was the home of Union Luxembourg. It holds just under 6,000 spectators. Beyond football it has a place in local music history: on 6 June 1971 Deep Purple headlined Luxembourg's first rock festival here, in front of about 4,000 people.",
+"photos": [
+{
+"src": "/landmarks/stade-achille-hammerel/photo.webp",
+"caption": "Stade Achille Hammerel",
+"author": "Bdx",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Stade_Achille_Hammerel,_Luxembourg,_2014.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/stade-achille-hammerel/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Stade_Achille_Hammerel",
+"quarter": "Verlorenkost",
+"visiting": "Open for matches and events.",
+"facts": [
+"Capacity: 5,814",
+"Home club: Racing FC Union Luxembourg",
+"Use: football stadium",
+"Notable event: Deep Purple concert, 6 June 1971"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Stade_Achille_Hammerel"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Stade_Achille-Hammerel"
+}
+]
+},
+{
+"slug": "grand-theatre-de-luxembourg",
+"name": "Grand Théâtre de Luxembourg",
+"local": "Grand Théâtre de la Ville de Luxembourg",
+"category": "culture",
+"x": 9414,
+"y": 4607,
+"about": "The Grand Théâtre is the city's main stage for drama, opera and dance. It was planned to replace the cramped Théâtre des Capucins: the Parisian architect Alain Bourbonnais won a 1958 competition, work began in 1959 and the building opened as the Municipal Theatre on 15 April 1964. Its long, low modernist front faces the Rond-Point Schuman, and a 2002-2003 refit by the Berlin firm Gerling + Arendt modernised the stage machinery, acoustics and lighting.",
+"photos": [
+{
+"src": "/landmarks/grand-theatre-de-luxembourg/photo.webp",
+"caption": "Grand Théâtre de Luxembourg",
+"author": "Hvpuser",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Hvplux.jpg"
+},
+{
+"src": "/landmarks/grand-theatre-de-luxembourg/photo-2.webp",
+"caption": "Grand Théâtre de Luxembourg, another view",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_fontaine_parvis_Grand_Th%C3%A9%C3%A2tre_(blurred).jpg"
+}
+],
+"interior": {
+"architect": "Alain Bourbonnais (Paris), winner of the 1958 international competition.",
+"dates": "Built 1959–64, opened 15 April 1964; renovated 2001–03 (stage machinery, acoustics, lighting).",
+"style": "1960s modernism: long glazed foyer front, façade panels with irregular hexagonal openings, mosaic and stone cladding.",
+"main_spaces": "**Grande salle** (943 seats, proscenium stage, opera and dance); **Studio** (adaptable black box, about 100–400 seats); long **foyer** with large hanging chandeliers and a wall pierced by irregular little windows.",
+"access": "Performances; the foyer during events.",
+"official_site": "https://www.theatres.lu/",
+"wikipedia": "[en: Grand Théâtre de Luxembourg](https://en.wikipedia.org/wiki/Grand_Th%C3%A9%C3%A2tre_de_Luxembourg)",
+"photos": []
+},
+"model": "/landmarks/grand-theatre-de-luxembourg/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Grand_Th%C3%A9%C3%A2tre_de_Luxembourg",
+"quarter": "Limpertsberg",
+"visiting": "Open for performances; see the Théâtres de la Ville de Luxembourg programme.",
+"facts": [
+"Opened: 15 April 1964",
+"Architect: Alain Bourbonnais",
+"Built: 1959-1964",
+"Renovated: 2002-2003, Gerling + Arendt",
+"Use: theatre, opera and dance venue"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Grand_Th%C3%A9%C3%A2tre_de_Luxembourg"
+},
+{
+"title": "Official site",
+"url": "http://www.theatres.lu"
+}
+]
+},
+{
+"slug": "lycee-robert-schuman",
+"name": "Lycée Robert-Schuman",
+"local": "Lycée Robert-Schuman",
+"category": "education",
+"x": 9614,
+"y": 4324,
+"about": "This state secondary school began in 1909 as a private girls' lycée set up by an association founded by Aline Mayrisch-de Saint-Hubert, and became a public school in 1911. Its own building by the Glacis, designed by Nicolas Petit, opened in 1926 and still forms the old core. Co-education arrived in 1972, when the school took the name of Robert Schuman, and it was enlarged by Laurent Schmit (completed 1987) and again by Françoise Folmer between 1999 and 2007.",
+"photos": [
+{
+"src": "/landmarks/lycee-robert-schuman/photo.webp",
+"caption": "Lycée Robert-Schuman",
+"author": "Cornischong at Luxembourgish Wikipedia",
+"licence": "CC BY-SA 1.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/1.0",
+"source": "https://commons.wikimedia.org/wiki/File:L-Rob-Schuman--w.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/lycee-robert-schuman/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Lyc%C3%A9e_Robert-Schuman",
+"quarter": "Limpertsberg",
+"visiting": "School premises, not open to visitors.",
+"facts": [
+"Founded: 1909 (public school from 1911)",
+"Original building: 1926, Nicolas Petit",
+"Extensions: 1979-1987 (Laurent Schmit), 1999-2007 (Françoise Folmer)",
+"Renamed: 1972",
+"Use: public secondary school"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Lyc%C3%A9e_Robert-Schuman"
+},
+{
+"title": "Official site",
+"url": "http://www.lrsl.lu/"
+}
+]
+},
+{
+"slug": "cine-utopia",
+"name": "Ciné Utopia",
+"local": "Kino Utopia",
+"category": "culture",
+"x": 7941,
+"y": 4045,
+"about": "Members of the Ciné-Club 80 opened Utopia on 15 December 1983 in a former garage on Avenue de la Faïencerie, with a single screen of 145 seats. It proved so popular that a second room followed in 1985, and by 1989 it had grown to five screens. Long known for arthouse and international films, the cinema has belonged to the Kinepolis group since 2015.",
+"photos": [
+{
+"src": "/landmarks/cine-utopia/photo.webp",
+"caption": "Ciné Utopia",
+"author": "Otets at lb.wikipedia",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Kino_Utopia.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/cine-utopia/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Utopia_%28Kino%29",
+"quarter": "Limpertsberg",
+"visiting": "Cinema open for screenings.",
+"facts": [
+"Opened: 15 December 1983",
+"Founded by: members of Ciné-Club 80",
+"Building: converted former garage",
+"Screens: five (since 1989)",
+"Owner: Kinepolis group (since 2015)"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Utopia_%28Kino%29"
+}
+]
+},
+{
+"slug": "mausoleum-of-the-french-soldiers",
+"name": "Mausoleum of the French Soldiers",
+"local": "Mausolée des soldats français",
+"category": "landmark",
+"x": 6939,
+"y": 3890,
+"about": "This war memorial in the Notre-Dame Cemetery honours French soldiers who died in Luxembourg during the First World War, along with unknown Luxembourgers of the Foreign Legion who fell in the Battle of the Marne. It was designed by the architects Léon Muller and Joseph Nouveau, with sculpture by Ernest Grosber and bronze ornament by Michel Haagen, and was inaugurated on 16 November 1924. It is built of Bohemian granite and sandstone from the Ernzen quarries.",
+"photos": [
+{
+"src": "/landmarks/mausoleum-of-the-french-soldiers/photo.webp",
+"caption": "Mausoleum of the French Soldiers",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Mausol%C3%A9e_des_soldats_fran%C3%A7ais_de_la_Grande_Guerre_(1).JPG"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Mausoleum_vun_de_frans%C3%A9ischen_Zaldoten_zu_L%C3%ABtzebuerg",
+"quarter": "Limpertsberg",
+"visiting": "Inside the cemetery, open during cemetery hours.",
+"facts": [
+"Inaugurated: 16 November 1924",
+"Architects: Léon Muller and Joseph Nouveau",
+"Sculptor: Ernest Grosber",
+"Materials: granite and Ernzen sandstone",
+"Setting: Notre-Dame Cemetery"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Mausoleum_vun_de_frans%C3%A9ischen_Zaldoten_zu_L%C3%ABtzebuerg"
+}
+]
+},
+{
+"slug": "robert-schuman-monument",
+"name": "Robert Schuman Monument",
+"local": "Monument Robert Schuman / Robert-Schuman-Monument",
+"category": "landmark",
+"x": 9467,
+"y": 4835,
+"about": "Standing on Boulevard Robert Schuman at the city end of the Red Bridge, this memorial honours the French statesman whose declaration of 9 May 1950 launched European integration. Designed by architect Robert Lentz, it was unveiled together with the bridge on 24 October 1966. Three tall steel girders rise from a concrete base carved with quotations from the declaration, their tops cut into six points for the six founding members of the Community.",
+"photos": [
+{
+"src": "/landmarks/robert-schuman-monument/photo.webp",
+"caption": "Robert Schuman Monument",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Monument_Robert-Schuman_(2).JPG"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://de.wikipedia.org/wiki/Robert-Schuman-Monument",
+"quarter": "Limpertsberg",
+"visiting": "Open-air monument, accessible at all times.",
+"facts": [
+"Unveiled: 24 October 1966",
+"Architect: Robert Lentz",
+"Materials: concrete base, three steel girders",
+"Symbolism: six points for the six founding states"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Robert-Schuman-Monument"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Robert-Schuman_Monument"
+}
+]
+},
+{
+"slug": "lycee-des-arts-et-metiers",
+"name": "Lycée des Arts et Métiers",
+"local": "Lycée des Arts et Métiers / Handwierkerschoul",
+"category": "education",
+"x": 10318,
+"y": 3694,
+"about": "Created by law in 1896 at the urging of Paul Eyschen to give young craftsmen a broader education, the former crafts school is the country's oldest technical secondary school. In 1910 it took over the Jesuits' Bellevue house in Limpertsberg, and state architect Sosthène Weis added workshops by 1911. Wings followed in 1948-53 and the school was enlarged again in 1968-71. It took its present name in 2015.",
+"photos": [
+{
+"src": "/landmarks/lycee-des-arts-et-metiers/photo.webp",
+"caption": "Lycée des Arts et Métiers",
+"author": "Fliedermaus at Luxembourgish Wikipedia",
+"licence": "CC BY-SA 1.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/1.0",
+"source": "https://commons.wikimedia.org/wiki/File:LTAM_2008.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://de.wikipedia.org/wiki/Lyc%C3%A9e_des_Arts_et_M%C3%A9tiers",
+"quarter": "Limpertsberg",
+"visiting": "Outside only; a working school.",
+"facts": [
+"Founded: 14 March 1896",
+"Architect: Sosthène Weis (workshops, 1909-1911)",
+"Extensions: 1948-1953, 1968-1971",
+"Heritage status: national monument",
+"Use: technical and arts secondary school"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Lyc%C3%A9e_des_Arts_et_M%C3%A9tiers"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Lyc%C3%A9e_des_arts_et_m%C3%A9tiers"
+},
+{
+"title": "Official site",
+"url": "https://www.ltam.lu/"
+}
+]
+},
+{
+"slug": "russian-orthodox-church-of-saints-peter-and-paul",
+"name": "Russian Orthodox Church of Saints Peter and Paul",
+"local": "Église des Saints-Apôtres-Pierre-et-Paul / Russesch-orthodox Kierch",
+"category": "church",
+"x": 6588,
+"y": 4367,
+"about": "Luxembourg's first Russian Orthodox church serves a parish founded in 1928 by Russian émigrés, many of them former soldiers of General Kornilov's army who came to work in quarries and factories. After the city granted a plot on Rue Jean-Pierre Probst in 1975, Archbishop Anthony laid the first stone in 1979. The church was built largely by the parishioners themselves, led by the priest Sergey Puch, and consecrated in 1982.",
+"photos": [
+{
+"src": "/landmarks/russian-orthodox-church-of-saints-peter-and-paul/photo.webp",
+"caption": "Russian Orthodox Church of Saints Peter and Paul",
+"author": "Otets at Luxembourgish Wikipedia",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Russian_Orthodox_Church_02.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/russian-orthodox-church-of-saints-peter-and-paul/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/St._Peter_and_Paul_Church%2C_Luxembourg",
+"quarter": "Limpertsberg",
+"visiting": "Open to the public during services.",
+"facts": [
+"Built: 1979-1982",
+"Consecrated: 12 July 1982",
+"Parish founded: 1928",
+"Use: Russian Orthodox church (Russian Orthodox Church Outside Russia)"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/St._Peter_and_Paul_Church%2C_Luxembourg"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/%C3%89glise_des_Saints-Ap%C3%B4tres-Pierre-et-Paul_de_Luxembourg"
+}
+]
+},
+{
+"slug": "glacis",
+"name": "Glacis",
+"local": "Champ du Glacis / Glacis",
+"category": "square",
+"x": 8374,
+"y": 4373,
+"about": "The Glacis is the broad open ground between Limpertsberg and the old town, named after the cleared slope that lay in front of the fortress walls so that attackers had nowhere to hide. After the fortress was dismantled it became a public square, and today it is the city's largest open-air car park, with room for some 1,200 cars. Every late summer it fills with the rides and stalls of the Schueberfouer, the funfair founded in 1340 by John the Blind and held here since 1610.",
+"photos": [
+{
+"src": "/landmarks/glacis/photo.webp",
+"caption": "The Glacis in 1916, during a wartime potato distribution (historic photograph)",
+"author": "Unknown authorUnknown author",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Kartoffel_Ausgabestelle,_Luxemburg_Glacis,_Kriegsjahr_1916-101.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Glacis_%28Lampertsbierg%29",
+"quarter": "Limpertsberg",
+"visiting": "Open space at all times; the Schueberfouer runs from late August into September.",
+"facts": [
+"Origin: fortress glacis (open firing ground)",
+"Use: car park, about 1,200 spaces",
+"Event: Schueberfouer funfair, held here since 1610",
+"Fair founded: 1340 by John the Blind"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Glacis_%28Lampertsbierg%29"
+},
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Schueberfouer"
+}
+]
+},
+{
+"slug": "lycee-technique-du-centre",
+"name": "Lycée technique du Centre",
+"local": "Lycée technique du Centre (LTC)",
+"category": "education",
+"x": 9252,
+"y": 2312,
+"about": "The Lycée technique du Centre is a public secondary school focused on technical trades. It grew out of vocational classes held after the Second World War in an annex of the Dominican convent on Limpertsberg; after the 1953 law on vocational training, the city's trade school replaced that annex with a new building. It took its present name in 1979 and now also has an annex on Kirchberg.",
+"photos": [
+{
+"src": "/landmarks/lycee-technique-du-centre/photo.webp",
+"caption": "Lycée technique du Centre",
+"author": "JimHawk",
+"licence": "CC BY-SA 3.0",
+"licence_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Ltc1lampertsbierg.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/lycee-technique-du-centre/model.bin",
+"wikipedia": "https://fr.wikipedia.org/wiki/Lyc%C3%A9e_technique_du_Centre",
+"quarter": "Limpertsberg",
+"visiting": "School; not open to visitors.",
+"facts": [
+"Founded: 1953 (vocational centre)",
+"Present name: since 1979",
+"Type: public technical secondary school",
+"Sites: main building on Limpertsberg, annex on Kirchberg",
+"UNESCO Associated School: since 2017"
+],
+"sources": [
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Lyc%C3%A9e_technique_du_Centre"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Lyc%C3%A9e_technique_du_Centre"
+}
+]
+},
+{
+"slug": "notre-dame-cemetery",
+"name": "Notre-Dame Cemetery",
+"local": "Cimetière Notre-Dame / Nikloskierfecht",
+"category": "park",
+"x": 7039,
+"y": 3883,
+"about": "When the old St Nicholas church in the town centre was pulled down, its parish graveyard was moved in 1779 outside the walls to the Glacis, which is why locals still call it the Nikloskierfecht. It grew from a small burial ground by the Notre-Dame chapel, used since 1691 for people executed for non-criminal offences such as desertion. Today it is the largest of the city's fourteen cemeteries, a green, walled space of tree-lined paths and old family tombs.",
+"photos": [
+{
+"src": "/landmarks/notre-dame-cemetery/photo.webp",
+"caption": "Notre-Dame Cemetery",
+"author": "Jwh",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Nikloskierfecht,_Schwindt-Goerens-101.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Notre-Dame_Cemetery_%28Luxembourg%29",
+"quarter": "Limpertsberg",
+"visiting": "Open to the public during cemetery hours.",
+"facts": [
+"Established: 1779-1780",
+"Origin: parish graveyard of St Nicholas",
+"Earlier burial ground: from 1691",
+"Largest of the city's 14 cemeteries"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Notre-Dame_Cemetery_%28Luxembourg%29"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Cimeti%C3%A8re_Notre-Dame_de_Luxembourg"
+}
+]
+},
+{
+"slug": "glacis-chapel",
+"name": "Glacis Chapel",
+"local": "Chapelle du Glacis / Glaciskapell",
+"category": "church",
+"x": 7336,
+"y": 4509,
+"about": "The Glacis Chapel stands on the roundabout where Boulevard Joseph II meets Boulevard de la Foire, about 100 metres from the first Marian chapel built here in 1626 around a statue set up by the Jesuit Jacques Brocquart; that chapel was destroyed by French revolutionary troops in 1796. The present building was put up at the wish of Bishop Nicolas Adames to plans by state architect Charles Arendt and consecrated in 1885. Dedicated to the Nativity of the Virgin, it was listed as a national monument in 2020.",
+"photos": [
+{
+"src": "/landmarks/glacis-chapel/photo.webp",
+"caption": "Glacis Chapel",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_Glacis_Chapel_2011.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/glacis-chapel/model.bin",
+"wikipedia": "https://de.wikipedia.org/wiki/Kapelle_Glacis_%28Luxemburg%29",
+"quarter": "Limpertsberg",
+"visiting": "Open to the public during services and church events.",
+"facts": [
+"Consecrated: 1885",
+"Architect: Charles Arendt",
+"Dedication: Nativity of the Virgin Mary",
+"Heritage status: national monument (2020)",
+"First chapel nearby: 1626, destroyed 1796"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Kapelle_Glacis_%28Luxemburg%29"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Glaciskapell"
+}
+]
+},
+{
+"slug": "saint-joseph-church-limpertsberg",
+"name": "Saint-Joseph Church, Limpertsberg",
+"local": "Église Saint-Joseph / Jousefskierch Lampertsbierg",
+"category": "church",
+"x": 8918,
+"y": 3430,
+"about": "With Limpertsberg's population growing and the cathedral far away, the city council decided in 1909 to give the quarter its own church and rectory. City architect Nicolas Petit designed it, and the firm of Achille Giorgetti built it between 1910 and 1913; it was consecrated on 30 April 1913. It is one of the few Neo-Romanesque churches in a country where Neo-Gothic is the norm, and stands at the corner of Avenue Victor Hugo and Rue Antoine Zinnen. Willy Hahn of Trier redesigned the interior in 1976.",
+"photos": [
+{
+"src": "/landmarks/saint-joseph-church-limpertsberg/photo.webp",
+"caption": "Saint-Joseph Church, Limpertsberg",
+"author": "MMFE",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Kierch_Lampertsbierg.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/saint-joseph-church-limpertsberg/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/St_Joseph%27s_Church%2C_Limpertsberg",
+"quarter": "Limpertsberg",
+"visiting": "Open to the public during services.",
+"facts": [
+"Built: 1910–1913",
+"Architect: Nicolas Petit",
+"Style: Neo-Romanesque",
+"Interior renovation: 1976, Willy Hahn",
+"Heritage status: national monument (2019)"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/St_Joseph%27s_Church%2C_Limpertsberg"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Jousefskierch_um_Lampertsbierg"
+}
+]
+},
+{
+"slug": "fondation-j-p-pescatore",
+"name": "Fondation J.-P. Pescatore",
+"local": "Fondation Jean-Pierre Pescatore",
+"category": "landmark",
+"x": 8920,
+"y": 4850,
+"about": "In 1853 the banker Jean-Pierre Pescatore left Luxembourg City half a million francs to build a home for old people. The Neo-Gothic building went up in 1886–1892 on the site of the fortress's Redoute Marie, at the edge of the newly laid-out municipal park, and was the first building in Luxembourg to use reinforced concrete. It opened in 1892, has been extended with new wings several times since, and is still a care home run by the foundation.",
+"photos": [
+{
+"src": "/landmarks/fondation-j-p-pescatore/photo.webp",
+"caption": "Fondation J.-P. Pescatore",
+"author": "Zinneke",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Fondation_Pescatore_Luxembourg_City_2012-04_--2.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/fondation-j-p-pescatore/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Fondation_Pescatore",
+"quarter": "Limpertsberg",
+"visiting": "Residential care home; seen from outside only.",
+"facts": [
+"Founded: 1853 (bequest of Jean-Pierre Pescatore)",
+"Built: 1886–1892",
+"Architect: Tony Dutreux (disputed)",
+"Style: Neo-Gothic",
+"Use: home for the elderly"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Fondation_Pescatore"
+}
+]
+},
+{
+"slug": "national-monument-of-resistance-and-deportation",
+"name": "National Monument of Resistance and Deportation",
+"local": "Monument national de la Résistance et de la Déportation / Hinzerter Kräiz",
+"category": "landmark",
+"x": 6882,
+"y": 4216,
+"about": "This wooden cross in the Notre-Dame cemetery honours the 82 Luxembourgers executed at the SS camp of Hinzert and in Cologne's Klingelpütz prison who are buried here. Joseph Colabianchi, a joiner and former Hinzert prisoner, made it from planks taken from the camp's huts; it first stood at Hinzert and was raised over the graves in March 1946. In 1969 the setting was redesigned and Lucien Wercollier's bronze 'The Political Prisoner' added. It became a national monument in 1974.",
+"photos": [],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Hinzerter_Kr%C3%A4iz",
+"quarter": "Limpertsberg",
+"visiting": "In the cemetery; open during cemetery hours.",
+"facts": [
+"Cross erected: March 1946",
+"Maker: Joseph Colabianchi",
+"Sculpture: 'The Political Prisoner' by Lucien Wercollier (1969)",
+"Heritage status: national monument (1974)",
+"Setting: Notre-Dame cemetery"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Hinzerter_Kr%C3%A4iz"
+}
+]
+},
+{
+"slug": "saint-mathieu-church-pfaffenthal",
+"name": "Saint-Mathieu Church, Pfaffenthal",
+"local": "Église Saint-Mathieu / Kierch Pafendall",
+"category": "church",
+"x": 9913,
+"y": 5677,
+"about": "The parish church of Pfaffenthal stands by the bridge over the Alzette at the corner of Rue Saint-Mathieu and Rue Vauban. A first church with a glass dome, by the city architect Jean-François Eydt, opened in 1847, but it proved too hot in summer and too cold in winter and was replaced by the present neo-Byzantine church by state architect Charles Arendt, consecrated in 1872. During the Second World War the priest hid young men fleeing forced conscription in its tower, and since about 2020 it has been used by the Romanian Orthodox community.",
+"photos": [
+{
+"src": "/landmarks/saint-mathieu-church-pfaffenthal/photo.webp",
+"caption": "Saint-Mathieu Church, Pfaffenthal",
+"author": "MMFE",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Kirche_Luxembourg-Pfaffenthal_01.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/saint-mathieu-church-pfaffenthal/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Pafendall",
+"quarter": "Pfaffenthal",
+"visiting": "Open during services.",
+"facts": [
+"Consecrated: 1872",
+"Architect: Charles Arendt",
+"Style: neo-Byzantine",
+"Stained glass: about 1920",
+"Use: Romanian Orthodox worship (since about 2020)"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Pafendall"
+}
+]
+},
+{
+"slug": "vauban-towers",
+"name": "Vauban Towers",
+"local": "Tours Vauban / Vauban-Tierm",
+"category": "fortification",
+"x": 10048,
+"y": 5479,
+"about": "Two gate towers, the Siechentor and the Eichertor, face each other across the Alzette in Pfaffenthal, joined by a defensive wall that once sealed the river and now carries a footbridge, the 'Béinchen'. After the French siege of 1684, Vauban drew the poorly defended valley into the fortress, and the towers took the names of the medieval gates that stood here. Machicolations at their base let defenders drop missiles on attackers.",
+"photos": [],
+"interior": null,
+"model": null,
+"wikipedia": "https://de.wikipedia.org/wiki/Vauban-T%C3%BCrme",
+"quarter": "Pfaffenthal",
+"visiting": "Outside only; the footbridge between the towers is open to walkers.",
+"facts": [
+"Towers: Siechentor and Eichertor",
+"Built: from 1685, under Vauban",
+"Link: barrier wall over the Alzette, now a footbridge",
+"Heritage status: part of the UNESCO World Heritage fortress (1994)"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Vauban-T%C3%BCrme"
+}
+]
+},
+{
+"slug": "eich-gate-and-pfaffenthal-wall",
+"name": "Eich Gate and Pfaffenthal wall",
+"local": "Porte d'Eich / Eecherpaart",
+"category": "fortification",
+"x": 9609,
+"y": 5397,
+"about": "When Vauban took over the fortress for France, he judged the lightly defended Pfaffenthal valley a weak point, and from 1684-85 he enclosed it with a new wall and gate towers. The Eich Gate, named after the medieval gate it replaced on the road to Eich, is linked across the Alzette by a narrow wall-bridge, the Béinchen, to its twin, the Bons-Malades gate. From there the Vauban wall climbs the valley side, with a ditch and caponier uncovered during restoration and an arrow-shaped ravelin of 1743 in front of the gate.",
+"photos": [
+{
+"src": "/landmarks/eich-gate-and-pfaffenthal-wall/photo.webp",
+"caption": "Eich Gate and Pfaffenthal wall",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_porte_des_Bons_Malades_01.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://de.wikipedia.org/wiki/Siechentor",
+"quarter": "Pfaffenthal",
+"visiting": "Outside freely visible; the Vauban Circular Walk passes by.",
+"facts": [
+"Built: 1684-1685",
+"Engineer: Vauban",
+"Ravelin added: 1743",
+"Restored: 1991 and 1998",
+"Linked by: the Béinchen wall-bridge over the Alzette"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Siechentor"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Sichepaart"
+},
+{
+"title": "Luxembourg City Tourist Office",
+"url": "https://www.luxembourg-city.com/en/place/monument/vauban-towers"
+}
+]
+},
+{
+"slug": "fort-niedergrunewald",
+"name": "Fort Niedergrünewald",
+"local": "Fort Niedergrünewald / Fort du Bas-Grünewald",
+"category": "fortification",
+"x": 10172,
+"y": 5566,
+"about": "Vauban built this large outwork in 1684–1685, after the French took Luxembourg, on the very spot where his guns had shelled the town. From the edge of the Kirchberg plateau it commanded both the plateau and the Pfaffenthal valley below. It had a moated redoubt on the slope, fronted by a crown-work of bastions. Most of it was blown up in 1874–1876; since then the redoubt, its moat and a curtain wall have been cleared and partly rebuilt, and a small lookout turret, the 'Spanish turret', survives.",
+"photos": [
+{
+"src": "/landmarks/fort-niedergrunewald/photo.webp",
+"caption": "Fort Niedergrünewald",
+"author": "Alf van Beem",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Fort_Niedergr%C3%BCnewald_pic1.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Fort_Niedergr%C3%BCnewald",
+"quarter": "Pfaffenthal",
+"visiting": "The redoubt and moat are freely accessible; casemates by guided tour only.",
+"facts": [
+"Built: 1684–1685",
+"Architect: Sébastien Le Prestre de Vauban",
+"Demolished: mainly 1874–1876",
+"Remains: redoubt, moat, curtain wall and a lookout turret",
+"Setting: public parkland on the slope above Pfaffenthal"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Fort_Niedergr%C3%BCnewald"
+}
+]
+},
+{
+"slug": "pfaffenthal-viaduct",
+"name": "Pfaffenthal Viaduct",
+"local": "Viaduc de Pfaffenthal / Pafendaller Viaduc",
+"category": "bridge",
+"x": 10116,
+"y": 6587,
+"about": "One of four railway viaducts in Luxembourg City, this bridge carries the northern line across the Alzette valley between Clausen and Pfaffenthal. It runs on from the Clausen viaduct, to which a bridge over the Montée de Clausen links it, and continues along Rue Vauban towards the Dräi Eechelen viaduct. The British contractors Waring Brothers built it from 1859, and it opened in 1862 with the line to the north. It is about 257 m long.",
+"photos": [
+{
+"src": "/landmarks/pfaffenthal-viaduct/photo.webp",
+"caption": "Pfaffenthal Viaduct",
+"author": "Dickelbers",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Capital_city_Luxembourg_05.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://fr.wikipedia.org/wiki/Viaduc_de_Pfaffenthal",
+"quarter": "Pfaffenthal",
+"visiting": "Visible from the streets of Pfaffenthal and Clausen.",
+"facts": [
+"Built: 1859–1862",
+"Opened: 1862",
+"Builders: Waring Brothers",
+"Length: 257 m",
+"Use: railway line 1, Luxembourg to Troisvierges"
+],
+"sources": [
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Viaduc_de_Pfaffenthal"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Pafendaller_Viaduc"
+}
+]
+},
+{
+"slug": "fort-rubamprez",
+"name": "Fort Rubamprez",
+"local": "Fort Rubamprez",
+"category": "fortification",
+"x": 10273,
+"y": 7370,
+"about": "This outwork on the Rham plateau began as a redoubt built in 1684-89 under Vauban to keep siege guns away from the city. The Austrians enlarged it in 1735 with a bastion-shaped envelope, moving the Trier road closer to Clausen. When the fortress was dismantled after 1867 the outer works and ditch disappeared, but the reduit, a powder magazine, still stands on the grounds of the National Sports Institute, where it serves as a sports hall.",
+"photos": [
+{
+"src": "/landmarks/fort-rubamprez/photo.webp",
+"caption": "Fort Rubamprez",
+"author": "Zinneke",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_Gun_powder_magazine_Rubamprez_2013-08_--2.JPG"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Fort_Rubamprez",
+"quarter": "Clausen",
+"visiting": "On the grounds of the National Sports Institute; outside view only.",
+"facts": [
+"Built: 1684-1689 (redoubt); enlarged 1735",
+"Engineer: Vauban (first phase)",
+"Dismantled: after 1867",
+"Survives: reduit / powder magazine",
+"Use: sports hall of the National Sports Institute"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Fort_Rubamprez"
+}
+]
+},
+{
+"slug": "la-fontaine-castle-ruins-and-mansfeld-park",
+"name": "La Fontaine Castle ruins and Mansfeld Park",
+"local": "Château La Fontaine / Schlass La Fontaine, Parc Mansfeld",
+"category": "park",
+"x": 11972,
+"y": 6916,
+"about": "Peter Ernst I von Mansfeld, governor of Luxembourg, began a grand Renaissance palace in Clausen in 1563 and kept enlarging it until his death in 1604. He rerouted the road to Neudorf, walled in a large hunting park and filled the gardens with Roman statues, among them a Venus fountain. The French destroyed the palace in the siege of 1684, and very little survives; the fountain basin has been excavated since 2003, and the grounds are now a park.",
+"photos": [
+{
+"src": "/landmarks/la-fontaine-castle-ruins-and-mansfeld-park/photo.webp",
+"caption": "Historic drawing of Count Mansfeld's castle and gardens in Clausen",
+"author": "attributed to Tobie Verhaeght",
+"licence": "Public domain",
+"licence_url": "",
+"source": "https://commons.wikimedia.org/wiki/File:SchlossLaFontaine16Jh.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/La_Fontaine_Castle",
+"quarter": "Clausen",
+"visiting": "Public park, open during the day.",
+"facts": [
+"Built: 1563-1604",
+"Builder: Peter Ernst I von Mansfeld",
+"Destroyed: 1684, French siege",
+"Remains: few ruins; excavated Venus fountain (since 2003)"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/La_Fontaine_Castle"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Ch%C3%A2teau_La_Fontaine"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Schlass_La_Fontaine"
+}
+]
+},
+{
+"slug": "sportlycee",
+"name": "Sportlycée",
+"local": "Sportlycée",
+"category": "education",
+"x": 10725,
+"y": 7527,
+"about": "A state secondary school for talented young athletes, set up to combine schooling and high-level training. It began in 2007 as an annex of the Lycée Aline Mayrisch beside the National Sports Institute at Fetschenhaff, and became an independent school in 2012. Its own building, with a boarding house and canteen, went up in 2011-12 for about 11 million euros and was officially opened in February 2013.",
+"photos": [
+{
+"src": "/landmarks/sportlycee/photo.webp",
+"caption": "Sportlycée",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Sportlyc%C3%A9e_(101).jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/sportlycee/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Sportlyc%C3%A9e",
+"quarter": "Clausen",
+"visiting": "Outside only; a working school.",
+"facts": [
+"Built: 2011-2012",
+"Opened: 22 February 2013",
+"Cost: about EUR 11 million",
+"Use: secondary school for young athletes, with boarding house"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Sportlyc%C3%A9e"
+},
+{
+"title": "Official site",
+"url": "https://portal.education.lu/sportlycee"
+}
+]
+},
+{
+"slug": "malakoff-tower",
+"name": "Malakoff Tower",
+"local": "Tour Malakoff / Malakoff-Tuerm",
+"category": "fortification",
+"x": 12377,
+"y": 6587,
+"about": "Built in 1861 on a hairpin bend of Rue Jules-Wilhelm, halfway between Clausen and Fort Thüngen, the Malakoff Tower was the last structure added to the fortress before it was dismantled after 1867. It takes its name from the Malakoff bastion at Sevastopol, fought over for months in the Crimean War, whose name became a byword for strength. The well-kept tower is now let to youth and scouting groups.",
+"photos": [
+{
+"src": "/landmarks/malakoff-tower/photo.webp",
+"caption": "Malakoff Tower",
+"author": "Fliedermaus at Luxembourgish Wikipedia",
+"licence": "CC BY-SA 1.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/1.0",
+"source": "https://commons.wikimedia.org/wiki/File:Festung_L%C3%ABtzebuerg_Malakoff-Tuerm.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://de.wikipedia.org/wiki/Malakoff-Turm_%28Luxemburg%29",
+"quarter": "Clausen",
+"visiting": "Outside only; seen from Rue Jules-Wilhelm.",
+"facts": [
+"Built: 1861",
+"Named after: the Malakoff tower at Sevastopol",
+"Last building of the fortress before 1867",
+"Use: let to the FNEL and LGS scout and guide groups"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Malakoff-Turm_%28Luxemburg%29"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Malakoff-Tuerm_%28L%C3%ABtzebuerg%29"
+}
+]
+},
+{
+"slug": "fort-rumigny",
+"name": "Fort Rumigny",
+"local": "Fort Rumigny / Redoute de la Bombarde",
+"category": "fortification",
+"x": 10960,
+"y": 7510,
+"about": "Fort Rumigny began in 1688 as the Redoute de la Bombarde, a small lookout redoubt that Vauban added to the Rham Plateau to cope with stronger siege artillery. Under Austrian rule in 1735 it was wrapped in a new outer envelope, upgraded to a fort and renamed Rumigny, with walls added to either side. The original redoubt still survives as the fort's keep, in the grounds of the National Sports Institute between the Trier road and the railway.",
+"photos": [
+{
+"src": "/landmarks/fort-rumigny/photo.webp",
+"caption": "Fort Rumigny",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Fort_Rumigny_(101).jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Fort_Rumigny",
+"quarter": "Clausen",
+"visiting": "On sports institute grounds; not generally open.",
+"facts": [
+"Built: 1688 (redoubt), enlarged 1735",
+"Engineer: Vauban",
+"Also known as: Redoute de la Bombarde",
+"Survives: the redoubt, in the grounds of the Institut national des sports"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Fort_Rumigny"
+}
+]
+},
+{
+"slug": "rives-de-clausen",
+"name": "Rives de Clausen",
+"local": "Rives de Clausen",
+"category": "landmark",
+"x": 10757,
+"y": 7157,
+"about": "For centuries the Mousel brewery stood on the banks of the Alzette in Clausen, until brewing moved to Diekirch in 2000 after a merger with the Brasserie de Luxembourg. The old brewery halls were then turned into a lively quarter of bars, restaurants and beer houses, which opened in 2008 along a private lane, formerly Rue Émile Mousel. A microbrewery set up in the old buildings in 2007, and a footbridge crosses the river towards Rue de la Tour Jacob.",
+"photos": [
+{
+"src": "/landmarks/rives-de-clausen/photo.webp",
+"caption": "Rives de Clausen",
+"author": "User:Otets",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Brauerei_Mousel.jpg"
+},
+{
+"src": "/landmarks/rives-de-clausen/photo-2.webp",
+"caption": "Rives de Clausen, another view",
+"author": "Rombou",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Clausen_Mousel_2012.JPG"
+}
+],
+"interior": null,
+"model": "/landmarks/rives-de-clausen/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Rives_de_Clausen",
+"quarter": "Clausen",
+"visiting": "Bars and restaurants open in the evenings, busiest at weekends.",
+"facts": [
+"Former use: Mousel brewery (brewing until 2000)",
+"Opened as leisure quarter: 2008",
+"Microbrewery: since 2007",
+"Use: bars, restaurants and nightlife"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Rives_de_Clausen"
+},
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Mousel"
+}
+]
+},
+{
+"slug": "saint-cunigunde-church-clausen",
+"name": "Saint Cunigunde Church, Clausen",
+"local": "Église Sainte-Cunégonde / Clausener Kierch",
+"category": "church",
+"x": 11724,
+"y": 6848,
+"about": "Clausen became a parish of its own in 1865, split from Saint-Michel, and its church was built and consecrated by Bishop Nicolas Adames that same year. It stands on the Place Sainte-Cunégonde by the Allée Pierre de Mansfeld in the valley. Fully restored in 1958, it was badly damaged by fire in 1964 but repaired in time for its centenary in October 1965. Today it is known for its weekly Sunday Mass in the traditional Latin rite.",
+"photos": [
+{
+"src": "/landmarks/saint-cunigunde-church-clausen/photo.webp",
+"caption": "Saint Cunigunde Church, Clausen",
+"author": "MMFE",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Kirche_Clausen_01.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/saint-cunigunde-church-clausen/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Clausen",
+"quarter": "Clausen",
+"visiting": "Open to the public during services.",
+"facts": [
+"Built: 1865",
+"Consecrated by: Bishop Nicolas Adames",
+"Organ: 1875, Breidenfeld of Trier",
+"Fire and repair: 1964–1965",
+"Use: Catholic church, Sunday Latin Mass"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Clausen"
+}
+]
+},
+{
+"slug": "european-court-of-auditors",
+"name": "European Court of Auditors",
+"local": "Cour des comptes européenne",
+"category": "eu-institution",
+"x": 15416,
+"y": 5969,
+"about": "The European Court of Auditors checks how the European Union raises and spends its money. Set up by a 1975 treaty and at work from October 1977, it became a full EU institution under the Maastricht Treaty in 1993. Its Kirchberg seat on Rue Alcide de Gasperi centres on a main building of 1988 by the Brussels architect Paul Noël, wrapped by two street-front extensions of 2003 and 2012 by Jim Clemes, whose regular façades are picked out with thin lines of primary colour.",
+"photos": [
+{
+"src": "/landmarks/european-court-of-auditors/photo.webp",
+"caption": "European Court of Auditors",
+"author": "de:Euseson",
+"licence": "CC BY-SA 3.0",
+"licence_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Europ%C3%A4ischer_Rechnungshof.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/european-court-of-auditors/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/European_Court_of_Auditors",
+"quarter": "Kirchberg",
+"visiting": "Working institution; the buildings are seen from outside.",
+"facts": [
+"Established: 18 October 1977",
+"Main building: 1988, architect Paul Noël",
+"Extensions: 2003 and 2012, Jim Clemes",
+"Members: one per EU member state",
+"Use: EU external audit institution"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/European_Court_of_Auditors"
+},
+{
+"title": "Luxembourg City Tourist Office",
+"url": "https://luxembourg-city.com/en/place/monument/european-court-of-auditors-luxembourg"
+},
+{
+"title": "CVCE.eu",
+"url": "https://www.cvce.eu/obj/building_of_the_court_of_auditors-en-be79588f-c67c-499b-a86d-97ef2dd8aeb9.html"
+},
+{
+"title": "Official site",
+"url": "https://www.eca.europa.eu/"
+}
+]
+},
+{
+"slug": "national-library-of-luxembourg",
+"name": "National Library of Luxembourg",
+"local": "Bibliothèque nationale du Luxembourg / Nationalbibliothéik",
+"category": "culture",
+"x": 20814,
+"y": 6457,
+"about": "The National Library, the largest in the country, traces its roots to a school library of 1798 and took its present form in 1899. After decades in cramped premises in the old town it moved to a purpose-built home on Avenue John F. Kennedy in Kirchberg, designed by the Münster practice Bolles+Wilson after a 2003 competition and opened in October 2019. The long, low building gathers its reading room in tiers like an amphitheatre beneath a single wide-span roof.",
+"photos": [
+{
+"src": "/landmarks/national-library-of-luxembourg/photo.webp",
+"caption": "National Library of Luxembourg",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Biblioth%C3%A8que_nationale_Kirchberg_(101).jpg"
+}
+],
+"interior": {
+"architects": "Bolles+Wilson (Münster) with WW+ architektur + management.",
+"dates": "Competition 2003, long delay, detailed design from 2013; opened to the public 1 Oct 2019 on Avenue John F. Kennedy.",
+"form": "A long building with a patterned façade (coloured ceramic \"book spine\" panels and red render); the **main reading room** is a terraced landscape of desks and shelves under a **long-span timber roof** carried on white **tree-like columns**.",
+"main_spaces": "Foyer and café; main reading room (terraces like an amphitheatre for reading); **upper reading deck**; **special reading room** in red for rare and old documents; open-plan offices on three levels around a light-filled atrium; closed stacks.",
+"materials_colours": "White steel, light timber ceiling baffles, dark floors, white shelving; red and multicoloured façade.",
+"access": "Free, Mon–Sat; reader card for borrowing.",
+"official_site": "https://bnl.public.lu/",
+"wikipedia": "[en: National Library of Luxembourg](https://en.wikipedia.org/wiki/National_Library_of_Luxembourg)",
+"photos": []
+},
+"model": "/landmarks/national-library-of-luxembourg/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/National_Library_of_Luxembourg",
+"quarter": "Kirchberg",
+"visiting": "Open to the public during library opening hours.",
+"facts": [
+"Founded: 1899 (roots in 1798)",
+"Current building opened: 1 October 2019",
+"Architect: Bolles+Wilson",
+"Holdings: about 1.8 million printed items",
+"Use: national and legal-deposit library"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/National_Library_of_Luxembourg"
+},
+{
+"title": "Archello",
+"url": "https://archello.com/news/bolleswilson-shapes-national-library-of-luxembourg-like-amphitheatre-for-reading-under-long-span-roof"
+},
+{
+"title": "Official site",
+"url": "http://bnl.public.lu"
+}
+]
+},
+{
+"slug": "chamber-of-commerce",
+"name": "Chamber of Commerce",
+"local": "Chambre de Commerce / Handelskummer",
+"category": "modern",
+"x": 15652,
+"y": 5718,
+"about": "Founded by royal decree in 1841, only two years after independence, the Chamber of Commerce is the oldest professional chamber in Luxembourg and speaks for businesses in industry, trade, finance and services. Its Kirchberg headquarters came out of an international competition won by the French architect Claude Vasconi with his Luxembourg partner Jean Petit, who renovated and greatly extended the site. The result is a sequence of six steel-and-glass blocks along Rue Alcide de Gasperi and Rue Erasme, occupied from the end of 2003.",
+"photos": [],
+"interior": null,
+"model": null,
+"wikipedia": "https://fr.wikipedia.org/wiki/Chambre_de_commerce_%28Luxembourg%29",
+"quarter": "Kirchberg",
+"visiting": "Offices; open to visitors for events and conferences.",
+"facts": [
+"Institution founded: 1 October 1841",
+"Headquarters completed: 2003-2004",
+"Architects: Claude Vasconi with Jean Petit",
+"Design: six steel-and-glass blocks",
+"Use: offices and conference centre of the Chamber"
+],
+"sources": [
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Chambre_de_commerce_%28Luxembourg%29"
+},
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Handelskammer_Luxemburg"
+},
+{
+"title": "Luxembourg City Tourist Office",
+"url": "https://luxembourg-city.com/en/place/monument/luxembourgish-chamber-of-commerce"
+},
+{
+"title": "Official site",
+"url": "https://www.cc.lu/en/"
+}
+]
+},
+{
+"slug": "fort-parkhohe",
+"name": "Fort Parkhöhe",
+"local": "Fort de la Hauteur du Parc / Fort Parkhéicht",
+"category": "fortification",
+"x": 12897,
+"y": 6649,
+"about": "Fort Parkhöhe was one of the last outworks of the Luxembourg fortress, built by the Prussian garrison in 1864-1865 on the heights above Clausen to close the gap between Fort Thüngen and Fort Dumoulin. Its core was a bomb-proof, T-shaped powder magazine behind a ditch guarded by a caponier, but it was demolished in 1867 when the fortress was dismantled. The name recalls the deer park laid out here in the 16th century by Count Peter Ernst of Mansfeld, and since 1970 the site has been occupied by the archdiocesan seminary.",
+"photos": [
+{
+"src": "/landmarks/fort-parkhohe/photo.webp",
+"caption": "Fort Parkhöhe",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Seminairesbierg_(105).jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Fort_Parkh%C3%B6he",
+"quarter": "Kirchberg",
+"facts": [
+"Built: 1864-1865",
+"Demolished: 1867",
+"Builder: Prussian garrison of the fortress",
+"Core: T-shaped bomb-proof powder magazine",
+"Site today: seminary of the Archdiocese of Luxembourg (since 1970)"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Fort_Parkh%C3%B6he"
+}
+]
+},
+{
+"slug": "european-investment-bank",
+"name": "European Investment Bank",
+"local": "Banque européenne d'investissement",
+"category": "eu-institution",
+"x": 22107,
+"y": 6392,
+"about": "The European Union's lending bank, founded in 1958, moved to the Kirchberg plateau in 1980. Its first headquarters, a low, cross-shaped Brutalist building by Sir Denys Lasdun, was built in 1974-80, one of his few works outside Britain, and extended in 1995. Next to it rises the East Building by Ingenhoven Architekten with Werner Sobek, opened in 2008: a long office block under a vast curved glass roof, with winter gardens inside.",
+"photos": [
+{
+"src": "/landmarks/european-investment-bank/photo.webp",
+"caption": "European Investment Bank",
+"author": "Margin1522",
+"licence": "CC BY 2.0",
+"licence_url": "https://creativecommons.org/licenses/by/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:Lasdun-EIB-Entrance-2006.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/european-investment-bank/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/European_Investment_Bank",
+"quarter": "Kirchberg",
+"visiting": "Outside only; the buildings are offices.",
+"facts": [
+"Built: 1974-1980 (West Building); East Building opened 2008",
+"Architects: Denys Lasdun (West); Ingenhoven Architekten with Werner Sobek (East)",
+"Style: Brutalist (West)",
+"Glass roof: about 170 m by 50 m (East Building)",
+"Use: headquarters of the European Investment Bank"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/European_Investment_Bank"
+},
+{
+"title": "Official site",
+"url": "https://www.eib.org/en/about/headquarters"
+}
+]
+},
+{
+"slug": "european-school-luxembourg-i",
+"name": "European School Luxembourg I",
+"local": "École européenne Luxembourg I",
+"category": "education",
+"x": 18150,
+"y": 5799,
+"about": "The very first European School was set up in October 1953 by parents working for the European Coal and Steel Community, starting with 72 pupils in a former furniture shop in Limpertsberg. It became officially a European School in 1957 and, after a building on Boulevard de la Foire, moved to the Kirchberg plateau in 1973. It teaches the children of EU staff and others in several language sections.",
+"photos": [
+{
+"src": "/landmarks/european-school-luxembourg-i/photo.webp",
+"caption": "European School Luxembourg I",
+"author": "GoodSimon",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:European_School_of_Luxembourg_(2003).jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/European_School%2C_Luxembourg_I",
+"quarter": "Kirchberg",
+"visiting": "Outside only; a working school.",
+"facts": [
+"Founded: October 1953",
+"European School status: April 1957",
+"On Kirchberg since: 1973",
+"Use: nursery, primary and secondary school"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/European_School%2C_Luxembourg_I"
+},
+{
+"title": "Official site",
+"url": "http://www.euroschool.lu/"
+}
+]
+},
+{
+"slug": "fort-olizy",
+"name": "Fort Olizy",
+"local": "Fort Olizy / Fort Olisy",
+"category": "fortification",
+"x": 11505,
+"y": 5337,
+"about": "Fort Olizy was one of the outer forts guarding the Kirchberg heights across the Alzette from the old town, between today's Avenue John F. Kennedy and the European Investment Bank. It was an irregular five-sided work with its broad front facing the valley, linked to Fort Thüngen by tunnels. Of the four Kirchberg forts it is the one where only parts of the underground works survive, some damaged when the Red Bridge was built.",
+"photos": [
+{
+"src": "/landmarks/fort-olizy/photo.webp",
+"caption": "Fort Olizy",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_acc%C3%A8s_casemates_Fort_Olizy_(1).jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Fort_Olizy",
+"quarter": "Kirchberg",
+"visiting": "Little to see above ground; the nearby Dräi Eechelen museum at Fort Thüngen offers 3D tours of its galleries.",
+"facts": [
+"Type: irregular pentagonal outer fort",
+"Remains: parts of the underground galleries only",
+"Location: between Avenue J.F. Kennedy and the EIB",
+"Street name: Rue du Fort Olisy in Pfaffenthal recalls it"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Fort_Olizy"
+},
+{
+"title": "Musée Dräi Eechelen",
+"url": "https://m3e.public.lu/en/forts.html"
+}
+]
+},
+{
+"slug": "jean-monnet-2-building",
+"name": "Jean Monnet 2 Building",
+"local": "Bâtiment Jean Monnet 2 / Jean-Monnet-2-Gebai",
+"category": "eu-institution",
+"x": 15430,
+"y": 5483,
+"about": "Jean Monnet 2 is a large office complex being built by the Luxembourg state for the European Commission on Boulevard Konrad Adenauer, on part of the site of the first Jean Monnet building (1975), which was demolished in 2016-2019 after asbestos was found. Designed by KSP Jürgen Engel Architekten, it pairs a 180-metre, eight-storey block with a 24-storey tower, linked at low level, plus a welcome pavilion. Work began in 2018; the pandemic and contractor problems have pushed completion back to around 2028.",
+"photos": [
+{
+"src": "/landmarks/jean-monnet-2-building/photo.webp",
+"caption": "Jean Monnet 2 Building",
+"author": "Luxofluxo",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Jean_Monnet_2_building_construction,_8_March_2026.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/jean-monnet-2-building/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Jean_Monnet_2_building",
+"quarter": "Kirchberg",
+"visiting": "Building site; seen from outside only.",
+"facts": [
+"Status: under construction (2026)",
+"Ground broken: 4 June 2018",
+"Architect: KSP Jürgen Engel Architekten",
+"Size: 8-storey block and 24-storey tower",
+"Capacity: about 3,600 workplaces"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Jean_Monnet_2_building"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Jean-Monnet-2-Gebai"
+},
+{
+"title": "Fonds Kirchberg",
+"url": "https://fondskirchberg.public.lu/en/projets/lieux-de-travail/jmo2.html"
+}
+]
+},
+{
+"slug": "kinepolis-kirchberg",
+"name": "Kinepolis Kirchberg",
+"local": "Kinepolis Kirchberg",
+"category": "culture",
+"x": 23597,
+"y": 6558,
+"about": "Opened in 1996 as Utopolis Kirchberg, this multiplex on Avenue John F. Kennedy is the largest cinema in Luxembourg, with ten screens and about 2,500 seats. It took its present name after the Belgian Kinepolis Group bought the Utopia Group at the end of 2015. It sits east of the Kirchberg district centre, amid the plateau's offices and shopping streets.",
+"photos": [
+{
+"src": "/landmarks/kinepolis-kirchberg/photo.webp",
+"caption": "Kinepolis Kirchberg",
+"author": "Lajmmoore",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Kinepolis_Kirchberg.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Kinepolis_Kirchberg",
+"quarter": "Kirchberg",
+"visiting": "Open daily for film screenings.",
+"facts": [
+"Opened: 1996",
+"Former name: Utopolis Kirchberg",
+"Screens: 10",
+"Seats: 2,505",
+"Operator: Kinepolis Group (since 2015)"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Kinepolis_Kirchberg"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Kinepolis_Kirchberg"
+},
+{
+"title": "Official site",
+"url": "https://kinepolis.lu/en/bioscopen/kinepolis-kirchberg/info"
+}
+]
+},
+{
+"slug": "robert-schuman-building",
+"name": "Robert Schuman Building",
+"local": "Bâtiment Robert Schuman / Robert-Schuman-Gebai",
+"category": "eu-institution",
+"x": 12258,
+"y": 5893,
+"about": "Built between 1970 and 1973 on the Place de l'Europe to designs by Laurent Schmit, this state-owned block was made for the services of the European Parliament and an assembly chamber. Plans grew during construction when three new member states joined. The chamber, with a geometric zinc relief by the Italian group NP2, hosted 35 Parliament sittings in 1973–1979 but was too small after the 1979 elections; Parliament offices remained in the building.",
+"photos": [],
+"interior": null,
+"model": "/landmarks/robert-schuman-building/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Robert-Schuman-Gebai",
+"quarter": "Kirchberg",
+"visiting": "Office building; seen from outside only.",
+"facts": [
+"Built: 1970–1973",
+"Architect: Laurent Schmit",
+"Height: about 35 m",
+"Owner: Luxembourg State",
+"Use: European Parliament offices; former assembly chamber"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Robert-Schuman-Gebai"
+}
+]
+},
+{
+"slug": "european-convention-center-luxembourg",
+"name": "European Convention Center Luxembourg",
+"local": "European Convention Center Luxembourg (ECCL) / Hémicycle",
+"category": "eu-institution",
+"x": 13335,
+"y": 6391,
+"about": "Luxembourg's main conference centre lies along the south side of the Place de l'Europe, at the foot of the Alcide De Gasperi tower. Its core is the Hémicycle, a debating chamber built in 1978–1979 after a grander parliament project was dropped, where the European Parliament sat until 1981. A long, low modern wing about 300 m long, designed by Schemel & Wirtz with Jourdan-Müller/PAS, now links it to the tower. The Council of the EU meets here each April, June and October.",
+"photos": [
+{
+"src": "/landmarks/european-convention-center-luxembourg/photo.webp",
+"caption": "European Convention Center Luxembourg",
+"author": "Etienne Baudon",
+"licence": "Public domain",
+"licence_url": "",
+"source": "https://commons.wikimedia.org/wiki/File:European_Convention_Center_Luxembourg,_external,_1_June_2019_1.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/european-convention-center-luxembourg/model.bin",
+"wikipedia": null,
+"quarter": "Kirchberg",
+"visiting": "Open for conferences and events only.",
+"facts": [
+"Hémicycle opened: 1979",
+"European Parliament sittings: 1979–1981",
+"Architects of the convention centre: Schemel & Wirtz with Jourdan-Müller/PAS",
+"Size: about 300 m long, 10 m high",
+"Hémicycle seats: 646",
+"Use: Council of the EU meetings and conferences"
+],
+"sources": [
+{
+"title": "Official site",
+"url": "https://eccl.lu"
+},
+{
+"title": "Fonds Kirchberg",
+"url": "https://fondskirchberg.public.lu/en/vivre-kirchberg/travailler-etudier/foires-conferences/eccl.html"
+},
+{
+"title": "Europeana: The Hemicycles",
+"url": "https://europeana.eu/en/exhibitions/the-hemicycle/the-hemicycles-luxembourg"
+},
+{
+"title": "Luxembourg City Tourist Office",
+"url": "https://www.luxembourg-city.com/en/place/monument/european-convention-center-luxembourg"
+}
+]
+},
+{
+"slug": "luxexpo-the-box",
+"name": "Luxexpo The Box",
+"local": "Luxexpo The Box",
+"category": "culture",
+"x": 23879,
+"y": 6188,
+"about": "Luxembourg's exhibition and congress centre on the Kirchberg plateau goes back to trade fairs held from the 1920s, which moved from the Limpertsberg halls to Kirchberg in 1974. The halls were renamed Luxexpo in 2004 and, after a refurbishment, Luxexpo The Box in 2017. A congress centre fitted out in 2003–2004 by architect Jim Clemes, to host EU ministers' meetings while their usual building was rebuilt, won a national architecture prize. Its halls host the spring and autumn fairs.",
+"photos": [
+{
+"src": "/landmarks/luxexpo-the-box/photo.webp",
+"caption": "Luxexpo The Box",
+"author": "Zinneke",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxexpo_The_Box_2021-07.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://fr.wikipedia.org/wiki/Luxexpo_The_Box",
+"quarter": "Kirchberg",
+"visiting": "Open during fairs and events.",
+"facts": [
+"On Kirchberg since: 1974",
+"Renamed Luxexpo: 2004",
+"Renamed Luxexpo The Box: 2017",
+"Congress centre: 2003–2004, architect Jim Clemes",
+"Facilities: seven halls and several rooms",
+"Use: trade fairs, congresses and events"
+],
+"sources": [
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Luxexpo_The_Box"
+},
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Luxexpo"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Luxexpo"
+},
+{
+"title": "Official site",
+"url": "https://thebox.lu/"
+}
+]
+},
+{
+"slug": "saint-martin-church-weimerskirch",
+"name": "Saint-Martin Church, Weimerskirch",
+"local": "Église Saint-Martin / Kierch Weimeschkierch",
+"category": "church",
+"x": 14055,
+"y": 3964,
+"about": "Weimerskirch is one of the oldest parishes in the country, mentioned around 723 in a document of the Abbey of St Maximin in Trier, and is often called the mother parish of Luxembourg City. The present church of St Martin dates mainly from 1763-64 and was consecrated in 1767 by the Trier auxiliary bishop Johann Nikolaus von Hontheim; it was enlarged in the late 19th century. A terraced churchyard lies beside it on several levels.",
+"photos": [
+{
+"src": "/landmarks/saint-martin-church-weimerskirch/photo.webp",
+"caption": "Saint-Martin Church, Weimerskirch",
+"author": "MMFE",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Kirche_Weimerskirch_01.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/saint-martin-church-weimerskirch/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Weimeschkierch",
+"quarter": "Weimerskirch",
+"visiting": "Open to the public during services.",
+"facts": [
+"Built: 1763-1764",
+"Consecrated: 1767",
+"Patron: St Martin",
+"Heritage status: national monument (2019)",
+"Use: Catholic church"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Weimeschkierch"
+}
+]
+},
+{
+"slug": "saint-hubert-church-dommeldange",
+"name": "Saint-Hubert Church, Dommeldange",
+"local": "Église Saint-Hubert / Haupeschkierch Dummeldeng",
+"category": "church",
+"x": 16646,
+"y": 3402,
+"about": "Dommeldange's Catholic church dates from 1891, when it replaced a chapel of 1777, and is dedicated to St Hubert of Liège, whose feast falls on 3 November. It was restored in 1949, given a crucifixion scene by Hans Lechner in 1951, and reordered in 1970-72 to follow the Second Vatican Council. It stands at the junction of Rue du Château and Rue des Hauts-Fourneaux, with the St Hubert fountain in the square before it.",
+"photos": [
+{
+"src": "/landmarks/saint-hubert-church-dommeldange/photo.webp",
+"caption": "Saint-Hubert Church, Dommeldange",
+"author": "MMFE",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Kirche_Dommeldange_02.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/saint-hubert-church-dommeldange/model.bin",
+"wikipedia": "https://de.wikipedia.org/wiki/Hubertuskirche_%28Dommeldingen%29",
+"quarter": "Dommeldange",
+"visiting": "Open to the public during services and church events.",
+"facts": [
+"Built: 1891",
+"Replaced: chapel of 1777",
+"Patron: St Hubert",
+"Restored: 1949; interior renovated 1984-85",
+"Artwork: crucifixion scene by Hans Lechner (1951)"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Hubertuskirche_%28Dommeldingen%29"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Haupeschkierch_vun_Dummeldeng"
+}
+]
+},
+{
+"slug": "pulvermuhl-viaduct",
+"name": "Pulvermühl Viaduct",
+"local": "Viaduc de Pulvermühl / Biisserbréck",
+"category": "bridge",
+"x": 8626,
+"y": 7574,
+"about": "This railway viaduct carries the lines north of Luxembourg station across the Alzette valley at Pulvermühl, towards the Rham plateau and on to Trier and the north of the country. Like the city's other early viaducts, it was built to plans by the Waring Brothers and opened with the railway in the early 1860s. It runs for 242 metres and stands up to 37 metres high; it was electrified in 1988, and in 2019 a second viaduct alongside raised the crossing from two tracks to four.",
+"photos": [
+{
+"src": "/landmarks/pulvermuhl-viaduct/photo.webp",
+"caption": "The arches of the Pulvermühl viaduct",
+"author": "Smiley.toerist",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxemburg_spoorviaduct_verbreding.JPG"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Pulvermuhl_Viaduct",
+"quarter": "Pulvermühl",
+"visiting": "Railway structure; best seen from the Alzette valley below.",
+"facts": [
+"Opened: 1861-1862",
+"Engineers: Waring Brothers",
+"Length: 242 m",
+"Height: up to 37 m",
+"Electrified: 1988",
+"Second viaduct: inaugurated 11 June 2019"
+],
+"sources": [
+{
+"title": "Wikipedia (en)",
+"url": "https://en.wikipedia.org/wiki/Pulvermuhl_Viaduct"
+},
+{
+"title": "Wikipedia (fr)",
+"url": "https://fr.wikipedia.org/wiki/Viaduc_de_Pulverm%C3%BChl"
+}
+]
+},
+{
+"slug": "schlaifmillen",
+"name": "Schläifmillen",
+"local": "Schläifmillen / Schleifmühle",
+"category": "culture",
+"x": 13156,
+"y": 9756,
+"about": "Once a small mill on the Alzette where iron and metal goods were ground, the Schläifmillen was bought by the brothers Samson and Guetschlique Godchaux and became the heart of their woollen cloth works, later powered by steam. For many years it was also the administrative centre of the old commune of Hamm. Production stopped in 1939, and from the 1980s artists and designers moved into the old mill buildings in the valley.",
+"photos": [
+{
+"src": "/landmarks/schlaifmillen/photo.webp",
+"caption": "Schläifmillen",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Schl%C3%A4ifmillen_(105).jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/schlaifmillen/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Schl%C3%A4ifmillen_%28L%C3%ABtzebuerg%29",
+"quarter": "Hamm",
+"visiting": "Outside only, except during occasional open studios and events.",
+"facts": [
+"Original use: grinding mill",
+"Later use: Godchaux Frères cloth factory",
+"Production ended: 1939",
+"Use since the 1980s: artists' studios"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Schl%C3%A4ifmillen_%28L%C3%ABtzebuerg%29"
+},
+{
+"title": "Chronicle.lu: industrial heritage",
+"url": "https://chronicle.lu/category/at-home/52056-industrial-heritage-textiles-in-luxembourg"
+}
+]
+},
+{
+"slug": "church-of-the-exaltation-of-the-holy-cross-hamm",
+"name": "Church of the Exaltation of the Holy Cross, Hamm",
+"local": "Église de l'Exaltation-de-la-Sainte-Croix / Kierch Hamm",
+"category": "church",
+"x": 15169,
+"y": 9880,
+"about": "Hamm's parish church sits at a crossroads of four streets. A church here is first recorded in 1337, serving a community of hermit women, and later drew pilgrims to a miraculous cross. In 1902–1903 the old church was replaced by a Neo-Gothic building, but its 14th-century choir and the tower beside it on the north side were kept and built into the new church, so the old and new parts can still be told apart.",
+"photos": [
+{
+"src": "/landmarks/church-of-the-exaltation-of-the-holy-cross-hamm/photo.webp",
+"caption": "Church of the Exaltation of the Holy Cross, Hamm",
+"author": "MMFE",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Kirche_Hamm_01.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/church-of-the-exaltation-of-the-holy-cross-hamm/model.bin",
+"wikipedia": "https://de.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Hamm",
+"quarter": "Hamm",
+"visiting": "Open to the public during services.",
+"facts": [
+"First recorded: 1337",
+"Rebuilt: 1902–1903",
+"Style: Neo-Gothic, with a 14th-century choir",
+"Parish since: 1867",
+"Dedication: Exaltation of the Holy Cross"
+],
+"sources": [
+{
+"title": "Wikipedia (de)",
+"url": "https://de.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Hamm"
+},
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Hamm"
+}
+]
+},
+{
+"slug": "holy-spirit-church-cents",
+"name": "Holy Spirit Church, Cents",
+"local": "Église du Saint-Esprit / Kierch Zens",
+"category": "church",
+"x": 15235,
+"y": 8174,
+"about": "One of the youngest and most modern churches in the city, the Holy Spirit Church stands at the junction of Rue de Trèves and Boulevard Charles Simonis. Its foundation stone was laid in 1976 and Bishop Jean Hengen consecrated it at Whitsun 1980. Designed by the architects Michel Mousel and Edouard Stein to suit the post-Vatican II liturgy, the church is lit by slab-glass windows in white, yellow and amber by the artist Théo Kerg, who also made its altar and furnishings.",
+"photos": [
+{
+"src": "/landmarks/holy-spirit-church-cents/photo.webp",
+"caption": "Holy Spirit Church, Cents",
+"author": "MMFE",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Kirche_Luxembourg-Cents_01.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/holy-spirit-church-cents/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Zens",
+"quarter": "Cents",
+"visiting": "Open during services.",
+"facts": [
+"Foundation stone: 15 May 1976",
+"Consecrated: 25 May 1980",
+"Architects: Michel Mousel and Edouard Stein",
+"Windows and furnishings: Théo Kerg",
+"Style: modern, post-Vatican II"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Zens"
+}
+]
+},
+{
+"slug": "fort-dumoulin",
+"name": "Fort Dumoulin",
+"local": "Fort Dumoulin / Fort du Moulin",
+"category": "fortification",
+"x": 12649,
+"y": 7642,
+"about": "First thrown up as a temporary arrow-shaped work during the French siege of 1794–1795 and known as Fort Fetschenhof, this outwork on the Rham plateau was rebuilt in 1836–1838 with a deep moat and soon altered again. It was renamed after Friedrich Dumoulin, an infantry general and commander of the fortress. A fortified powder magazine was added in its courtyard in 1829. Today the site is the headquarters of the Luxembourg Girl Guides association.",
+"photos": [],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Fort_Dumoulin",
+"quarter": "Cents",
+"visiting": "Private site; seen from outside only.",
+"facts": [
+"First built: 1794–1795 (temporary work)",
+"Rebuilt: 1836–1838",
+"Named after: General Friedrich Dumoulin",
+"Use: headquarters of the Luxembourg Girl Guides (AGGL)",
+"Heritage status: supplementary inventory (2012)"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Fort_Dumoulin"
+}
+]
+},
+{
+"slug": "saint-henri-church-neudorf",
+"name": "Saint-Henri Church, Neudorf",
+"local": "Église Saint-Henri / Kierch Neiduerf",
+"category": "church",
+"x": 17741,
+"y": 7644,
+"about": "Neudorf's Catholic church, dedicated to Saint Henry, stands on the Ale Wee, a small lane off the main Rue de Neudorf. It was built in stages between 1899 and 1914, with the main structure finished in 1901. Its stained-glass windows are by the Luxembourg artist Emile Probst.",
+"photos": [
+{
+"src": "/landmarks/saint-henri-church-neudorf/photo.webp",
+"caption": "Saint-Henri Church, Neudorf",
+"author": "Jwh",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Neiduerf_Kierch.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/saint-henri-church-neudorf/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Neiduerf",
+"quarter": "Neudorf",
+"visiting": "Open to the public during services.",
+"facts": [
+"Built: 1899–1914 (main structure 1901)",
+"Architect: Kemp (attributed)",
+"Windows: Emile Probst",
+"Use: Catholic church"
+],
+"sources": [
+{
+"title": "Wikipedia (lb)",
+"url": "https://lb.wikipedia.org/wiki/Kierch_L%C3%ABtzebuerg-Neiduerf"
+},
+{
+"title": "Ons Stad no. 18 (1985)",
+"url": "https://onsstad.vdl.lu/fileadmin/uploads/media/ons_stad_18-1985_15.pdf"
+}
+]
 }
 ]

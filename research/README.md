@@ -5,7 +5,7 @@ Reference material for Isometric Luxembourg, gathered for later use (landmark in
 
 | # | Folder | Topic | Status |
 |---|---|---|---|
-| 1 | `01-landmarks/` | Pictures of the landmarks | done (47 landmarks, 143 images) |
+| 1 | `01-landmarks/` | Pictures and facts of the landmarks | done (129 landmarks, 223 images; 82 citywide additions with facts and sources) |
 | 2 | `02-buildings-interiors/` | Famous buildings: exteriors, interiors, floor plans | done (22 buildings, 71 interior photos, 1 free plan) |
 | 3 | `03-underground-tunnels/` | Maps of the casemates and tunnels under the city | done (22 maps/plans, 20 photos, 3 GeoJSON layers) |
 | 4 | `04-city-evolution/` | How the city evolved: walls, castle, fortress, dismantling | done (7 eras, 101 images, 4 GIS files) |

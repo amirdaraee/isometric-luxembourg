@@ -1,6 +1,7 @@
 """Shared paths, projections and camera for the Luxembourg City map."""
 from pathlib import Path
 import math
+import re
 import numpy as np
 from pyproj import Transformer
 
@@ -48,3 +49,21 @@ def depth(e, n, z):
     """Distance along the view ray: smaller is nearer the camera."""
     f = (e - ORIGIN_E) * FWD[0] + (n - ORIGIN_N) * FWD[1]
     return f * math.cos(ELEV) - z * math.sin(ELEV)
+
+
+def landmark_slug(s):
+    """URL-safe slug of a landmark title, as used for web/public/landmarks/<slug>/."""
+    s = s.lower().replace("ë", "e").replace("é", "e").replace("è", "e").replace("ô", "o").replace("ü", "u").replace("â", "a")
+    s = s.replace("ä", "a").replace("ö", "o").replace("ç", "c").replace("ê", "e").replace("î", "i").replace("û", "u").replace("œ", "oe")
+    return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+
+
+def readme_sections(text):
+    """The '### Title' sections of a research README, each with its '| key | value |' rows."""
+    out = []
+    for blk in re.split(r"\n(?=### )", text):
+        if blk.startswith("### "):
+            title = blk.splitlines()[0][4:].strip()
+            rows = dict(re.findall(r"^\| ([^|]+?) \| (.+?) \|\s*$", blk, re.M))
+            out.append((title, rows, blk))
+    return out
