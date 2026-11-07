@@ -902,6 +902,24 @@ The model must stay recognisable (a 747's hump and four engines, Luxair's tail c
 it by eye.
 **Estimate.** M.
 
+**Done (C4b, stream C, 8 Nov 2026).** `pipeline/build_plane_sprites.py` builds four low-poly aircraft with the
+vehicle renderer (lofted fuselages, swept wings, engines, fins; 0.5 m per sprite px, with its own inking thresholds
+for that scale): Cargolux 747-8F, Luxair 737-800, E195-E2 and Dash 8-400, each at 32 headings level and 8 degrees
+nose up, plus a soft ground shadow, and per heading the visible navigation, beacon, strobe and landing lights
+(`web/public/sprites/planes.json` and four atlases, 227 KB). `pipeline/build_flights.py` takes runway 06/24 from OSM
+and writes four tracks (`web/public/data/flights.json`, 6 KB): departures 24 turning north or south, arrivals 06 on a
+3 degree final over the city, and a downwind for arrivals 24 north of the city. `web/src/sky/flights.ts` holds the
+seeded daily plan, the runway from the wind and the positions (checks: `node src/sky/flights.test.ts`; `--find`
+lists the moments with an aircraft in the shots' views). `Planes.tsx`, mounted by `Sky.tsx` behind `planes`: at most
+three aircraft, above the clouds and below the rain and the pins, drawn no smaller than at zoom 0.28 so that they
+still read zoomed far out; a shadow below 400 m; lights at night; nothing flashes with reduced motion. Facts and
+sources: `research/06-city-details/README.md`, "Findel".
+Shots `data/work/shots/2026-11-07-c5-planes3`: the views' hours were picked with `--find` (15.8183 Cargolux departure,
+9.9542 Luxair departure, 22.3053 night departure), with `weather=clear` so that the live wind cannot change the
+runway, and the east-wind view moved to `#12000,8700,0.25`, where the final runs.
+Open: the owner's check of the models and liveries by eye; the Luxair aircraft are small and pale at zoom 0.15;
+departures 06 are not drawn (they leave eastwards, off the map); live ADS-B positions not done (optional).
+
 ### Item 12. "Christmas markets have a highlight on their edge, which is not good"
 
 **Root cause** (`pipeline/events/xmas_v2.py`):

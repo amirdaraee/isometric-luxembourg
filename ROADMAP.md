@@ -25,7 +25,7 @@ The order of work, step by step, is in **[PLAN.md](PLAN.md)**, along with the ru
 | 6 | Life on the map: car hiding, water shimmer, swaying trees, better traffic, transit refresh, birds | free | done 7 Nov except swaying trees: traffic sim, sprites, occlusion, river water, trams/trains, weekday/weekend timetable, birds; access rules + emergency vehicles in progress |
 | 7 | Switch features on publicly, one at a time | free | to do |
 | 8 | isometric.lu | domain fee | done 7 Nov |
-| 9 | More events, weather, clouds, easter eggs, height, historic mode | varies | clouds being redone; notes from visitors (API live, hidden); live weather (rain, storm, snow, wind) and valley fog built behind the `weather` and `fog` switches (PLAN_NEXT.md item 5) |
+| 9 | More events, weather, clouds, easter eggs, height, historic mode | varies | clouds being redone; notes from visitors (API live, hidden); live weather (rain, storm, snow, wind) and valley fog built behind the `weather` and `fog` switches (PLAN_NEXT.md item 5); Cargolux and Luxair aircraft from Findel behind the `planes` switch (item 11) |
 
 ## Open issues
 | ID | Issue | Type | Phase |

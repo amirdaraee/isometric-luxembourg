@@ -353,3 +353,26 @@ Not downloaded on purpose: recent sculptures and buildings whose authors are ali
 - OpenStreetMap via Overpass (ODbL): building and amenity names, embassy locations, the T1 route relation, wikidata tags; the project's own extract `data/raw/osm/places.json` for addresses.
 - Wikidata (wbgetentities API): inception, architect, heritage and sitelinks for 649 items linked from OSM.
 - Wikimedia Commons: images, see `sources.json`.
+
+## Findel
+
+Facts behind the aircraft over the map (PLAN_NEXT.md item 11; `pipeline/build_flights.py`,
+`pipeline/build_plane_sprites.py`, `web/src/sky/flights.ts`).
+
+- **Runway 06/24:** one runway, 4000 m by 60 m, asphalt, from OpenStreetMap (`aeroway=runway`, `ref=06/24`, fetched
+  through Overpass on 8 Nov 2026 and kept in `data/raw/osm/runway.json`). Ends at 49.6175 N 6.1875 E (threshold 06)
+  and 49.6354 N 6.2356 E (threshold 24). In the map's grid it points 060 / 240 degrees. Field elevation used: 376 m.
+  The 06 threshold projects to about `21524,10535`, inside the map's frame but outside the painted area.
+- **Fleets** (Wikipedia, "Luxair", fleet table as of July 2026): Luxair flies Boeing 737-700, 737-800 and 737 MAX 8,
+  De Havilland Canada Dash 8-400 and, since December 2025, Embraer E195-E2 (E190-E2 and 737 MAX 10 on order).
+  Cargolux flies Boeing 747-8F and 747-400F; only the 747-8F is modelled.
+- **Sizes used for the models:** 747-8F 76.3 m long, 68.4 m span; 737-800 39.5 m, 35.8 m with winglets; E195-E2
+  41.5 m, 35.1 m; Dash 8-400 32.8 m, 28.4 m (manufacturers' published figures).
+- **Liveries:** simplified on purpose, without logos or lettering: Cargolux white with a blue fin and a red band;
+  Luxair white with a light-blue fin, winglets and engine lips. They follow the owner's brief, not reference photos;
+  the owner checks them by eye.
+- **Procedures and schedule:** not the published ones. Departures 24 climb at 7 % to 3000 ft and turn north or south;
+  arrivals 06 fly a 3 degree final over the city; arrivals 24 cross north of the city on a downwind at 3500 ft; the
+  runway changes to 06 when the tailwind on 24 is over 2.5 m/s. Luxair: 40 departures and 40 arrivals from 06:00 to
+  23:00; Cargolux: 12 movements, most in the evening, at most 4 between 23:00 and 06:00 (a simplification of the
+  airport's night rules, which were not checked against the AIP).

@@ -7,6 +7,7 @@ import { canvasDpr, subscribe } from "../frame";
 import { currentAmounts, onWeather } from "../weather";
 import { groundToScreen } from "../sky/weatherCore";
 import { Fog } from "./Fog";
+import { Planes } from "./Planes";
 
 export interface SkyProps {
   map: RefObject<MapHandle>;
@@ -20,9 +21,10 @@ export interface SkyProps {
 }
 
 /**
- * The sky over the map: the weather (src/weather.ts) and, later, the aircraft. In order, from the map up:
+ * The sky over the map: the weather (src/weather.ts) and the aircraft. In order, from the map up:
  *  - valley fog and haze (Fog.tsx, switch fog);
  *  - a wash that dims and cools the map under an overcast or rainy sky (a plain coloured layer, not a CSS filter);
+ *  - the aircraft (Planes.tsx, switch planes);
  *  - rain and snow on one 2D canvas: rain as streaks slanted by the wind (projected like the map: a west wind
  *    drives them to the right), with small splash rings on the painted ground when zoomed in and, at night, a few
  *    streaks catching warm lamp light; snow as flakes drifting with the wind;
@@ -37,7 +39,7 @@ function snowAmount(weatherSnow: number, season: Season): number {
   return season === "winter" && on("snow") ? 0.5 : 0;
 }
 
-export function Sky({ map, night, season }: SkyProps) {
+export function Sky({ map, night, hour, season, date }: SkyProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const wash = useRef<HTMLDivElement>(null);
   const flash = useRef<HTMLDivElement>(null);
@@ -221,6 +223,7 @@ export function Sky({ map, night, season }: SkyProps) {
       {on("weather") && on("fog") && <Fog map={map} night={night} />}
       {on("weather") && <div ref={wash} aria-hidden="true"
         style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, background: "rgb(52,64,86)", opacity: 0 }} />}
+      {on("planes") && <Planes map={map} night={night} hour={hour} date={date} />}
       {(on("weather") || on("snow")) && <canvas ref={canvas} aria-hidden="true"
         style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", pointerEvents: "none", zIndex: 1 }} />}
       {on("weather") && <div ref={flash} aria-hidden="true"
