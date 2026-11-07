@@ -94,6 +94,8 @@ export const DEFAULTS = {
   planes: true,
   /** Automatically lowers the effect quality on slow devices. */
   adaptiveQuality: true,
+  /** Layered-map proof of concept for the old town (LAYERS_POC.md): local dev server only, with ?layers. */
+  layersPoc: true,
   /** Frame-time readout for testing. Off everywhere unless asked for with ?on=perfHud. */
   perfHud: false,
 };
