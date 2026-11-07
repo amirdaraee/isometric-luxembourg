@@ -1,0 +1,31 @@
+[
+ {
+  "site": "constitution",
+  "kind": "wheel",
+  "x": 6918,
+  "y": 6146,
+  "fps": 1.0
+ },
+ {
+  "site": "knuedler",
+  "kind": "carousel",
+  "x": 7961,
+  "y": 6171,
+  "fps": 6.0,
+  "front": {
+   "x0": 7908,
+   "y0": 6096,
+   "w": 106,
+   "h": 52,
+   "day": "knuedler_front_day.webp",
+   "night": "knuedler_front_night.webp"
+  }
+ },
+ {
+  "site": "constitution",
+  "kind": "pyramid",
+  "x": 7159.5,
+  "y": 6138,
+  "fps": 6.0
+ }
+]

@@ -172,7 +172,7 @@ export default function App() {
       </div>
       {ready && on("water") && <Water map={map} night={sceneMix.night} />}
       {ready && <Overlay map={map} meta={meta} streets={streets} traffic={traffic} night={sceneMix.night} hour={live ? null : scene.hour} season={scene.season} />}
-      {ready && <EventLayer map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />}
+      {ready && <EventLayer map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} active={scene.christmas && scene.season === "winter" ? ["winterlights"] : []} />}
       {ready && on("clouds") && <Clouds map={map} night={sceneMix.night} />}
       {ready && <Sky map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />}
       {(on("timeOfDay") || on("seasons") || on("christmas") || on("weather")) && <SceneControl scene={scene} live={live} sun={sun} onLive={() => setLive(true)}
