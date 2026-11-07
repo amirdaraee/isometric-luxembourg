@@ -29,6 +29,8 @@ export interface MapHandle {
   setLayers: (alpha: Record<string, number>) => void;
   /** Small painted patches (events) placed in map px, with opacities. */
   setPatches: (patches: { url: string; x0: number; y0: number; w: number; a: number }[]) => void;
+  /** Call `fn` in the same frame as every map redraw (before React hears about the move). Returns an unsubscribe. */
+  onFrame: (fn: () => void) => () => void;
 }
 
 interface Props {
@@ -45,6 +47,7 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
   const pending = useRef<Record<string, number>>({});
   const patches = useRef<Record<string, OpenSeadragon.TiledImage | "loading">>({});
   const patchAlpha = useRef<Record<string, number>>({});
+  const frameFns = useRef(new Set<() => void>());
   const tileSourceFor = (folder: string) => ({
     width: meta.width, height: meta.height, tileSize: meta.tileSize, tileOverlap: 0, minLevel: 9,
     maxLevel: Math.ceil(Math.log2(Math.max(meta.width, meta.height))),
@@ -124,6 +127,10 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
       const p = vp.pixelFromPoint(b.imageToViewportCoordinates(new OpenSeadragon.Point(x, y)), true);
       return { x: p.x, y: p.y };
     },
+    onFrame(fn) {
+      frameFns.current.add(fn);
+      return () => { frameFns.current.delete(fn); };
+    },
   }));
 
   useEffect(() => {
@@ -182,7 +189,9 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
       const c = b.viewportToImageCoordinates(vp.getCenter(true));
       onViewChange({ x: c.x, y: c.y, z: b.viewportToImageZoom(vp.getZoom(true)) });
     };
-    v.addHandler("update-viewport", report);
+    // Things pinned to the map (labels) move here, in the same frame as the map is drawn; React only decides
+    // which of them show.
+    v.addHandler("update-viewport", () => { for (const fn of frameFns.current) fn(); report(); });
     viewer.current = v;
     return () => {
       v.destroy();

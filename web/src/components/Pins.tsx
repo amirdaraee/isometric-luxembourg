@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { MapHandle, View } from "./IsometricMap";
 
 export interface Place {
@@ -24,8 +24,23 @@ const LABEL_W = 150;
 const LABEL_H = 34;
 
 // Places in priority order, keeping only those whose labels don't collide.
+// React decides which labels show; their positions are written straight to the DOM in the map's own redraw
+// (map.onFrame), so they never lag a frame behind the map while it moves.
 export function Pins({ places, view, map, active, onPick }: Props) {
   const featured = useMemo(() => places.filter((p) => p.f || p.q), [places]);
+  const els = useRef(new Map<string, { el: HTMLElement; p: Place }>());
+
+  const place = useRef(() => {
+    const m = map.current;
+    if (!m) return;
+    for (const { el, p } of els.current.values()) {
+      const s = m.toScreen(p.x, p.y);
+      if (s) el.style.transform = `translate(${s.x}px,${s.y}px)`;
+    }
+  }).current;
+  useLayoutEffect(place); // newly shown labels get their position before the browser paints
+  useEffect(() => map.current?.onFrame(place), [map, place]);
+
   if (!view || !map.current) return null;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -34,6 +49,10 @@ export function Pins({ places, view, map, active, onPick }: Props) {
   const placed: { x: number; y: number }[] = [];
   const out: JSX.Element[] = [];
   const ordered = [...(active ? [active] : []), ...featured.filter((p) => p !== active)];
+  const track = (p: Place) => (el: HTMLElement | null) => {
+    if (el) els.current.set(p.n, { el, p });
+    else els.current.delete(p.n);
+  };
   for (const p of ordered) {
     const isQuarter = !!p.q;
     if (p !== active) {
@@ -47,15 +66,15 @@ export function Pins({ places, view, map, active, onPick }: Props) {
     placed.push(s);
     out.push(
       isQuarter ? (
-        <div key={p.n} className="quarter" style={{ transform: `translate(${s.x}px,${s.y}px)` }}>
+        <div key={p.n} ref={track(p)} className="quarter">
           <span>{p.n}</span>
         </div>
       ) : (
         <button
           key={p.n}
+          ref={track(p)}
           type="button"
           className={`pin cat-${p.c}${p === active ? " on" : ""}`}
-          style={{ transform: `translate(${s.x}px,${s.y}px)` }}
           onClick={() => onPick(p)}
         >
           <span>{p.n}</span>

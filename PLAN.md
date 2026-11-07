@@ -56,39 +56,52 @@ Each of these cost us a run or a day once.
   certificate stalls, remove the custom domain and set it again.
 - Never print or commit keys. They live in `pipeline/.env` and `~/.runpod/config.toml`.
 
-## Phase 0: tidy up (free, about 1 day)
-1. Fix the place labels sliding while the map moves (issue I1). Move them in OpenSeadragon's `update-viewport`
-   handler by writing `transform` directly, and re-render React only when the zoom level changes.
-3. Cap the maximum zoom at the painted resolution (I8).
-4. Confirm `http://` redirects to `https://` on the live site (I2).
-5. Add a height pass to `render.py`: surface height per pixel, in centimetres across two channels, saved next to
-   the existing kind and line passes. Phase 2 uses it for patch repair and Phase 6 for car hiding, tree sway and
-   water.
+## Phase 0: tidy up (free) — done 7 Nov 2026
+1. Done: labels move in the map's own redraw. `MapHandle.onFrame` is called from OpenSeadragon's
+   `update-viewport` handler, and `Pins.tsx` writes each label's `transform` there. React only decides which
+   labels show (I1).
+2. Already in 1.0: the zoom is capped at the painted detail with `maxZoomPixelRatio: 1.25` (I8).
+3. Done: `http://` redirects to `https://` (I2).
+4. Done: `render.py --heights` writes `data/work/frames_height/`. These are 16-bit PNGs of the visible surface's
+   height above sea level, in cm (0 = empty), for the whole map (91 frames, 19 s). Trees are not in the 3D model,
+   so tree crowns must come from the green colour, not from the height.
 
-Done when: labels stay pinned while dragging, the zoom stops at the painted detail, and the height pass exists for
-the showcase.
+## Phase 1: the new painter (free, on the laptop) — built 7 Nov 2026, waiting for its GPU test
+Files:
+- `tiles/md_core.py`: window blending, the shifted grid, resume and hold/repair. It has no model in it.
+- `tiles/test_md_core.py`: 6 laptop tests with a stand-in model. All pass.
+- `tiles/mdpaint.py`: the Qwen-Image-Edit-2511 adapter. Its shapes were checked against a tiny copy of the same
+  transformer.
+- `md_on_pod.sh`: the RunPod launcher.
+- `modal_paint.py`: the Modal launcher.
+- `prompt_v2.txt`: the exact training prompt.
 
-## Phase 1: the new painter (free, on the laptop, about 2 to 3 days)
-New script `pipeline/gpu_train/tiles/mdpaint.py`. It keeps the model (Qwen-Image-Edit-2511), the style LoRA, the
-prompt and the inputs (render plus layout map), and changes how the windows are combined. The method comes from
-Pixel Singapore (see References).
+Two findings from building it:
+- **Red outline:** full-view training examples (about 20% of the v2 set) have a 2 px red outline round the whole
+  image, so every window's render crop gets one too.
+- **Prompt:** the prompt is the training prompt. The light LoRA's prompts ("Convert the outlined section ...")
+  still need checking with whole windows in Phase 2.
 
-1. **One image for the whole area.** Start one noise latent the size of the area being painted. For the showcase
-   that is 6000 px, or 750 × 750 latents, which is small.
+The method comes from Pixel Singapore (see References). It keeps the model (Qwen-Image-Edit-2511), the style LoRA,
+the prompt and the inputs (render plus layout map), and changes how the windows are combined:
+
+1. **One image for the whole area.** Start one noise latent the size of the area being painted. The showcase is
+   6000 render px, which becomes 5120 model px or 640 × 640 latents, with 49 windows per step.
 2. **Windows that share every step.** At each step, cut the latent into overlapping 1024 px windows with a 768 px
    stride. Run the model on each window, conditioned on its crop of the render and layout map. Blend the
    predicted velocities with a weight that is flat in the middle and falls to zero at the edges. Take one scheduler
    step for the whole latent.
 3. **Shifted grid.** On every other step, shift the window grid by 384 px, so no window edge stays in one place.
 4. **Decode in overlapping pieces** and blend them in pixel space.
-5. **Resume.** Save the latent, step number and settings after every step to `/workspace/md_state/<job>/`. On start,
+5. **Resume.** Save the latent, step number and settings after every step to `/workspace/md/<job>/state/` (RunPod) or the Modal volume. On start,
    continue from the last saved step. This also makes cheaper interruptible GPUs usable.
 6. **Patch repair and neighbours** (replaces `repaint.py`). Take a mask of known pixels. At each step, re-noise the
    known pixels to that step's noise level and hold them fixed, as RePaint does, adapted to flow matching. Leave a
    64 px free band at the boundary and feather it back at the end. Skip windows that are fully known. The same code
    paints a new block next to finished ones.
 7. **Options:** `--steps` (25 now; 8 with a Lightning LoRA, tested in Phase 2), `--lora` (style or light, for the
-   versions), `--max-usd` with a deadline watchdog.
+   versions), `--deadline` (pauses 10 minutes before it, with the state saved). On Modal, `--max-hours` sets the
+   function timeout and prints the cost cap.
 8. **Laptop tests** with a stand-in model that predicts a known velocity, since the real model doesn't fit a laptop:
    - The window weights sum to 1 everywhere.
    - A flat-colour input gives a flat-colour output with no grid pattern.
@@ -97,10 +110,10 @@ Pixel Singapore (see References).
 9. **Pod script** `pipeline/gpu_train/md_on_pod.sh`. It reinstalls if needed, honours `KEEP`, writes to its own
    output folder, and has a watchdog.
 
-Done when: all four laptop tests pass and the pod script passes a shell lint.
-
-## Phase 2: showcase test (GPU, about $10 to $15, needs approval)
-Settle every open painting question in one GPU session.
+## Phase 2: showcase test (GPU, about $10 to $15 in total, on Modal)
+Settle every open painting question in one GPU session. The estimate for one showcase run at 25 steps is
+49 windows × 25 steps at 2 to 4 s per window, which is 0.7 to 1.4 h, or $3 to $6 on a Modal H200 ($4.54/h).
+Download the model on CPU first (`modal_paint.py::download`), so no GPU time is spent downloading.
 
 1. Repaint the showcase with `mdpaint.py` at 25 steps.
 2. Repaint it at 8 steps with the Lightning LoRA, if one is published for Qwen-Image-Edit-2511.
