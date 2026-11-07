@@ -68,9 +68,9 @@ def overlaps(a, b):
 
 
 def hours_cap(b):
-    # windows per step over the data-filled part (empty windows are skipped), x steps x seconds, + 25 min margin
+    # windows per step over the data-filled part (empty windows are skipped), x steps x seconds, + 12 min margin
     win = 49 * max(b["fill"], 0.1)
-    return round(win * args.steps * args.sec_per_window / 3600 + 25 / 60, 2)
+    return round(win * args.steps * args.sec_per_window / 3600 + 12 / 60, 2)
 
 
 def paint_block(b):
@@ -111,6 +111,8 @@ def paint_block(b):
     if rc != 0 or not out.exists():
         print(f"{bid}: no canvas (rc={rc}); see {log}", flush=True)
         return False
+    if V:  # the light model sometimes leaves magenta specks on lawns: fill them from their surroundings
+        sh(PY, "pipeline/despeckle.py", str(out), str(out), log=log)
     if not V:  # rivers in the old town's blue, keeping the painted texture
         sh(PY, "pipeline/water_tone.py", str(out), str(b["x0"]), str(b["y0"]), str(b["w"]), str(b["h"]), str(out), log=log)
     sh(PY, "pipeline/city_blocks.py", "done", bid, str(out), *([V] if V else []), log=log)
