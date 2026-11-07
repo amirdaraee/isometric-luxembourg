@@ -1,0 +1,2536 @@
+[
+{
+"slug": "notre-dame-cathedral",
+"name": "Notre-Dame Cathedral",
+"local": "Cathédrale Notre-Dame",
+"category": "landmark",
+"x": 7660,
+"y": 6288,
+"about": "Begun in 1613 as the Jesuit college church (architect Jean du Blocq): late Gothic in structure with Renaissance and Baroque ornament; it became the cathedral in 1870 and was greatly enlarged eastwards in 1935–38 by Hubert Schumacher. Pale yellow-grey sandstone walls and grey slate roofs; the skyline signature is two needle-thin dark spires at the east end plus a third, older west tower. The crypt holds the grand-ducal burial vault and the tomb of John the Blind.",
+"photos": [
+{
+"src": "/landmarks/notre-dame-cathedral/aerial.webp",
+"caption": "Aerial view of the cathedral spires with the Gëlle Fra and Place de la Constitution",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_12.jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/drone.webp",
+"caption": "Drone shot of the cathedral from above",
+"author": "Clemenspool",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Cath%C3%A9drale_Notre-Dame_de_Luxembourg_2024.jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/exterior.webp",
+"caption": "Exterior of the cathedral",
+"author": "Zinneke",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Cath%C3%A9drale_Notre-Dame_de_Luxembourg_2019-08_--1.jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/exterior-choir.webp",
+"caption": "Exterior of the transept and choir",
+"author": "GVR",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Kathedrale_unserer_lieben_Frau_4.jpg"
+}
+],
+"interior": {
+"architects": "Jesuit church begun 1613 (Jean du Blocq is usually credited with the design; Ulrich Job of Lucerne built it); carved organ gallery and portal by Daniel Muller (d. 1623). East extension 1935–38 by Hubert Schumacher.",
+"dates": "First stone 7 May 1613, consecrated 17 Oct 1621 as the Jesuit college church; cathedral since 1870; enlarged eastwards 1935–38 (new transept, choir, east towers, crypt); west tower burned 1985 and was rebuilt.",
+"style": "Late Gothic structure (\"Jesuit Gothic\") with Renaissance and Baroque ornament; the 1930s extension continues it in a sober historicist style.",
+"layout": "Three-aisled hall church (aisles nearly as high as the nave) with galleries over the aisles in the old part; transept and long choir from 1935–38; three towers (old west tower, two slim east spires). Crypt under the 1930s choir.",
+"main_spaces": "**Nave**: pale sandstone clustered piers carrying painted net/star rib vaults, Renaissance-carved gallery balustrades. **Organ gallery** (west): richly carved by Daniel Muller. **Choir**: tall stained-glass windows (mostly 20th c.), high altar. **Chapel of the Consolatrix Afflictorum**: the miraculous Virgin, focus of the Octave pilgrimage. **Crypt** (1930s): low hall on squat columns; the **grand-ducal burial vault** closed by a bronze gate guarded by two lions (sculptor Auguste Trémont); the **tomb of John the Blind**, King of Bohemia and Count of Luxembourg (d. 1346), with its sculpted mourners (remains moved here in 1945); bishops' tombstones; a small modern crypt chapel.",
+"materials_colours": "Warm yellow-grey sandstone, white/cream plastered vault cells with painted ribs and ornament, dark oak furnishings, deep blue/red stained glass; crypt in grey stone with blue-tiled and starry details.",
+"access": "Open daily, free (Mon–Sat 08:00–18:00, Sun 09:00–19:00, per the tourist office). Crypt usually accessible; closed during services.",
+"official_site": "https://www.cathol.lu/ (archdiocese) · tourist page https://luxembourg-city.com/en/place/church/cathedral-of-the-blessed-virgin",
+"wikipedia": "[en: Notre-Dame Cathedral, Luxembourg](https://en.wikipedia.org/wiki/Notre-Dame_Cathedral,_Luxembourg)",
+"photos": [
+{
+"src": "/landmarks/notre-dame-cathedral/in-nave.webp",
+"caption": "Nave looking east to the choir: clustered sandstone piers and rib vaults",
+"author": "Helmlechner",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Kathedrale_unserer_lieben_Frau_Luxemburg_Innenraum.jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/in-choir-windows.webp",
+"caption": "Choir with its tall stained-glass windows and high altar",
+"author": "Diego Tirira from Quito, Ecuador",
+"licence": "CC BY-SA 2.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:LU_Luxemburgo_0710_(27)_(17042879327).jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/in-vault-ceiling.webp",
+"caption": "Looking straight up into the painted late-Gothic star/net rib vault",
+"author": "Diego Delso",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Catedral_de_Nuestra_Se%C3%B1ora,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-16,_DD_87-89_HDR.jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/in-organ-gallery.webp",
+"caption": "West organ gallery with carved Renaissance balustrade",
+"author": "Diego Tirira from Quito, Ecuador",
+"licence": "CC BY-SA 2.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:LU_Luxemburgo_0710_(33)_(17250309715).jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/in-stained-glass.webp",
+"caption": "Stained-glass windows, detail of figures and colours",
+"author": "Pudelek (Marcin Szala)",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Stained-glass_windows_in_Cath%C3%A9drale_Notre-Dame_de_Luxembourg.jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/in-crypt-hall.webp",
+"caption": "Crypt hall",
+"author": "Dguendel",
+"licence": "CC BY 3.0",
+"licence_url": "https://creativecommons.org/licenses/by/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxemburg,_Kathedrale_unserer_lieben_Frau,_Krypta-4.jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/in-crypt-vault-gate.webp",
+"caption": "Entrance to the grand-ducal burial vault: bronze gate flanked by two lions",
+"author": "User:Pietz",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Crypt_Entry.jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/in-crypt-tomb-john-the-blind.webp",
+"caption": "Tomb of John the Blind, King of Bohemia, in the crypt",
+"author": "Dudva",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Crypt_of_Notre-Dame_Cathedral,_Luxembourg.jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/in-crypt-chapel.webp",
+"caption": "Crypt chapel with red chairs and starry-tiled vault",
+"author": "Dguendel",
+"licence": "CC BY 3.0",
+"licence_url": "https://creativecommons.org/licenses/by/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxemburg,_Kathedrale_unserer_lieben_Frau,_Krypta-2.jpg"
+},
+{
+"src": "/landmarks/notre-dame-cathedral/in-plan-jesuit-college-project.webp",
+"caption": "17th-c. Jesuit plan",
+"author": "Unknown Jesuit draughtsman (17th c.); Bibliothèque nationale de France",
+"licence": "Public domain",
+"licence_url": "https://creativecommons.org/publicdomain/mark/1.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Coll%C3%A8ge_de_Luxembourg_-_autre_projet_-_plan_du_rez-de-chauss%C3%A9e_-_dessin,_plan_-_btv1b84487002_(1_of_2).jpg"
+}
+]
+},
+"model": "/landmarks/notre-dame-cathedral/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Notre-Dame_Cathedral,_Luxembourg",
+"cutaway": "/landmarks/notre-dame-cathedral/cutaway.webp"
+},
+{
+"slug": "grand-ducal-palace",
+"name": "Grand Ducal Palace",
+"local": "Palais grand-ducal",
+"category": "landmark",
+"x": 8307,
+"y": 6230,
+"about": "Built from 1572 as the city hall, extended in the 18th century and again in the 1890s, it has been the Grand Duke's town residence since 1890. The Renaissance façade is honey-coloured sandstone covered in fine geometric carving in a Spanish-Moorish-influenced style, with oriel turrets topped by slender slate spires and a steep dark roof with dormers. Guards in a sentry box stand at the door on the Rue du Marché-aux-Herbes.",
+"photos": [
+{
+"src": "/landmarks/grand-ducal-palace/facade.webp",
+"caption": "Main façade from the Rue du Marché-aux-Herbes",
+"author": "Moncle",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Fa%C3%A7ade_du_Palais_Grand-Ducal,_Luxembourg,_septembre_2025.jpg"
+},
+{
+"src": "/landmarks/grand-ducal-palace/exterior-with-chamber.webp",
+"caption": "Palace and the adjoining Chamber of Deputies",
+"author": "Krzysztof Golik",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Grand_Ducal_Palace_in_Luxembourg_City_04.jpg"
+},
+{
+"src": "/landmarks/grand-ducal-palace/detail-windows-roof.webp",
+"caption": "Detail: windows, sgraffito and roof",
+"author": "Krzysztof Golik",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Grand_Ducal_Palace_in_Luxembourg_City_03.jpg"
+}
+],
+"interior": {
+"architects": "Original city hall 1572 (Renaissance façade); 1741 extension; 1890s renovation and new wing by Gédéon Bordiau (Belgian) and Charles Arendt (state architect).",
+"dates": "City hall 1572–1795; prefecture 1795, seat of government 1817, governor's residence; grand-ducal residence since 1890; interior renovated 1883; looted under Nazi occupation (used as concert hall and tavern); redecorated in the 1960s; thoroughly restored 1991–96.",
+"style": "Flemish/Spanish-influenced Renaissance façade with dense geometric carving; interiors 19th-century historicist (Louis XV/XVI revival, white and gold).",
+"floors": "Ground floor (entrance, guard), **first floor = state rooms (piano nobile)**, upper floors with apartments; a 19th-century gangway links it to the Chamber of Deputies next door.",
+"main_rooms_(summer_tour_route)": "**Grand staircase** linking the state rooms. **Dining room** (state banquets): Napoleon-given tapestries, bronze and crystal chandeliers, ceiling with the arms of the twelve cantons. **King's Room / King's Lounge**: dark panelling, painted ceiling. **Map room**. **Reception hall / Ballroom**: white and gold, mirrors, chandeliers, balcony over the street. **Yellow Room** (the Grand Duke's Christmas message is filmed here). **Grand Duke's study**, and two private apartment areas at the end of the tour.",
+"materials_colours": "Honey-coloured sandstone outside; inside white panelling with gilt mouldings, yellow and red silk, parquet, crystal chandeliers, tapestries.",
+"access": "Guided tours only, in summer (2026: 18 July – 30 August, about 75 min, FR/EN/DE/LB, adults €18). Tickets from the Luxembourg City Tourist Office. **No photography inside.** Lift access. Also open on European Heritage Days.",
+"official_site": "https://monarchie.lu/en/visit-grand-ducal-palace",
+"wikipedia": "[en: Grand Ducal Palace, Luxembourg](https://en.wikipedia.org/wiki/Grand_Ducal_Palace,_Luxembourg)",
+"photos": [
+{
+"src": "/landmarks/grand-ducal-palace/in-ballroom.webp",
+"caption": "Ballroom: white and gold panelling, mirrors, chandeliers",
+"author": "MrSkylarMan",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Grand_Ducal_Palace_Ballroom.jpg"
+},
+{
+"src": "/landmarks/grand-ducal-palace/in-kings-lounge.webp",
+"caption": "King's Lounge: painted ceiling, dark panelling, red carpet",
+"author": "MrSkylarMan",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Ducal_Palace_Kings_Lounge.jpg"
+},
+{
+"src": "/landmarks/grand-ducal-palace/in-state-salon.webp",
+"caption": "White-and-gold state salon used for audiences",
+"author": "Office of U.S. House Speaker",
+"licence": "Public domain",
+"licence_url": "https://creativecommons.org/publicdomain/mark/1.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Nancy_Pelosi_and_Grand_Duke_Henri_in_2019_(1).jpg"
+}
+]
+},
+"model": "/landmarks/grand-ducal-palace/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Grand_Ducal_Palace,_Luxembourg",
+"cutaway": "/landmarks/grand-ducal-palace/cutaway.webp"
+},
+{
+"slug": "chamber-of-deputies",
+"name": "Chamber of Deputies",
+"local": "Chambre des Députés",
+"category": "landmark",
+"x": 8263,
+"y": 6308,
+"about": "Hôtel de la Chambre, the parliament building, built 1858–1860 directly adjoining the Grand Ducal Palace. Neo-Renaissance façade in light sandstone with arched windows and decorative carving, flags at the entrance; much smaller and plainer than the palace next to it.",
+"photos": [
+{
+"src": "/landmarks/chamber-of-deputies/facade.webp",
+"caption": "Façade of the parliament building",
+"author": "Daderot",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:H%C3%B4tel_de_la_Chambre_des_d%C3%A9put%C3%A9s_-_Luxembourg_City_-_DSC05971.JPG"
+},
+{
+"src": "/landmarks/chamber-of-deputies/exterior.webp",
+"caption": "Exterior on the Rue du Marché-aux-Herbes",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_Chambre_des_d%C3%A9put%C3%A9s_Nov_2009.jpg"
+},
+{
+"src": "/landmarks/chamber-of-deputies/detail.webp",
+"caption": "Detail of the façade",
+"author": "Daderot",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Detail_-_H%C3%B4tel_de_la_Chambre_des_d%C3%A9put%C3%A9s_-_Luxembourg_City_-_DSC05973.JPG"
+}
+],
+"interior": {
+"architect": "Antoine Hartmann. Later annexes in the neighbouring buildings along the Rue du Marché-aux-Herbes and Rue de l'Eau.",
+"dates": "Built 1858–60 next to the palace (to which it is linked by a gangway); renovated several times; during the Covid-19 pandemic (2020–21) the Chamber met in the Cercle Cité for distancing.",
+"style": "Neo-Renaissance, harmonised with the palace.",
+"main_rooms": "**Plenary hall**: horseshoe of oak desks on red carpet facing the president's raised desk and tribune; tall windows with heavy curtains, faux-marble pilasters, crystal chandeliers, coffered ceiling with skylight, a public gallery on three sides with a carved balustrade. **Grand staircase** with red carpet and carved wooden balustrade. Committee rooms, corridors and a modern glass link, a members' bar, attic meeting rooms (all shown in the Commons category below).",
+"materials_colours": "Warm wood, red and gold textiles, cream walls, marbled columns.",
+"access": "Public sessions can be watched from the gallery; free guided visits for groups on request, and open days (European Heritage Days, e.g. 17 Oct 2026).",
+"official_site": "https://www.chd.lu/",
+"wikipedia": "[en: Hôtel de la Chambre](https://en.wikipedia.org/wiki/H%C3%B4tel_de_la_Chambre)",
+"photos": [
+{
+"src": "/landmarks/chamber-of-deputies/in-plenary-hall.webp",
+"caption": "Plenary hall seen from the public gallery: horseshoe of desks, chandeliers, marble pilasters",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Chambre_des_D%C3%A9put%C3%A9s_(int%C3%A9rieur)_(08).jpg"
+},
+{
+"src": "/landmarks/chamber-of-deputies/in-plenary-in-session.webp",
+"caption": "Plenary hall in session, view along the benches",
+"author": "oscepa",
+"licence": "CC BY-SA 2.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:Joint_meeting_with_the_Members_of_the_Standing_Committee,_the_Members_of_the_Luxembourg_delegation_to_the_OSCE_PA_and_the_Members_of_the_Committee_on_Foreign_and_European_Affairs,_Cooperation,_Immigration_and_Asylum,_25_March_2019_-_2.jpg"
+},
+{
+"src": "/landmarks/chamber-of-deputies/in-plenary-presidium.webp",
+"caption": "President's desk and tribune at the head of the plenary hall",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Chambre_des_D%C3%A9put%C3%A9s_(int%C3%A9rieur)_(09).jpg"
+},
+{
+"src": "/landmarks/chamber-of-deputies/in-staircase.webp",
+"caption": "Main staircase with red carpet and carved balustrade",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Chambre_des_D%C3%A9put%C3%A9s_(int%C3%A9rieur)_(03).jpg"
+}
+]
+},
+"model": "/landmarks/chamber-of-deputies/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Chamber_of_Deputies_(Luxembourg"
+},
+{
+"slug": "city-hall",
+"name": "City Hall",
+"local": "Hôtel de Ville",
+"category": "landmark",
+"x": 7564,
+"y": 6114,
+"about": "City Hall on Place Guillaume II, built 1830–1838 in a sober neoclassical style on the site of the old Franciscan friary. Pale stone façade with a row of tall windows and a portico; two bronze lions guard the steps.",
+"photos": [
+{
+"src": "/landmarks/city-hall/facade.webp",
+"caption": "Neoclassical façade with its lions",
+"author": "Krzysztof Golik",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:City_Hall_of_Luxembourg_City_01.jpg"
+},
+{
+"src": "/landmarks/city-hall/with-square.webp",
+"caption": "City Hall, the square and the cathedral",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxemb_City_Hotel_de_ville_01.jpg"
+},
+{
+"src": "/landmarks/city-hall/corner.webp",
+"caption": "Corner view of the City Hall block",
+"author": "Chabe01",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:H%C3%B4tel_Ville_-_Luxembourg_(LU03)_-_2026-09-27_-_7.jpg"
+}
+],
+"interior": {
+"architect": "Justin Remont (Liège). Bronze lions on the steps by Auguste Trémont (1930s).",
+"dates": "Built 1830–38 on the site of the former Franciscan friary on Place Guillaume II (Knuedler).",
+"style": "Neoclassical; two main storeys over a raised ground floor, cream render and sandstone dressings, hipped slate roof.",
+"main_rooms": "Council chamber (municipal council meetings), reception hall / salle des fêtes on the first floor used for civil weddings and official receptions, mayor's offices.",
+"access": "Not open to visitors; public council meetings; weddings; occasional open days.",
+"official_site": "https://www.vdl.lu/",
+"wikipedia": "[en: City Hall, Luxembourg](https://en.wikipedia.org/wiki/City_Hall,_Luxembourg)",
+"photos": []
+},
+"model": "/landmarks/city-hall/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Luxembourg_City_Hall"
+},
+{
+"slug": "place-guillaume-ii",
+"name": "Place Guillaume II",
+"local": "Place Guillaume II / Knuedler",
+"category": "square",
+"x": 7880,
+"y": 6112,
+"about": "The Knuedler, the city's largest square, on the site of a former Franciscan friary (named after the friars' knotted belts). The equestrian statue of King-Grand Duke William II by Antonin Mercié stands in the middle, with the City Hall on one side. Used for markets and events; large paved open space framed by pastel town houses.",
+"photos": [
+{
+"src": "/landmarks/place-guillaume-ii/city-hall-night.webp",
+"caption": "The square and City Hall at night",
+"author": "Diego Delso",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Plaza_Guillermo_II,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-15,_DD_52-54_HDR.jpg"
+},
+{
+"src": "/landmarks/place-guillaume-ii/raised-view.webp",
+"caption": "Square seen from the City Hall",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_pl_Guillaume_Knuedler_02.jpg"
+},
+{
+"src": "/landmarks/place-guillaume-ii/statue.webp",
+"caption": "The equestrian statue of William II",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_pl_Guillaume_II_vers_rue_de_la_Reine.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Place_Guillaume_II"
+},
+{
+"slug": "place-d-armes",
+"name": "Place d'Armes",
+"local": "Place d'Armes / Plëss",
+"category": "square",
+"x": 7615,
+"y": 5801,
+"about": "The old town's main café square, laid out in the 17th century as a parade ground for the garrison (hence the name). Lined with plane trees, with a bandstand used for summer concerts, and the Cercle Cité on its east side. Pink and grey paving, café terraces, a Christmas market in winter.",
+"photos": [
+{
+"src": "/landmarks/place-d-armes/square.webp",
+"caption": "The square with its trees and bandstand",
+"author": "Kapsuglan",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luksemburg_2013_(19).JPG"
+},
+{
+"src": "/landmarks/place-d-armes/square-market.webp",
+"caption": "Flea market on the square",
+"author": "Ipigott",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Place_d%27Armes_Luxbg2.JPG"
+},
+{
+"src": "/landmarks/place-d-armes/detail-bandstand.webp",
+"caption": "The bandstand",
+"author": "Razvan Orendovici",
+"licence": "CC BY-SA 2.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:Place_d%27Armes_Bandstand.JPG"
+},
+{
+"src": "/landmarks/place-d-armes/square-2.webp",
+"caption": "View over the square with the bandstand",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Place_d%27Armes_(101).jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Place_d'Armes_(Luxembourg"
+},
+{
+"slug": "cercle-cite",
+"name": "Cercle Cité",
+"local": "Cercle Cité",
+"category": "culture",
+"x": 7869,
+"y": 5887,
+"about": "Cercle municipal, built 1904–1909 for city receptions and events, now Cercle Cité with exhibition rooms. Ornate Beaux-Arts style façade in cream stone facing Place d'Armes, with a clock under a sculpted pediment and a long relief frieze of Countess Ermesinde granting the city its charter of freedoms in 1244.",
+"photos": [
+{
+"src": "/landmarks/cercle-cite/facade.webp",
+"caption": "Façade on Place d'Armes",
+"author": "Krzysztof Golik",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Cercle_municipal_in_Luxembourg_City_02.jpg"
+},
+{
+"src": "/landmarks/cercle-cite/detail-top.webp",
+"caption": "Detail: top of the façade with sculpture",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_Cercle_municipal_top.jpg"
+},
+{
+"src": "/landmarks/cercle-cite/detail-clock.webp",
+"caption": "Detail: the clock",
+"author": "Krzysztof Golik",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Cercle_municipal_in_Luxembourg_City_05.jpg"
+}
+],
+"interior": {
+"architects": "Pierre Funck and his son Paul Funck (competition launched 1902, won 1904). Annex \"Cité\" (library, conference centre) added 2011, linked behind.",
+"dates": "Built 1904–09 (some sources say 1904–05 for the shell); municipal palace from Sept 1909, inaugurated 1910; renovated and reopened as \"Cercle Cité\" in 2011.",
+"style": "Neo-Baroque / Belle Époque, with a sculpted frieze (Countess Ermesinde granting the city charter) and a clock pediment on Place d'Armes.",
+"main_rooms": "**Grande Salle** (ballroom): parquet, white stucco, mirrors, red curtains, chandeliers; used for receptions, concerts, the Chamber's sessions during its renovation. **Stair hall** under an oval **stained-glass dome**. **Vaulted gallery / foyer** with marble floor and a central glazed bay. Reception salons; the **Ratskeller** exhibition space (basement, free); conference rooms on the upper floor of the annex.",
+"materials_colours": "Golden sandstone outside; inside white and cream stucco, marble, polished parquet, gilt details, coloured glass.",
+"access": "Ratskeller exhibitions free, daily; the reception rooms on open days and events.",
+"official_site": "https://cerclecite.lu/",
+"wikipedia": "[en: Cercle Municipal](https://en.wikipedia.org/wiki/Cercle_Municipal)",
+"photos": [
+{
+"src": "/landmarks/cercle-cite/in-ballroom.webp",
+"caption": "Grande Salle",
+"author": "Procrastineur49",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Cercle_Cit%C3%A9_Int%C3%A9rieur_(104).jpg"
+},
+{
+"src": "/landmarks/cercle-cite/in-glass-dome.webp",
+"caption": "Stained-glass oval dome over the stair hall",
+"author": "Procrastineur49",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Cercle_Cit%C3%A9_Int%C3%A9rieur_(101).jpg"
+},
+{
+"src": "/landmarks/cercle-cite/in-gallery.webp",
+"caption": "Vaulted gallery / foyer with marble floor",
+"author": "Procrastineur49",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Cercle_Cit%C3%A9_Int%C3%A9rieur_(106).jpg"
+},
+{
+"src": "/landmarks/cercle-cite/in-stair-landing.webp",
+"caption": "Upper landing with wrought-iron balustrade",
+"author": "Procrastineur49",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Cercle_Cit%C3%A9_Int%C3%A9rieur_(102).jpg"
+}
+]
+},
+"model": "/landmarks/cercle-cite/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Cercle_Municipal",
+"cutaway": "/landmarks/cercle-cite/cutaway.webp"
+},
+{
+"slug": "national-museum-of-history-and-art",
+"name": "National Museum of History and Art",
+"local": "Musée national d'histoire et d'art",
+"category": "culture",
+"x": 8702,
+"y": 6212,
+"about": "National Museum of Archaeology, History and Art on the Fëschmaart, the old fish market at the heart of the medieval town. Its main building (2002) is a smooth white limestone cube that goes deep into the rock, connected to restored historic town houses. Collections run from prehistory and Gallo-Roman mosaics to modern art.",
+"photos": [
+{
+"src": "/landmarks/national-museum-of-history-and-art/interior-gallery.webp",
+"caption": "Interior: exhibition gallery",
+"author": "Yourusernamewillbepublic2",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Museum.jpg"
+},
+{
+"src": "/landmarks/national-museum-of-history-and-art/interior.webp",
+"caption": "Inside the museum",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Nationalmus%C3%A9e_um_F%C3%ABschmaart_22.jpg"
+},
+{
+"src": "/landmarks/national-museum-of-history-and-art/interior-2.webp",
+"caption": "Inside the museum",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Nationalmus%C3%A9e_um_F%C3%ABschmaart_05.jpg"
+},
+{
+"src": "/landmarks/national-museum-of-history-and-art/exterior.webp",
+"caption": "Exterior on the Marché-aux-Poissons",
+"author": "Chabe01",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Mus%C3%A9e_Arch%C3%A9ologie_Histoire_Art_-_Luxembourg_(LU03)_-_2026-09-27_-_1.jpg"
+},
+{
+"src": "/landmarks/national-museum-of-history-and-art/entrance.webp",
+"caption": "Entrance on the Fëschmaart",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_MNAHA_2023_(101).jpg"
+}
+],
+"interior": {
+"architects": "New museum building by Christian Bauer & Associés (opened 2002), behind and below the historic Fish Market houses; later Wiltheim wing (2017) links the old houses.",
+"dates": "Museum on this site since 1939 in old patrician houses; new wing 2002; Wiltheim wing 2017; reception renovated 2025.",
+"layout": "A white natural-stone block on the Fish Market with a glazed hall; **three underground levels (about 700 m² each) dug into the rock** for archaeology; upper floors for fine arts and decorative arts (an Edward Steichen space planned on the 5th floor).",
+"main_spaces": "**Prehistory level** in the rock (rock walls left visible, reconstructions); **Gallo-Roman level** with the **Vichten mosaic** (3rd c., the nine Muses) in its own room; medieval and coin rooms; painting galleries (dark walls, spot lighting); period rooms in the old houses.",
+"materials_colours": "White limestone, bare rock, dark grey gallery walls, glass.",
+"access": "Tue–Sun, free for the permanent collection.",
+"official_site": "https://www.mnaha.lu/",
+"wikipedia": "[en: National Museum of Archaeology, History and Art](https://en.wikipedia.org/wiki/National_Museum_of_Archaeology,_History_and_Art)",
+"photos": [
+{
+"src": "/landmarks/national-museum-of-history-and-art/in-prehistory-rock-level.webp",
+"caption": "Underground prehistory level cut into the rock",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Nationalmus%C3%A9e_um_F%C3%ABschmaart_05.jpg"
+},
+{
+"src": "/landmarks/national-museum-of-history-and-art/in-vichten-mosaic-room.webp",
+"caption": "Room of the Roman Vichten mosaic",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Nationalmus%C3%A9e_um_F%C3%ABschmaart_13.jpg"
+},
+{
+"src": "/landmarks/national-museum-of-history-and-art/in-gallery.webp",
+"caption": "Dark exhibition gallery with spot-lit artworks",
+"author": "Yourusernamewillbepublic2",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Museum.jpg"
+}
+]
+},
+"model": "/landmarks/national-museum-of-history-and-art/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/National_Museum_of_Archaeology,_History_and_Art"
+},
+{
+"slug": "luxembourg-city-history-museum",
+"name": "Luxembourg City History Museum",
+"local": "Lëtzebuerg City Museum / Musée d'Histoire de la Ville",
+"category": "culture",
+"x": 8133,
+"y": 6490,
+"about": "The Lëtzebuerg City Museum on the Rue du Saint-Esprit, opened 1996 in four restored town houses from the 17th to 19th centuries. Its large glass panoramic lift drops through the rock and has views over the Grund; inside, fortress models and the history of the city.",
+"photos": [
+{
+"src": "/landmarks/luxembourg-city-history-museum/view.webp",
+"caption": "View over the old town roofs towards the Grund (filed under the museum on Commons)",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:L%C3%ABtzebuerg_City_Museum_04.jpg"
+},
+{
+"src": "/landmarks/luxembourg-city-history-museum/exterior-2.webp",
+"caption": "Museum exterior",
+"author": "Michael Kramer",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Historisches_Museum_der_Stadt_Luxemburg_8325-026.jpg"
+},
+{
+"src": "/landmarks/luxembourg-city-history-museum/exhibit.webp",
+"caption": "Exhibit inside the museum (reconstructed prehistoric shelter)",
+"author": "Van Der Meulen Christofle",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Reconstitution_(1)_(Mus%C3%A9e_d%27Histoire_de_la_Ville_de_Luxembourg).jpg"
+}
+],
+"interior": {
+"architects": "Conny Lentz (Luxembourg) with Repérages (Paris).",
+"dates": "Opened 22 June 1996; renamed from Musée d'histoire de la Ville de Luxembourg in May 2017.",
+"layout": "Four restored town houses (17th–19th c., medieval traces) on Rue du Saint-Esprit joined by a modern glass façade and atrium; the rock beneath was excavated for **four extra levels**, giving **eight levels** in all. A **glass panoramic lift** (up to 60–65 people) runs through all of them: rock foundations at the bottom, views over the Grund and the Rham plateau at the top.",
+"main_spaces": "Rock-cut lower levels (archaeology, reconstructions), the permanent exhibition on the city's history through the floors, temporary-exhibition floors, the **city model / UNESCO visitor-centre room**, period rooms in the old houses.",
+"access": "Tue–Sun; ticketed.",
+"official_site": "https://citymuseum.lu/",
+"wikipedia": "[en: Luxembourg City History Museum](https://en.wikipedia.org/wiki/Luxembourg_City_History_Museum)",
+"photos": [
+{
+"src": "/landmarks/luxembourg-city-history-museum/in-model-room.webp",
+"caption": "White room with the city model",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:World_Heritage_Luxembourg_09.jpg"
+},
+{
+"src": "/landmarks/luxembourg-city-history-museum/in-rock-level-reconstruction.webp",
+"caption": "Reconstruction in the rock-cut lower level",
+"author": "Van Der Meulen Christofle",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Reconstitution_(2)_(Mus%C3%A9e_d%27Histoire_de_la_Ville_de_Luxembourg).jpg"
+}
+]
+},
+"model": "/landmarks/luxembourg-city-history-museum/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Luxembourg_City_History_Museum"
+},
+{
+"slug": "st-michael-s-church",
+"name": "St. Michael's Church",
+"local": "Église Saint-Michel",
+"category": "landmark",
+"x": 8781,
+"y": 6423,
+"about": "The oldest religious site in the city: a chapel of the counts' castle stood here from the late 10th century. The present church mixes Romanesque, Gothic and Baroque parts; it was rebuilt after the French siege, with a Baroque portal of the 1680s. Ochre walls, an onion-domed bell tower and a statue of Saint Michael with the dragon.",
+"photos": [
+{
+"src": "/landmarks/st-michael-s-church/exterior.webp",
+"caption": "The church and its tower",
+"author": "Polibil",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Michaelskirche_Luxemburg_(DSC08308).jpg"
+},
+{
+"src": "/landmarks/st-michael-s-church/portal.webp",
+"caption": "The 1687 portal",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_%C3%A9glise_St_Michel_01.jpg"
+},
+{
+"src": "/landmarks/st-michael-s-church/detail-statue.webp",
+"caption": "Detail: Saint Michael and the dragon",
+"author": "Cayambe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_-_Eglise_St-Michel_-_St_Michel_et_le_dragon.jpg"
+}
+],
+"interior": {
+"dates": "Oldest religious site in the city: castle chapel of 987. Destroyed and rebuilt several times; present church mostly rebuilt in **1688** after the French siege, keeping older Romanesque/Gothic parts; baroque portal of the same period.",
+"style": "Mix of Gothic (rib vaults, pointed windows) and Baroque (portal, altars).",
+"layout": "Small hall church with nave and side aisle on round columns, rib-vaulted; west gallery with the organ; polygonal choir.",
+"main_features": "Large **baroque high altar** (17th c.) with paintings and statues; side altar of the Madonna; organ gallery on columns; stained glass; St Michael statue.",
+"materials_colours": "White walls and vaults, grey stone ribs and columns, dark gilded altars, coloured glass.",
+"access": "Open daily, free.",
+"wikipedia": "[en: St. Michael's Church, Luxembourg](https://en.wikipedia.org/wiki/St._Michael%27s_Church,_Luxembourg)",
+"photos": [
+{
+"src": "/landmarks/st-michael-s-church/in-nave.webp",
+"caption": "Nave looking to the high altar: Gothic vault, baroque altar",
+"author": "Michael Kramer",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Michaelskirche_Altarfront_8214-131.jpg"
+},
+{
+"src": "/landmarks/st-michael-s-church/in-choir.webp",
+"caption": "Choir and baroque high altar with stained glass",
+"author": "Diego Delso",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Iglesia_de_San_Miguel,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-16,_DD_74-76_HDR.jpg"
+},
+{
+"src": "/landmarks/st-michael-s-church/in-organ-gallery.webp",
+"caption": "West organ gallery on columns",
+"author": "Chatsam",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Interior_of_%C3%89glise_Saint-Michel_(Luxembourg_City)_02.JPG"
+}
+]
+},
+"model": "/landmarks/st-michael-s-church/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Saint_Michael's_Church,_Luxembourg"
+},
+{
+"slug": "casino-luxembourg-forum-of-contemporary-art",
+"name": "Casino Luxembourg – Forum of contemporary art",
+"local": "Casino Luxembourg – Forum d'art contemporain",
+"category": "culture",
+"x": 6753,
+"y": 5855,
+"about": "Built 1880–1882 as the 'Casino bourgeois', a society club where Franz Liszt gave his last concert in 1886; since 1996 the Casino Luxembourg – Forum d'art contemporain. Cream stone neo-Renaissance façade on Boulevard Roosevelt with a modern glass ground-floor extension.",
+"photos": [
+{
+"src": "/landmarks/casino-luxembourg-forum-of-contemporary-art/facade.webp",
+"caption": "Façade on Boulevard Roosevelt",
+"author": "Krzysztof Golik",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Casino_Luxembourg.jpg"
+},
+{
+"src": "/landmarks/casino-luxembourg-forum-of-contemporary-art/exterior.webp",
+"caption": "Front view",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Casino_Luxembourg_bd_Roosevelt_01.jpg"
+},
+{
+"src": "/landmarks/casino-luxembourg-forum-of-contemporary-art/detail-plaque.webp",
+"caption": "Detail: commemorative bronze plaque on the building",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Casino_Luxembourg_Alliance_int_tourisme_1898.jpg"
+}
+],
+"interior": {
+"architects": "Pierre Kemp and Pierre Funck (per the Casino's own history PDF; Wikipedia says Pierre and Paul Funck). 1959 glass pavilion (\"Aquarium\") by René Mailliet. Adapted for art in 1995 with Urs Raussmüller.",
+"dates": "Built 1880–82 as the Casino Bourgeois (social club with ballroom and gaming); Franz Liszt gave his last recital here in July 1886; converted for European Capital of Culture 1995; contemporary art centre since 1996.",
+"style": "Neo-Renaissance sandstone palace on Rue Notre-Dame/Boulevard Roosevelt; glass Aquarium (café/library) on the south.",
+"main_spaces": "White-cube exhibition rooms on the ground and first floor inside the historic shell (ornate ceilings partly kept), the former ballroom, the Aquarium, a white stair/\"Artgalerio\" circuit, a black-box room in the basement.",
+"access": "Wed–Mon, ticketed (free on some days).",
+"official_site": "https://www.casino-luxembourg.lu/ ; history PDF https://casino-luxembourg.lu/sites/default/files/2021-11/The%20history.pdf",
+"wikipedia": "[en: Casino Luxembourg](https://en.wikipedia.org/wiki/Casino_Luxembourg)",
+"photos": [
+{
+"src": "/landmarks/casino-luxembourg-forum-of-contemporary-art/in-staircase.webp",
+"caption": "White modern staircase inside the art centre",
+"author": "RG72",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Artgalerio_Casino_Luxembourg_-_Forum_d%27art_contemporain_02.jpg"
+}
+]
+},
+"model": "/landmarks/casino-luxembourg-forum-of-contemporary-art/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Casino_Luxembourg"
+},
+{
+"slug": "place-de-la-constitution",
+"name": "Place de la Constitution",
+"local": "Place de la Constitution",
+"category": "square",
+"x": 7050,
+"y": 6119,
+"about": "Square on the Beck bastion above the Pétrusse valley, home to the Gëlle Fra and the entrance to the Pétrusse casemates. Views of the Pont Adolphe and the Spuerkeess tower; site of the Christmas market and funfair wheel in winter.",
+"photos": [
+{
+"src": "/landmarks/place-de-la-constitution/aerial.webp",
+"caption": "Aerial view of the square, Gëlle Fra and the cathedral",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_15.jpg"
+},
+{
+"src": "/landmarks/place-de-la-constitution/raised-view.webp",
+"caption": "The square seen from the cathedral tower",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxemb_pl_Constitution_from_cathedral_01.jpg"
+},
+{
+"src": "/landmarks/place-de-la-constitution/square-funfair.webp",
+"caption": "The square with the Christmas funfair wheel",
+"author": "Cayambe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_place_de_la_Constitution_nov_2015.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://de.wikipedia.org/wiki/Place_de_la_Constitution"
+},
+{
+"slug": "gelle-fra",
+"name": "Gëlle Fra",
+"local": "Monument du Souvenir / Gëlle Fra",
+"category": "landmark",
+"x": 7052,
+"y": 6150,
+"about": "The Monument of Remembrance by sculptor Claus Cito, unveiled in 1923 for Luxembourgers who served in the First World War. A gilded bronze woman holding up a laurel wreath stands on a tall granite obelisk (about 21 m), with two bronze soldiers at the base. Pulled down by the Nazi occupiers in 1940, it was pieced back together and re-erected in 1985. The golden figure is a key colour accent on the Place de la Constitution.",
+"photos": [
+{
+"src": "/landmarks/gelle-fra/aerial.webp",
+"caption": "Aerial view of the monument on Place de la Constitution with the cathedral",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_18.jpg"
+},
+{
+"src": "/landmarks/gelle-fra/exterior.webp",
+"caption": "South face of the monument with the obelisk",
+"author": "Cayambe",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:G%C3%ABlle_Fra_face_sud_2025.jpg"
+},
+{
+"src": "/landmarks/gelle-fra/detail-statue.webp",
+"caption": "Detail: the gilded figure on the obelisk",
+"author": "Simo.Albo80",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:A_Golden_Figure_Against_the_Blue.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/G%C3%ABlle_Fra"
+},
+{
+"slug": "chemin-de-la-corniche",
+"name": "Chemin de la Corniche",
+"local": "Chemin de la Corniche / Corniche",
+"category": "viewpoint",
+"x": 8185,
+"y": 6644,
+"about": "A promenade along the 17th-century rampart walls above the Grund, often called 'the most beautiful balcony in Europe'. Cobbled walkway, parapet walls and trees, with views over Neumünster Abbey, the Alzette and the Rham plateau.",
+"photos": [
+{
+"src": "/landmarks/chemin-de-la-corniche/exterior.webp",
+"caption": "The Corniche rampart",
+"author": "Cayambe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg-ville_%E2%80%93Corniche.jpg"
+},
+{
+"src": "/landmarks/chemin-de-la-corniche/promenade.webp",
+"caption": "The promenade",
+"author": "Francisco Anzola",
+"licence": "CC BY 2.0",
+"licence_url": "https://creativecommons.org/licenses/by/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:La_Corniche_(3755577623).jpg"
+},
+{
+"src": "/landmarks/chemin-de-la-corniche/view-from.webp",
+"caption": "View of the Grund from the Corniche",
+"author": "Cayambe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_-_Grund_from_Corniche.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/chemin-de-la-corniche/model.bin",
+"wikipedia": "https://de.wikipedia.org/wiki/Corniche_(Luxemburg"
+},
+{
+"slug": "bock-promontory",
+"name": "Bock promontory",
+"local": "Rocher du Bock / Bockfiels",
+"category": "history",
+"x": 9111,
+"y": 6558,
+"about": "The rocky spur over the Alzette where Count Siegfried acquired the castle site of Lucilinburhuc in 963, the founding date of Luxembourg. The castle was demolished with the fortress after 1867; what remains are cliffs, casemate openings and the Schlassbréck (castle bridge). Yellow-brown sandstone cliffs with walls on top.",
+"photos": [
+{
+"src": "/landmarks/bock-promontory/exterior.webp",
+"caption": "The Bock promontory",
+"author": "Diego Delso",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Bock,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-15,_DD_10-12_HDR.jpg"
+},
+{
+"src": "/landmarks/bock-promontory/panorama.webp",
+"caption": "Panorama: Grund, Ville Haute, Bock and Kirchberg",
+"author": "Cayambe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Corniche_%E2%80%93_Grund_%E2%80%93_Kirchberg_01.jpg"
+},
+{
+"src": "/landmarks/bock-promontory/castle-bridge.webp",
+"caption": "The Bock and the castle bridge",
+"author": "Pudelek (Marcin Szala)",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Bockfiels_and_Schlassbr%C3%A9ck,_Luxembourg_City.JPG"
+},
+{
+"src": "/landmarks/bock-promontory/historic-drawing.webp",
+"caption": "Historic drawing of the Bock by Michel Engels",
+"author": "Michel Engels",
+"licence": "Public domain",
+"licence_url": "https://creativecommons.org/publicdomain/mark/1.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Michel_Engels_-_14_L%27int%C3%A9rieur_du_Bock_avec_la_bastion_du_Ch%C3%A2teau.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Lucilinburhuc"
+},
+{
+"slug": "bock-casemates",
+"name": "Bock Casemates",
+"local": "Casemates du Bock",
+"category": "history",
+"x": 9290,
+"y": 6578,
+"about": "Galleries and gun chambers cut into the Bock rock, begun under Spanish rule in the 1640s and extended by Vauban and the Austrians in the 18th century; the whole city once had about 23 km of casemates, of which some 17 km survive. Raw yellow-brown sandstone tunnels, cannon embrasures opening onto the Alzette valley, and a stone bridge (the Schlassbréck) leading to them. Part of the UNESCO World Heritage site since 1994.",
+"photos": [
+{
+"src": "/landmarks/bock-casemates/interior-lit.webp",
+"caption": "Interior: lit gallery in the Bock casemates",
+"author": "Thomas Fuhrmann",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Casemates_du_Bock_in_2024_v04.jpg"
+},
+{
+"src": "/landmarks/bock-casemates/interior-gallery.webp",
+"caption": "Interior: a casemate gallery",
+"author": "LoKiLeCh",
+"licence": "CC BY-SA 3.0",
+"licence_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Casemates_(27).jpg"
+},
+{
+"src": "/landmarks/bock-casemates/detail-bridge.webp",
+"caption": "The bridge leading to the Bock casemates",
+"author": "Dguendel",
+"licence": "CC BY 3.0",
+"licence_url": "https://creativecommons.org/licenses/by/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxemburg,_die_Br%C3%BCcke_zur_Kasematte_Bock.jpg"
+},
+{
+"src": "/landmarks/bock-casemates/exterior.webp",
+"caption": "View from the Grund up to the casemates in the Bock rock",
+"author": "Flocci Nivis",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:20190324_Casemates_Luxembourg_City_01.jpg"
+}
+],
+"interior": {
+"dates": "Galleries cut into the Bock rock from **1644** (Spanish), greatly extended under Vauban (after 1684) and the Austrians (1730s–1740s); at their peak 23 km of tunnels, about 17 km survive. Partly demolished after 1867; opened to the public in 1933.",
+"spaces": "Rock-cut galleries on several levels with **cannon embrasures** opening onto the Alzette valley; stairs and shafts; the **Archaeological crypt** at the entrance with the foundations of Count Siegfried's castle (963).",
+"materials_colours": "Raw yellow-grey Luxembourg sandstone, damp and dark, with modern lighting and steel walkways.",
+"access": "Seasonal (roughly spring to autumn), ticketed.",
+"wikipedia": "[en: Bock (Luxembourg)](https://en.wikipedia.org/wiki/Bock_(Luxembourg))",
+"photos": [
+{
+"src": "/landmarks/bock-casemates/in-gallery.webp",
+"caption": "Rock-cut gallery inside the casemates",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Casemates_du_Bock_Luxembourg_-_L%C3%ABtzebuerg_16.jpg"
+},
+{
+"src": "/landmarks/bock-casemates/in-cannon-embrasure.webp",
+"caption": "Embrasure with cannon looking out over the Alzette valley",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Casemates_du_Bock_Luxembourg_-_L%C3%ABtzebuerg_27.jpg"
+},
+{
+"src": "/landmarks/bock-casemates/in-archaeological-crypt.webp",
+"caption": "Archaeological crypt: castle foundations under the Bock",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Casemates_du_Bock_Luxembourg_-_L%C3%ABtzebuerg_09.jpg"
+}
+]
+},
+"model": "/landmarks/bock-casemates/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Bock_(Luxembourg",
+"cutaway": "/landmarks/bock-casemates/cutaway.webp"
+},
+{
+"slug": "petrusse-casemates",
+"name": "Pétrusse Casemates",
+"local": "Casemates de la Pétrusse",
+"category": "history",
+"x": 7207,
+"y": 6191,
+"about": "Casemates dug in the 1640s under the Beck bastion, below today's Place de la Constitution, with staircases descending deep into the rock towards the Pétrusse valley. Closed for years for safety work, they reopened in the 2020s with new lighting. Rough sandstone vaults, steep narrow stairs and gun ports looking over the valley.",
+"photos": [
+{
+"src": "/landmarks/petrusse-casemates/interior.webp",
+"caption": "Interior of the casemates after reopening",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_P%C3%A9trusse_Casemates_(120).jpg"
+},
+{
+"src": "/landmarks/petrusse-casemates/interior-gallery.webp",
+"caption": "Interior gallery",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Casemates_de_la_P%C3%A9trusse_Luxembourg_-_L%C3%ABtzebuerg_10.jpg"
+},
+{
+"src": "/landmarks/petrusse-casemates/detail.webp",
+"caption": "Detail inside the casemates",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_P%C3%A9trusse_Casemates_(116).jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/petrusse-casemates/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/P%C3%A9itruss-Kasematten"
+},
+{
+"slug": "three-towers-gate",
+"name": "Three Towers Gate",
+"local": "Porte des Trois Tours / Dräi Tierm",
+"category": "history",
+"x": 8883,
+"y": 6099,
+"about": "The 'Three Towers' gate (Dräi Tierm, also Porte du Pfaffenthal) on the medieval walls: the innermost tower goes back to the city's first wall around 1050, the other two were added in the late Middle Ages. Three round sandstone towers with conical slate roofs, side by side over a gateway.",
+"photos": [
+{
+"src": "/landmarks/three-towers-gate/exterior.webp",
+"caption": "The Three Towers gate",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Dr%C3%A4i_Tierm_(01).jpg"
+},
+{
+"src": "/landmarks/three-towers-gate/raised-view.webp",
+"caption": "The gate seen from the Rue du Nord, above",
+"author": "Jwh",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Dr%C3%A4i_Tierm_vun_uewen-001.jpg"
+},
+{
+"src": "/landmarks/three-towers-gate/historic.webp",
+"caption": "Historic photograph by Charles Bernhoeft",
+"author": "Charles Bernhoeft",
+"licence": "Public domain",
+"licence_url": "https://creativecommons.org/publicdomain/mark/1.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Dr%C3%A4i_Tierm_Bernhoeft.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/three-towers-gate/model.bin",
+"wikipedia": "https://de.wikipedia.org/wiki/Drei_T%C3%BCrme_(Luxemburg"
+},
+{
+"slug": "spanish-turrets",
+"name": "Spanish Turrets",
+"local": "Tourelles espagnoles / Spuenesch Tiermchen",
+"category": "history",
+"x": 10596,
+"y": 5917,
+"about": "Small stone sentry turrets (bartizans) with pointed roofs on the fortress walls, especially along the Montée de Pfaffenthal. Popularly called 'Spanish', though most date from later French and Austrian rebuilding. Pale stone with slate or metal caps, perched over steep drops.",
+"photos": [
+{
+"src": "/landmarks/spanish-turrets/exterior.webp",
+"caption": "A Spanish turret on the walls",
+"author": "Krzysztof Golik",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Spuenesch_Tiermercher_in_Luxembourg_City_02.jpg"
+},
+{
+"src": "/landmarks/spanish-turrets/bartizan.webp",
+"caption": "Bartizan over the Montée de Pfaffenthal",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxemb_City_%C3%A9chauguette_mont%C3%A9e_Pfaffenthal_01.jpg"
+},
+{
+"src": "/landmarks/spanish-turrets/detail.webp",
+"caption": "Detail of a turret",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Spueneschen_Tiermchen_03.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://de.wikipedia.org/wiki/Spanische_T%C3%BCrmchen"
+},
+{
+"slug": "wenceslas-wall",
+"name": "Wenceslas Wall",
+"local": "Mur de Wenceslas / Wenzelsmauer",
+"category": "history",
+"x": 9378,
+"y": 6791,
+"about": "Part of the city's late-14th-century ring wall built under Duke Wenceslas II, crossing the Alzette valley from the Bock to the Rham plateau. Stretches of rubble-stone wall with round towers, gateways and the Stierchen bridge survive; the 'Wenzel circular walk' follows it.",
+"photos": [
+{
+"src": "/landmarks/wenceslas-wall/exterior.webp",
+"caption": "The Wenzel wall",
+"author": "trolvag",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Wenzelsmauer_-_panoramio.jpg"
+},
+{
+"src": "/landmarks/wenceslas-wall/rham-wall.webp",
+"caption": "The medieval wall on the Rham plateau",
+"author": "Sven Knepper / Roude Leiw2001 at lb.wikipedia",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Enceinte_du_Rham.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Fortress_of_Luxembourg"
+},
+{
+"slug": "grund-lock-and-stierchen-bridge",
+"name": "Grund lock and Stierchen bridge",
+"local": "Écluse du Grund / Pont du Stierchen",
+"category": "bridge",
+"x": 9328,
+"y": 6854,
+"about": "The Stierchen is a small medieval footbridge over the Alzette that forms part of the Wenceslas Wall, with a round tower at one end. Just upstream, the Grund lock (Écluse du Grund) was a fortress water barrier that could flood the valley. Stone arches, weir, rubble walls and the Bock cliffs behind.",
+"photos": [
+{
+"src": "/landmarks/grund-lock-and-stierchen-bridge/weir-and-bridge.webp",
+"caption": "The Alzette weir with the Stierchen bridge and the Bock behind",
+"author": "Diego Delso",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Puente_Stierchen,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-16,_DD_51.jpg"
+},
+{
+"src": "/landmarks/grund-lock-and-stierchen-bridge/raised-view.webp",
+"caption": "Stierchen bridge, Wenzel wall tower and the Alzette weir, from above",
+"author": "Dietmar Rabich",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_(LU),_Alzette_--_2023_--_8129.jpg"
+},
+{
+"src": "/landmarks/grund-lock-and-stierchen-bridge/detail-tower.webp",
+"caption": "Tower at the Stierchen bridge",
+"author": "Radosław Botev",
+"licence": "CC BY 3.0 pl",
+"licence_url": "https://creativecommons.org/licenses/by/3.0/pl/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Tower_at_the_Stierchen_Bridge_Luxembourg_2008_(2).jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://lb.wikipedia.org/wiki/Stierchen"
+},
+{
+"slug": "saint-esprit-citadel",
+"name": "Saint-Esprit Citadel",
+"local": "Citadelle du Saint-Esprit / Plateau du Saint-Esprit",
+"category": "history",
+"x": 7685,
+"y": 7156,
+"about": "The Saint-Esprit citadel, built under Vauban in the 1680s on the plateau above the Grund and the Pétrusse, on the site of a former convent. Its massive sloping walls drop to the valley; on top stands the Cité judiciaire, the courts complex built in the style of the old barracks.",
+"photos": [
+{
+"src": "/landmarks/saint-esprit-citadel/exterior.webp",
+"caption": "The Saint-Esprit citadel walls",
+"author": "MadBob",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Citadelle_du_Saint-Esprit.jpg"
+},
+{
+"src": "/landmarks/saint-esprit-citadel/plateau.webp",
+"caption": "The Plateau du Saint-Esprit",
+"author": "Flocci Nivis",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:20190324_Plateau_du_Saint-Esprit_02.jpg"
+},
+{
+"src": "/landmarks/saint-esprit-citadel/from-below.webp",
+"caption": "The plateau seen from the Grund",
+"author": "KlipschFan",
+"licence": "CC BY-SA 2.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_-_Plateau_du_Saint-Esprit_(234694983).jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/saint-esprit-citadel/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Fortress_of_Luxembourg"
+},
+{
+"slug": "fort-obergrunewald",
+"name": "Fort Obergrünewald",
+"local": "Fort Obergrünewald",
+"category": "history",
+"x": 10607,
+"y": 6063,
+"about": "An 18th-century fort on the Grünewald slope between the Pfaffenthal and the Kirchberg plateau, part of the outer fortress. Low, thick stone walls, ditches and a caponier, partly restored, half hidden among trees above the Alzette.",
+"photos": [
+{
+"src": "/landmarks/fort-obergrunewald/exterior.webp",
+"caption": "The fort above the Alzette",
+"author": "Dietmar Rabich",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_(LU),_Fort_Obergr%C3%BCnewald_--_2023_--_8127.jpg"
+},
+{
+"src": "/landmarks/fort-obergrunewald/walls.webp",
+"caption": "Fort walls",
+"author": "Zairon",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Fort_Obergruental_06.JPG"
+},
+{
+"src": "/landmarks/fort-obergrunewald/glacis.webp",
+"caption": "Fort walls and glacis with the old town behind",
+"author": "Zairon",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Fort_Obergruental_15.JPG"
+}
+],
+"interior": null,
+"model": "/landmarks/fort-obergrunewald/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Fortress_of_Luxembourg"
+},
+{
+"slug": "fort-thungen-three-acorns-museum",
+"name": "Fort Thüngen / Three Acorns Museum",
+"local": "Musée Dräi Eechelen",
+"category": "history",
+"x": 11312,
+"y": 6023,
+"about": "Fort Thüngen, built by the Austrians from 1732, named after commander Count Thüngen; its three round towers topped by stone acorns give the local name Dräi Eechelen ('three acorns'). Rebuilt in the 1990s–2000s, it houses the fortress and history museum since 2012. Grey-yellow stone towers with conical stone caps and gilt acorn finials, next to Mudam's glass roofs.",
+"photos": [
+{
+"src": "/landmarks/fort-thungen-three-acorns-museum/aerial.webp",
+"caption": "Aerial view of Fort Thüngen and Mudam",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_09.jpg"
+},
+{
+"src": "/landmarks/fort-thungen-three-acorns-museum/exterior.webp",
+"caption": "The three acorn-topped towers",
+"author": "Zinneke",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Fort_Th%C3%BCngen_-_Mus%C3%A9e_Dr%C3%A4i_Eechelen_2017-04.jpg"
+},
+{
+"src": "/landmarks/fort-thungen-three-acorns-museum/detail-acorn.webp",
+"caption": "Detail: a stone acorn on the central tower",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Dr%C3%A4i_Eechelen_(03).jpg"
+}
+],
+"interior": {
+"dates": "Fort built **1732–33** by the Austrians in front of the Grünewald front; named \"Three Acorns\" after the acorn finials on its three towers; mostly razed after 1867; walls rediscovered and **reconstructed** in the 1990s–2000s (alongside Mudam); museum opened **July 2012** (part of the MNAHA). Park by Michel Desvigne (2009).",
+"layout": "Redoubt with three round towers on a bastion; the museum occupies the restored fort (vaulted rooms in the towers and curtain wall) plus a **new underground building** (exhibition hall and auditorium with glass floor panels showing the foundations), linked to the original **counter-mine galleries** that run under the glacis.",
+"main_spaces": "Exhibition rooms on Luxembourg history 1443–1903 (cannons, models, maps); the long, narrow, lit **mine galleries**; auditorium; reconstructed casemates.",
+"materials_colours": "Grey-yellow sandstone and limestone, bare rock galleries, modern dark interiors with glass.",
+"access": "Tue–Sun, free.",
+"official_site": "https://m3e.public.lu/",
+"wikipedia": "[en: Musée Dräi Eechelen](https://en.wikipedia.org/wiki/Mus%C3%A9e_Dr%C3%A4i_Eechelen)",
+"photos": [
+{
+"src": "/landmarks/fort-thungen-three-acorns-museum/in-mine-gallery.webp",
+"caption": "Narrow counter-mine gallery under the fort",
+"author": "RG72",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Ekspozicio_de_la_muzeo_Dr%C3%A4i_Eechelen_18.jpg"
+},
+{
+"src": "/landmarks/fort-thungen-three-acorns-museum/in-exhibition-room.webp",
+"caption": "Exhibition room with cannons",
+"author": "RG72",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Ekspozicio_de_la_muzeo_Dr%C3%A4i_Eechelen_02.jpg"
+},
+{
+"src": "/landmarks/fort-thungen-three-acorns-museum/in-auditorium.webp",
+"caption": "Modern auditorium/exhibition space with glass floor panels",
+"author": "Hejnjahns",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Mus%C3%A9e_Dr%C3%A4i_Eechelen_Auditorium.jpg"
+}
+]
+},
+"model": "/landmarks/fort-thungen-three-acorns-museum/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Fort_Th%C3%BCngen",
+"cutaway": "/landmarks/fort-thungen-three-acorns-museum/cutaway.webp"
+},
+{
+"slug": "neumunster-abbey",
+"name": "Neumünster Abbey",
+"local": "Abbaye de Neumünster",
+"category": "culture",
+"x": 9040,
+"y": 6876,
+"about": "Benedictine abbey moved to the Grund in the 16th century and rebuilt in the late 17th and early 18th centuries after fires and wars; later a prison (until 1984), it has been a cultural centre since 2004. Long ochre- and cream-plastered wings with grey slate roofs around a large paved courtyard, beside the Alzette and the Saint-Jean church, with the Corniche cliffs above.",
+"photos": [
+{
+"src": "/landmarks/neumunster-abbey/exterior.webp",
+"caption": "Abbey buildings in the Grund",
+"author": "Diego Delso",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Abad%C3%ADa_Neum%C3%BCnster,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-16,_DD_47.jpg"
+},
+{
+"src": "/landmarks/neumunster-abbey/raised-view.webp",
+"caption": "View over the Grund and the abbey at dawn",
+"author": "Diego Delso",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Abad%C3%ADa_Neum%C3%BCnster,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-17,_DD_22-24_HDR.jpg"
+},
+{
+"src": "/landmarks/neumunster-abbey/courtyard.webp",
+"caption": "Abbey courtyard and buildings",
+"author": "Dennis G. Jarvis",
+"licence": "CC BY-SA 2.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg-5114_-_Neum%C3%BCnster_Abbey_(12726203945).jpg"
+}
+],
+"interior": {
+"dates": "Benedictine abbey moved to the Grund after its predecessor on the Altmünster plateau was destroyed (1543); rebuilt 1688–1720 after a fire; after 1796 a military hospital, then **prison 1869–1985**; restored and opened as cultural centre (Centre culturel de rencontre) in 2004.",
+"layout": "Four long wings around a large paved **courtyard (parvis)** by the Alzette, next to the church of Saint-Jean; cloister wing; gardens.",
+"main_rooms": "**Agora Marcel Jullian** (494 m² covered courtyard under a filigree glass roof, the main entrance hall); **Salle Robert Krieps** (theatre/concert hall, 283 seats, former prison workshop); **cloister** with the Lucien Wercollier sculpture collection; **chapel** (baroque altar, stained glass); seminar rooms Nic Klecker and Lou Koster; brasserie; exhibition spaces.",
+"materials_colours": "Ochre-yellow render, grey slate roofs, sandstone dressings; inside white plaster, stone floors, steel and glass in the new parts.",
+"access": "Open daily, free (courtyard, Agora, cloister, exhibitions).",
+"official_site": "https://www.neimenster.lu/ (room pages, e.g. https://www.neimenster.lu/en/rooms/agora-marcel-jullian/)",
+"wikipedia": "[en: Neumünster Abbey](https://en.wikipedia.org/wiki/Neum%C3%BCnster_Abbey)",
+"photos": [
+{
+"src": "/landmarks/neumunster-abbey/in-chapel-altar.webp",
+"caption": "Chapel with baroque altar and stained glass",
+"author": "Zinneke",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Altar_Neim%C3%ABnster_2026-08.jpg"
+},
+{
+"src": "/landmarks/neumunster-abbey/in-courtyard-aerial.webp",
+"caption": "Raised view of the abbey courtyard and wings",
+"author": "Martin Röll",
+"licence": "CC BY-SA 2.0 de",
+"licence_url": "https://creativecommons.org/licenses/by-sa/2.0/de/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:041102-abteineumuenster-luxemburg-hof.jpg"
+}
+]
+},
+"model": "/landmarks/neumunster-abbey/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Neum%C3%BCnster_Abbey",
+"cutaway": "/landmarks/neumunster-abbey/cutaway.webp"
+},
+{
+"slug": "church-of-st-john-the-baptist-grund",
+"name": "Church of St. John the Baptist, Grund",
+"local": "Église Saint-Jean-Baptiste du Grund",
+"category": "landmark",
+"x": 8864,
+"y": 6826,
+"about": "Church of St John the Baptist (Saint-Jean du Grund), the former abbey church of Neumünster, built in the early 18th century. Yellow-plastered walls, a tall slender black spire, and a rich Baroque interior with gilded altars and a Black Madonna.",
+"photos": [
+{
+"src": "/landmarks/church-of-st-john-the-baptist-grund/interior.webp",
+"caption": "Interior: nave and baroque high altar",
+"author": "Diego Delso",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Iglesia_de_San_Juan,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-16,_DD_31-33_HDR.jpg"
+},
+{
+"src": "/landmarks/church-of-st-john-the-baptist-grund/raised-view.webp",
+"caption": "Grund and the church from above",
+"author": "Dietmar Rabich",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_(LU),_Grund_und_%C3%89glise_Saint-Jean_--_2023_--_8133.jpg"
+},
+{
+"src": "/landmarks/church-of-st-john-the-baptist-grund/tower.webp",
+"caption": "The church tower",
+"author": "Dietmar Rabich",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_(LU),_%C3%89glise_Saint-Jean_--_2023_--_8147.jpg"
+}
+],
+"interior": {
+"dates": "Former abbey church of Neumünster, consecrated **1705**; parish church of the Grund.",
+"style": "Baroque interior in a late-Gothic-shaped hall (pointed windows, rib vaults).",
+"main_features": "Single nave with white vaults; large **baroque high altar** and side altars in black, gold and marble; **Black Madonna** (14th c.); **organ gallery** over the entrance with a historic organ; stained glass.",
+"access": "Open daily, free.",
+"wikipedia": "[en: St. John's Church, Luxembourg](https://en.wikipedia.org/wiki/St._John%27s_Church,_Luxembourg)",
+"photos": [
+{
+"src": "/landmarks/church-of-st-john-the-baptist-grund/in-nave.webp",
+"caption": "Nave with baroque high altar and white vaults",
+"author": "Diego Delso",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Iglesia_de_San_Juan,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-16,_DD_31-33_HDR.jpg"
+},
+{
+"src": "/landmarks/church-of-st-john-the-baptist-grund/in-organ-gallery.webp",
+"caption": "Organ gallery",
+"author": "Diego Delso",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Iglesia_de_San_Juan,_ciudad_de_Luxemburgo,_Luxemburgo,_2023-12-16,_DD_43-45_HDR.jpg"
+},
+{
+"src": "/landmarks/church-of-st-john-the-baptist-grund/in-stained-glass.webp",
+"caption": "Stained-glass window",
+"author": "Jwh",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Gr%C3%ABnnesch_Kierch_Dafjang_beim_Herodes.jpg"
+}
+]
+},
+"model": "/landmarks/church-of-st-john-the-baptist-grund/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Grund,_Luxembourg_City"
+},
+{
+"slug": "national-museum-of-natural-history",
+"name": "National Museum of Natural History",
+"local": "Musée national d'histoire naturelle / Natur Musée",
+"category": "culture",
+"x": 8450,
+"y": 6909,
+"about": "National Museum of Natural History, in the former Hospice Saint-Jean in the Grund, beside the Alzette. White-plastered walls, slate roofs and a decorated Baroque stone portal with statues; the building's foundations sit right on the river.",
+"photos": [
+{
+"src": "/landmarks/national-museum-of-natural-history/exterior.webp",
+"caption": "Museum in the old Hospice Saint-Jean, Grund",
+"author": "Paul Braun",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_National_Museum_of_Natural_History_20200922-1.jpg"
+},
+{
+"src": "/landmarks/national-museum-of-natural-history/detail-portal.webp",
+"caption": "Detail: the old hospice portal",
+"author": "Jwh",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Naturmus%C3%A9e_Portal.jpg"
+},
+{
+"src": "/landmarks/national-museum-of-natural-history/entrance.webp",
+"caption": "Entrance",
+"author": "PlayMistyForMe",
+"licence": "CC BY 3.0",
+"licence_url": "https://creativecommons.org/licenses/by/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:MNHNL_02_Luxembourg.jpg"
+}
+],
+"interior": {
+"building": "The former **Hospice Saint-Jean** in the Grund (17th–18th c. hospice buildings by the Alzette, next to Neimënster); baroque portal with the arms of Luxembourg and statues in niches.",
+"dates": "Museum in this building since 1996 (permanent exhibition renewed since).",
+"layout": "Long two-storey wings with dormered slate roofs around courtyards; exhibition halls on two floors, education rooms, café.",
+"access": "Tue–Sun; ticketed.",
+"official_site": "https://www.mnhn.lu/",
+"wikipedia": "[en: National Museum of Natural History, Luxembourg](https://en.wikipedia.org/wiki/National_Museum_of_Natural_History,_Luxembourg)",
+"photos": [
+{
+"src": "/landmarks/national-museum-of-natural-history/in-workshop-room.webp",
+"caption": "Interior room",
+"author": "RG72",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Nacia_Muzeo_de_Natura_Historio_(Luksemburgo)_08.jpg"
+}
+]
+},
+"model": "/landmarks/national-museum-of-natural-history/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/National_Museum_of_Natural_History,_Luxembourg"
+},
+{
+"slug": "adolphe-bridge",
+"name": "Adolphe Bridge",
+"local": "Pont Adolphe",
+"category": "bridge",
+"x": 6272,
+"y": 6194,
+"about": "Stone road bridge over the Pétrusse valley, built 1900–1903 to a design by Paul Séjourné; its 85 m main arch was the largest stone arch in the world when finished. Pale sandstone, twin parallel arches joined by a deck, with smaller arches at each end. Renovated 2014–2017, when a suspended pedestrian and cycle deck was added underneath; the tram has crossed it since 2020.",
+"photos": [
+{
+"src": "/landmarks/adolphe-bridge/aerial.webp",
+"caption": "Aerial view of the bridge with Gëlle Fra and Spuerkeess",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_04.jpg"
+},
+{
+"src": "/landmarks/adolphe-bridge/exterior.webp",
+"caption": "The bridge after its 2017 renovation, side view",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_pont_Adolphe_et_City_Skyliner_(1).jpg"
+},
+{
+"src": "/landmarks/adolphe-bridge/detail-arch.webp",
+"caption": "Detail: the main arch from underneath",
+"author": "Denise Hastert",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:PONT_ADOLPHE_main_bow,_Luxembourg_City.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Adolphe_Bridge"
+},
+{
+"slug": "passerelle",
+"name": "Passerelle",
+"local": "Passerelle / Viaduc / Al Bréck",
+"category": "bridge",
+"x": 6826,
+"y": 7295,
+"about": "The Old Viaduct (Passerelle, Al Bréck), built 1859–1861 to link the old town with the new railway station across the Pétrusse valley. About 290 m long with 24 sandstone arches, 45 m above the valley.",
+"photos": [
+{
+"src": "/landmarks/passerelle/aerial.webp",
+"caption": "Aerial view of the Passerelle, Spuerkeess and the Cité judiciaire",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_16.jpg"
+},
+{
+"src": "/landmarks/passerelle/exterior.webp",
+"caption": "The viaduct over the Pétrusse",
+"author": "Matthias v.d. Elbe",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:2008-Passerelle.jpg"
+},
+{
+"src": "/landmarks/passerelle/exterior-2.webp",
+"caption": "Side view of the arches",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxbg_Passerelle_Al_Br%C3%A9ck_01crop.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Passerelle_(Luxembourg"
+},
+{
+"slug": "grand-duchess-charlotte-bridge",
+"name": "Grand Duchess Charlotte Bridge",
+"local": "Pont Grande-Duchesse Charlotte / Roud Bréck",
+"category": "bridge",
+"x": 10209,
+"y": 5253,
+"about": "Steel girder bridge built 1963–1966 (architect Egon Jux) linking the city centre with Kirchberg across the Alzette valley; about 355 m long and 74 m above the valley floor. Painted a strong red, hence the name Roud Bréck; it carries road and, since 2017, the tram, with glass safety screens along the sides.",
+"photos": [
+{
+"src": "/landmarks/grand-duchess-charlotte-bridge/aerial.webp",
+"caption": "Aerial view of the bridge and Porte de l'Europe",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_01.jpg"
+},
+{
+"src": "/landmarks/grand-duchess-charlotte-bridge/exterior.webp",
+"caption": "Panorama of the red bridge from the fortress",
+"author": "Cayambe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_-_fortress_wall_-_pont_Grande-duchesse-Charlotte.jpg"
+},
+{
+"src": "/landmarks/grand-duchess-charlotte-bridge/detail.webp",
+"caption": "Detail: red steel deck from below",
+"author": "Ermell",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Br%C3%BCcke-20080530-RM-154812.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Grand_Duchess_Charlotte_Bridge"
+},
+{
+"slug": "clausen-railway-viaduct",
+"name": "Clausen railway viaduct",
+"local": "Viaduc de Clausen",
+"category": "bridge",
+"x": 9999,
+"y": 7059,
+"about": "Stone railway viaduct of the 1860s carrying the line north and east towards Germany across the Alzette valley between Pfaffenthal and Clausen. A long row of tall sandstone arches, now partly wooded around its feet.",
+"photos": [
+{
+"src": "/landmarks/clausen-railway-viaduct/exterior.webp",
+"caption": "The viaduct over Clausen",
+"author": "Dietmar Rabich",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_(LU),_Viaduc_de_Clausen_--_2023_--_8131.jpg"
+},
+{
+"src": "/landmarks/clausen-railway-viaduct/exterior-2.webp",
+"caption": "The viaduct arches",
+"author": "Aktron (Wikimedia Commons user)",
+"licence": "CC BY 3.0",
+"licence_url": "https://creativecommons.org/licenses/by/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Lucemburk,_%C5%BEelezni%C4%8Dn%C3%AD_most.jpg"
+},
+{
+"src": "/landmarks/clausen-railway-viaduct/historic.webp",
+"caption": "Historic photograph of the viaduct",
+"author": "Rijksmuseum",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Gezicht_op_het_spoorviaduct_in_Luxemburg,_RP-F-F12459.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://fr.wikipedia.org/wiki/Viaduc_de_Clausen"
+},
+{
+"slug": "pfaffenthal-panoramic-lift",
+"name": "Pfaffenthal Panoramic Lift",
+"local": "Ascenseur panoramique du Pfaffenthal",
+"category": "viewpoint",
+"x": 9293,
+"y": 5432,
+"about": "Panoramic glass lift opened in 2016, connecting the Pescatore park in the Ville Haute with the Pfaffenthal about 60–70 m below. A slim steel and glass tower with a footbridge at the top and a glass-floored viewing platform. Free and open late; one of the best views of the Alzette valley and Kirchberg.",
+"photos": [
+{
+"src": "/landmarks/pfaffenthal-panoramic-lift/exterior.webp",
+"caption": "The lift, footbridge and the Pfaffenthal",
+"author": "Paul Braun",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Pfaffenthal_lift_2019-04-11.jpg"
+},
+{
+"src": "/landmarks/pfaffenthal-panoramic-lift/exterior-tower.webp",
+"caption": "The glass lift shaft",
+"author": "MMFE",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Lift_Luxembourg-Pfaffenthal_02.jpg"
+},
+{
+"src": "/landmarks/pfaffenthal-panoramic-lift/view-from-top.webp",
+"caption": "View towards Kirchberg from the upper platform",
+"author": "Zinneke",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:View_upper_platform_lift_Pfaffenthal-Upper_Town_Luxembourg_City_2017-04.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/pfaffenthal-panoramic-lift/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Pfaffenthal_Panoramic_Elevator"
+},
+{
+"slug": "petrusse-valley",
+"name": "Pétrusse Valley",
+"local": "Vallée de la Pétrusse",
+"category": "park",
+"x": 5883,
+"y": 6748,
+"about": "The deep, green valley of the small Pétrusse river separating the old town from the Gare quarter, spanned by the Pont Adolphe and the Passerelle. Parks and paths along the bottom, sandstone cliffs and fortress walls on the north side; the river was renaturalised in the 2020s.",
+"photos": [
+{
+"src": "/landmarks/petrusse-valley/panorama.webp",
+"caption": "Panorama of the valley",
+"author": "Krzysztof Golik",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Valley_of_Petrusse_river_in_Luxembourg_City_03.jpg"
+},
+{
+"src": "/landmarks/petrusse-valley/aerial.webp",
+"caption": "Aerial view over the valley with Spuerkeess and Pont Adolphe",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_06.jpg"
+},
+{
+"src": "/landmarks/petrusse-valley/fortress-walls.webp",
+"caption": "Fortress walls in the valley",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Petrusse_fortress_and_remarkable_beech_01.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/P%C3%A9trusse"
+},
+{
+"slug": "municipal-park",
+"name": "Municipal Park",
+"local": "Parc municipal Édouard André / Stadtpark",
+"category": "park",
+"x": 7520,
+"y": 5086,
+"about": "Laid out from 1871 by French landscape architect Édouard André on the ground freed by the dismantling of the fortress, forming a green belt around the west of the old town. Winding paths, large trees, lawns and playgrounds; Villa Vauban stands in it.",
+"photos": [
+{
+"src": "/landmarks/municipal-park/park.webp",
+"caption": "Park paths and lawns",
+"author": "RG72",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Municipa_parko_en_Luksemburgo_12.jpg"
+},
+{
+"src": "/landmarks/municipal-park/plan.webp",
+"caption": "Édouard André's 1871 plan of the park",
+"author": "Édouard André (1840-1911)",
+"licence": "Public domain",
+"licence_url": "https://creativecommons.org/publicdomain/mark/1.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Plan_parc_municipal_Luxembourg,_E._Andr%C3%A9.jpg"
+},
+{
+"src": "/landmarks/municipal-park/detail-fountain.webp",
+"caption": "Detail: drinking fountain",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Fontaine_d%27eau_publique_(1).jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/%C3%89douard_Andr%C3%A9_Municipal_Park"
+},
+{
+"slug": "villa-vauban",
+"name": "Villa Vauban",
+"local": "Villa Vauban – Musée d'Art de la Ville",
+"category": "culture",
+"x": 6845,
+"y": 4828,
+"about": "A 19th-century villa built in 1873 on the remains of a Vauban fortification in the Municipal Park; the city's art museum since 1959, extended with a modern bronze-coloured wing in 2010. White façade, mansard slate roof, lawns and a fountain in front.",
+"photos": [
+{
+"src": "/landmarks/villa-vauban/exterior.webp",
+"caption": "The villa in its park",
+"author": "Daderot",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Villa_Vauban_-_Luxembourg_City_-_DSC06362.JPG"
+},
+{
+"src": "/landmarks/villa-vauban/exterior-park.webp",
+"caption": "Villa seen from the park",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Villa_Vauban_Luxembourg_parc_03.jpg"
+},
+{
+"src": "/landmarks/villa-vauban/facade.webp",
+"caption": "Façade",
+"author": "Cayambe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Villa_Vauban_Luxembourg_02.jpg"
+}
+],
+"interior": {
+"dates": "Villa built 1873 on the foundations of a Vauban-era fortification, in a park laid out by Édouard André; city art museum since 1959; restored and extended 2005–10 (reopened 2010) by architects **Diane Heirend & Philippe Schmit**.",
+"style": "19th-century villa (neoclassical) + a contemporary wing with exposed-aggregate concrete walls, timber floors and frosted glass.",
+"main_spaces": "Villa salons with stucco ceiling roses, parquet, used as painting galleries (Dutch and Flemish 17th c. and 19th-c. French paintings); original wooden staircase with cast-iron newel; new wing with top-lit galleries, timber stair and glazed corridor to the park.",
+"access": "Wed–Mon, ticketed (free under 21).",
+"official_site": "https://villavauban.lu/",
+"wikipedia": "[en: Villa Vauban](https://en.wikipedia.org/wiki/Villa_Vauban)",
+"photos": [
+{
+"src": "/landmarks/villa-vauban/in-salon.webp",
+"caption": "Villa salon with stucco ceiling rose and parquet, used as gallery",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Villa_Vauban,_int%C3%A9rieur_(104).jpg"
+},
+{
+"src": "/landmarks/villa-vauban/in-historic-staircase.webp",
+"caption": "19th-century wooden staircase with cast-iron newel",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Villa_Vauban,_int%C3%A9rieur_(102).jpg"
+},
+{
+"src": "/landmarks/villa-vauban/in-new-wing-stair.webp",
+"caption": "Stair in the 2010 extension: timber, exposed aggregate walls",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Villa_Vauban,_int%C3%A9rieur_(108).jpg"
+},
+{
+"src": "/landmarks/villa-vauban/in-new-wing-corridor.webp",
+"caption": "Glazed corridor of the 2010 extension",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Villa_Vauban,_int%C3%A9rieur_(109).jpg"
+}
+]
+},
+"model": "/landmarks/villa-vauban/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Villa_Vauban",
+"cutaway": "/landmarks/villa-vauban/cutaway.webp"
+},
+{
+"slug": "spuerkeess",
+"name": "Spuerkeess",
+"local": "Banque et Caisse d'Épargne de l'État",
+"category": "landmark",
+"x": 6300,
+"y": 6382,
+"about": "Headquarters of the state savings bank (BCEE / Spuerkeess) on Place de Metz, built 1909–1913 by architect Jean-Pierre Koenig in a neo-Gothic and eclectic style. The landmark is its tall clock tower with a green copper spire, seen from the Pont Adolphe and the Pétrusse valley. Pale grey-yellow stone, steep slate roofs, carved ornament.",
+"photos": [
+{
+"src": "/landmarks/spuerkeess/aerial.webp",
+"caption": "Aerial view of the Spuerkeess headquarters and Pont Adolphe",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_08.jpg"
+},
+{
+"src": "/landmarks/spuerkeess/exterior.webp",
+"caption": "Headquarters on Place de Metz",
+"author": "Krzysztof Golik",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Banque_et_caisse_d%27epargne_de_l%27Etat_a_Luxembourg-Ville_01.jpg"
+},
+{
+"src": "/landmarks/spuerkeess/tower.webp",
+"caption": "The clock tower",
+"author": "Krzysztof Golik",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Banque_et_caisse_d%27epargne_de_l%27Etat_a_Luxembourg-Ville_02.jpg"
+},
+{
+"src": "/landmarks/spuerkeess/detail-ornament.webp",
+"caption": "Detail: façade ornament",
+"author": "GilPe",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Caisse_d%27%C3%A9pargne,_ornament_(109).jpg"
+}
+],
+"interior": {
+"architect": "Jean-Pierre Koenig (1870–1919), state architect.",
+"dates": "Built 1910–13, inaugurated 15 Nov 1913; later extensions behind.",
+"style": "Neo-Renaissance in a French manner with Art Nouveau touches; the tall **clock tower** with green copper cap is a city landmark.",
+"main_spaces": "Monumental entrance hall and historic banking hall (not documented on Commons); **Musée de la Banque** (bank museum) inside the building: vaults, old teller counter, safes, calculating machines, history of savings in Luxembourg.",
+"access": "Bank museum free, Mon–Fri during office hours (check on spuerkeess.lu).",
+"official_site": "https://www.spuerkeess.lu/",
+"wikipedia": "[en: Spuerkeess Building](https://en.wikipedia.org/wiki/Spuerkeess_Building)",
+"photos": [
+{
+"src": "/landmarks/spuerkeess/in-bank-museum-vault.webp",
+"caption": "Bank museum: old vault/strongroom display",
+"author": "LoKiLeCh",
+"licence": "CC BY-SA 3.0",
+"licence_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Bankmuseum_(1).jpg"
+},
+{
+"src": "/landmarks/spuerkeess/in-bank-museum-counter.webp",
+"caption": "Bank museum: reconstructed teller counter",
+"author": "LoKiLeCh",
+"licence": "CC BY-SA 3.0",
+"licence_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Bankmuseum_(9).jpg"
+}
+]
+},
+"model": "/landmarks/spuerkeess/model.bin",
+"wikipedia": "https://fr.wikipedia.org/wiki/Banque_et_caisse_d'%C3%A9pargne_de_l'%C3%89tat"
+},
+{
+"slug": "luxembourg-railway-station",
+"name": "Luxembourg railway station",
+"local": "Gare de Luxembourg",
+"category": "transport",
+"x": 4957,
+"y": 8099,
+"about": "The main station building dates from 1907–1913, in a neo-Baroque style with a tall clock tower and a large arched main window. Cream sandstone with grey slate roofs and dark-green metal details; a modern glass entrance hall was added in front in the 2010s. Tram terminus and bus hub on the Place de la Gare.",
+"photos": [
+{
+"src": "/landmarks/luxembourg-railway-station/exterior.webp",
+"caption": "Station building over Place de la Gare",
+"author": "Simo.Albo80",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:The_Gateway_to_Luxembourg.jpg"
+},
+{
+"src": "/landmarks/luxembourg-railway-station/glass-entrance.webp",
+"caption": "Modern glass entrance hall",
+"author": "CAPTAIN RAJU",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Railway_Station_in_2019.12.jpg"
+},
+{
+"src": "/landmarks/luxembourg-railway-station/tracks.webp",
+"caption": "Overview of the tracks from the road bridge",
+"author": "Smiley.toerist",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Overzicht_sporen_bij_station_Luxemburg_2022.jpg"
+}
+],
+"interior": {
+"architects": "Alexander Rüdell, Karl Jüsgen and Scheuffel (German imperial railway architects). Hall ceiling redesigned in 1994 by Luxembourg artist **Armand Strainchamps**. 2010s modernisation with an ETFE-glazed passage, new passenger hall and underpasses.",
+"dates": "Present building 1907–13; extended and modernised 2008–2012 and in the 2020s (new platforms and tracks 2021–25).",
+"style": "Neo-Baroque (sometimes called \"Mosel Baroque\") with a tall clock tower.",
+"main_spaces": "**Main hall**: tall barrel-like space, cream walls, arched windows, departure boards; **painted ceiling** (sky with a large sun and black linework); the large semicircular **stained-glass window** with the **silhouette of the old city** (towers and spires in warm yellows, reds and blues); the **glass-roofed passage** to the platforms; shops and ticket office.",
+"access": "Open all day, free.",
+"official_site": "https://www.cfl.lu/",
+"wikipedia": "[en: Luxembourg railway station](https://en.wikipedia.org/wiki/Luxembourg_railway_station)",
+"photos": [
+{
+"src": "/landmarks/luxembourg-railway-station/in-main-hall.webp",
+"caption": "Main hall: painted ceiling, arched windows, departure boards",
+"author": "Basile Alexiou",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:LuxGare4.jpg"
+},
+{
+"src": "/landmarks/luxembourg-railway-station/in-painted-ceiling.webp",
+"caption": "Painted ceiling with the sun motif",
+"author": "Basile Alexiou",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:LuxGare10.jpg"
+},
+{
+"src": "/landmarks/luxembourg-railway-station/in-stained-glass-window.webp",
+"caption": "Stained-glass window with the silhouette of the city",
+"author": "Zoelux",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Vitrail_Gare_Luxembourg.jpg"
+},
+{
+"src": "/landmarks/luxembourg-railway-station/in-glass-passage.webp",
+"caption": "Modern glass-roofed passage",
+"author": "EEJCC",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Hallway_Luxembourg_railway_station.jpg"
+}
+]
+},
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Luxembourg_railway_station",
+"cutaway": "/landmarks/luxembourg-railway-station/cutaway.webp"
+},
+{
+"slug": "pfaffenthal-kirchberg-station-and-funicular",
+"name": "Pfaffenthal-Kirchberg station and funicular",
+"local": "Gare Pfaffenthal-Kirchberg",
+"category": "transport",
+"x": 10816,
+"y": 5131,
+"about": "Railway station opened in 2017 in the Alzette valley below the Red Bridge, linked to the tram stop on the bridge by a funicular and a lift. Modern concrete, glass and steel, with a long sloping funicular track up the valley side.",
+"photos": [
+{
+"src": "/landmarks/pfaffenthal-kirchberg-station-and-funicular/platform.webp",
+"caption": "Platform with a double-deck train",
+"author": "Smiley.toerist",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Kirchberg-Pfaffenthal_station_2024_4.jpg"
+},
+{
+"src": "/landmarks/pfaffenthal-kirchberg-station-and-funicular/raised-view.webp",
+"caption": "Station and funicular from above",
+"author": "MMFE",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Gare_Kirchberg-Pfaffenthal_01.jpg"
+},
+{
+"src": "/landmarks/pfaffenthal-kirchberg-station-and-funicular/from-bridge.webp",
+"caption": "Station seen from the Red Bridge",
+"author": "Procrastineur49",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Gare_Pfaffenthal_vue_du_pont.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/pfaffenthal-kirchberg-station-and-funicular/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Pfaffenthal-Kirchberg_railway_station"
+},
+{
+"slug": "porte-de-l-europe-and-kirchberg-towers",
+"name": "Porte de l'Europe and Kirchberg towers",
+"local": "Porte de l'Europe / Tours Kirchberg",
+"category": "landmark",
+"x": 13102,
+"y": 5887,
+"about": "The Porte de l'Europe: twin office towers by Ricardo Bofill's Taller de Arquitectura at the Kirchberg end of the Red Bridge, forming a gateway to the European quarter. Tall, slim towers with pale stone-coloured grid façades and glass.",
+"photos": [
+{
+"src": "/landmarks/porte-de-l-europe-and-kirchberg-towers/aerial.webp",
+"caption": "Aerial view of the Porte de l'Europe towers and the Red Bridge",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_13.jpg"
+},
+{
+"src": "/landmarks/porte-de-l-europe-and-kirchberg-towers/exterior.webp",
+"caption": "The Porte de l'Europe towers",
+"author": "Radosław Botev",
+"licence": "CC BY 3.0 pl",
+"licence_url": "https://creativecommons.org/licenses/by/3.0/pl/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:La_Porte_de_l%27Europe_2008_(2).jpg"
+},
+{
+"src": "/landmarks/porte-de-l-europe-and-kirchberg-towers/panorama.webp",
+"caption": "Panorama of the Kirchberg gateway",
+"author": "Guido Radig",
+"licence": "CC BY 3.0",
+"licence_url": "https://creativecommons.org/licenses/by/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_-_Porte_de_Kirchberg_-_Panorama.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/porte-de-l-europe-and-kirchberg-towers/model.bin",
+"wikipedia": "https://lb.wikipedia.org/wiki/Porte_de_l'Europe"
+},
+{
+"slug": "philharmonie-luxembourg",
+"name": "Philharmonie Luxembourg",
+"local": "Philharmonie Luxembourg",
+"category": "culture",
+"x": 12620,
+"y": 5961,
+"about": "Concert hall on Place de l'Europe by Christian de Portzamparc, opened 2005. An eye-shaped (elliptical) building wrapped in a screen of 823 thin white steel columns, with the main 1,500-seat hall inside. Bright white against the glass towers of Kirchberg.",
+"photos": [
+{
+"src": "/landmarks/philharmonie-luxembourg/aerial.webp",
+"caption": "Aerial view of the Kirchberg with the Philharmonie and the Court of Justice",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_14.jpg"
+},
+{
+"src": "/landmarks/philharmonie-luxembourg/exterior.webp",
+"caption": "Exterior with the columned façade",
+"author": "Geugeor",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Philharmonie_Luxembourg_02.jpg"
+},
+{
+"src": "/landmarks/philharmonie-luxembourg/detail-columns.webp",
+"caption": "Detail: the white steel columns",
+"author": "Reinhold Möller Ermell",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_Philharmonie_S%C3%A4ulen-20080530-RM-195346.jpg"
+},
+{
+"src": "/landmarks/philharmonie-luxembourg/interior.webp",
+"caption": "Interior: main concert hall",
+"author": "Clewe2807",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Philharmonie,_Gro%C3%9Fer_Konzertsaal.jpg"
+}
+],
+"interior": {
+"architect": "Christian de Portzamparc.",
+"dates": "Built 2002–05, opened June 2005.",
+"form": "An eye-shaped (lens) plan wrapped by a screen of **823 white steel columns**; the foyer sits between the columns and the inner hall; two smaller halls are expressed as white sculptural volumes at the ends.",
+"main_rooms": "**Grand Auditorium** (about 1,500 seats, max 1,471 in rental terms): shoebox with the audience in stacked \"towers\" of boxes around the stage, white and light timber, a high organ (Schuke, 2005). **Salle de Musique de Chambre** (about 300 seats): curved red walls, a white suspended canopy with star-like point lights. **Espace Découverte** (about 120 places, for electronic/experimental music and children). Foyer with long ramps and stairs behind the colonnade.",
+"materials_colours": "White steel and glass outside; inside white, light wood, red (chamber hall), grey stone floors.",
+"access": "Concerts; guided architecture tours.",
+"official_site": "https://www.philharmonie.lu/ ; architecture page https://old.philharmonie.lu/en/service/architecture",
+"wikipedia": "[en: Philharmonie Luxembourg](https://en.wikipedia.org/wiki/Philharmonie_Luxembourg)",
+"photos": [
+{
+"src": "/landmarks/philharmonie-luxembourg/in-grand-auditorium.webp",
+"caption": "Grand Auditorium: shoebox hall with stacked box 'towers' around the stage",
+"author": "Clewe2807",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Philharmonie,_Gro%C3%9Fer_Konzertsaal.jpg"
+},
+{
+"src": "/landmarks/philharmonie-luxembourg/in-chamber-music-hall.webp",
+"caption": "Chamber music hall: curved red walls and suspended canopy with point lights",
+"author": "Clewe2807",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Philharmonie,_Kammermusiksaal.jpg"
+},
+{
+"src": "/landmarks/philharmonie-luxembourg/in-organ.webp",
+"caption": "Grand Auditorium organ and stage from the side",
+"author": "Zinneke",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Pipe_organ_Philharmonie_Luxembourg_2024-09.jpg"
+},
+{
+"src": "/landmarks/philharmonie-luxembourg/in-foyer.webp",
+"caption": "Foyer between the outer colonnade and the inner hall",
+"author": "EEJCC",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Philharmonie_Luxembourg,_interior.jpg"
+}
+]
+},
+"model": "/landmarks/philharmonie-luxembourg/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Philharmonie_Luxembourg",
+"cutaway": "/landmarks/philharmonie-luxembourg/cutaway.webp"
+},
+{
+"slug": "mudam",
+"name": "Mudam",
+"local": "Musée d'Art Moderne Grand-Duc Jean",
+"category": "culture",
+"x": 11596,
+"y": 6023,
+"about": "Museum of modern art by I. M. Pei, opened 2006, built on the foundations of Fort Thüngen's walls. Warm honey-coloured French limestone, faceted glass roofs and a central glass pyramid-like hall that echoes the fortress geometry.",
+"photos": [
+{
+"src": "/landmarks/mudam/aerial.webp",
+"caption": "Aerial view of Mudam and Fort Thüngen",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_19.jpg"
+},
+{
+"src": "/landmarks/mudam/exterior.webp",
+"caption": "Exterior on a winter day",
+"author": "Denise Hastert",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:MUDAM_in_winter.jpg"
+},
+{
+"src": "/landmarks/mudam/entrance.webp",
+"caption": "Entrance with visitors",
+"author": "Jean-noël Lafargue",
+"licence": "CC BY 2.5",
+"licence_url": "https://creativecommons.org/licenses/by/2.5",
+"source": "https://commons.wikimedia.org/wiki/File:Mudam_11_jnl.jpg"
+}
+],
+"interior": {
+"architect": "I. M. Pei (Pei Cobb Freed & Partners).",
+"dates": "Commissioned 1989, built 1999–2006 on the walls of Fort Thüngen, opened 1 July 2006.",
+"form": "Arrow-shaped plan following the fort's bastion; massive walls of French **Magny Doré limestone** (honey-coloured) with glass-and-steel roofs.",
+"floors": "Exhibition spaces on three levels (0, -1, +1), about 6,000 m² public area (+1 = collection, over 800 m²).",
+"main_spaces": "**Grand Hall**: tall central space under a glazed steel lantern/pyramid; **Pavilion**: glass-roofed hall (café) with limestone walls; galleries on both wings; the curving stone **spiral staircases**; auditorium; shop.",
+"access": "Wed–Mon, ticketed.",
+"official_site": "https://www.mudam.com/ (building and park: https://www.mudam.com/building-park ; accessibility/levels: https://www.mudam.com/visit/accessibility)",
+"wikipedia": "[en: MUDAM](https://en.wikipedia.org/wiki/MUDAM)",
+"photos": [
+{
+"src": "/landmarks/mudam/in-grand-hall.webp",
+"caption": "Grand Hall under I. M. Pei's glass and steel roof",
+"author": "Cornischong at Luxembourgish Wikipedia",
+"licence": "CC BY-SA 3.0",
+"licence_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+"source": "https://commons.wikimedia.org/wiki/File:Mudam-Hall_8304.jpg"
+},
+{
+"src": "/landmarks/mudam/in-pavilion.webp",
+"caption": "Glass-roofed pavilion with limestone walls",
+"author": "Marco Musmeci",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Lussemburgo_MUDAM_luglio_2010_04.jpg"
+},
+{
+"src": "/landmarks/mudam/in-staircase.webp",
+"caption": "Spiral stone staircase with glass balustrade",
+"author": "Hartmut Schmidt, Heidelberg",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Staircase,_Mus%C3%A9e_d%27Art_Moderne_Grand-Duc_Jean.jpg"
+},
+{
+"src": "/landmarks/mudam/in-roof-structure.webp",
+"caption": "Steel and glass roof structure of the Grand Hall",
+"author": "Marco Musmeci",
+"licence": "CC BY-SA 3.0 lu",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0/lu/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Lussemburgo_MUDAM_luglio_2010_07.jpg"
+}
+]
+},
+"model": "/landmarks/mudam/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/MUDAM",
+"cutaway": "/landmarks/mudam/cutaway.webp"
+},
+{
+"slug": "court-of-justice-of-the-european-union",
+"name": "Court of Justice of the European Union",
+"local": "Cour de justice de l'Union européenne",
+"category": "landmark",
+"x": 14201,
+"y": 5543,
+"about": "Court of Justice of the European Union. The original Palais (1973) has been extended several times, notably by Dominique Perrault, whose two gold-clad towers (2008) and third tower (2019) dominate the Kirchberg plateau. The towers and the Palais' ring are wrapped in bronze-gold anodised metal mesh.",
+"photos": [
+{
+"src": "/landmarks/court-of-justice-of-the-european-union/aerial.webp",
+"caption": "Aerial view of the Court of Justice complex and Porte de l'Europe",
+"author": "Sophie Margue / European Commission",
+"licence": "CC BY 4.0",
+"licence_url": "https://creativecommons.org/licenses/by/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Aerial_views_of_European_Union_Capitals_-_Luxembourg,_Luxembourg_07.jpg"
+},
+{
+"src": "/landmarks/court-of-justice-of-the-european-union/towers.webp",
+"caption": "The golden towers",
+"author": "Alf van Beem",
+"licence": "CC0",
+"licence_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+"source": "https://commons.wikimedia.org/wiki/File:Tours_de_la_Cour_de_justice_de_l%27Union_europ%C3%A9enne_photo_1.jpg"
+},
+{
+"src": "/landmarks/court-of-justice-of-the-european-union/entrance.webp",
+"caption": "Entrance area of the Palais",
+"author": "Isderion",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Entrance_Area_of_the_Palais_of_the_Court_of_Justice_of_the_European_Union.jpg"
+},
+{
+"src": "/landmarks/court-of-justice-of-the-european-union/interior.webp",
+"caption": "Interior: grand courtroom",
+"author": "Cédric Puisney from Brussels, Belgium",
+"licence": "CC BY 2.0",
+"licence_url": "https://creativecommons.org/licenses/by/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:European_Court_of_Justice_-_Grand_courtoom_(3516682090).jpg"
+}
+],
+"interior": {
+"architects": "Ancien Palais (1973): Jean-Paul Conzemius, François Jamagne and Michel Vanden Haute. Extensions (Anneau, two towers, Gallery; renovation of the Ancien Palais): **Dominique Perrault**, competition 1996, inaugurated Dec 2008; **third tower** (Perrault) completed 2019, the tallest building in Luxembourg.",
+"layout": "The Ancien Palais (courtrooms of the Court of Justice) is wrapped by the **Anneau**, a ring raised on slender columns that holds the judges' chambers; the **Gallery**, a long glazed street, links the Palais, the three gold-clad towers (translation services) and the Erasmus, Thomas More and Themis annexes (General Court).",
+"main_rooms": "**Grand courtroom** in the Ancien Palais: a huge canopy of bronze-anodised aluminium **gold metal mesh** (40 trapezoidal panels) over dark timber benches, interpreting booths around the top; other courtrooms in warm wood; **entrance hall** with black steel columns and flags; the Gallery (library, links); Rodin statue at the main stair.",
+"materials_colours": "Gold/bronze mesh and anodised metal, dark wood, black steel, glass; outside rusty Cor-ten on the Anneau and gold-tinted glass towers.",
+"access": "Public hearings are open to the public; free guided group visits on request (curia.europa.eu); open days.",
+"official_site": "https://curia.europa.eu/",
+"wikipedia": "[en: Palais de la Cour de Justice](https://en.wikipedia.org/wiki/Palais_de_la_Cour_de_Justice)",
+"photos": [
+{
+"src": "/landmarks/court-of-justice-of-the-european-union/in-grand-courtroom.webp",
+"caption": "Grand courtroom under the gold metal-mesh ceiling",
+"author": "Cédric Puisney from Brussels, Belgium",
+"licence": "CC BY 2.0",
+"licence_url": "https://creativecommons.org/licenses/by/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:Palais_de_la_Cour_de_Justice_CJEU_May_2009,_Main_Court_room_of_the_Ancien_Palais.jpg"
+},
+{
+"src": "/landmarks/court-of-justice-of-the-european-union/in-main-courtroom.webp",
+"caption": "Main courtroom, wooden benches and judges' bench",
+"author": "Isderion",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Main_Court_Room_in_Court_of_Justice_of_the_European_Union_2.jpg"
+},
+{
+"src": "/landmarks/court-of-justice-of-the-european-union/in-entrance-hall.webp",
+"caption": "Entrance hall of the Palais",
+"author": "Isderion",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Entrance_Area_of_the_Palais_of_the_Court_of_Justice_of_the_European_Union.jpg"
+},
+{
+"src": "/landmarks/court-of-justice-of-the-european-union/in-gallery.webp",
+"caption": "Gallery building corridor linking the complex",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Court_of_Justice_of_the_European_Union_Luxembourg_2026_400.jpg"
+},
+{
+"src": "/landmarks/court-of-justice-of-the-european-union/in-architectural-model.webp",
+"caption": "Architectural model of the whole Palais complex",
+"author": "Cédric Puisney from Brussels, Belgium",
+"licence": "CC BY 2.0",
+"licence_url": "https://creativecommons.org/licenses/by/2.0",
+"source": "https://commons.wikimedia.org/wiki/File:European_Court_of_Justice_model_maquette_(3515859355).jpg"
+}
+]
+},
+"model": "/landmarks/court-of-justice-of-the-european-union/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/Court_of_Justice_of_the_European_Union"
+},
+{
+"slug": "european-parliament-konrad-adenauer-building",
+"name": "European Parliament, Konrad Adenauer Building",
+"local": "Bâtiment Konrad Adenauer",
+"category": "landmark",
+"x": 14494,
+"y": 5846,
+"about": "The European Parliament's General Secretariat building in Kirchberg. The original 1970s building has been replaced by a large new complex completed in phases in the 2010s–2020s. Glass and metal façades in silver and grey with red window panels on parts of the older wings.",
+"photos": [
+{
+"src": "/landmarks/european-parliament-konrad-adenauer-building/exterior.webp",
+"caption": "The new Konrad Adenauer building",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Konrad_Adenauer_building_European_Parliament_Luxembourg_01.jpg"
+},
+{
+"src": "/landmarks/european-parliament-konrad-adenauer-building/exterior-2.webp",
+"caption": "Façade detail of the building",
+"author": "FrDr",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Konrad_Adenauer_building_European_Parliament_Luxembourg_03.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/european-parliament-konrad-adenauer-building/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/European_Parliament_in_Luxembourg"
+},
+{
+"slug": "d-coque",
+"name": "d'Coque",
+"local": "Centre national sportif et culturel d'Coque",
+"category": "culture",
+"x": 16404,
+"y": 6218,
+"about": "The national sports and cultural centre by architect Roger Taillibert, opened 2002: an arena and Olympic swimming pool under one huge, low, shell-shaped roof (the 'coque'). The roof reads as a grey-blue curved dome in the Kirchberg landscape. See the freedom-of-panorama note: free photos are scarce.",
+"photos": [
+{
+"src": "/landmarks/d-coque/avenue.webp",
+"caption": "Avenue John F. Kennedy with the edge of the shell roof",
+"author": "Pudelek (Marcin Szala)",
+"licence": "CC BY-SA 3.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg_City_-_Avenue_John_F._Kennedy_and_La_coque.jpg"
+},
+{
+"src": "/landmarks/d-coque/tram-stop.webp",
+"caption": "Coque tram stop (building partly blurred on Commons)",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Coque_tram_stop_(103)_(blurred).jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/d-coque/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/D'Coque"
+},
+{
+"slug": "kirchberg-central-park",
+"name": "Kirchberg Central Park",
+"local": "Parc Central, Arboretum du Kirchberg",
+"category": "park",
+"x": 17700,
+"y": 6146,
+"about": "The central park of Kirchberg, part of the Kirchberg arboretum, laid out by landscape architect Peter Latz around d'Coque. Lawns, groves and straight paths with modern sculpture; d'Coque's roof and the Kirchberg towers form the backdrop.",
+"photos": [
+{
+"src": "/landmarks/kirchberg-central-park/park.webp",
+"caption": "The park with d'Coque behind",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Parc_central_Kirchberg_(105).jpg"
+},
+{
+"src": "/landmarks/kirchberg-central-park/park-2.webp",
+"caption": "Park paths",
+"author": "GilPe",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Luxembourg,_Parc_central_Kirchberg_(102).jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://fr.wikipedia.org/wiki/Arboretum_du_Kirchberg"
+},
+{
+"slug": "university-of-luxembourg-kirchberg-campus",
+"name": "University of Luxembourg, Kirchberg campus",
+"local": "Université du Luxembourg – Campus Kirchberg",
+"category": "landmark",
+"x": 18559,
+"y": 6372,
+"about": "The University of Luxembourg's Kirchberg campus, home to parts of its faculty and research units in modern office-style buildings along the Avenue John F. Kennedy area. The university's main campus is now at Belval (Esch-sur-Alzette).",
+"photos": [
+{
+"src": "/landmarks/university-of-luxembourg-kirchberg-campus/aerial.webp",
+"caption": "Aerial shot of lower Kirchberg with the campus",
+"author": "Manis404 at English Wikipedia",
+"licence": "CC BY 3.0",
+"licence_url": "https://creativecommons.org/licenses/by/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:University_of_Luxembourg_-_Kirchberg_Campus.jpg"
+}
+],
+"interior": null,
+"model": "/landmarks/university-of-luxembourg-kirchberg-campus/model.bin",
+"wikipedia": "https://en.wikipedia.org/wiki/University_of_Luxembourg"
+},
+{
+"slug": "auchan-kirchberg-shopping-centre",
+"name": "Auchan Kirchberg shopping centre",
+"local": "Kirchberg Shopping Center",
+"category": "landmark",
+"x": 22774,
+"y": 6280,
+"about": "The shopping centre with an Auchan hypermarket and shops at the eastern end of the Kirchberg plateau, opened in the 1990s, next to the Kinepolis cinema. Modern glass, metal and concrete with a glass-roofed atrium inside.",
+"photos": [
+{
+"src": "/landmarks/auchan-kirchberg-shopping-centre/exterior.webp",
+"caption": "Entrance on Avenue John F. Kennedy",
+"author": "giggel",
+"licence": "CC BY 3.0",
+"licence_url": "https://creativecommons.org/licenses/by/3.0",
+"source": "https://commons.wikimedia.org/wiki/File:Stadtteilzentrum_Kirchberg,_Avenue_John_F_Kennedy_-_2013.jpg"
+},
+{
+"src": "/landmarks/auchan-kirchberg-shopping-centre/interior.webp",
+"caption": "Interior mall",
+"author": "TCsongor",
+"licence": "CC BY-SA 4.0",
+"licence_url": "https://creativecommons.org/licenses/by-sa/4.0",
+"source": "https://commons.wikimedia.org/wiki/File:Kirchberg_District_Centre.jpg"
+}
+],
+"interior": null,
+"model": null,
+"wikipedia": "https://en.wikipedia.org/wiki/Kirchberg,_Luxembourg"
+}
+]
