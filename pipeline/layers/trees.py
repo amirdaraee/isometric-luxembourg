@@ -21,9 +21,10 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from layers_common import POC_IMG, block, en_to_map, ground_z, inputs_dir, out_dir, preview
+from layers_common import POC_IMG, block, en_to_map, ground_z, inputs_dir, out_dir, preview, unshift
 
 BACKDROP = (255, 0, 255)
+TONE = 0.84  # placed trees a little darker than the painted sheet, like the painting's woods
 PXM = 5120 / 6000 * 4          # painted px per metre (0.293 m per px)
 CE = math.cos(math.radians(30))  # vertical screen scale of heights
 SE = 0.5                          # vertical screen scale of ground depth
@@ -167,15 +168,21 @@ def sheet(bid):
     print(d / "sheet_src.png", (W, H), len(items), "items")
 
 
-def cut(bid, painted, season, slack=5):
+def cut(bid, painted, season, slack=None):
     d = out_dir(bid) / "trees"
     meta = json.loads((d / "sheet.json").read_text())
     P = np.asarray(Image.open(painted).convert("RGB")).astype(np.float32)
     src = np.asarray(Image.open(d / "sheet_src.png").convert("RGB")).astype(np.float32)
     if P.shape != src.shape:
         P = np.asarray(Image.open(painted).convert("RGB").resize((src.shape[1], src.shape[0]), Image.LANCZOS)).astype(np.float32)
+    # the painter's shift, measured on the buildings painted in the same job (the sheet is too sparse to measure)
+    sh = out_dir(bid) / "objects" / "shift.txt"
+    if sh.exists():
+        dx, dy = (float(v) for v in sh.read_text().split())
+        P = unshift(P, dx, dy).astype(np.float32)
     lib = d / f"lib_{season}"
     lib.mkdir(exist_ok=True)
+    slack = slack or (9 if season == "spring" else 5)  # the season pass paints fuller crowns than the summer shapes
     out = []
     ker = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * slack + 1, 2 * slack + 1))
     for it in meta["items"]:
@@ -190,7 +197,24 @@ def cut(bid, painted, season, slack=5):
         a = cv2.GaussianBlur(a.astype(np.float32), (3, 3), 0.6) * (a > 0) + 0 * a
         col = crop.copy()
         spill = np.clip((col[..., 0] + col[..., 2]) / 2 - col[..., 1] - 30, 0, None)
+        # the painted glow round each tree: light, pinkish pixels (backdrop mixed with paper white) are dropped
+        pink = (crop[..., 0] + crop[..., 2]) / 2 - crop[..., 1]
+        lum = crop @ np.array((0.3, 0.59, 0.11), np.float32)
+        # (white is blossom in spring, so only the pink glow goes there)
+        if season != "spring":  # spring blossom is white and pink
+            a = np.where((pink > 8) & (lum > 120) | (lum > 200), 0, a)
+        else:  # the season pass paints a bright lawn round the trunk: drop grass green in the lower part
+            hh = crop.shape[0]
+            low = (np.arange(hh)[:, None] > hh * 0.62) & np.ones((1, crop.shape[1]), bool)
+            grass = (crop[..., 1] > 150) & (crop[..., 2] < 120) & (crop[..., 1] - crop[..., 0] > 25)
+            a = np.where(low & grass, 0, a)
+        a = cv2.erode((a > 0).astype(np.uint8), np.ones((2, 2), np.uint8)).astype(np.float32) * a + 0 * a
         col[..., 0] -= spill * 0.7; col[..., 2] -= spill * 0.7
+        if it["species"] == "beech_red" and season == "summer":
+            # the painter turned the copper beech green: give the foliage its copper-purple back, keeping the shading
+            g = col.mean(axis=2, keepdims=True)
+            leaf = (col[..., 1] > col[..., 0]).astype(np.float32)[..., None]
+            col = col * (1 - leaf) + (g * np.array((1.25, 0.62, 0.66), np.float32)) * leaf
         rgba = np.dstack((col.clip(0, 255), (a * 255).clip(0, 255))).astype(np.uint8)
         Image.fromarray(rgba).save(lib / f"{it['name']}.png")
         out.append({**it, "file": f"{it['name']}.png", "base": [it["base"][0] + pad, it["base"][1] + pad],
@@ -205,6 +229,10 @@ def season_inputs(bid):
     1024 px minimum height with backdrop, the backdrop held."""
     d = out_dir(bid) / "trees"
     P = Image.open(d / "painted_sheet.png").convert("RGB")
+    sh = out_dir(bid) / "objects" / "shift.txt"
+    if sh.exists():  # start from the shift-corrected sheet, so the season pass's own shift is the only one left
+        dx, dy = (float(v) for v in sh.read_text().split())
+        P = Image.fromarray(unshift(np.asarray(P), dx, dy))
     keep = Image.open(d / "sheet_keep.png").convert("L")
     H = 1024
     src = Image.new("RGB", (P.width, H), BACKDROP); src.paste(P, (0, 0))
@@ -262,16 +290,26 @@ def place(bid, k):
         used_mass[near] = True
         placed.append({"s": m["file"], "x": float(lx[i]), "y": float(ly[i]), "sc": float(k * 6000 / 5120 * rng.uniform(0.9, 1.1)),
                        "j": float(rng.uniform(-0.06, 0.06)), "mass": 1})
+    # no tree rooted in the river: the survey finds crowns hanging over the water, but the painting keeps the
+    # rivers open, and a trunk in the water reads wrong
+    wm = np.asarray(Image.open(out_dir(bid) / f"k{int(k * 100)}" / "water_mask.png")) > 0 if \
+        (out_dir(bid) / f"k{int(k * 100)}" / "water_mask.png").exists() else None
     for i in np.flatnonzero(ins & ~used_mass):
         t = trees[i]
-        sp = {"conifer": "conifer", "deciduous_red": "beech_red"}.get(t["type"])
+        if wm is not None:
+            xi, yi = int(lx[i]), int(ly[i])
+            if 0 <= xi < wm.shape[1] and 0 <= yi < wm.shape[0] and wm[max(0, yi - 3):yi + 4, max(0, xi - 3):xi + 4].any():
+                continue
+        sp = {"conifer": "conifer"}.get(t["type"])
+        if t["type"] == "deciduous_red" and rng.random() < 0.3:  # the survey's "red" is often just shade
+            sp = "beech_red"
         if sp is None:
             sp = ["lime", "chestnut", "plane"][int(rng.integers(3))] if dens[i] < 8 else ["chestnut", "lime"][int(rng.integers(2))]
         size = "l" if t["h"] > 11 else "s"
         cand = by.get((sp, size)) or by[("lime", size)]
         it = cand[int(rng.integers(len(cand)))]
         nominal = SIZES[size][1]
-        sc = float(np.clip((2 * max(t["cmean"], 1.0)) / nominal, 0.5, 1.8))
+        sc = float(np.clip(0.9 * (2 * max(t["cmean"], 1.0)) / nominal, 0.45, 1.6))
         placed.append({"s": it["file"], "x": float(lx[i]), "y": float(ly[i]), "sc": sc * k * 6000 / 5120,
                        "j": float(rng.uniform(-0.06, 0.06)), "h": t["h"]})
     placed.sort(key=lambda p: p["y"])
@@ -286,17 +324,30 @@ def render(bid, season, k):
     pl = json.loads((d / f"placed_k{int(k * 100)}.json").read_text())["trees"]
     lib = {it["file"]: it for it in json.loads((d / f"lib_{season}.json").read_text())}
     S = round(6000 * k)
+    # Spring: only some trees blossom (as in the city: cherries, magnolias, some fruit trees); the others get the
+    # summer drawing tinted to fresh light green. Per-tree control is the point of a tree layer.
+    rng = np.random.default_rng(5)
+    fresh = np.array((1.08, 1.16, 0.78), np.float32)
+    libs = {s_: {it["file"]: it for it in json.loads((d / f"lib_{s_}.json").read_text())}
+            for s_ in {season, "summer"}}
     acc = np.zeros((S, S, 4), np.float32)
     row = np.zeros((S, S), np.uint16)   # trunk-base row of the tree drawn at each pixel (for depth against buildings)
     cache = {}
     for p in pl:
         it = lib[p["s"]]
-        key = (p["s"], round(p["sc"], 2))
+        src_season = season
+        if season == "spring" and (rng.random() > 0.3 or p["s"].startswith("conifer")):
+            src_season = "summer"
+        key = (p["s"], round(p["sc"], 2), src_season)
         if key not in cache:
-            im = Image.open(d / f"lib_{season}" / p["s"])
+            im = Image.open(d / f"lib_{src_season}" / p["s"])
             w, h = max(1, round(im.width * p["sc"])), max(1, round(im.height * p["sc"]))
             cache[key] = np.asarray(im.resize((w, h), Image.LANCZOS)).astype(np.float32)
+            if season == "spring" and src_season == "summer" and not p["s"].startswith("conifer"):
+                cache[key][..., :3] *= fresh
         spr = cache[key]
+        if src_season != season:
+            it = libs[src_season][p["s"]]
         h, w = spr.shape[:2]
         x0 = int(round(p["x"] - it["base"][0] * p["sc"])); y0 = int(round(p["y"] - it["base"][1] * p["sc"]))
         sx0, sy0 = max(0, -x0), max(0, -y0)
@@ -305,7 +356,7 @@ def render(bid, season, k):
             continue
         sub = spr[sy0:sy1, sx0:sx1]
         a = sub[..., 3:] / 255
-        col = sub[..., :3] * (1 + p["j"])
+        col = sub[..., :3] * (TONE + p["j"])
         dst = acc[y0 + sy0:y0 + sy1, x0 + sx0:x0 + sx1]
         dst[..., :3] = dst[..., :3] * (1 - a) + col * a
         dst[..., 3:] = dst[..., 3:] * (1 - a) + 255 * a

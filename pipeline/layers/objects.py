@@ -19,10 +19,10 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from layers_common import ELEV, block, cut, ground_z, heights, kinds, map_to_en, out_dir
+from layers_common import ELEV, block, cut, ground_z, heights, kinds, map_to_en, out_dir, painter_shift, unshift
 
 BACKDROP = (255, 0, 255)   # magenta: no building, roof or bridge in the old town has this colour
-SLACK = 3                  # px at the painted scale: chimneys and eaves may stand a little outside the 3D outline
+SLACK = 2                  # px at the painted scale: chimneys and eaves may stand a little outside the 3D outline
 PAINT = 5120               # painted size of a 6000 px block
 
 
@@ -60,33 +60,54 @@ def prep(bid):
 def cut_out(bid, painted):
     b = block(bid)
     d = out_dir(bid) / "objects"
-    P = np.asarray(Image.open(painted).convert("RGB")).astype(np.int16)
+    P = np.asarray(Image.open(painted).convert("RGB"))
     S = P.shape[0]
+    ref = np.asarray(Image.open(d / "src.png").convert("L").resize((S, S), Image.LANCZOS)).astype(np.float32)
+    dx, dy = painter_shift(np.asarray(Image.fromarray(P).convert("L")).astype(np.float32), ref)
+    print(f"painter shift: dx {dx:.1f}, dy {dy:.1f} px; undone before cutting")
+    P = unshift(P, dx, dy).astype(np.int16)
+    (d / "shift.txt").write_text(f"{dx} {dy}\n")
     k = S / b["w"]
     kd = kinds(b, k)
-    bld = (kd <= 100)            # walls and roofs (and the empty edge and holes, removed below)
-    deck = (kd > 100) & (kd <= 200)
+    # bridge decks are 128 in the kinds pass, but so are the anti-aliased edges between white ground and dark
+    # roofs: keep only deck areas thicker than a few px
+    deck = ((kd > 100) & (kd <= 200)).astype(np.uint8)
+    deck = cv2.morphologyEx(deck, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))) > 0
     rgb = np.asarray(cut("frames", "jpg", "RGB", (16, 24, 40), b, k, Image.BILINEAR)).astype(int)
     empty = np.abs(rgb - (16, 24, 40)).sum(2) < 30
     gr = np.unpackbits(np.load(d / "ground.npy"))[:b["w"] * b["h"]].reshape(b["h"], b["w"])
     gr = cv2.resize(gr, (S, S), interpolation=cv2.INTER_NEAREST) > 0
-    bld &= ~empty & ~gr
+    bld = (kd <= 200) & ~deck & ~empty & ~gr     # walls, roofs and their anti-aliased edges
     ker = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * SLACK + 1, 2 * SLACK + 1))
     # rule 2: far from the backdrop colour (distance in RGB; the model shifts flat colours a little)
     dist = np.abs(P - np.array(BACKDROP)).sum(2)
     notbg = np.clip((dist - 120) / 80, 0, 1)
+    col = P.astype(np.float32).copy()
+    spill = np.clip((col[..., 0] + col[..., 2]) / 2 - col[..., 1] - 40, 0, None)   # pull magenta out of edges
+    col[..., 0] -= spill * 0.6; col[..., 2] -= spill * 0.6
+    lum = col @ np.array((0.3, 0.59, 0.11), np.float32)
     out = {}
     for name, m in (("L7_buildings", bld), ("L5_bridges", deck)):
         rule1 = cv2.dilate(m.astype(np.uint8), ker) > 0
         a = notbg * rule1
-        # one-pixel soft edge: average with neighbours only at the boundary
-        soft = cv2.blur(a.astype(np.float32), (3, 3))
-        edge = (cv2.dilate(a.astype(np.float32), np.ones((3, 3))) > 0) & (cv2.erode(a.astype(np.float32), np.ones((3, 3))) < 1)
-        a = np.where(edge, np.minimum(a, soft) if False else soft * (a > 0) + soft * 0.5 * (a == 0), a)
-        # pull magenta out of edge pixels (despill)
-        col = P.astype(np.float32).copy()
-        spill = np.clip((col[..., 0] + col[..., 2]) / 2 - col[..., 1] - 40, 0, None)
-        col[..., 0] -= spill * 0.6; col[..., 2] -= spill * 0.6
+        # In the slack ring outside the true outline the model often paints a soft light glow or a bush. Keep a
+        # ring pixel only if it is dark ink or close in colour to the nearest pixel inside the outline (a chimney
+        # or an eave continuing the building).
+        ring = rule1 & ~m
+        _, lab = cv2.distanceTransformWithLabels((~m).astype(np.uint8), cv2.DIST_L2, 3, labelType=cv2.DIST_LABEL_PIXEL)
+        iy, ix = np.nonzero(m)
+        ny = np.zeros(lab.max() + 1, np.int32); nx = np.zeros(lab.max() + 1, np.int32)
+        ny[lab[m]] = iy; nx[lab[m]] = ix
+        ry, rx = np.nonzero(ring)
+        near = col[ny[lab[ry, rx]], nx[lab[ry, rx]]]
+        same = np.abs(col[ry, rx] - near).sum(1) < 45
+        dark = lum[ry, rx] < 70
+        keep = np.zeros(m.shape, bool); keep[ry[same | dark], rx[same | dark]] = True
+        a = np.where(ring & ~keep, 0, a).astype(np.float32)
+        # one-pixel soft edge
+        soft = cv2.blur(a, (3, 3))
+        edge = (cv2.dilate(a, np.ones((3, 3))) > 0) & (cv2.erode(a, np.ones((3, 3))) < 1)
+        a = np.where(edge & (a > 0), soft, a)
         rgba = np.dstack((col.clip(0, 255), (a * 255).clip(0, 255))).astype(np.uint8)
         Image.fromarray(rgba).save(d / f"{name}.png")
         out[name] = rgba

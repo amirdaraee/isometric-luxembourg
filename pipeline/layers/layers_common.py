@@ -136,3 +136,33 @@ def preview(im, path, size=1600, quality=82):
 # The local progress page's image folder (web/public/poc/img); POC_IMG overrides it (e.g. from a worktree).
 import os  # noqa: E402
 POC_IMG = Path(os.environ.get("POC_IMG", ROOT / "web" / "public" / "poc" / "img"))
+
+
+def painter_shift(painted, reference, tile=512, n=4):
+    """The painter's output sits a few px off its input (about 6 px down at 5120 px, measured on today's map too).
+    Measure the median shift (dx, dy) of `painted` against `reference` (both greyscale float arrays, same size) by
+    phase correlation of their edges over a grid of tiles."""
+    import cv2
+
+    def ed(a):
+        return cv2.Laplacian(cv2.GaussianBlur(a, (0, 0), 1.5), cv2.CV_32F).astype(np.float64)
+    H, W = painted.shape
+    win = cv2.createHanningWindow((tile, tile), cv2.CV_64F)
+    got = []
+    for y in np.linspace(0, H - tile, n).astype(int):
+        for x in np.linspace(0, W - tile, n).astype(int):
+            (dx, dy), r = cv2.phaseCorrelate(ed(reference[y:y + tile, x:x + tile]), ed(painted[y:y + tile, x:x + tile]), win)
+            if r > 0.12 and abs(dx) < 20 and abs(dy) < 20:
+                got.append((dx, dy))
+    if not got:
+        return 0.0, 0.0
+    g = np.array(got)
+    return float(np.median(g[:, 0])), float(np.median(g[:, 1]))
+
+
+def unshift(img, dx, dy):
+    """Move an image by (-dx, -dy) px (sub-pixel), undoing a measured painter shift."""
+    import cv2
+    a = np.asarray(img)
+    M = np.float32([[1, 0, -dx], [0, 1, -dy]])
+    return cv2.warpAffine(a, M, (a.shape[1], a.shape[0]), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
