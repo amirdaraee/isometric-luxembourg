@@ -68,6 +68,10 @@ def main():
     ap.add_argument("--layout-override", help="the layout map for the crop (render scale)")
     ap.add_argument("--version", help="repaint a version (night, golden, ...) from --day with the light LoRA")
     ap.add_argument("--day", help="with --version: the repaired day canvas of the block (canvas scale)")
+    ap.add_argument("--init-from", help="start from this canvas (block canvas scale), e.g. the free fill of every spot "
+                    "(repair_cars.py free --all), instead of pure noise: the painter re-textures it")
+    ap.add_argument("--strength", type=float, default=0.5, help="with --init-from: noise level to start at")
+    ap.add_argument("--no-clean", action="store_true", help="day: leave the spots in the painter's input as rendered")
     ap.add_argument("--tag", default="item4-cars")
     ap.add_argument("--budget", type=float, default=16.0, help="USD cap over every run logged with this tag")
     ap.add_argument("--backend", default="modal", choices=["modal", "runpod"])
@@ -99,7 +103,8 @@ def main():
         m_r = cv2.resize(m_c.astype(np.uint8), (w, h), interpolation=cv2.INTER_NEAREST) > 0
         m_r = cv2.dilate(m_r.astype(np.uint8), np.ones((9, 9), np.uint8)) > 0
         med = cv2.medianBlur(src, 31)
-        src[m_r] = med[m_r]
+        if not a.no_clean:
+            src[m_r] = med[m_r]
         Image.fromarray(src).save(d / "src.png")
     if not V:
         lay = Image.open(a.layout_override) if a.layout_override else \
@@ -110,10 +115,16 @@ def main():
     Image.fromarray(np.where(m_c, 0, 255).astype(np.uint8)).save(d / "keep.png")
     print(f"crop {w}x{h} map px, canvas {known.size}, spots {m_c.mean() * 100:.1f}% of it; cap ${cap:.2f} ({be.name})")
     remote = f"inputs/repair/{a.job}"
-    for f in (("src", "known", "keep") if V else ("src", "layout", "known", "keep")):
+    files = ["src", "known", "keep"] if V else ["src", "layout", "known", "keep"]
+    if a.init_from:
+        Image.open(a.init_from).convert("RGB").crop(cbox).save(d / "init.png")
+        files.append("init")
+    for f in files:
         if be.put(str(d / f"{f}.png"), f"{remote}/{f}.png"):
             sys.exit("upload failed")
     extra = f"--known {be.abs(remote)}/known.png --keep {be.abs(remote)}/keep.png --band {a.band} --seed {a.seed}"
+    if a.init_from:
+        extra += f" --init {be.abs(remote)}/init.png --strength {a.strength}"
     if V:
         run = dict(src=f"{remote}/src.png", lora="loras/luxembourg-light-v1.safetensors", steps=15, cfg=3.0,
                    src_cell=512, prompt_file=f"pipeline/gpu_train/prompts/{V}.txt")

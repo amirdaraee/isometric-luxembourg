@@ -81,7 +81,37 @@ def masks(bid, grow_m=1.5, close_m=0.0, name=None):
     return m
 
 
-PROTECT_M = 9.0   # radius kept out of every mask round a landmark's pin (statues and monuments stand in car parks)
+GROUP_M, GROUP_MAX = 6.0, 3   # spots within 6 m of each other form a group; groups of more than 3 are car parks
+GROUP_MAX_M2 = 130.0          # ... or groups with more mask than about three grown car boxes
+
+
+def lone(bid):
+    """mask_<block>_lone.png: the tight mask without dense groups. Pilots on RunPod (8 Nov): the painter's repair
+    removes lone cars and small groups well (b00, Place de la Constitution), but where spots merge into one area
+    (the b04 hospital car parks) it redraws the whole car park as a blank wall or a road, with or without a start
+    image from the free fill; such car parks keep their painted cars."""
+    m = np.asarray(Image.open(OUT / f"mask_{bid}.png")) > 0
+    b = block(bid)
+    k = m.shape[1] / b["w"]
+    c = int(GROUP_M / MAP_MPP * k) | 1
+    grouped = cv2.dilate(m.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (c, c)))
+    ng, glab = cv2.connectedComponents(grouped)
+    ns, slab = cv2.connectedComponents(m.astype(np.uint8))
+    # spots per group (a spot lies inside one group, since the groups are the spots grown)
+    pairs = np.unique(np.stack([slab[m], glab[m]], 1), axis=0)
+    count = np.bincount(pairs[:, 1], minlength=ng)
+    # and by area: overlapping boxes of a row of cars merge into one spot
+    area = np.bincount(glab[m], minlength=ng) / (k / MAP_MPP) ** 2      # m2 of mask per group
+    count[area > GROUP_MAX_M2] = GROUP_MAX + 1
+    keep_groups = np.nonzero((count >= 1) & (count <= GROUP_MAX))[0]
+    out = m & np.isin(glab, keep_groups)
+    Image.fromarray((out * 255).astype(np.uint8)).save(OUT / f"mask_{bid}_lone.png")
+    print(bid, f"{ns - 1} spots; kept {int(sum(count[keep_groups]))} in {len(keep_groups)} small groups; "
+          f"{int((count > GROUP_MAX).sum())} car parks left as painted")
+    return out
+
+
+PROTECT_M = 9.0  # radius kept out of every mask round a landmark's pin (statues and monuments stand in car parks)
 PROTECT_SKIP = {"square", "park", "bridge", "viewpoint", "transport", "sport"}   # pins in the middle of open ground
 
 
@@ -232,6 +262,12 @@ if __name__ == "__main__":
     cmd = sys.argv[1]
     if cmd == "carry":
         carry(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif cmd == "lonemasks":   # the painter's mask for the full run: car parks (dense groups) left out
+        for bid in blocks(sys.argv[2]):
+            lone(bid)
+    elif cmd == "freeall":   # every spot filled (copy, or the smooth fallback): the start image for gpu_repair.py --init-from
+        for bid in blocks(sys.argv[2]):
+            free(bid, dest_name="canvas_day_freeall.png", copy_only=False)
     elif cmd == "gpumasks":   # wider spots for the painter: grown 3 m, groups closed over 8 m
         for bid in blocks(sys.argv[2]):
             masks(bid, 3.0, 8.0, f"mask_{bid}_gpu.png")
