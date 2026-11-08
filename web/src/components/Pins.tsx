@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { forwardWheel } from "../forwardWheel";
 import type { MapHandle } from "./IsometricMap";
 import { useView } from "../viewStore";
 import { gauge, span } from "../perf";
@@ -98,5 +99,5 @@ export function Pins({ places, map, active, onPick }: Props) {
     );
   }
   // Many labels at once: plain backgrounds instead of each label blurring what is behind it (costly on phones).
-  return <div className={out.length > 20 ? "pins many" : "pins"}>{out}</div>;
+  return <div className={out.length > 20 ? "pins many" : "pins"} onWheel={forwardWheel}>{out}</div>;
 }

@@ -12,6 +12,7 @@
  * Clicking a statue (an invisible button over it) opens its landmark card, or the nearest one.
  */
 import { useEffect, useRef, useState } from "react";
+import { forwardWheel } from "../forwardWheel";
 import { asset } from "../config";
 import type { MapHandle } from "./IsometricMap";
 import type { Place } from "./Pins";
@@ -197,7 +198,7 @@ export function Statues({ map, night, season, onPick }: Props) {
   return (
     <>
       <canvas ref={canvas} className="overlay statues" aria-hidden="true" />
-      <div className="statue-hits">
+      <div className="statue-hits" onWheel={forwardWheel}>
         {list.map((s) => (
           <button key={s.id} type="button" className="statue-hit" aria-label={s.name} title={s.name}
             ref={(el) => { if (el) hits.current.set(s.id, el); else hits.current.delete(s.id); }}
