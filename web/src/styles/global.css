@@ -63,6 +63,8 @@ kbd { padding: 1px 7px; border: 1px solid var(--line); border-radius: 5px; color
 .foot > * { pointer-events: auto; }
 .badge { margin-right: auto; padding: 2px 9px; border-radius: 999px; background: rgba(16, 24, 40, 0.75); color: #ffd166; text-shadow: none; }
 .link { padding: 0; border: 0; background: none; text-decoration: underline; color: inherit; }
+/* one line, so that on phones it stays under the tool buttons instead of growing up behind them */
+.foot .link { white-space: nowrap; }
 
 .toast { position: fixed; bottom: 54px; left: 50%; transform: translateX(-50%); padding: 9px 16px; border-radius: 999px; z-index: 6; white-space: nowrap; }
 .about-wrap { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(6, 10, 18, 0.5); z-index: 7; }
@@ -85,6 +87,8 @@ kbd { padding: 1px 7px; border: 1px solid var(--line); border-radius: 5px; color
 
 /* Landmark panel */
 .landmark { position: fixed; top: 76px; right: 16px; bottom: calc(96px + env(safe-area-inset-bottom)); width: min(420px, calc(100vw - 32px)); border-radius: 18px; z-index: 6; display: flex; flex-direction: column; overflow: hidden; }
+/* wider screens: beside the tool buttons (zoom, mark, share, source), not over them */
+@media (min-width: 641px) { .landmark { right: 76px; } }
 .landmark .close { position: absolute; top: 10px; right: 10px; z-index: 2; }
 .lm-hero { height: 150px; background-size: cover; background-position: center; flex: none; }
 .landmark header { padding: 12px 18px 0; }
