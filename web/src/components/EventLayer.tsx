@@ -7,6 +7,9 @@ import { on } from "../features";
 import { subscribe } from "../frame";
 import { CONSTITUTION_WHEEL, drawWheel, wheelAngle } from "./ferrisWheel";
 import type { WheelSpec } from "./ferrisWheel";
+import { drawEffects, type EventEffects } from "./eventEffects";
+import { RULES, type EventId } from "../calendar";
+import { sunTimes } from "../scene";
 
 export interface EventLayerProps {
   map: RefObject<MapHandle>;
@@ -19,6 +22,8 @@ export interface EventLayerProps {
   date: Date;
   /** ids of the events shown now ("winterlights", ...) */
   active?: string[];
+  /** the event picked in the Events menu (a preview: its effects play whatever the day), or null */
+  picked?: string | null;
 }
 
 /** web/public/events/sprites.json, from pipeline/events/build_event_sprites.py */
@@ -39,7 +44,51 @@ interface Loaded {
 }
 
 const MIN_ZOOM = 0.25;   // further out the rides would be a few pixels: draw nothing
-const EVENT_DIRS: Record<string, string> = { winterlights: "xmas" };
+const FX_MIN_ZOOM = 0.08; // fireworks and bonfires still read from far out
+const EVENT_DIRS: Record<string, string> = { winterlights: "xmas", newYear: "xmas" };
+
+/** web/public/events/lift.json (pipeline/events/lift_model.py sprites): the Pfaffenthal lift's cabin. */
+interface LiftCell { frame: [number, number]; anchor: [number, number]; day: [number, number]; night: [number, number] }
+interface LiftMeta {
+  image: string; mpp: number; map_mpp: number; cabin: LiftCell; front: LiftCell; tower?: LiftCell; structure?: boolean;
+  bottom: [number, number]; rise: number; ride: number; wait: [number, number]; hours: [number, number];
+}
+interface Lift { meta: LiftMeta; atlas: HTMLImageElement }
+const LIFT_MIN_ZOOM = 0.2;
+
+/** How far up the shaft the cabin is (0 bottom .. 1 top) at a time: wait at the bottom, ride up, wait at the top,
+ * ride down, eased at both ends of a ride. Outside the opening hours it waits at the bottom. */
+export function liftPosition(m: Pick<LiftMeta, "ride" | "wait" | "hours">, sec: number, hour: number): number {
+  const [h0, h1] = m.hours;
+  const open = hour >= h0 || hour + 24 < h1;
+  if (!open) return 0;
+  const [wb, wt] = m.wait, T = 2 * m.ride + wb + wt;
+  const t = ((sec % T) + T) % T;
+  const ease = (u: number) => 0.5 - 0.5 * Math.cos(Math.PI * u);
+  if (t < wb) return 0;
+  if (t < wb + m.ride) return ease((t - wb) / m.ride);
+  if (t < wb + m.ride + wt) return 1;
+  return 1 - ease((t - wb - m.ride - wt) / m.ride);
+}
+
+/** web/public/events/events.json (pipeline/events/event_patch.py manifest), loaded once. */
+let manifest: Promise<Record<string, EventEffects>> | null = null;
+export function eventManifest(): Promise<Record<string, EventEffects>> {
+  manifest ??= fetch(asset("/events/events.json")).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+  return manifest;
+}
+
+/** Day of the event shown (0 = first) and days left (0 = last), or null if the date is not in it. */
+function dayIndex(id: string, d: Date): [number, number] | null {
+  const rule = RULES[id as EventId];
+  if (!rule) return null;
+  const day = (x: Date) => Math.round(+new Date(x.getFullYear(), x.getMonth(), x.getDate()) / 864e5);
+  for (const y of [d.getFullYear() - 1, d.getFullYear()]) {
+    const r = rule(y);
+    if (r && day(d) >= day(r[0]) && day(d) <= day(r[1])) return [day(d) - day(r[0]), day(r[1]) - day(d)];
+  }
+  return null;
+}
 
 function img(url: string): Promise<HTMLImageElement> {
   return new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = url; });
@@ -89,24 +138,37 @@ function hash(i: number): number {
  * the clock, so every visitor sees the same thing. With reduced motion asked for, rides stand still and lights
  * stay steady.
  */
-export function EventLayer({ map, night, active = [] }: EventLayerProps) {
+export function EventLayer({ map, night, hour, date, active = [], picked = null }: EventLayerProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const data = useRef<Record<string, Loaded | null>>({});
-  const flags = useRef({ night, active });
-  flags.current = { night, active };
-  const want = on("eventRides") ? active.filter((a) => EVENT_DIRS[a]) : [];
-  const key = want.join(",");
+  const fx = useRef<Record<string, EventEffects>>({});
+  const glowRef = useRef<HTMLCanvasElement | null>(null);
+  const flags = useRef({ night, active, hour, date, picked });
+  flags.current = { night, active, hour, date, picked };
+  // events with live effects: every event but Christmas needs the events switch and its own
+  const withFx = active.filter((a) => a === "winterlights" || (on("events") && on(a as never)));
+  const dirs = on("eventRides") ? [...new Set(active.map((a) => EVENT_DIRS[a]).filter(Boolean))] : [];
+  const key = [...withFx, "|", ...dirs, ...(on("liftCabin") ? ["lift"] : [])].join(",");
+  const lift = useRef<Lift | null>(null);
+  useEffect(() => {
+    if (!on("liftCabin")) return;
+    fetch(asset("/events/lift.json")).then((r) => r.json() as Promise<LiftMeta>)
+      .then(async (meta) => { lift.current = { meta, atlas: await img(asset(`/events/${meta.image}`)) }; })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
-    for (const id of key ? key.split(",") : []) {
-      if (id in data.current) continue;
-      data.current[id] = null;
-      load(EVENT_DIRS[id]).then((d) => { data.current[id] = d; });
+    for (const dir of dirs) {
+      if (dir in data.current) continue;
+      data.current[dir] = null;
+      load(dir).then((d) => { data.current[dir] = d; });
     }
+    if (withFx.length) eventManifest().then((m) => { fx.current = m; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
   useEffect(() => {
-    if (!key) {
+    if (key === "|") {
       const cv = canvas.current;
       cv?.getContext("2d")?.clearRect(0, 0, cv.width, cv.height);
       return;
@@ -120,14 +182,45 @@ export function EventLayer({ map, night, active = [] }: EventLayerProps) {
       const g = cv.getContext("2d")!;
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, W, H);
-      if (v.z < MIN_ZOOM) return;
+      if (v.z < FX_MIN_ZOOM) return;
       const z = v.z, ox = W / 2 - v.x * z, oy = H / 2 - v.y * z;
       const n = flags.current.night;
       const sec = still ? 0 : Date.now() / 1000;
+      glowRef.current ??= glowSprite();
+      const f = flags.current;
+      // the Pfaffenthal lift: the structure while the art lacks it, the cabin, then the shaft's front frame over it
+      const L = lift.current;
+      if (L && z >= LIFT_MIN_ZOOM) {
+        const m = L.meta, k = (m.mpp / m.map_mpp) * z;
+        const bx = m.bottom[0] * z + ox, by = m.bottom[1] * z + oy;
+        if (bx > -300 && bx < W + 300 && by > -200 && by < H + 600) {
+          const cell = (c: LiftCell, dy: number) => {
+            for (const [xy, a] of [[c.day, 1], [c.night, n]] as const) {
+              if (a < 0.01) continue;
+              g.globalAlpha = a;
+              g.drawImage(L.atlas, xy[0], xy[1], c.frame[0], c.frame[1], bx - c.anchor[0] * k, by + dy - c.anchor[1] * k, c.frame[0] * k, c.frame[1] * k);
+            }
+            g.globalAlpha = 1;
+          };
+          if (m.structure && m.tower) cell(m.tower, 0);
+          cell(m.cabin, -m.rise * z * liftPosition(m, sec, f.hour));
+          cell(m.front, 0);
+        }
+      }
+      for (const id of f.active) {
+        const e = fx.current[id];
+        if (!e || (id !== "winterlights" && !(on("events") && on(id as never)))) continue;
+        const effects = on("fireworks") ? e : { ...e, fireworks: undefined };
+        drawEffects(g, effects, {
+          z, ox, oy, W, H, sec: still ? 1000 : sec, hour: f.hour, night: n, sunset: sunTimes(f.date)[1],
+          dayIndex: f.picked === id ? null : dayIndex(id, f.date), glow: glowRef.current, still,
+        });
+      }
+      if (v.z < MIN_ZOOM) return;
       g.imageSmoothingEnabled = true;
       g.imageSmoothingQuality = "high";
-      for (const id of flags.current.active) {
-        const d = data.current[id];
+      for (const dir of new Set(flags.current.active.map((a) => EVENT_DIRS[a]).filter(Boolean))) {
+        const d = data.current[dir];
         if (!d) continue;
         const k = (d.sheet.mpp / d.sheet.map_mpp) * z;   // sprite px -> screen px
         for (const r of d.rides) {

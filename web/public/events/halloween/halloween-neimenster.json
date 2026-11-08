@@ -1,0 +1,11 @@
+{
+ "site": "halloween-neimenster",
+ "x0": 8907,
+ "y0": 6819,
+ "w": 409,
+ "h": 236,
+ "files": {
+  "day": "halloween-neimenster_day.webp",
+  "night": "halloween-neimenster_night.webp"
+ }
+}

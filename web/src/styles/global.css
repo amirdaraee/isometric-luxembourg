@@ -112,6 +112,7 @@ kbd { padding: 1px 7px; border: 1px solid var(--line); border-radius: 5px; color
 .graded { position: fixed; inset: 0; transition: filter .8s ease; }
 .scene { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; padding: 8px 12px; border-radius: 16px; z-index: 4; }
 .scene-row { display: flex; align-items: center; gap: 6px; justify-content: center; }
+.scene-events { flex-wrap: wrap; max-width: min(560px, 92vw); }
 .scene input[type=range] { width: min(320px, 46vw); accent-color: #ef3340; }
 .scene-time { font: 600 13px/1 system-ui, sans-serif; font-variant-numeric: tabular-nums; min-width: 42px; }
 .scene-wind { font: 600 12px/1 system-ui, sans-serif; color: var(--mute); }

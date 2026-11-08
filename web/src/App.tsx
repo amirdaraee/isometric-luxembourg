@@ -13,6 +13,9 @@ import { Sky } from "./components/Sky";
 import { WeatherControl } from "./components/WeatherControl";
 import { LayersPoc, layersPocOn } from "./components/LayersPoc";
 import { christmasOn, mix, seasonOf, sunTimes, type SceneState, type Variant } from "./scene";
+import { activeEvents, EVENT_SEASON, RULES, type EventId } from "./calendar";
+import { eventManifest } from "./components/EventLayer";
+import type { EventEffects } from "./components/eventEffects";
 import { luxSeconds } from "./components/Transit";
 import { asset, tilesBase } from "./config";
 import { on } from "./features";
@@ -22,8 +25,27 @@ const FOCUS_ZOOM = 0.75;
 
 /** The scene for "now" in Luxembourg (or the ?hour, ?season and ?date test parameters), limited to the features
  * that are switched on. */
+/** The events shown: the one picked (or ?event=), else the calendar's, each only with its switches on. */
+function shownEvents(s: SceneState, date: Date): string[] {
+  const ok = (id: string) => id === "winterlights" ? on("christmas") : on("events") && on(id as never);
+  const ids = s.event ? [s.event] : activeEvents(date).filter((id) => id !== "winterlights");
+  const out = ids.filter(ok);
+  if (s.christmas && !out.includes("winterlights")) out.unshift("winterlights");
+  // each event's patches and effects belong to one season's art
+  return out.filter((id) => (EVENT_SEASON[id as EventId] ?? s.season) === s.season);
+}
+
 function liveScene(): SceneState {
   const christmas = on("christmas") && (christmasOn() || testParams.event === "winterlights");
+  const ev = testParams.event && testParams.event !== "winterlights" && testParams.event in RULES ? testParams.event : null;
+  if (ev && on("events")) {
+    return {
+      hour: on("timeOfDay") ? testParams.hour ?? luxSeconds() / 3600 : 13,
+      season: testParams.season ?? EVENT_SEASON[ev as EventId] ?? seasonOf(),
+      christmas: christmas || ev === "newYear",
+      event: ev,
+    };
+  }
   return {
     hour: on("timeOfDay") ? testParams.hour ?? luxSeconds() / 3600 : 13,
     // The Christmas markets are painted on the winter art, so Winterlights brings winter with it (late November
@@ -71,6 +93,9 @@ export default function App() {
   const date = useMemo(() => today(), []);
   const [xmas, setXmas] = useState<{ site: string; x0: number; y0: number; w: number }[]>([]);
   useEffect(() => { if (on("christmas")) fetch(asset("/events/xmas/xmas.json")).then((r) => r.json()).then(setXmas).catch(() => {}); }, []);
+  const [events, setEvents] = useState<Record<string, EventEffects>>({});
+  useEffect(() => { if (on("events")) eventManifest().then(setEvents); }, []);
+  const shown = useMemo(() => shownEvents(scene, date), [scene, date]);
   const map = useRef<MapHandle>(null);
   const landmarksRef = useRef<Landmark[]>([]);
   const lastSurprise = useRef<Place | null>(null);
@@ -157,11 +182,21 @@ export default function App() {
     // The day patch stays fully on and the night patch fades in over it (both share one opaque region), so the
     // map never shows through a patch halfway through dusk.
     const n = sceneMix.night;
-    map.current?.setPatches(xmas.flatMap((x) => [
+    // Other events: their patches, by the same rule (day patch on, night patch fading in over it). An event with
+    // only a day patch (a daytime market) fades out at night instead. Events not shown are passed at 0, so a patch
+    // shown before goes away.
+    const others = Object.entries(events).filter(([id]) => id !== "winterlights" && id !== "newYear").flatMap(([id, e]) => {
+      const on_ = shown.includes(id);
+      return (e.patches ?? []).flatMap((p) => [
+        ...(p.day ? [{ url: asset(p.day), x0: p.x0, y0: p.y0, w: p.w, a: on_ ? (p.night ? 1 : 1 - n) : 0 }] : []),
+        ...(p.night ? [{ url: asset(p.night), x0: p.x0, y0: p.y0, w: p.w, a: on_ ? n : 0 }] : []),
+      ]);
+    });
+    map.current?.setPatches([...xmas.flatMap((x) => [
       { url: asset(`/events/xmas/${x.site}_day.webp`), x0: x.x0, y0: x.y0, w: x.w, a: xmasShown ? 1 : 0 },
       { url: asset(`/events/xmas/${x.site}_night.webp`), x0: x.x0, y0: x.y0, w: x.w, a: xmasShown ? n : 0 },
-    ]));
-  }, [sceneMix, ready, have, scene.christmas, scene.season, xmas]);
+    ]), ...others]);
+  }, [sceneMix, ready, have, scene.christmas, scene.season, xmas, shown, events]);
 
   if (error) return <div className="splash">The map couldn't load. Please try refreshing.</div>;
   if (!meta || !places || !initial) return <div className="splash">Loading Luxembourg</div>;
@@ -175,12 +210,12 @@ export default function App() {
       {ready && on("water") && <Water map={map} night={sceneMix.night} />}
       {ready && <Overlay map={map} meta={meta} streets={streets} traffic={traffic} night={sceneMix.night} hour={live ? null : scene.hour} season={scene.season} />}
       {ready && layersPocOn && <LayersPoc map={map} below={false} />}
-      {ready && <EventLayer map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} active={scene.christmas && scene.season === "winter" ? ["winterlights"] : []} />}
+      {ready && <EventLayer map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} active={shown} picked={scene.event ?? null} />}
       {ready && on("clouds") && <Clouds map={map} night={sceneMix.night} />}
       {ready && <Sky map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />}
       {(on("timeOfDay") || on("seasons") || on("christmas") || on("weather")) && <SceneControl scene={scene} live={live} sun={sun} onLive={() => setLive(true)}
-        onChange={(c) => { setLive(false); setScene((s) => ({ ...s, ...c, ...(c.christmas ? { season: "winter" as const } : {}) })); }}
-        extra={<WeatherControl map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />} />}
+        onChange={(c) => { setLive(false); setScene((s) => ({ ...s, ...c, ...(c.christmas && !c.season ? { season: "winter" as const } : {}) })); }}
+        date={date} extra={<WeatherControl map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />} />}
       {ready && on("pins") && <Pins places={places} view={view} map={map} active={active} onPick={pick} />}
       {ready && on("comments") && feedbackConfigured && <Feedback map={map} marking={marking} setMarking={setMarking}
         onToast={(m) => { setToast(m); setTimeout(() => setToast(""), 3200); }} />}

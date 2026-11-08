@@ -4,7 +4,11 @@ import { today } from "./testParams";
 
 export type Season = "spring" | "summer" | "autumn" | "winter";
 export type Variant = "day" | "golden" | "night" | "winter" | "winter_night" | "autumn" | "spring";
-export interface SceneState { hour: number; season: Season; christmas: boolean }
+export interface SceneState {
+  hour: number; season: Season; christmas: boolean;
+  /** an event picked in the Events menu (a preview, any day of the year), or null to follow the calendar */
+  event?: string | null;
+}
 
 // Luxembourg (49.6 N): sunrise/sunset by month, local time (rough, enough for lighting)
 const SUN: [number, number][] = [[8.3, 16.9], [7.7, 17.7], [7.0, 18.5], [6.9, 20.4], [6.1, 21.1], [5.5, 21.7],

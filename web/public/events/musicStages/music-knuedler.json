@@ -1,0 +1,11 @@
+{
+ "site": "music-knuedler",
+ "x0": 7544,
+ "y0": 5932,
+ "w": 489,
+ "h": 349,
+ "files": {
+  "day": "music-knuedler_day.webp",
+  "night": "music-knuedler_night.webp"
+ }
+}

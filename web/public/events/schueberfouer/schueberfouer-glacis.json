@@ -1,0 +1,11 @@
+{
+ "site": "schueberfouer-glacis",
+ "x0": 7843,
+ "y0": 4179,
+ "w": 1075,
+ "h": 390,
+ "files": {
+  "day": "schueberfouer-glacis_day.webp",
+  "night": "schueberfouer-glacis_night.webp"
+ }
+}

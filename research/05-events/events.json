@@ -400,6 +400,29 @@
   "website": "https://www.vdl.lu/en/visiting/leisure-and-recreation/festivals-fairs-and-events/fete-de-la-musique"
  },
  {
+  "id": "rock-um-knuedler",
+  "name": "Rock um Knuedler",
+  "name_local": "Rock um Knuedler (lb)",
+  "rule": "A free open-air rock festival on a summer day, historically in early or mid July (Friday 12 July in 2019); not held since 2019 (2020 cancelled for COVID-19)",
+  "dates_2026": null,
+  "dates_2027": null,
+  "locations": [
+   {
+    "name": "Place Guillaume II (Knuedler)",
+    "lat": 49.6106,
+    "lon": 6.1322
+   },
+   {
+    "name": "Rue du Saint-Esprit (Holy Ghost Stage, 2019)",
+    "lat": 49.6094,
+    "lon": 6.1338
+   }
+  ],
+  "visual_impact": "medium",
+  "layer_idea": "Two open-air stages with lighting rigs and a sound tower on the Knuedler (shared with the Fête de la Musique stages, switch musicStages); only if the festival comes back.",
+  "website": "https://en.wikipedia.org/wiki/Rock_um_Knuedler"
+ },
+ {
   "id": "summer-in-the-city",
   "name": "Summer in the City",
   "name_local": "Summer in the City / Summer an der Stad",
