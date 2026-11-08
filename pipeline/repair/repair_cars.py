@@ -236,17 +236,31 @@ def match_ring(rep, ver, day, m, night):
     return (res * soft + ver * (1 - soft)).astype(np.uint8)
 
 
-def carry(bid, version, rep_path):
+CARRY_MIN_DIFF, CARRY_MIN_PX = 24, 30   # RGB sum difference, and the smallest spot carried (px)
+
+
+def carry(bid, version, rep_path, mask=None):
     st = state()
     day = np.asarray(Image.open(st["done"][bid]).convert("RGB"))
     ver = np.asarray(Image.open(st["done_v"][version][bid]).convert("RGB"))
     rep = np.asarray(Image.open(rep_path).convert("RGB"))
-    changed = (np.abs(rep.astype(int) - day.astype(int)).sum(2) > 0).astype(np.uint8)
-    changed = cv2.dilate(changed, np.ones((3, 3), np.uint8))
+    # real changes only: the painter's repair also moves pixels by a level or two everywhere it decoded (rounding),
+    # and carrying those would scatter specks over the version
+    changed = (np.abs(rep.astype(int) - day.astype(int)).sum(2) > CARRY_MIN_DIFF).astype(np.uint8)
+    changed = cv2.morphologyEx(changed, cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8))
+    changed = cv2.dilate(changed, np.ones((5, 5), np.uint8))
+    if mask is not None:   # only the spots: the repair also redraws trees in its free band, and a summer crown
+        # colour-matched into winter or autumn shows as a green blot
+        spots = np.asarray(Image.open(mask)) > 0
+        changed &= cv2.dilate(spots.astype(np.uint8), np.ones((9, 9), np.uint8))
     out = ver.copy()
     n, lab, stt, _ = cv2.connectedComponentsWithStats(changed)
+    carried = 0
     for i in range(1, n):
-        x, y, w, h, _ = stt[i]
+        x, y, w, h, area = stt[i]
+        if area < CARRY_MIN_PX:
+            continue
+        carried += 1
         pad = 16
         x0, y0, x1, y1 = max(x - pad, 0), max(y - pad, 0), min(x + w + pad, day.shape[1]), min(y + h + pad, day.shape[0])
         sub = (lab[y0:y1, x0:x1] == i).astype(np.uint8)
@@ -255,7 +269,7 @@ def carry(bid, version, rep_path):
     d.mkdir(parents=True, exist_ok=True)
     dest = d / f"canvas_{version}_repaired.png"
     Image.fromarray(out).save(dest)
-    print(bid, version, n - 1, "spots carried ->", dest)
+    print(bid, version, carried, "spots carried ->", dest)
 
 
 if __name__ == "__main__":
