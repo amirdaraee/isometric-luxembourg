@@ -8,6 +8,7 @@ GPU's price, and no block starts if the caps could exceed --budget in total.
 
   paint_city.py --budget 40 [--steps 25 --cfg 3] [--lightning] [--only b03,b01] [--parallel 3] [--dry-run]
   paint_city.py --budget 20 --version night     # a painted version, from each block's finished day canvas
+  paint_city.py --budget 5 --version spring --only b13 --backend runpod --parallel 1   # on a pod (launch.sh)
 With --version, the light LoRA turns the day canvas into that version (1:1 scale, prompts/<version>.txt, 15 steps
 by default), holding the neighbouring blocks already finished in the same version.
 """
@@ -23,10 +24,10 @@ ROOT = Path(__file__).resolve().parents[2]
 PIPE = ROOT / "pipeline"
 CITY = ROOT / "data" / "work" / "city"
 PAINTED = ROOT / "data" / "work" / "tiles" / "painted.json"
-MODAL = str(PIPE / ".venv" / "bin" / "modal")
-PY = str(PIPE / ".venv" / "bin" / "python")
 PRICE = {"H200": 4.54, "H100": 3.95}
-LIGHTNING = "/vol/loras/Qwen-Image-Edit-2511-Lightning-8steps-V1.0-bf16.safetensors"
+sys.path.insert(0, str(Path(__file__).parent))
+from backend import LIGHTNING, MAIN, backend, spend_log  # noqa: E402
+PY = str(MAIN / "pipeline" / ".venv" / "bin" / "python")
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--budget", type=float, required=True, help="USD, total cap for this run")
@@ -39,13 +40,16 @@ ap.add_argument("--sec-per-window", type=float, default=4.0, help="measured in P
 ap.add_argument("--only", default="")
 ap.add_argument("--parallel", type=int, default=3)
 ap.add_argument("--dry-run", action="store_true")
+ap.add_argument("--backend", default="modal", choices=["modal", "runpod"], help="runpod: a pod already up (launch.sh)")
 args = ap.parse_args()
+BE = backend(args.backend)
 if args.lightning:
     args.steps, args.cfg = 8, 1.0
 if args.steps is None:
     args.steps = 15 if args.version else 25
 V = args.version
 LIGHT_LOCAL = ROOT / "data" / "work" / "night" / "lora_light" / "luxembourg-light-v1.safetensors"
+INK_LOCAL = ROOT / "data" / "work" / "style" / "lora_v2" / "luxembourg-ink-v2_000002000.safetensors"
 
 lock = threading.Lock()
 spent_cap = 0.0
@@ -79,7 +83,7 @@ def paint_block(b):
     log = str(d / f"paint_city{'_' + V if V else ''}.log")
     d.mkdir(parents=True, exist_ok=True)
     sfx = f"_{V}" if V else ""
-    put = lambda local, remote: sh(MODAL, "volume", "put", "-f", "iso-lux", str(local), remote, log=log)  # noqa: E731
+    put = lambda local, remote: args.dry_run or BE.put(str(local), remote, log=log)  # noqa: E731
     if V:
         put(state()["done"][bid], f"inputs/city/{bid}/day.png")
     elif not (d / "src.png").exists():
@@ -91,23 +95,27 @@ def paint_block(b):
             put(d / f"{name}.png", f"inputs/city/{bid}/{name}.png")
     extra = []
     if (d / f"known{sfx}.png").exists():
-        extra += ["--known", f"/vol/inputs/city/{bid}/known{sfx}.png", "--keep", f"/vol/inputs/city/{bid}/keep{sfx}.png"]
+        extra += ["--known", BE.abs(f"inputs/city/{bid}/known{sfx}.png"),
+                  "--keep", BE.abs(f"inputs/city/{bid}/keep{sfx}.png")]
     if args.lightning:
-        extra += ["--extra-lora", LIGHTNING, "--mu", "1.0986"]
+        extra += ["--extra-lora", BE.abs(LIGHTNING), "--mu", "1.0986"]
     job = f"city_{bid}_{V or 'day'}_s{args.steps}"
     if V:
-        inputs = ["--src", f"inputs/city/{bid}/day.png", "--src-cell", "512",
-                  "--lora", "loras/luxembourg-light-v1.safetensors", "--prompt-file", f"pipeline/gpu_train/prompts/{V}.txt"]
+        inputs = dict(src=f"inputs/city/{bid}/day.png", src_cell=512, lora="loras/luxembourg-light-v1.safetensors",
+                      prompt_file=f"pipeline/gpu_train/prompts/{V}.txt")
     else:
-        inputs = ["--src", f"inputs/city/{bid}/src.png", "--layout", f"inputs/city/{bid}/layout.png",
-                  "--lora", "loras/luxembourg-ink-v2.safetensors"]
-    rc = sh(MODAL, "run", "pipeline/gpu_train/modal_paint.py", "--job", job, *inputs, "--steps", str(args.steps),
-            "--cfg", str(args.cfg), "--gpu", args.gpu, "--max-hours", str(hours_cap(b)),
-            *(["--extra", " ".join(extra)] if extra else []), log=log)
+        inputs = dict(src=f"inputs/city/{bid}/src.png", layout=f"inputs/city/{bid}/layout.png",
+                      lora="loras/luxembourg-ink-v2.safetensors")
     out = d / f"canvas_{V or 'day'}_s{args.steps}.png"
-    sh(MODAL, "volume", "get", "--force", "iso-lux", f"md/{job}/canvas_full.png", str(out), log=log)
+    print(f"+ {BE.name} run {job} {inputs} steps {args.steps} cfg {args.cfg} cap {hours_cap(b)} h", flush=True)
     if args.dry_run:
         return True
+    t0 = time.time()
+    rc = BE.run(job, **inputs, steps=args.steps, cfg=args.cfg, gpu=args.gpu, max_hours=hours_cap(b),
+                extra=" ".join(extra), log=log)
+    if BE.name == "runpod":
+        spend_log(BE, f"city-{V or 'day'}", job, time.time() - t0)
+    BE.get(f"md/{job}/canvas_full.png", str(out), log=log)
     if rc != 0 or not out.exists():
         print(f"{bid}: no canvas (rc={rc}); see {log}", flush=True)
         return False
@@ -135,11 +143,13 @@ def main():
     # a version needs the block's day canvas first
     order = [b for b in blocks if b["id"] not in done and (not V or b["id"] in st["done"])]
     if V and not args.dry_run:
-        sh(MODAL, "volume", "put", "-f", "iso-lux", str(LIGHT_LOCAL), "loras/luxembourg-light-v1.safetensors")
+        BE.put(str(LIGHT_LOCAL), "loras/luxembourg-light-v1.safetensors")
+    elif not args.dry_run and BE.name == "runpod":
+        BE.put(str(INK_LOCAL), "loras/luxembourg-ink-v2.safetensors")
     if args.only:
         keep = set(args.only.split(","))
         order = [b for b in order if b["id"] in keep]
-    rate = PRICE[args.gpu]
+    rate = BE.price if BE.name == "runpod" else PRICE[args.gpu]
     print(f"{len(order)} blocks to paint; caps:", ", ".join(f"{b['id']} ${hours_cap(b) * rate:.2f}" for b in order))
     running: dict[str, threading.Thread] = {}
     failed: set[str] = set()
