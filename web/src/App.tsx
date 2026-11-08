@@ -79,6 +79,8 @@ export default function App() {
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [error, setError] = useState(false);
   const [ready, setReady] = useState(false);
+  // Everything but the map waits until its first view has drawn, so the map gets the line to itself first.
+  const [drawn, setDrawn] = useState(false);
   const [active, setActive] = useState<Place | null>(null);
   const [toast, setToast] = useState("");
   const [consent, setConsent] = useState<Consent>(readConsent);
@@ -90,8 +92,9 @@ export default function App() {
   // Marking a spot puts away the place cards, so the map and the note card have the room.
   useEffect(() => { if (marking) { setLm(null); setActive(null); } }, [marking]);
   useEffect(() => {
+    if (!drawn) return;
     fetch(asset("/data/landmarks.json")).then((r) => r.json()).then((l: Landmark[]) => { landmarksRef.current = l; }).catch(() => {});
-  }, []);
+  }, [drawn]);
   const [traffic, setTraffic] = useState(true);
   // Time of day: the map opens at START_HOUR; "Live" follows Luxembourg's clock until the person moves the slider.
   const [live, setLive] = useState(false);
@@ -220,21 +223,22 @@ export default function App() {
   return (
     <div className="app">
       <div className="graded" style={{ filter: sceneMix.grade || undefined }}>
-      <IsometricMap ref={map} meta={meta} initial={initial} onViewChange={onViewChange} onReady={() => setReady(true)} />
+      <IsometricMap ref={map} meta={meta} initial={initial} onViewChange={onViewChange} onReady={() => setReady(true)}
+        onDrawn={() => { setDrawn(true); dispatchEvent(new Event("map-drawn")); }} />
       </div>
-      {ready && layersPocOn && <LayersPoc map={map} below />}
-      {ready && on("water") && <Water map={map} night={sceneMix.night} />}
-      {ready && on("statues") && <Statues map={map} night={sceneMix.night} season={scene.season} onPick={pick} />}
-      {ready && <Overlay map={map} meta={meta} streets={streets} traffic={traffic} night={sceneMix.night} hour={live ? null : scene.hour} season={scene.season} />}
-      {ready && layersPocOn && <LayersPoc map={map} below={false} />}
-      {ready && <EventLayer map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} active={shown} picked={scene.event ?? null} />}
-      {ready && on("clouds") && <Clouds map={map} night={sceneMix.night} />}
-      {ready && <Sky map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />}
+      {ready && drawn && layersPocOn && <LayersPoc map={map} below />}
+      {ready && drawn && on("water") && <Water map={map} night={sceneMix.night} />}
+      {ready && drawn && on("statues") && <Statues map={map} night={sceneMix.night} season={scene.season} onPick={pick} />}
+      {ready && drawn && <Overlay map={map} meta={meta} streets={streets} traffic={traffic} night={sceneMix.night} hour={live ? null : scene.hour} season={scene.season} />}
+      {ready && drawn && layersPocOn && <LayersPoc map={map} below={false} />}
+      {ready && drawn && <EventLayer map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} active={shown} picked={scene.event ?? null} />}
+      {ready && drawn && on("clouds") && <Clouds map={map} night={sceneMix.night} />}
+      {ready && drawn && <Sky map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />}
       {(on("timeOfDay") || on("seasons") || on("christmas") || on("weather")) && <SceneControl scene={scene} live={live} sun={sun} onLive={() => setLive(true)}
         onChange={(c) => { if (c.hour !== undefined) setLive(false); setScene((s) => changeScene(s, c, EVENT_SEASON)); }}
         date={date} extra={<WeatherControl map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />} />}
-      {ready && on("pins") && <Pins places={places} map={map} active={active} onPick={pick} />}
-      {ready && on("comments") && feedbackConfigured && <Feedback map={map} marking={marking} setMarking={setMarking}
+      {ready && drawn && on("pins") && <Pins places={places} map={map} active={active} onPick={pick} />}
+      {ready && drawn && on("comments") && feedbackConfigured && <Feedback map={map} marking={marking} setMarking={setMarking}
         onToast={(m) => { setToast(m); setTimeout(() => setToast(""), 3200); }} />}
       {on("search") && <Search places={places} onPick={pick} onSurprise={on("surprise") ? surprise : undefined} />}
 
@@ -284,7 +288,7 @@ export default function App() {
       </div>
 
       {toast && <div className="toast glass" role="status">{toast}</div>}
-      {gaAvailable && consent === null && (
+      {drawn && gaAvailable && consent === null && (
         <div className="consent glass" role="dialog" aria-label="Statistics cookies">
           <span>May we count your visit with Google Analytics? It sets cookies. Anonymous, cookie-free counts are kept either way.</span>
           <span className="consent-btns">

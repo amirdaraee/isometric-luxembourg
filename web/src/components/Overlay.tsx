@@ -354,7 +354,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
 
   // The street lines (2 MB) only once streets or traffic are wanted; the traffic graph is then built when the page
   // is idle, so that it never holds up the first paint.
-  const wantLines = streets || traffic;
+  const wantLines = streets || (traffic && (on("traffic") || on("transit")));
   const linesAsked = useRef(false);
   useEffect(() => {
     if (!wantLines || linesAsked.current) return;

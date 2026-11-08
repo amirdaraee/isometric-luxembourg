@@ -1,7 +1,7 @@
 /**
  * Error reports to Sentry, release build on isometric.lu only.
- * Errors only: no tracing, no session replay, no IP addresses, no cookies. The SDK is loaded after the map has
- * started, so it costs nothing on the first view; errors thrown before then are kept and sent once it is up.
+ * Errors only: no tracing, no session replay, no IP addresses, no cookies. The SDK is loaded after the map's first
+ * view has drawn, so it costs nothing on the first view; errors thrown before then are kept and sent once it is up.
  * DSN from .env.production (VITE_SENTRY_DSN, public by design).
  */
 const DSN = import.meta.env.VITE_SENTRY_DSN as string | undefined;
@@ -33,6 +33,10 @@ export function startMonitoring() {
     for (const e of early) Sentry.captureException(e);
   }).catch(() => { /* blocked by an ad blocker: nothing to do */ });
 
-  if (document.readyState === "complete") setTimeout(load, 2000);
-  else addEventListener("load", () => setTimeout(load, 2000), { once: true });
+  // the listeners above catch errors from the start (a map that fails to draw matters most); the SDK itself loads
+  // once the map's first view has drawn, or after 8 s
+  let asked = false;
+  const go = () => { if (!asked) { asked = true; setTimeout(load, 500); } };
+  addEventListener("map-drawn", go, { once: true });
+  setTimeout(go, 8000);
 }

@@ -44,9 +44,11 @@ interface Props {
   initial: View;
   onViewChange: (v: View) => void;
   onReady: () => void;
+  /** Once, when the first view of the map has fully drawn (or after a few seconds on a slow line). */
+  onDrawn?: () => void;
 }
 
-export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({ meta, initial, onViewChange, onReady }, ref) {
+export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({ meta, initial, onViewChange, onReady, onDrawn }, ref) {
   const host = useRef<HTMLDivElement>(null);
   const viewer = useRef<OpenSeadragon.Viewer | null>(null);
   const layers = useRef<Record<string, OpenSeadragon.TiledImage | "loading">>({});
@@ -69,8 +71,11 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
   const loadedOnce = useRef(new Set<string>());
   const zeroSince = useRef<Record<string, number>>({});
   /** Start-up mark for the timing harness: the first time a visible map version has its whole view loaded. */
+  const drawnSent = useRef(false);
+  const sendDrawn = () => { if (!drawnSent.current) { drawnSent.current = true; onDrawn?.(); } };
   const markLoaded = (it: OpenSeadragon.TiledImage) => {
     if (it.getOpacity() > 0 && !performance.getEntriesByName("map-loaded").length) performance.mark("map-loaded");
+    if (it.getOpacity() > 0) sendDrawn();
   };
   /** The version covering the ones under it at the last applyLayers, and since when it has been held (see below). */
   const covering = useRef<{ name: string; rank: number } | null>(null);
@@ -303,6 +308,7 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
       // The base map waits, hidden, for the first setLayers (or a moment), in case a version will cover it.
       b.setOpacity(0);
       setTimeout(applyLayers, 250);
+      setTimeout(sendDrawn, 6000);   // a slow line: don't hold the rest back for ever
       vp.zoomTo(b.imageToViewportZoom(initial.z), undefined, true);
       vp.panTo(b.imageToViewportCoordinates(new OpenSeadragon.Point(initial.x, initial.y)), true);
       onReady();
