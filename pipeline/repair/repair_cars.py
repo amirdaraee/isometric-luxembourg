@@ -81,7 +81,37 @@ def masks(bid, grow_m=1.5, close_m=0.0, name=None):
     return m
 
 
-PROTECT_M = 9.0   # radius kept out of every mask round a landmark's pin (statues and monuments stand in car parks)
+GROUP_M, GROUP_MAX = 6.0, 3   # spots within 6 m of each other form a group; groups of more than 3 are car parks
+GROUP_MAX_M2 = 130.0          # ... or groups with more mask than about three grown car boxes
+
+
+def lone(bid):
+    """mask_<block>_lone.png: the tight mask without dense groups. Pilots on RunPod (8 Nov): the painter's repair
+    removes lone cars and small groups well (b00, Place de la Constitution), but where spots merge into one area
+    (the b04 hospital car parks) it redraws the whole car park as a blank wall or a road, with or without a start
+    image from the free fill; such car parks keep their painted cars."""
+    m = np.asarray(Image.open(OUT / f"mask_{bid}.png")) > 0
+    b = block(bid)
+    k = m.shape[1] / b["w"]
+    c = int(GROUP_M / MAP_MPP * k) | 1
+    grouped = cv2.dilate(m.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (c, c)))
+    ng, glab = cv2.connectedComponents(grouped)
+    ns, slab = cv2.connectedComponents(m.astype(np.uint8))
+    # spots per group (a spot lies inside one group, since the groups are the spots grown)
+    pairs = np.unique(np.stack([slab[m], glab[m]], 1), axis=0)
+    count = np.bincount(pairs[:, 1], minlength=ng)
+    # and by area: overlapping boxes of a row of cars merge into one spot
+    area = np.bincount(glab[m], minlength=ng) / (k / MAP_MPP) ** 2      # m2 of mask per group
+    count[area > GROUP_MAX_M2] = GROUP_MAX + 1
+    keep_groups = np.nonzero((count >= 1) & (count <= GROUP_MAX))[0]
+    out = m & np.isin(glab, keep_groups)
+    Image.fromarray((out * 255).astype(np.uint8)).save(OUT / f"mask_{bid}_lone.png")
+    print(bid, f"{ns - 1} spots; kept {int(sum(count[keep_groups]))} in {len(keep_groups)} small groups; "
+          f"{int((count > GROUP_MAX).sum())} car parks left as painted")
+    return out
+
+
+PROTECT_M = 9.0  # radius kept out of every mask round a landmark's pin (statues and monuments stand in car parks)
 PROTECT_SKIP = {"square", "park", "bridge", "viewpoint", "transport", "sport"}   # pins in the middle of open ground
 
 
@@ -196,42 +226,73 @@ def match_ring(rep, ver, day, m, night):
         ring &= vl[..., 0] < np.percentile(vl[..., 0][ring], 80) if ring.any() else ring
     if ring.sum() < 20:
         return ver
+    # match on the ring pixels that look like the spot's new ground by day (asphalt next to asphalt): crowns and
+    # roofs in the ring pulled pavement towards their own colour (pink patches in autumn)
+    target = np.median(rl[m > 0], axis=0)
+    alike = ring & (np.linalg.norm(dl - target, axis=2) < 25)
+    if alike.sum() >= 20:
+        ring = alike
     out = vl.copy()
     for c in range(3):
         dm, ds = dl[..., c][ring].mean(), dl[..., c][ring].std() + 1e-3
         vm, vs = vl[..., c][ring].mean(), vl[..., c][ring].std() + 1e-3
-        out[..., c] = (rl[..., c] - dm) * (vs / ds) + vm
+        out[..., c] = (rl[..., c] - dm) * float(np.clip(vs / ds, 0.8, 1.25)) + vm   # spread barely: it saturated
     res = cv2.cvtColor(np.clip(out, 0, 255).astype(np.uint8), cv2.COLOR_LAB2RGB)
     soft = cv2.GaussianBlur(m.astype(np.float32), (0, 0), 1.0)[..., None]
     return (res * soft + ver * (1 - soft)).astype(np.uint8)
 
 
-def carry(bid, version, rep_path):
+CARRY_MIN_DIFF, CARRY_MIN_PX = 24, 30   # RGB sum difference, and the smallest spot carried (px)
+CARRY_MIN_MEAN = 30                     # mean RGB sum difference over a spot below which it is not carried
+
+
+def carry(bid, version, rep_path, mask=None):
     st = state()
     day = np.asarray(Image.open(st["done"][bid]).convert("RGB"))
     ver = np.asarray(Image.open(st["done_v"][version][bid]).convert("RGB"))
     rep = np.asarray(Image.open(rep_path).convert("RGB"))
-    changed = (np.abs(rep.astype(int) - day.astype(int)).sum(2) > 0).astype(np.uint8)
-    changed = cv2.dilate(changed, np.ones((3, 3), np.uint8))
+    # real changes only: the painter's repair also moves pixels by a level or two everywhere it decoded (rounding),
+    # and carrying those would scatter specks over the version
+    changed = (np.abs(rep.astype(int) - day.astype(int)).sum(2) > CARRY_MIN_DIFF).astype(np.uint8)
+    changed = cv2.morphologyEx(changed, cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8))
+    changed = cv2.dilate(changed, np.ones((5, 5), np.uint8))
+    if mask is not None:   # only the spots: the repair also redraws trees in its free band, and a summer crown
+        # colour-matched into winter or autumn shows as a green blot
+        spots = np.asarray(Image.open(mask)) > 0
+        changed &= cv2.dilate(spots.astype(np.uint8), np.ones((9, 9), np.uint8))
     out = ver.copy()
     n, lab, stt, _ = cv2.connectedComponentsWithStats(changed)
+    carried = 0
     for i in range(1, n):
-        x, y, w, h, _ = stt[i]
+        x, y, w, h, area = stt[i]
+        if area < CARRY_MIN_PX:
+            continue
+        carried += 1
         pad = 16
         x0, y0, x1, y1 = max(x - pad, 0), max(y - pad, 0), min(x + w + pad, day.shape[1]), min(y + h + pad, day.shape[0])
         sub = (lab[y0:y1, x0:x1] == i).astype(np.uint8)
+        s = sub > 0
+        if np.abs(rep[y0:y1, x0:x1][s].astype(int) - day[y0:y1, x0:x1][s].astype(int)).sum(1).mean() < CARRY_MIN_MEAN:
+            carried -= 1   # barely changed by day (a detector false alarm): leave the version as it is
+            continue
         out[y0:y1, x0:x1] = match_ring(rep[y0:y1, x0:x1], ver[y0:y1, x0:x1], day[y0:y1, x0:x1], sub, "night" in version)
     d = OUT / bid
     d.mkdir(parents=True, exist_ok=True)
     dest = d / f"canvas_{version}_repaired.png"
     Image.fromarray(out).save(dest)
-    print(bid, version, n - 1, "spots carried ->", dest)
+    print(bid, version, carried, "spots carried ->", dest)
 
 
 if __name__ == "__main__":
     cmd = sys.argv[1]
     if cmd == "carry":
         carry(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif cmd == "lonemasks":   # the painter's mask for the full run: car parks (dense groups) left out
+        for bid in blocks(sys.argv[2]):
+            lone(bid)
+    elif cmd == "freeall":   # every spot filled (copy, or the smooth fallback): the start image for gpu_repair.py --init-from
+        for bid in blocks(sys.argv[2]):
+            free(bid, dest_name="canvas_day_freeall.png", copy_only=False)
     elif cmd == "gpumasks":   # wider spots for the painter: grown 3 m, groups closed over 8 m
         for bid in blocks(sys.argv[2]):
             masks(bid, 3.0, 8.0, f"mask_{bid}_gpu.png")

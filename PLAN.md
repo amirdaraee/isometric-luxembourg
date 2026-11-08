@@ -19,7 +19,7 @@ the idea list, and points here for the order of work. Update both when a phase f
 - Built locally but switched off publicly: time of day, seasons, Christmas, snow, traffic, transit, 3D models.
 - Painter: `pipeline/gpu_train/tiles/tiler.py`, window by window with red-box infill and colour-drift correction.
   Seams and drift are its main weakness.
-- RunPod balance: $4.44.
+- RunPod balance: $13.76 (8 Nov 2026, after T1).
 
 ## Lessons: rules so we don't repeat mistakes
 Each of these cost us a run or a day once.

@@ -515,6 +515,21 @@ canvas is offered for replacement. Next, when Modal is back: the pilot with meth
 Constitution, about $0.30), then the full run within the cap. Open: side-on cars packed in a row along a street
 score 0.05 to 0.08 and are mostly missed (b04 near `#10600,9150`); the Gare quarter itself has few painted cars.
 
+**Status (T1, 8 Nov 2026): painter's repair run on RunPod for lone cars; dense car parks left as painted.**
+Pilots on tight masks (RunPod H100, `gpu_repair.py --backend runpod`): Place de la Constitution (b00) came out clean
+(boxed cars gone, a few replaced by shrubs); the b04 hospital car parks did not: where the spots merge into one
+area the painter redraws the whole car park, as a blank wall or a road. A second b04 pilot started from the free
+fill of every spot (`repair_cars.py freeall`, `--init-from`, strength 0.5 and 0.65) left blocky patches and still
+redrew the car parks. So the full run uses `repair_cars.py lonemasks`: lone cars and groups of at most 3 spots
+and 130 m2, dense car parks keep their painted cars (`mask_<block>_lone.png`; about 560 of 1,000 spots kept). Run
+on whole blocks b00 to b13 (b14 has none), Lightning 8 steps, $4.54 of jobs in all; every change stays within 40 px
+of a spot. Versions: `repair_cars.py carry` (free), now limited to the spots that really changed, matched on ring
+pixels that look like the spot's own ground, with the spread held to 0.8 to 1.25. `finalize.py` builds the final
+canvases (with the lift for b00) and swaps them in, keeping `*_orig.png` next to each. Open: the painter
+occasionally invents a car or a small detail in a spot; a second `find_vehicles.py` pass is still to do; winter
+and night spots can look slightly flat; dense car parks need another method (a car-park layer, or repaint with
+the layout map showing parking bays).
+
 ### Item 5. "We need a task for rain, storm and wind, or fog"
 
 **Today.** Snow is the only weather: 260 screen-space dots in `Overlay.tsx` when the season is winter
@@ -659,6 +674,13 @@ shaft and footbridge, then the cabin (25 s wait at the bottom, 30 s ride, 35 s a
 then the shaft's front frame, under `liftCabin`. The repaint inputs are in `data/work/lift/` (`lift_model.py
 inputs`); run the repaint when Modal is back, then set `structure` to false. Open: the old draped footbridge still
 shows under the drawn structure until the repaint; the structure is plain grey by night.
+
+**Status (T1, 8 Nov 2026): repainted on RunPod; `structure` is false.** Day: `gpu_repair.py b00
+8560,4720,1200,1200 --mask data/work/lift/mask_b00.png --src-override data/work/lift/src.png --layout-override
+data/work/lift/layout.png --band 48`, three seeds; seed 1867 (`lift_day_s1`) chosen: grey-blue truss and a light
+glass shaft (another seed painted the truss red). Versions: `--version <v> --day lift_day_s1.png` (light LoRA, 15
+steps, CFG 3) for all six. Pasted into b00 by `finalize.py` (only the pixels the repaint changed). $0.53 in all.
+Still to check: the cabin's anchors against the painted shaft at `#9293,5350,1.2?on=liftCabin`.
 
 ### Item 7. "The merry-go-round and other Christmas things need animation"
 
