@@ -2,7 +2,7 @@
 | # | Task | How | Cost | Status |
 |---|---|---|---|---|
 | T1 | Finish the paid repaints on RunPod (Modal is disabled): the 2 missing spring blocks (b13, b14), the painted-car repair (pilot, then full run, carried into the versions), the Pfaffenthal lift repaint | one pod for everything, deadline watchdog, delete after; then rebuild tiles, recomposite event patches, rebuild occlusion | cap $15 (RunPod balance $24.12) | done: $10.36 spent, balance $13.76; pod deleted |
-| T2 | Match the roads to the paintings (no repainting): vehicles and trains must run on the roads and tracks as painted | detect the painted asphalt and rails in the art, fit lanes and tracks to them, use those for driving; debug overlay | free | first pass done; T2b (dense warp of the data onto the painting) running |
+| T2 | Match the roads to the paintings (no repainting): vehicles and trains must run on the roads and tracks as painted | detect the painted asphalt and rails in the art, fit lanes and tracks to them, use those for driving; debug overlay | free | done: T2 first pass, T2b dense warp onto the painting (see below) |
 | T3 | Refactoring, performance and tool bugs (time slider, season and event buttons, other controls) | audit, fix every reproducible bug with a test, simplify code, measure before/after | free | queued |
 | T4 | Famous statues as a separate layer, no repainting: Gëlle Fra, Grand Duchess Charlotte, William II, Dicks–Lentz, Hämmelsmarsch fountain, Princess Amélie, Wenzel, John the Blind and others | small drawings in the ink style placed on their plinths at their true positions, hidden behind buildings like vehicles, linked to their landmark cards | cap $3 (OpenAI) | done (8 Nov), see T4 result |
 
@@ -22,6 +22,42 @@
   (not yet unveiled), Wenzel / Count Siegfried (no statue).
 - **Rebuild:** `pipeline/.venv/bin/python pipeline/build_statues.py` (add `--draw` for missing drawings; capped,
   logged as `statues:` in openai_spend.json). Drawings cost $0.57.
+
+## T2b result (8 Nov): the data warped onto the painting
+- **Method** (`pipeline/flow_field.py`, `pipeline/flowfield.py`): every painted day block is registered densely
+  against the render it was painted from. Structure images (grey, normalised by local mean and contrast) are matched
+  by NCC for every whole-px move, coarse (half resolution, 96 px windows, up to 24 px) then fine (64 px windows,
+  every 8 px, up to 4 px); each match carries the curvature of its NCC peak, so a straight road or edge only pins the
+  direction across it; the field is a robust (Cauchy, three rounds) weighted smoothing of the matches, falling back to
+  the coarser field where the painting says little. Three layers: **ground** (the kinds pass's terrain and decks),
+  **built** (walls and roofs) and **road** (the ground field refined on the roads and tracks themselves: their bands
+  at width "w" against the painted asphalt and rail bed, 16 m windows, up to 3 m). The painter moves the ground about
+  1.5 px lower than the roofs, and redrew some streets up to 2 m from the ground round them. Output
+  `data/work/flowfit/field.npz` (every 8 map px).
+- **Warped:** `lines.json` `q` (road layer, then the colour fit capped at 1 m), `transit.json` `fit`,
+  `road_heights.json` `fx`/`fy`, the drivable map (kinds pass and footprints by the built layer, decks and OSM water by
+  the ground layer, corridors and widths on the warped lines), the occluders' R and G (built layer; the render's tiles
+  kept in `data/work/flowfit/occluders_render/`), the canopy's lane strip. The water mask is found in the painting
+  already (left as it is); landmark pins and statues keep their places (moves of 1.5-3 m, under a pin's size).
+- **Asphalt in shade:** the colour model has a second model among dark cells (shaded road against shaded pavement);
+  without it streets in the shade of buildings did not count as road. The guard is the painted road grown by 2 m.
+- **Validation** (`data/work/flowfit/validate.json`, independent 48 px matches at features after the warp; median
+  over the blocks, block offset -> field): building corners 1.42 -> 0.95 px, ground features 1.96 -> 1.15 px, bridge
+  decks 1.85 -> 1.31 px, river banks 2.94 -> 2.45 px.
+- **Measured** (`node src/sim/roadfit.test.ts 5 0.75`, on the T1 art): cars on painted asphalt without the fade 94.7%
+  (strict 83.5%; T2 as published 88.5%; T2's method on today's art and masks 94.4%); faded by the guard 1.4% (T2 11.0%;
+  T2 on today's art 5.5%); of the cars shown 96.0% on painted asphalt; trams and trains on the painted bed 93.3% (T2
+  94.4%; 93.6% on today's art). A colour fit of up to 2 m gives 94.8% and 94.5%.
+- **Pictures:** the dashboard `web/public/poc/` (local, not in git), section "Roads matched to the painting (T2b)":
+  32 places before/after, made by `pipeline/fit_to_art_images.py`.
+- **Re-run after any repaint:** `cd pipeline && .venv/bin/python fit_to_art.py` (about 50 minutes, 4.7 GB at most:
+  the field, drivable map, occlusion, fit, checks; `--from drivable` skips the field).
+- **Open:** 97% on painted asphalt is not reached: of the cars still off it, about half are within 1 m and a third 1-2
+  m, on streets the painter covered with a house, a tree or a cliff, or in shade the colour model still misses; the
+  rail bed share did not improve (grass tram tracks, rail beds hard to tell by colour); b14 is almost unpainted (its
+  field is the median); the lane layout keeps the OSM width "w" (the painted width "qw" is narrower in places).
+- **Traffic fix on the way:** a car standing aside for a siren no longer rejoins its lane while the siren still
+  overlaps it (the emergency scenario on Rue Guillaume Schneider found it with the new lines).
 
 ## T2 result (8 Nov)
 - **Painter's offset, per block** (`pipeline/fit_roads.py`, kept in `data/work/roadfit/shifts.json`): by edges against

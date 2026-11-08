@@ -1,6 +1,6 @@
 """Put everything that moves on the map where the painting has it (task T2b): one command after any repaint.
 
-    cd pipeline && .venv/bin/python fit_to_art.py            (about 45 minutes, up to 4 GB; one step at a time)
+    cd pipeline && .venv/bin/python fit_to_art.py            (about 50 minutes, up to 4.7 GB; one step at a time)
     cd pipeline && .venv/bin/python fit_to_art.py --from drivable   (skip the field, e.g. after changing lines.json)
 
 Steps, in order (each is its own script and can be run alone):

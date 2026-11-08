@@ -25,10 +25,10 @@ Z = 2
 # (name, map x, y): spread over the city, the owner's list first
 SPOTS = [
     ("Hollow Tooth", 9604, 6685), ("Pfaffenthal quay", 9750, 5640), ("Pfaffenthal lift", 9293, 5432),
-    ("Red Bridge", 10209, 5253), ("Boulevard Royal", 7827, 5183), ("Boulevard Royal north", 8417, 5304),
+    ("Red Bridge", 10500, 5150), ("Boulevard Royal", 7827, 5183), ("Boulevard Royal north", 8417, 5304),
     ("Gare station", 4957, 8099), ("Avenue de la Gare", 5584, 7685), ("Place de Paris", 5474, 7243),
-    ("Kirchberg, Avenue JFK at Porte de l'Europe", 13102, 5887), ("Kirchberg, Avenue JFK at the Parliament", 14494, 5846),
-    ("Kirchberg, Avenue JFK at the Central Park", 17700, 6146), ("Kirchberg, Avenue JFK east", 20500, 6420),
+    ("Kirchberg, Avenue JFK at Porte de l'Europe", 13180, 5900), ("Kirchberg, Avenue JFK at the Parliament", 14543, 6214),
+    ("Kirchberg, Avenue JFK at the Central Park", 17712, 6606), ("Kirchberg, Avenue JFK east", 20643, 6702),
     ("Grund", 9328, 6854), ("Grund, Neumünster", 9040, 6876), ("Clausen", 10757, 7157), ("Clausen, Saint Cunigunde", 11724, 6848),
     ("Limpertsberg", 8918, 3430), ("Limpertsberg, Boulevard de la Foire", 8417, 4511), ("Glacis", 8374, 4373),
     ("Adolphe Bridge", 6272, 6194), ("Passerelle", 6826, 7295), ("Boulevard Patton", 10293, 8278),
