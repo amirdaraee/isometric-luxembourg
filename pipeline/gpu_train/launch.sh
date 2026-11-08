@@ -1,7 +1,8 @@
 #!/bin/bash
 # Rent an H100/H200 (US first), upload files, start a job, and keep copying results back until the pod is gone.
 # Usage: launch.sh <name> <hours deadline> <local results dir> <remote results glob> <script> <script args...> -- <files to upload...>
-# Writes $SP/<name>.ssh, <name>.id, <name>.meta. Uploads go to /workspace/ (rsync with resume).
+# Writes $SP/<name>.ssh, <name>.known_hosts, <name>.id, <name>.meta. Uploads go to /workspace/ (rsync with resume).
+# When the pod is deleted, delete <name>.known_hosts too (a new pod gets a fresh one here anyway).
 # Env: OFFERS = "cloud:gpu-id" pairs to try in order (default: the cheapest first, community H100 at the time of
 #      writing; community pods need a public IP); COUNTRIES (default "US CA DE NL SE").
 # For a painter session (jobs sent one by one from the laptop with gpu_train/backend.py):
@@ -38,8 +39,11 @@ echo $id > $SP/$NAME.id; echo "$cost $(date +%s)" > $SP/$NAME.meta
 if [ -f $SP/ssh_full ]; then
   sed -e "s/^Host .*/Host pod/" -e "s/HostName .*/HostName $ip/" -e "s/Port .*/Port $port/" $SP/ssh_full > $SP/$NAME.ssh
 else
-  printf 'Host pod\n  HostName %s\n  Port %s\n  User root\n  IdentityFile ~/.ssh/id_ed25519\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  LogLevel ERROR\n' \
-    "$ip" "$port" > $SP/$NAME.ssh
+  # trust on first use, per pod: a new pod starts with a fresh known_hosts file, so the first connection records
+  # its key and every later ssh/scp/rsync (all through this config, -F) is checked against it
+  rm -f $SP/$NAME.known_hosts
+  printf 'Host pod\n  HostName %s\n  Port %s\n  User root\n  IdentityFile ~/.ssh/id_ed25519\n  StrictHostKeyChecking accept-new\n  UserKnownHostsFile %s\n' \
+    "$ip" "$port" "$SP/$NAME.known_hosts" > $SP/$NAME.ssh
 fi
 echo "pod $id \$$cost/h $ip:$port"
 for f in "${FILES[@]}" "$SCRIPT"; do

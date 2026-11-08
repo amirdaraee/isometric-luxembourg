@@ -29,10 +29,10 @@ DIFFUSERS="git+https://github.com/huggingface/diffusers.git@c943837899b16cbae2f6
 if [ ! -x /venv/bin/python ]; then
   echo "SETUP $(date -u +%H:%M:%S)" >> "$LOG"
   python3 -m venv /venv
-  # the same packages as the Modal image (modal_paint.py); torch built for CUDA 12.8 first (every pod's driver
-  # runs it), then 13.0, then whatever the image has
+  # the same packages as the Modal image (modal_paint.py); torch 2.13 is built for CUDA 13.0 (not 12.8), so a
+  # driver of 580 or newer; otherwise the torch the image has
   ok=0
-  for idx in cu128 cu130; do
+  for idx in cu130; do
     /venv/bin/pip install -q --no-cache-dir torch==2.13.0 torchvision==0.28.0 \
       --index-url https://download.pytorch.org/whl/$idx >> /workspace/setup.log 2>&1 && ok=1 && break
   done
