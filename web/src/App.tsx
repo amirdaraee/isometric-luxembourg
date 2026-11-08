@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { gaAvailable, readConsent, saveConsent, type Consent } from "./analytics";
 import { IsometricMap, type MapHandle, type MapMeta, type View } from "./components/IsometricMap";
 import { Pins, type Place } from "./components/Pins";
 import { Search } from "./components/Search";
@@ -80,6 +81,8 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [active, setActive] = useState<Place | null>(null);
   const [toast, setToast] = useState("");
+  const [consent, setConsent] = useState<Consent>(readConsent);
+  const choose = (c: "yes" | "no") => { saveConsent(c); setConsent(c); };
   const [about, setAbout] = useState(false);
   const [streets, setStreets] = useState(false);
   const [lm, setLm] = useState<Landmark | null>(null);
@@ -281,6 +284,15 @@ export default function App() {
       </div>
 
       {toast && <div className="toast glass" role="status">{toast}</div>}
+      {gaAvailable && consent === null && (
+        <div className="consent glass" role="dialog" aria-label="Statistics cookies">
+          <span>May we count your visit with Google Analytics? It sets cookies. Anonymous, cookie-free counts are kept either way.</span>
+          <span className="consent-btns">
+            <button type="button" onClick={() => choose("no")}>No thanks</button>
+            <button type="button" className="on" onClick={() => choose("yes")}>Allow</button>
+          </span>
+        </div>
+      )}
       {on("tiltShift") && <><div className="tilt tilt-top" aria-hidden="true" /><div className="tilt tilt-bottom" aria-hidden="true" /></>}
       {on("previewBadge") && !!meta.painted?.length && <Unpainted painted={meta.painted} />}
 
@@ -306,6 +318,11 @@ export default function App() {
               <li><a href="https://openseadragon.github.io" target="_blank" rel="noopener">OpenSeadragon</a> and <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a></li>
               <li><a href={REPO_URL} target="_blank" rel="noopener">Source on GitHub</a>: code MIT, art CC BY-NC 4.0</li>
             </ul>
+            {gaAvailable && <>
+              <h2>Privacy</h2>
+              <p>Visits are counted with Cloudflare Web Analytics (no cookies, nothing personal) and, only if you allow it, Google Analytics (cookies). Google Analytics: {consent === "yes" ? "allowed" : "not allowed"}.{" "}
+                <button type="button" className="link" onClick={() => choose(consent === "yes" ? "no" : "yes")}>{consent === "yes" ? "Withdraw" : "Allow"}</button></p>
+            </>}
           </section>
         </div>
       )}
