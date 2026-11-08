@@ -502,6 +502,19 @@ picks method (a), the full run is free.
 - Detection misses dark cars in shadow. The review sheet sorts by score, so look at the low-score end too.
 **Estimate.** L.
 
+**Status (stream B, 8 Nov 2026): detection done, free method rejected for car parks, painter's repair queued.**
+`find_vehicles.py` runs the detector on 256 px crops (at 512 px it missed whole rows of cars) on all 15 blocks
+(`data/work/repair/vehicles_<block>.json`, sheets `sheet_<block>.jpg`, detector vehicles first). The review step
+became a rule in `join`: a road vehicle on visible ground (render kind pass) at score 0.14, or a car-sized box on a
+road or car park from 0.08. The blob rule fired on dormers, markings, trees and grass, so it only feeds the sheets.
+Masks are tight boxes (+1.5 m): the first painter pilot on Place de la Constitution ($0.26, 7 Nov) closed car
+groups into one area and the painter drew a lawn there. Method (a) is a Poisson-blended copy of nearby ground: fine
+for a lone car, but on car parks most spots find no clean source and a partly boxed car leaves a smear, so no free
+canvas is offered for replacement. Next, when Modal is back: the pilot with method (b) on tight masks
+(`gpu_repair.py <block> <box> --mask data/work/repair/mask_<block>.png`, b04 hospital car park and b00 Place de la
+Constitution, about $0.30), then the full run within the cap. Open: side-on cars packed in a row along a street
+score 0.05 to 0.08 and are mostly missed (b04 near `#10600,9150`); the Gare quarter itself has few painted cars.
+
 ### Item 5. "We need a task for rain, storm and wind, or fog"
 
 **Today.** Snow is the only weather: 260 screen-space dots in `Overlay.tsx` when the season is winter
@@ -639,6 +652,14 @@ the input (ROADMAP "Building quality", option a). The cabin must line up with th
 2 px, so place the anchors by eye in a local helper page and store them.
 **Estimate.** L.
 
+**Status (stream B, 8 Nov 2026): model, inputs, cabin and an interim structure done; repaint queued.**
+Facts are in `research/01-landmarks/README.md`. The painted art has no tower at all (the painter made a wall of the
+old footbridge down the slope), so `lift.json` has `"structure": true`: `EventLayer.tsx` draws the modelled tower,
+shaft and footbridge, then the cabin (25 s wait at the bottom, 30 s ride, 35 s at the top, closed 01:00 to 05:45),
+then the shaft's front frame, under `liftCabin`. The repaint inputs are in `data/work/lift/` (`lift_model.py
+inputs`); run the repaint when Modal is back, then set `structure` to false. Open: the old draped footbridge still
+shows under the drawn structure until the repaint; the structure is plain grey by night.
+
 ### Item 7. "The merry-go-round and other Christmas things need animation"
 
 **Today.** The three Christmas patches (`web/public/events/xmas/*_day.webp`, `*_night.webp`, `xmas.json`, made
@@ -686,6 +707,11 @@ anyway (item 12).
 - Sprite and painting styles may differ. Use the same ink weight (1 px, `INK`) and shading as the vehicles,
   which already sit well on the map.
 **Estimate.** M.
+
+**Ferris wheel redone (BACKLOG B9, stream B, 8 Nov 2026).** The painted face-on A-frame was taken out of the
+Constitution drawings (`xmas_v2.py unframe`, a masked edit, $0.12) and the whole wheel is drawn live by
+`web/src/components/ferrisWheel.ts` in the map's projection: plane on a map axis (an ellipse on screen), 24
+gondolas hanging from their pins, one turn in 150 s from the clock, lit rims, spokes and windows at night.
 
 ### Item 8. "Cars will move out of the way of emergency vehicles"
 
@@ -1053,6 +1079,17 @@ nothing. Then add events one at a time, by visual impact and by the date they co
 ---
 
 ## 4. Three work streams
+
+**Status (stream B, 8 Nov 2026): framework and all ten events built, behind their switches.** `web/src/calendar.ts`
+(rules, tested against the research dates by `node src/calendar.test.ts`), an Events picker in `SceneControl.tsx`,
+`pipeline/events/event_patch.py` (draw, composite, manifest) and `web/public/events/events.json`; effects in
+`web/src/components/eventEffects.ts`. Patches: Schueberfouer (Glacis car park, centred on its polygon at
+`8420,4333`, not `8974,4151`), music stages and the Octave market (Knuedler), Éimaischen (Fëschmaart: the research
+longitude points into the Grund, so the National Museum's position is used), Halloween (Neimënster). National Day,
+New Year, the marathon and Buergbrennen are live effects only. Spent $0.74 of $6. Open: the Schueberfouer wheel is
+painted (still); the Éimaischen stalls may cover a few small roofs at the west edge; Schueberfouer patches are
+1.4 MB (lossless); Rock um Knuedler has no dates (not held since 2019); the patches must be composited again
+(`event_patch.py composite`, free) after any repaint of `day`, `night`, `spring` or `autumn`.
 
 ### Stream A: vehicles and rail
 Items **1, 2, 10, 9, 8**, plus stream A's part of **3**.

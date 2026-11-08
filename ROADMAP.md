@@ -25,7 +25,7 @@ The order of work, step by step, is in **[PLAN.md](PLAN.md)**, along with the ru
 | 6 | Life on the map: car hiding, water shimmer, swaying trees, better traffic, transit refresh, birds | free | done 7 Nov except swaying trees: traffic sim, sprites, occlusion, river water, trams/trains, weekday/weekend timetable, birds; access rules + emergency vehicles in progress |
 | 7 | Switch features on publicly, one at a time | free | to do |
 | 8 | isometric.lu | domain fee | done 7 Nov |
-| 9 | More events, weather, clouds, easter eggs, height, historic mode | varies | clouds being redone; notes from visitors (API live, hidden); live weather (rain, storm, snow, wind) and valley fog built behind the `weather` and `fog` switches (PLAN_NEXT.md item 5); Cargolux and Luxair aircraft from Findel behind the `planes` switch (item 11) |
+| 9 | More events, weather, clouds, easter eggs, height, historic mode | varies | clouds being redone; notes from visitors (API live, hidden); live weather (rain, storm, snow, wind) and valley fog built behind the `weather` and `fog` switches (PLAN_NEXT.md item 5); Cargolux and Luxair aircraft from Findel behind the `planes` switch (item 11); ten city events through the year (calendar, picker, patches, fireworks, bonfires, runners, bats) behind `events` and one switch each (item 13); the Pfaffenthal lift's moving cabin behind `liftCabin` (item 6) |
 
 ## Open issues
 | ID | Issue | Type | Phase |
@@ -35,7 +35,7 @@ The order of work, step by step, is in **[PLAN.md](PLAN.md)**, along with the ru
 | I3 | Night is upscaled from a 4096 px preview after a pod stopped early. | quality | 5 (being repainted) |
 | I4 | Buildings go soft at full zoom; windows are warped and facade lines aren't parallel. See "Building quality" below. | quality | 2, 4 |
 | I5 | ~~Visible seams and colour drift~~ Fixed 7 Nov by the whole-canvas painter. | quality | closed |
-| I6 | The painter sometimes invents trees over streets and small cars on station roads. | quality | 2 (patch repair) |
+| I6 | The painter sometimes invents trees over streets and small cars on station roads. Painted vehicles are now found on all blocks (`pipeline/repair/`, PLAN_NEXT item 4); their repair with the painter waits for Modal. | quality | 2 (patch repair) |
 | I7 | ~~`transit.json` holds one service day~~ Fixed 7 Nov: weekday, Saturday, Sunday/holiday timetables. | data | closed |
 | I8 | ~~The viewer zooms past the painted resolution~~ Already capped in 1.0 (`maxZoomPixelRatio: 1.25`). | bug | 0, closed |
 | I9 | ~~Unpainted areas show the raw render~~ Fixed 7 Nov: a note says so, and the whole city is painted now. | UX | closed |
