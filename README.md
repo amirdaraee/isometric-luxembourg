@@ -95,7 +95,9 @@ The pipeline lives in `pipeline/` (Python 3.11+, `uv venv && uv pip install -r p
 6. **Events and landmarks:** `pipeline/events/` adds Christmas markets and cutaway interiors.
    `build_landmarks.py` builds the landmark cards from `research/`.
 7. **Live layers:** `project_lines.py`, `export_visibility.py` and `build_transit.py` produce the data for the
-   streets, cars, trams and trains.
+   streets, cars, trams and trains. `build_drivable.py`, then `fit_roads.py`, fit the streets and tracks to the
+   roads and rails as painted (the vehicles drive on the fitted lines). Run `fit_roads.py --remeasure` again whenever the day
+   art changes or `project_lines.py` rewrites `lines.json`, then check with `node src/sim/roadfit.test.ts` in `web/`.
 8. **Tiles:** `build_tiles.py` builds the day map. `build_variant_tiles.py <version> ...` builds each other version.
 
 Checks: `water_check.py` compares the painted water with OpenStreetMap, `seam_check.py` finds visible tile seams,

@@ -25,17 +25,23 @@ Writes (keeping every original field):
                                "q": the fitted polyline (map px, 0.1 px), densified to at most 16 px between points,
                                "qi": for each vertex of "p", its index in "q" (the points between are the segment's
                                even subdivisions, moved). Consumers build the graph from "p" and draw on "q".
+                               "qw" (roads, where clear): the painted carriageway's width in m; for information only,
+                               traffic keeps "w" (with "qw" fewer cars sat on asphalt: the run often takes in the
+                               pavement).
   web/public/data/transit.json "fit": per shape, the fitted points (shapes are densified, geometry unchanged, so stop
                                distances stay valid); build_transit.py writes it too when lines.json has "q".
   web/public/data/road_heights.json  "fx", "fy" per deck profile: its sample points moved like its way.
   web/public/data/roadfit/     index.json and <tx>_<ty>.png tiles (like drivable/) of the painted masks: bit 1 asphalt,
-                               bit 2 rail bed; for the ?roaddebug overlay and the headless checks.
-  data/work/roadfit/shifts.json  the measured block offsets.
+                               2 rail bed, 4 unpainted, 16 painted road (asphalt, gaps up to 3.5 m closed), 8 the guard
+                               (16 grown by 0.5 m: Overlay fades a car outside it); for the guard, ?roaddebug and the
+                               headless check.
+  data/work/roadfit/shifts.json  the measured block offsets (the edge offsets are cached; --remeasure redoes them).
 
+Order: project_lines.py -> build_drivable.py -> fit_roads.py (build_transit.py may run any time after).
 Re-run after the day art changes (e.g. painted cars repaired) or after project_lines.py rewrites lines.json:
-    cd pipeline && .venv/bin/python fit_roads.py
-(about 5 minutes and 3 GB; then `node src/sim/roadfit.test.ts` in web/ for the on-road shares.)
-Usage: fit_roads.py [--shifts-only] [--debug OUT X0 Y0 X1 Y1]
+    cd pipeline && .venv/bin/python fit_roads.py --remeasure
+(about 1-2 minutes and 3.5 GB; then `node src/sim/roadfit.test.ts` in web/ for the on-road shares.)
+Usage: fit_roads.py [--shifts-only] [--remeasure] [--debug OUT X0 Y0 X1 Y1]
 """
 import argparse
 import json

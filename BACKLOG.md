@@ -2,9 +2,32 @@
 | # | Task | How | Cost | Status |
 |---|---|---|---|---|
 | T1 | Finish the paid repaints on RunPod (Modal is disabled): the 2 missing spring blocks (b13, b14), the painted-car repair (pilot, then full run, carried into the versions), the Pfaffenthal lift repaint | one pod for everything, deadline watchdog, delete after; then rebuild tiles, recomposite event patches, rebuild occlusion | cap $15 (RunPod balance $24.12) | running |
-| T2 | Match the roads to the paintings (no repainting): vehicles and trains must run on the roads and tracks as painted | detect the painted asphalt and rails in the art, fit lanes and tracks to them, use those for driving; debug overlay | free | running |
+| T2 | Match the roads to the paintings (no repainting): vehicles and trains must run on the roads and tracks as painted | detect the painted asphalt and rails in the art, fit lanes and tracks to them, use those for driving; debug overlay | free | done (first pass, see below) |
 | T3 | Refactoring, performance and tool bugs (time slider, season and event buttons, other controls) | audit, fix every reproducible bug with a test, simplify code, measure before/after | free | queued |
 | T4 | Famous statues as a separate layer, no repainting: Gëlle Fra, Grand Duchess Charlotte, William II, Dicks–Lentz, Hämmelsmarsch fountain, Princess Amélie, Wenzel, John the Blind and others | small drawings in the ink style placed on their plinths at their true positions, hidden behind buildings like vehicles, linked to their landmark cards | cap $3 (OpenAI) | queued |
+
+## T2 result (8 Nov)
+- **Painter's offset, per block** (`pipeline/fit_roads.py`, kept in `data/work/roadfit/shifts.json`): by edges against
+  the render, about (+0.1..+0.4, +6..+8) map px (the LAYERS_POC finding); by the roads themselves (cross-sections
+  against painted asphalt, a 2D least-squares fit per block), (+1.0..+4.2, +8.8..+11.8) map px, residual 1-2 px. The
+  road measure is used (roads sit about 3 px lower than the buildings say); four mostly unpainted blocks (b05, b07,
+  b09, b14) take the median (+2.3, +10.0).
+- **Local fit:** every street and track is moved sideways (up to 3 m) onto the painted asphalt and rail beds, found by
+  colour per block; junctions stay joined. Output: `q`/`qi` in `lines.json`, `fit` in `transit.json`, `fx`/`fy` in
+  `road_heights.json`, masks in `data/roadfit/`. Traffic builds its graph from the OSM lines and drives on `q`.
+- **Guard:** a car off the road as painted (a street the painter left out, such as Rue du Fort Olisy on the Hollow
+  Tooth cliff) fades out, on top of the drivable guard.
+- **Measured** (`node src/sim/roadfit.test.ts 5 0.75`): cars on painted asphalt 79.1% before, 88.5% after the fit; with
+  the guard 11% of car samples fade and 99.5% of the drawn ones are on painted road. Trams and trains on the painted
+  rail bed 66.6% before, 94.4% after.
+- **Look:** `?roaddebug` (masks, OSM lines red, fitted yellow, lanes cyan), `?nofit` (as before). Shots: the `t2-*`
+  views in `web/scripts/shots.json`.
+- **Re-run** after the day art changes (painted cars repaired) or after `project_lines.py`:
+  `cd pipeline && .venv/bin/python fit_roads.py --remeasure` (1-2 minutes, 3.5 GB), then the check above.
+- **Open:** the occlusion and drivable maps come from the render, which the painted art is offset from (same
+  block offsets): rebuild them shifted for an exact cut; only about a quarter of road sections give a clear local
+  match (the rest keep the block offset: hidden, unpainted, under trees); rail beds are hard to tell by colour (grass
+  tram tracks on Kirchberg); bridges keep the block offset only; widths still come from `build_drivable.py`.
 
 # Backlog: owner feedback, round 3 (7 Nov 2026)
 
