@@ -72,6 +72,10 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
   const markLoaded = (it: OpenSeadragon.TiledImage) => {
     if (it.getOpacity() > 0 && !performance.getEntriesByName("map-loaded").length) performance.mark("map-loaded");
   };
+  /** The version covering the ones under it at the last applyLayers, and since when it has been held (see below). */
+  const covering = useRef<{ name: string; rank: number } | null>(null);
+  const holdSince = useRef<number | null>(null);
+  const holdTimer = useRef<ReturnType<typeof setTimeout>>();
   const rankOf = (name: string) => (name === "golden" ? 2 : name.includes("night") ? 3 : name.startsWith("xmas") ? 4 : 1);
 
   /**
@@ -82,21 +86,48 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
    * at 0 for 30 s is removed (it is added again when needed).
    * Until the first view has loaded, nothing is on screen to keep, so a version counts as covering as soon as it
    * is asked for: the versions under it are never fetched at all.
+   * Uncovering (night back to dusk on the slider): the versions under the cover loaded nothing while hidden, so the
+   * covering version is held fully opaque while they load the view (at most 2 s), instead of fading it over empty
+   * tiles (a dark flash).
    */
   const applyLayers = () => {
     const v = viewer.current, b = base();
     if (!v || !b) return;
     const now = performance.now();
     const starting = !performance.getEntriesByName("map-loaded").length;
-    let cover = 0; // rank under which everything is hidden
+    let cover = 0, coverName = ""; // rank under which everything is hidden, and the version at that rank
     for (const [name, it] of Object.entries(layers.current)) {
-      if ((pending.current[name] ?? 0) >= 0.999 && (starting || (it !== "loading" && loadedOnce.current.has(name)))) cover = Math.max(cover, rankOf(name));
+      if ((pending.current[name] ?? 0) >= 0.999 && (starting || (it !== "loading" && loadedOnce.current.has(name))) && rankOf(name) > cover) {
+        cover = rankOf(name); coverName = name;
+      }
     }
-    b.setOpacity(cover > 0 ? 0 : 1);
+    let held: { name: string; rank: number } | null = null;
+    const was = covering.current;
+    if (was && cover < was.rank && !starting && (pending.current[was.name] ?? 0) > 0.001 && layers.current[was.name] !== undefined
+      && layers.current[was.name] !== "loading") {
+      // the versions about to show (their fully-loaded flag is only fresh once they have been preloading a moment)
+      const under: OpenSeadragon.TiledImage[] = cover === 0 ? [b] : [];
+      for (const [name, it] of Object.entries(layers.current)) {
+        if (it !== "loading" && rankOf(name) < was.rank && rankOf(name) >= cover && (pending.current[name] ?? 0) > 0.001) under.push(it);
+      }
+      holdSince.current ??= now;
+      const loaded = now - holdSince.current > 120 && under.every((it) => it.getFullyLoaded());
+      if (!loaded && now - holdSince.current < 2000) {
+        held = was;
+        for (const it of under) it.setPreload(true);
+        if (!holdTimer.current) holdTimer.current = setTimeout(() => { holdTimer.current = undefined; applyLayers(); }, 100);
+      }
+    }
+    if (!held) holdSince.current = null;
+    const shown = held ? held.rank : cover;
+    covering.current = held ?? (cover > 0 ? { name: coverName, rank: cover } : null);
+    b.setOpacity(shown > 0 ? 0 : 1);
+    if (!held) b.setPreload(false);
     for (const [name, it] of Object.entries(layers.current)) {
       if (it === "loading") continue;
       const a = pending.current[name] ?? 0;
-      it.setOpacity(rankOf(name) < cover ? 0 : a);
+      it.setOpacity(rankOf(name) < shown ? 0 : held && name === held.name ? 1 : a);
+      if (!held) it.setPreload(false);
       if (a > 0.001) { delete zeroSince.current[name]; continue; }
       zeroSince.current[name] ??= now;
       if (now - zeroSince.current[name] > 30000) {
@@ -310,6 +341,7 @@ export const IsometricMap = forwardRef<MapHandle, Props>(function IsometricMap({
     return () => {
       unGauges.forEach((f) => f());
       clearInterval(sweep);
+      clearTimeout(holdTimer.current);
       v.destroy();
       viewer.current = null;
     };
