@@ -1,0 +1,75 @@
+{
+ "note": "Pfaffenthal Panoramic Lift: one cabin running up and down its shaft (pipeline/events/lift_model.py)",
+ "image": "lift.png",
+ "mpp": 0.125,
+ "map_mpp": 0.25,
+ "cabin": {
+  "frame": [
+   39,
+   47
+  ],
+  "anchor": [
+   29,
+   21
+  ],
+  "day": [
+   0,
+   0
+  ],
+  "night": [
+   39,
+   0
+  ]
+ },
+ "front": {
+  "frame": [
+   36,
+   466
+  ],
+  "anchor": [
+   24,
+   443
+  ],
+  "day": [
+   0,
+   47
+  ],
+  "night": [
+   36,
+   47
+  ]
+ },
+ "tower": {
+  "frame": [
+   549,
+   601
+  ],
+  "anchor": [
+   461,
+   561
+  ],
+  "day": [
+   0,
+   513
+  ],
+  "night": [
+   549,
+   513
+  ]
+ },
+ "structure": true,
+ "bottom": [
+  9257.5,
+  5477.1
+ ],
+ "rise": 207.8,
+ "ride": 30,
+ "wait": [
+  25,
+  35
+ ],
+ "hours": [
+  5.75,
+  25.0
+ ]
+}
