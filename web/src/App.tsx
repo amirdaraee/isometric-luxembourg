@@ -42,14 +42,14 @@ function liveScene(): SceneState {
   const ev = testParams.event && testParams.event !== "winterlights" && testParams.event in RULES ? testParams.event : null;
   if (ev && on("events")) {
     return {
-      hour: on("timeOfDay") ? testParams.hour ?? luxSeconds() / 3600 : 13,
+      hour: on("timeOfDay") ? testParams.hour ?? START_HOUR : START_HOUR,
       season: testParams.season ?? EVENT_SEASON[ev as EventId] ?? seasonOf(),
       christmas: christmas || ev === "newYear",
       event: ev,
     };
   }
   return {
-    hour: on("timeOfDay") ? testParams.hour ?? luxSeconds() / 3600 : 13,
+    hour: on("timeOfDay") ? testParams.hour ?? START_HOUR : START_HOUR,
     // The Christmas markets are painted on the winter art, so Winterlights brings winter with it (late November
     // would otherwise still be autumn).
     season: on("seasons") && testParams.season ? testParams.season : christmas ? "winter" : on("seasons") ? seasonOf() : "summer",
@@ -57,6 +57,8 @@ function liveScene(): SceneState {
   };
 }
 const OPENING_NAME = "Notre-Dame Cathedral";
+/** The map opens at midday; the "Live" button switches to Luxembourg's real clock. */
+const START_HOUR = 13;
 const REPO_URL = "https://github.com/amirdaraee/isometric-luxembourg";
 
 /** A note while the view is centred on a part of the map not painted yet (re-rendered only when that changes). */
@@ -88,9 +90,8 @@ export default function App() {
     fetch(asset("/data/landmarks.json")).then((r) => r.json()).then((l: Landmark[]) => { landmarksRef.current = l; }).catch(() => {});
   }, []);
   const [traffic, setTraffic] = useState(true);
-  // Time of day and season: live (Luxembourg clock and date) until the person moves a control.
-  // ?hour= fixes the clock for tests, as if the person had moved the slider.
-  const [live, setLive] = useState(!(on("timeOfDay") && testParams.hour !== null));
+  // Time of day: the map opens at START_HOUR; "Live" follows Luxembourg's clock until the person moves the slider.
+  const [live, setLive] = useState(false);
   const [scene, setScene] = useState<SceneState>(liveScene);
   // Live follows Luxembourg's real clock (not ?hour=), and only the clock: the season, Christmas and the event
   // picked stay as they are.
