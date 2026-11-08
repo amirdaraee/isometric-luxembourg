@@ -226,17 +226,24 @@ def match_ring(rep, ver, day, m, night):
         ring &= vl[..., 0] < np.percentile(vl[..., 0][ring], 80) if ring.any() else ring
     if ring.sum() < 20:
         return ver
+    # match on the ring pixels that look like the spot's new ground by day (asphalt next to asphalt): crowns and
+    # roofs in the ring pulled pavement towards their own colour (pink patches in autumn)
+    target = np.median(rl[m > 0], axis=0)
+    alike = ring & (np.linalg.norm(dl - target, axis=2) < 25)
+    if alike.sum() >= 20:
+        ring = alike
     out = vl.copy()
     for c in range(3):
         dm, ds = dl[..., c][ring].mean(), dl[..., c][ring].std() + 1e-3
         vm, vs = vl[..., c][ring].mean(), vl[..., c][ring].std() + 1e-3
-        out[..., c] = (rl[..., c] - dm) * (vs / ds) + vm
+        out[..., c] = (rl[..., c] - dm) * float(np.clip(vs / ds, 0.8, 1.25)) + vm   # spread barely: it saturated
     res = cv2.cvtColor(np.clip(out, 0, 255).astype(np.uint8), cv2.COLOR_LAB2RGB)
     soft = cv2.GaussianBlur(m.astype(np.float32), (0, 0), 1.0)[..., None]
     return (res * soft + ver * (1 - soft)).astype(np.uint8)
 
 
 CARRY_MIN_DIFF, CARRY_MIN_PX = 24, 30   # RGB sum difference, and the smallest spot carried (px)
+CARRY_MIN_MEAN = 30                     # mean RGB sum difference over a spot below which it is not carried
 
 
 def carry(bid, version, rep_path, mask=None):
@@ -264,6 +271,10 @@ def carry(bid, version, rep_path, mask=None):
         pad = 16
         x0, y0, x1, y1 = max(x - pad, 0), max(y - pad, 0), min(x + w + pad, day.shape[1]), min(y + h + pad, day.shape[0])
         sub = (lab[y0:y1, x0:x1] == i).astype(np.uint8)
+        s = sub > 0
+        if np.abs(rep[y0:y1, x0:x1][s].astype(int) - day[y0:y1, x0:x1][s].astype(int)).sum(1).mean() < CARRY_MIN_MEAN:
+            carried -= 1   # barely changed by day (a detector false alarm): leave the version as it is
+            continue
         out[y0:y1, x0:x1] = match_ring(rep[y0:y1, x0:x1], ver[y0:y1, x0:x1], day[y0:y1, x0:x1], sub, "night" in version)
     d = OUT / bid
     d.mkdir(parents=True, exist_ok=True)
