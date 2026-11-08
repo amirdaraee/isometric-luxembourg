@@ -1394,7 +1394,10 @@ export class Traffic {
         if (c.lat) c.lat = Math.abs(c.lat) < 0.05 ? 0 : c.lat * Math.exp(-2.5 * dt);
         if (c.aside && this.t > c.asideTill) {
           if (!c.rejoinAt) c.rejoinAt = this.t + 0.5 + 1.5 * this.rnd();
-          else if (this.t > c.rejoinAt) { c.aside = 0; c.asideStop = false; c.pass = false; c.rejoinAt = 0; }
+          // not while a siren still shares its stretch of lane (it would stand in the siren)
+          else if (this.t > c.rejoinAt && !arr.some((o) => o.siren && o.s - o.len < c.s + 0.4 && o.s > c.s - c.len - 0.4)) {
+            c.aside = 0; c.asideStop = false; c.pass = false; c.rejoinAt = 0;
+          }
         }
         const pull = c.siren ? c.sirenPull : c.aside ? c.pullTo : 0;
         if (c.pull !== pull) c.pull += Math.max(-1.2 * dt, Math.min(1.2 * dt, pull - c.pull));

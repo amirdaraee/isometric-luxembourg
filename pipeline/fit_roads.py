@@ -37,11 +37,18 @@ Writes (keeping every original field):
                                headless check.
   data/work/roadfit/shifts.json  the measured block offsets (the edge offsets are cached; --remeasure redoes them).
 
-Order: project_lines.py -> build_drivable.py -> fit_roads.py (build_transit.py may run any time after).
+With the render -> painting field (flow_field.py, data/work/flowfit/field.npz; task T2b), which is the default when it
+exists: part 1 is replaced by the field's road layer (a dense move per 8 map px instead of one per block; shifts.json
+then records what the cross-sections still find left over per block), and part 2 moves at most 1 m (FIELD_MAXOFF_M).
+The asphalt colour model also has a second model among dark cells (asphalt in the shade of buildings). The guard is
+the painted road grown by GUARD_M (2 m). --no-field gives the T2 behaviour.
+
+Order: project_lines.py -> flow_field.py -> build_drivable.py -> build_occlusion.py -> fit_roads.py (build_transit.py
+may run any time after); fit_to_art.py runs them all.
 Re-run after the day art changes (e.g. painted cars repaired) or after project_lines.py rewrites lines.json:
-    cd pipeline && .venv/bin/python fit_roads.py --remeasure
-(about 1-2 minutes and 3.5 GB; then `node src/sim/roadfit.test.ts` in web/ for the on-road shares.)
-Usage: fit_roads.py [--shifts-only] [--remeasure] [--debug OUT X0 Y0 X1 Y1]
+    cd pipeline && .venv/bin/python fit_to_art.py        (everything: the field, drivable, occlusion, this, checks)
+(about 50 minutes, 4.7 GB at most; fit_roads.py alone: 2 minutes, 3.8 GB; `node src/sim/roadfit.test.ts` in web/ checks.)
+Usage: fit_roads.py [--shifts-only] [--remeasure] [--no-field] [--debug OUT X0 Y0 X1 Y1]
 """
 import argparse
 import json
@@ -67,7 +74,8 @@ STEP_M = 4.0            # stations along a way
 WALK_M = 0.25           # sample step across it
 MAXOFF_M = 3.0          # largest local move (on the block offsets)
 FIELD_MAXOFF_M = 1.0    # largest local move on the field (flow_field.py)
-GUARD_M = 1.5           # the guard: the painted road grown by this (with the field the lines are on it; the guard
+SHADOW_V = 90            # darker than this (max of R, G, B): in shade
+GUARD_M = 2.0           # the guard: the painted road grown by this (with the field the lines are on it; the guard
                         # only has to catch streets the painter left out)
 BLEND_M = 12.0          # junction blend
 RAIL_HALF_M = 1.5       # half the painted bed of one track
@@ -185,7 +193,7 @@ class Shifts:
 
 
 # ------------------------------------------------------------------------------------------------- the masks
-def colour_mask(rgb, pos, neg, own=None, ratio=1.3, min_hits=10, min_pos=20000):
+def colour_mask(rgb, pos, neg, own=None, ratio=1.3, min_hits=10, min_pos=20000, shadow=False):
     """Cells whose colour (4096 bins) is clearly likelier on `pos` than on `neg`. With `own` (the block grid), one
     model per painted block (the blocks were painted apart and their tones differ), the whole map's model for blocks
     with too few positive cells."""
@@ -210,6 +218,15 @@ def colour_mask(rgb, pos, neg, own=None, ratio=1.3, min_hits=10, min_pos=20000):
             g = model(pos & r, neg & r)
             m[r] = g[ci[r]]
             sizes.append(int(g.sum()))
+    if shadow:
+        # in the shade of buildings the painted asphalt is a dark blue that the model above, against all the ground
+        # beside the streets, does not pick out: a second model among dark cells only (shaded road against shaded
+        # pavement, verge, square)
+        dark = rgb.max(2) < SHADOW_V
+        if (pos & dark).sum() >= 2000:
+            gd = model(pos & dark, neg & dark)
+            m |= dark & gd[ci]
+            sizes.append(int(gd.sum()))
     del ci
     m = cv2.morphologyEx(m.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
     m = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8)).astype(bool)
@@ -431,6 +448,9 @@ def main():
     # 1a. edge offsets
     sf = OUT / "shifts.json"
     rec = json.loads(sf.read_text()) if sf.exists() and not a.remeasure else {}
+    if FF is not None:
+        # the field replaces the block offsets: no edge offsets needed (shifts.json records what is left over)
+        rec = {b["block"]: {"phase": [0.0, 0.0, 99]} for b in bl}
     for b in bl:
         if b["block"] not in rec or "phase" not in rec[b["block"]]:
             dx, dy, n = phase_shift(b, mos)
@@ -457,7 +477,7 @@ def main():
                         lambda w: 1.0, key)
         near = raster(roads, shape, lambda w: reach(w) + 3.0, key)
         ring = raster(roads, shape, lambda w: reach(w) + 7.0, key) & ~near
-        asp = colour_mask(rgb, centre & ok, ring & ok, own) & ok
+        asp = colour_mask(rgb, centre & ok, ring & ok, own, shadow=True) & ok
         del centre, ring
         core = raster([w for w in rails if not w.get("t") and not w.get("b")], shape, lambda w: 0.6, key)
         neart = raster(rails, shape, lambda w: RAIL_HALF_M + 4.0, key)

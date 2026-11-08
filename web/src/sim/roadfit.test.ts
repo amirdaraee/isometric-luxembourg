@@ -75,8 +75,17 @@ const meta = JSON.parse(readFileSync(PUB + "tiles/meta.json", "utf8")) as { pain
 const box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
 for (const a of meta.painted) { box.x0 = Math.min(box.x0, a.x0); box.y0 = Math.min(box.y0, a.y0); box.x1 = Math.max(box.x1, a.x0 + a.w); box.y1 = Math.max(box.y1, a.y0 + a.h); }
 
-interface Tally { n: number; strict: number; near: number; left: number; bad: Map<number, { n: number; x: number; y: number }> }
-const tally = (): Tally => ({ n: 0, strict: 0, near: 0, left: 0, bad: new Map() });
+interface Tally { n: number; strict: number; near: number; left: number; bad: Map<number, { n: number; x: number; y: number }>; far: number[] }
+const tally = (): Tally => ({ n: 0, strict: 0, near: 0, left: 0, bad: new Map(), far: [0, 0, 0, 0] });
+/** Off the painted road: how far to it (cells of 0.5 m, rings up to 8 m): 0 up to 1 m, 1 up to 2 m, 2 up to 4 m, 3 further. */
+function farBin(x: number, y: number, bits: number): number {
+  for (let r = 1; r <= 16; r++) {
+    for (let k = -r; k <= r; k++) {
+      for (const [dx, dy] of [[k, -r], [k, r], [-r, k], [r, k]]) if (mask(x + 2 * dx, y + 2 * dy) & bits) return r <= 2 ? 0 : r <= 4 ? 1 : r <= 8 ? 2 : 3;
+    }
+  }
+  return 3;
+}
 function add(t: Tally, x: number, y: number, c: number) {
   if (c === 0) { t.left++; return; }
   t.n++;
@@ -86,6 +95,7 @@ function add(t: Tally, x: number, y: number, c: number) {
     const k = Math.floor(y / 128) * 10000 + Math.floor(x / 128);
     const e = t.bad.get(k) ?? t.bad.set(k, { n: 0, x: 0, y: 0 }).get(k)!;
     e.n++; e.x += x; e.y += y;
+    t.far[farBin(x, y, 19)]++;
   }
 }
 const pct = (a: number, b: number) => (100 * a / Math.max(b, 1)).toFixed(2);
@@ -134,10 +144,13 @@ for (const [k, v] of Object.entries(res)) {
   const b = v.before, a = v.after;
   console.log(`${k}: ${a.n} samples (${a.left} left out). On the painted ${k === "cars" ? "asphalt" : "rail bed"}: ` +
     `before ${pct(b.near, b.n)}% (strict ${pct(b.strict, b.n)}%), after ${pct(a.near, a.n)}% (strict ${pct(a.strict, a.n)}%)`);
+  const f = a.far, nf = Math.max(1, f[0] + f[1] + f[2] + f[3]);
+  console.log(`  off it, distance to the painted road or track: up to 1 m ${pct(f[0], nf)}%, 1-2 m ${pct(f[1], nf)}%, ` +
+    `2-4 m ${pct(f[2], nf)}%, further ${pct(f[3], nf)}%`);
   const worst = [...a.bad.values()].sort((p, q) => q.n - p.n).slice(0, 15);
   console.log("  most samples off it after the fit: " + worst.map((e) => `#${Math.round(e.x / e.n)},${Math.round(e.y / e.n)},1.0 (${e.n})`).join(" "));
   out[k] = { before: { n: b.n, near: b.near, strict: b.strict }, after: { n: a.n, near: a.near, strict: a.strict },
-    worst: worst.map((e) => [Math.round(e.x / e.n), Math.round(e.y / e.n), e.n]) };
+    worst: worst.map((e) => [Math.round(e.x / e.n), Math.round(e.y / e.n), e.n]), far: a.far };
 }
 console.log(`(${((performance.now() - t0) / 1000).toFixed(0)} s)`);
 const jf = opt("--json");

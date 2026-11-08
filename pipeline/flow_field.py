@@ -264,11 +264,12 @@ def layer_masks(K):
 def layer_field(A2, B2, V2a, V2b, M2, Rrgb, Prgb, VR, VP, M, w, h, P):
     """The field of one layer of the render (weights M at full resolution, M2 at half): coarse then fine.
     Returns (fine field (ny, nx, 2) every STEP px, conf, stats, matches)."""
-    # 0. the median move, sparse (half resolution, windows of 128 map px every 256, moves up to 32)
-    vol, _, _ = ncc_volume(A2, B2, V2a, V2b, 16, 64, 128, 64, M2)
-    d0, _, _, ok0 = peaks(vol, 16, min_ncc=0.3)
+    # 0. the median move, sparse (quarter resolution, windows of 128 map px every 128, moves up to 32)
+    q = lambda a: cv2.resize(a, (a.shape[1] // 2, a.shape[0] // 2), interpolation=cv2.INTER_AREA)
+    vol, _, _ = ncc_volume(q(A2), q(B2), q(V2a), q(V2b), 8, 32, 32, 16, q(M2))     # quarter resolution
+    d0, _, _, ok0 = peaks(vol, 8, min_ncc=0.3)
     del vol
-    med = np.median(d0[ok0], 0) * 2 if ok0.sum() >= 5 else np.array([0.0, 8.0])
+    med = np.median(d0[ok0], 0) * 4 if ok0.sum() >= 5 else np.array([0.0, 8.0])
     # 1. coarse: half resolution, windows of P["cwin"] half px every 8 (16 map px), moves up to 12 (24 map px)
     m2 = np.round(med / 2).astype(int)
     B2s, V2bs = shifted(B2, m2), shifted(V2b, m2)
@@ -304,7 +305,7 @@ def layer_field(A2, B2, V2a, V2b, M2, Rrgb, Prgb, VR, VP, M, w, h, P):
     return F2, c2, st, {"d2": d2 + base, "ok2": ok2}
 
 
-ROAD_LAM = 0.002
+ROAD_LAM = 0.0001
 PARAMS = {"cwin": 48, "csig": 3.0, "frad": 4, "fwin": 64, "fsig": 2.0}
 
 
@@ -497,7 +498,7 @@ def road_layer(mos, band=768):
     centre = fr.raster([w for w in roads if w.get("k") in main_k and not w.get("b")], shape, lambda w: 1.0, key)
     near = fr.raster(roads, shape, lambda w: reach(w) + 3.0, key)
     ring = fr.raster(roads, shape, lambda w: reach(w) + 7.0, key) & ~near
-    asp = fr.colour_mask(rgb, centre & ok, ring & ok, own) & ok
+    asp = fr.colour_mask(rgb, centre & ok, ring & ok, own, shadow=True) & ok
     del centre, ring
     core = fr.raster([w for w in rails if not w.get("b")], shape, lambda w: 0.6, key)
     neart = fr.raster(rails, shape, lambda w: fr.RAIL_HALF_M + 4.0, key)
@@ -531,7 +532,7 @@ def road_layer(mos, band=768):
     ny, nx = z["ground_dx"].shape
     d, info = d[:ny, :nx], info[:ny, :nx]
     np.savez_compressed(FLOWFIT / "road_matches.npz", d=d.astype(np.float32), info=info.astype(np.float32))
-    res, conf = smooth_field(d, info, np.zeros_like(d), sigma=3.0, lam=ROAD_LAM)
+    res, conf = smooth_field(d, info, np.zeros_like(d), sigma=4.0, lam=ROAD_LAM)
     res = np.clip(res, -12, 12)
     z["road_dx"] = (z["ground_dx"] + res[..., 0]).astype(np.float32)
     z["road_dy"] = (z["ground_dy"] + res[..., 1]).astype(np.float32)
