@@ -26,14 +26,17 @@ export function Search({ places, onPick, onSurprise }: Props) {
   const index = useMemo<Entry[]>(() => places.map((p) => ({ ...p, key: fold(`${p.n} ${p.a ?? ""}`) })), [places]);
 
   // Addresses are large, so they load the first time someone searches.
+  // (once: focusing the box again while the first request is on its way does not ask again)
+  const asked = useRef(false);
   const loadAddresses = () => {
-    if (addresses.length) return;
+    if (asked.current) return;
+    asked.current = true;
     fetch(asset("/data/addresses.json"))
       .then((r) => r.json())
       .then((rows: [string, string, number, number][]) =>
         setAddresses(rows.map(([n, pc, x, y]) => ({ n, c: "address", x, y, sub: pc ? `L-${pc}` : undefined, key: fold(n) }))),
       )
-      .catch(() => undefined);
+      .catch(() => { asked.current = false; });
   };
 
   const results = useMemo(() => {
@@ -57,7 +60,10 @@ export function Search({ places, onPick, onSurprise }: Props) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "/" && document.activeElement !== input.current) {
+      // not while typing elsewhere (a "/" in the note to the author stays in the note)
+      const t = e.target as HTMLElement | null;
+      const typing = !!t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+      if (e.key === "/" && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         input.current?.focus();
       }

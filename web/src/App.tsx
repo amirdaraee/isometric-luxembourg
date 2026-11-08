@@ -13,7 +13,7 @@ import { EventLayer } from "./components/EventLayer";
 import { Sky } from "./components/Sky";
 import { WeatherControl } from "./components/WeatherControl";
 import { LayersPoc, layersPocOn } from "./components/LayersPoc";
-import { christmasOn, mix, seasonOf, sunTimes, type SceneState, type Variant } from "./scene";
+import { changeScene, christmasOn, mix, seasonOf, sunFor, type SceneState, type Variant } from "./scene";
 import { activeEvents, EVENT_SEASON, RULES, type EventId } from "./calendar";
 import { eventManifest } from "./components/EventLayer";
 import type { EventEffects } from "./components/eventEffects";
@@ -21,11 +21,10 @@ import { luxSeconds } from "./components/Transit";
 import { asset, tilesBase } from "./config";
 import { on } from "./features";
 import { testParams, today } from "./testParams";
+import { setView, useView } from "./viewStore";
 
 const FOCUS_ZOOM = 0.75;
 
-/** The scene for "now" in Luxembourg (or the ?hour, ?season and ?date test parameters), limited to the features
- * that are switched on. */
 /** The events shown: the one picked (or ?event=), else the calendar's, each only with its switches on. */
 function shownEvents(s: SceneState, date: Date): string[] {
   const ok = (id: string) => id === "winterlights" ? on("christmas") : on("events") && on(id as never);
@@ -36,6 +35,8 @@ function shownEvents(s: SceneState, date: Date): string[] {
   return out.filter((id) => (EVENT_SEASON[id as EventId] ?? s.season) === s.season);
 }
 
+/** The scene at start: "now" in Luxembourg (or the ?hour, ?season, ?date and ?event test parameters), limited to
+ * the features that are switched on. */
 function liveScene(): SceneState {
   const christmas = on("christmas") && (christmasOn() || testParams.event === "winterlights");
   const ev = testParams.event && testParams.event !== "winterlights" && testParams.event in RULES ? testParams.event : null;
@@ -56,6 +57,14 @@ function liveScene(): SceneState {
   };
 }
 const OPENING_NAME = "Notre-Dame Cathedral";
+const REPO_URL = "https://github.com/amirdaraee/isometric-luxembourg";
+
+/** A note while the view is centred on a part of the map not painted yet (re-rendered only when that changes). */
+function Unpainted({ painted }: { painted: NonNullable<MapMeta["painted"]> }) {
+  const show = useView((v) => !!v && v.z >= 0.1 &&
+    !painted.some((a) => v.x >= a.x0 && v.x <= a.x0 + a.w && v.y >= a.y0 && v.y <= a.y0 + a.h));
+  return show ? <div className="unpainted glass" role="note">This part of the city is still being drawn: you're looking at the 3D model underneath.</div> : null;
+}
 
 function readHash(): View | null {
   const m = location.hash.match(/^#(-?\d+),(-?\d+),([\d.]+)$/);
@@ -67,7 +76,6 @@ export default function App() {
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [error, setError] = useState(false);
   const [ready, setReady] = useState(false);
-  const [view, setView] = useState<View | null>(null);
   const [active, setActive] = useState<Place | null>(null);
   const [toast, setToast] = useState("");
   const [about, setAbout] = useState(false);
@@ -84,14 +92,17 @@ export default function App() {
   // ?hour= fixes the clock for tests, as if the person had moved the slider.
   const [live, setLive] = useState(!(on("timeOfDay") && testParams.hour !== null));
   const [scene, setScene] = useState<SceneState>(liveScene);
+  // Live follows Luxembourg's real clock (not ?hour=), and only the clock: the season, Christmas and the event
+  // picked stay as they are.
   useEffect(() => {
     if (!live) return;
-    const t = setInterval(() => setScene((s) => ({ ...s, hour: liveScene().hour })), 20000);
-    setScene(liveScene());
+    const tick = () => setScene((s) => ({ ...s, hour: on("timeOfDay") ? luxSeconds() / 3600 : 13 }));
+    const t = setInterval(tick, 20000);
+    tick();
     return () => clearInterval(t);
   }, [live]);
-  const sun = useMemo(() => sunTimes(), []);
   const date = useMemo(() => today(), []);
+  const sun = useMemo(() => sunFor(scene.season, date), [scene.season, date]);
   const [xmas, setXmas] = useState<{ site: string; x0: number; y0: number; w: number }[]>([]);
   useEffect(() => { if (on("christmas")) fetch(asset("/events/xmas/xmas.json")).then((r) => r.json()).then(setXmas).catch(() => {}); }, []);
   const [events, setEvents] = useState<Record<string, EventEffects>>({});
@@ -121,7 +132,7 @@ export default function App() {
   // Every view has a URL, so any view can be sent to someone.
   const hashTimer = useRef<ReturnType<typeof setTimeout>>();
   const onViewChange = useCallback((v: View) => {
-    setView(v);
+    setView(v); // the view store (viewStore.ts), not React state: the page does not re-render on every move
     clearTimeout(hashTimer.current);
     hashTimer.current = setTimeout(() => {
       history.replaceState(null, "", `#${Math.round(v.x)},${Math.round(v.y)},${v.z.toFixed(3)}`);
@@ -216,9 +227,9 @@ export default function App() {
       {ready && on("clouds") && <Clouds map={map} night={sceneMix.night} />}
       {ready && <Sky map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />}
       {(on("timeOfDay") || on("seasons") || on("christmas") || on("weather")) && <SceneControl scene={scene} live={live} sun={sun} onLive={() => setLive(true)}
-        onChange={(c) => { setLive(false); setScene((s) => ({ ...s, ...c, ...(c.christmas && !c.season ? { season: "winter" as const } : {}) })); }}
+        onChange={(c) => { if (c.hour !== undefined) setLive(false); setScene((s) => changeScene(s, c, EVENT_SEASON)); }}
         date={date} extra={<WeatherControl map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />} />}
-      {ready && on("pins") && <Pins places={places} view={view} map={map} active={active} onPick={pick} />}
+      {ready && on("pins") && <Pins places={places} map={map} active={active} onPick={pick} />}
       {ready && on("comments") && feedbackConfigured && <Feedback map={map} marking={marking} setMarking={setMarking}
         onToast={(m) => { setToast(m); setTimeout(() => setToast(""), 3200); }} />}
       {on("search") && <Search places={places} onPick={pick} onSurprise={on("surprise") ? surprise : undefined} />}
@@ -256,26 +267,28 @@ export default function App() {
             <path d="M12 15V4m0 0L8 8m4-4 4 4M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>}
+        <a className="round glass gh" href={REPO_URL} target="_blank" rel="noopener" aria-label="Source code on GitHub" title="Source code on GitHub">
+          <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
+            <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+          </svg>
+        </a>
       </div>
 
       <div className="foot">
-        {on("previewBadge") && meta.art !== "final" && <span className="badge">{meta.art === "painted" ? ((meta.painted?.length ?? 0) > 1 ? "Preview: the whole city is painted; details are still being refined" : "Preview: old town painted, the rest is 3D data") : "Preview: 3D data, final art coming"}</span>}
+        {on("previewBadge") && meta.art !== "final" && <span className="badge">{meta.art === "painted" ? ((meta.painted?.length ?? 0) > 1 ? "Preview: central Luxembourg City painted; more to come" : "Preview: old town painted, the rest is 3D data") : "Preview: 3D data, final art coming"}</span>}
         <button type="button" className="link" onClick={() => setAbout(true)}>About and credits</button>
       </div>
 
       {toast && <div className="toast glass" role="status">{toast}</div>}
       {on("tiltShift") && <><div className="tilt tilt-top" aria-hidden="true" /><div className="tilt tilt-bottom" aria-hidden="true" /></>}
-      {on("previewBadge") && view && view.z >= 0.1 && meta.painted?.length &&
-        !meta.painted.some((a) => view.x >= a.x0 && view.x <= a.x0 + a.w && view.y >= a.y0 && view.y <= a.y0 + a.h) && (
-        <div className="unpainted glass" role="note">This part of the city is still being drawn: you're looking at the 3D model underneath.</div>
-      )}
+      {on("previewBadge") && !!meta.painted?.length && <Unpainted painted={meta.painted} />}
 
       {about && (
         <div className="about-wrap" onClick={() => setAbout(false)}>
           <section className="about glass" role="dialog" aria-label="About and credits" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="ibtn close" aria-label="Close" onClick={() => setAbout(false)}>×</button>
             <h1>Isometric Luxembourg</h1>
-            <p>Luxembourg City seen from the south-east, from its gorges to Kirchberg, drawn as an inked illustration. This first release paints the old town in full, by day and night and through the seasons; the rest of the city is still shown as 3D data and will be painted next.</p>
+            <p>Luxembourg City seen from the south-east, from its gorges to Kirchberg, drawn as an inked illustration. This first release paints central Luxembourg City in summer, by day and by night, with golden hour in between; more of the city and the other seasons will follow.</p>
             <p>The art is painted tile by tile by an image model trained for this map on the real city: 3D buildings, terrain, streets, rail and rivers decide what goes where.</p>
             <h2>Data</h2>
             <ul>
@@ -290,7 +303,7 @@ export default function App() {
             <ul>
               <li>Viewer built from <a href="https://github.com/cannoneyed/isometric-nyc" target="_blank" rel="noopener">isometric-nyc</a> by Andy Coenen, MIT</li>
               <li><a href="https://openseadragon.github.io" target="_blank" rel="noopener">OpenSeadragon</a> and <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a></li>
-              <li><a href="https://github.com/amirdaraee/isometric-luxembourg" target="_blank" rel="noopener">Source on GitHub</a>: code MIT, art CC BY-NC 4.0</li>
+              <li><a href={REPO_URL} target="_blank" rel="noopener">Source on GitHub</a>: code MIT, art CC BY-NC 4.0</li>
             </ul>
           </section>
         </div>

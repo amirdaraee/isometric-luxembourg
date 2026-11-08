@@ -37,15 +37,16 @@ export function WeatherControl(_props: WeatherControlProps) {
       <div className="scene-row" role="group" aria-label="Weather">
         {MODES.map(([m, label, title]) => (
           <button key={m} type="button" className={mode === m ? "on" : ""} aria-pressed={mode === m} title={title}
+            aria-label={m === "live" ? "Live weather" : undefined} disabled={weatherFixed}
             onClick={() => setWeatherMode(m)}>{label}</button>
         ))}
       </div>
       <div className="scene-row">
         <label className="scene-wind" htmlFor="wind">Wind</label>
         <input id="wind" type="range" min={0} max={20} step={1} value={wind} aria-valuetext={`${wind} metres per second`}
-          onChange={(e) => setWind(+e.target.value)} />
+          disabled={weatherFixed} onChange={(e) => setWind(+e.target.value)} />
         <output className="scene-time" htmlFor="wind">{wind} m/s</output>
-        <button type="button" className={windSetting() === null ? "on" : ""} aria-pressed={windSetting() === null}
+        <button type="button" className={windSetting() === null ? "on" : ""} aria-pressed={windSetting() === null} disabled={weatherFixed}
           title="The weather's own wind" onClick={() => setWind(null)}>Auto</button>
       </div>
     </>

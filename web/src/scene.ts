@@ -1,6 +1,6 @@
 // Time of day and season: which painted map versions to show and how strongly, plus a colour grade for the
 // moments we don't paint separately (morning, noon, blue hour, spring/autumn nights...).
-import { today } from "./testParams";
+import { today } from "./testParams.ts";
 
 export type Season = "spring" | "summer" | "autumn" | "winter";
 export type Variant = "day" | "golden" | "night" | "winter" | "winter_night" | "autumn" | "spring";
@@ -21,6 +21,38 @@ export function sunTimes(d = today()): [number, number] {
 export function seasonOf(d = today()): Season {
   const m = d.getMonth();
   return m <= 1 || m === 11 ? "winter" : m <= 4 ? "spring" : m <= 7 ? "summer" : "autumn";
+}
+
+/** The middle month of each season (0 = January), for its sunrise and sunset. */
+const SEASON_MONTH: Record<Season, number> = { winter: 0, spring: 3, summer: 6, autumn: 9 };
+
+/**
+ * Sunrise and sunset for the season shown: today's while the season is today's (or the month next to it: late
+ * November with the Christmas markets in winter), else the middle month of that season, so that winter picked in
+ * July has dark evenings and summer picked in December light ones.
+ */
+export function sunFor(season: Season, d = today()): [number, number] {
+  const m = d.getMonth(), mid = SEASON_MONTH[season];
+  const near = [mid - 2, mid - 1, mid, mid + 1, mid + 2].some((x) => (x + 12) % 12 === m);
+  return SUN[near ? m : mid];
+}
+
+/** Season each event belongs to (its patches are painted on that season's art); calendar.ts EVENT_SEASON. */
+type EventSeasons = Partial<Record<string, Season>>;
+
+/**
+ * The scene after a change from the controls, kept consistent so that no button is lit for something not shown:
+ *   - Christmas switched on brings winter (the markets are painted on the winter art);
+ *   - a season other than winter switches Christmas off;
+ *   - an event that belongs to another season than the one now shown is dropped.
+ * The clock is not touched here: only a change of hour leaves live time (App.tsx).
+ */
+export function changeScene(s: SceneState, c: Partial<SceneState>, eventSeason: EventSeasons): SceneState {
+  const next: SceneState = { ...s, ...c };
+  if (c.christmas && c.season === undefined) next.season = "winter";
+  if (c.season !== undefined && c.season !== "winter" && c.christmas === undefined) next.christmas = false;
+  if (next.event && (eventSeason[next.event] ?? next.season) !== next.season) next.event = null;
+  return next;
 }
 
 /** Winterlights: Friday before the last Sunday before Advent .. first Sunday of January (research/05-events). */

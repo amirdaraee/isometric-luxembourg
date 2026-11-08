@@ -3,41 +3,45 @@
 Luxembourg City as an explorable isometric map, drawn as an inked illustration and seen from the south-east.
 It runs from the Pétrusse and Alzette gorges up to Kirchberg.
 
-**Release 1.0** paints the old town in full. The rest of the city still shows the 3D data underneath and will be
-painted next (see [ROADMAP.md](ROADMAP.md)).
+See it at **[isometric.lu](https://isometric.lu)**.
 
-## What's in it
+**Version 1** paints central Luxembourg City in summer, by day and by night. More of the city, the other seasons
+and the moving life (traffic, trams, trains, planes, weather) are built and switched on locally, and will be
+switched on publicly one by one (see [ROADMAP.md](ROADMAP.md)).
 
-- **Time of day:** the map follows Luxembourg's real clock. It cross-fades through golden hour into a painted night
-  with lit windows and streets, and the daytime shadows go away. A slider lets you pick any hour.
-- **Seasons:** painted spring, summer, autumn and winter versions. Winter includes snow, and winter night is painted too.
-- **Christmas markets:** a toggle that adds the Winterlights markets to Place d'Armes, Place de la Constitution
-  and Place Guillaume II, by day and by night.
-- **Traffic:** cars drawn on the real street network, plus trams and trains moving on today's real timetable (GTFS).
-- **Landmarks:** 47 cards with history, interiors and cutaway drawings. Many have a 3D model you can turn and
-  credited photos.
-- **Search and sharing:** search places, streets and addresses, or press "Surprise me". Every view has its own
-  link.
+## What's in version 1
 
-Every optional feature can be switched off. See [Feature switches](#feature-switches). The public release at
-**[isometric.lu](https://isometric.lu)** starts small, with the summer day map, landmark
-cards, search and street names. Time of day, seasons, Christmas, traffic, trams, trains and the 3D models are
-switched on locally and will be switched on publicly one by one.
+- **Time of day:** the map follows Luxembourg's real clock ("Live"). It cross-fades through golden hour into a
+  painted night with lit windows and streets. The slider picks any hour.
+- **Living details:** light glinting on the rivers, and a soft sea of cloud round the edges of the map.
+- **Landmarks:** pins with labels, and cards with history, interiors and cutaway drawings, credited photos and, for
+  many, a 3D model you can turn.
+- **Streets:** a layer with the streets and their names.
+- **Search and sharing:** search places, streets and addresses; every view has its own link, and the share button
+  copies it.
+- **Notes from visitors:** "Mark a spot" sends the author a private note about a place on the map.
+
+Built and switched off in the public release for now: seasons (spring, autumn, winter, winter night), the Christmas
+markets and other city events, traffic with emergency vehicles and signals, trams and trains on today's timetable,
+famous statues, birds, planes, rain, snow, fog and wind, and tilt-shift. Every one of them has a feature switch;
+see [Feature switches](#feature-switches).
 
 ## Run it locally
 
     cd web
     npm install
-    npm run dev          # http://localhost:3000
+    npm run dev          # http://localhost:3000, every feature on
+    npm run build        # the public release in web/dist, with the switches in .env.production
+    npx vite preview     # serve that build
 
 The map tiles (`web/public/tiles/`) are build output and are not kept in git. Either build them with the
 pipeline below, or copy them from someone who has.
 
 ## Feature switches
 
-All switches live in [`web/src/features.ts`](web/src/features.ts) and are on by default:
-`timeOfDay`, `seasons`, `christmas`, `snow`, `traffic`, `transit`, `streets`, `pins`, `search`, `surprise`,
-`share`, `landmarks`, `interiors`, `models3d`, `photos`, `previewBadge`.
+All switches live in [`web/src/features.ts`](web/src/features.ts), each with a one-line comment, and are on by
+default in development (except `perfHud`). The public release switches off the ones listed in
+`web/.env.production`.
 
 There are several ways to turn them off. Later ones in the table win:
 
@@ -72,8 +76,8 @@ in `web/worker/`.
 The `comments` switch adds a "Mark a spot" button (shortcut `M`). Visitors draw a box on the map and send the
 author a private note. The notes go to a small Cloudflare Worker with D1 in `web/feedback-worker/`, protected
 by Turnstile and rate limits. Only the author reads them, on the local-only page `web/public/admin/index.html`
-(open it at `http://localhost:3000/admin/index.html`). The switch is off in the public release until the Worker is
-deployed. See [web/feedback-worker/README.md](web/feedback-worker/README.md) for the endpoints, the security
+(open it at `http://localhost:3000/admin/index.html`). The button shows only when the build knows the Worker's
+address (`VITE_FEEDBACK_API`). See [web/feedback-worker/README.md](web/feedback-worker/README.md) for the endpoints, the security
 layers and deployment.
 
 ## How the map is made
@@ -112,11 +116,35 @@ and `fix_redbridge_deck.py` keeps the Red Bridge's deck grey.
 | LiDAR terrain 2019 (bare earth) | data.public.lu | CC0 |
 | Places, streets, addresses, rail, water, parking | © OpenStreetMap contributors | ODbL |
 | Tram and train timetables (GTFS) | data.public.lu | CC BY 4.0 |
+| Live weather | [Open-Meteo](https://open-meteo.com) | CC BY 4.0 |
 | Landmark photos | Wikimedia Commons, credited on each card | per photo |
 
-The viewer started as a fork of [isometric-nyc](https://github.com/cannoneyed/isometric-nyc) by Andy Coenen (MIT,
-see `web/LICENSE.isometric-nyc`). The map is shown with [OpenSeadragon](https://openseadragon.github.io) and the
-3D models with [three.js](https://threejs.org).
+## Acknowledgements
+
+This map stands on other people's work:
+
+- **[isometric-nyc](https://github.com/cannoneyed/isometric-nyc)** by Andy Coenen: the viewer started as a fork of
+  it (MIT, see `web/LICENSE.isometric-nyc`), and its idea of a whole city painted as one isometric illustration
+  started this project.
+- **[Pixel Singapore](https://www.yadongxie.com/blog/how-pixel-singapore-was-made)** by Yadong Xie: the painting
+  method (the whole canvas painted in shifted windows), the foreground layer that hides vehicles behind buildings,
+  and the ideas for traffic, water and trees.
+- **isometricsf.com**: the quality we aim for.
+- **Luxembourg's open data:** the Administration du Cadastre et de la Topographie (3D buildings, orthophoto,
+  served through [geoportail.lu](https://www.geoportail.lu)) and [data.public.lu](https://data.public.lu)
+  (LiDAR terrain, public transport timetables), with the surroundings' terrain from the
+  [Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) on AWS Open Data.
+- **[OpenStreetMap](https://www.openstreetmap.org/copyright) contributors**, read through the
+  [Overpass API](https://overpass-api.de): places, streets, rail, water and parking.
+- **[Open-Meteo](https://open-meteo.com):** the live weather.
+- **[Wikimedia Commons](https://commons.wikimedia.org)** photographers, credited on each landmark card.
+- **Painting:** [Qwen-Image-Edit-2511](https://huggingface.co/Qwen/Qwen-Image-Edit-2511) by the Qwen team, with
+  our own style and light LoRAs trained with [ostris/ai-toolkit](https://github.com/ostris/ai-toolkit), and the
+  [Lightning](https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning) distillation by lightx2v for faster
+  repaints; the GPUs are rented from [RunPod](https://www.runpod.io). The drawings the style was trained on, and the
+  statues, were made with OpenAI's image API.
+- **Viewer:** [OpenSeadragon](https://openseadragon.github.io) shows the map, [three.js](https://threejs.org) the 3D
+  models, built with [React](https://react.dev) and [Vite](https://vite.dev).
 
 ## Licence
 

@@ -59,7 +59,7 @@ export function Model3D({ url }: { url: string }) {
       controls.target.copy(c);
       cam.position.set(c.x + r * 1.6, c.y + r * 1.1, c.z + r * 1.6);
       controls.update();
-    });
+    }).catch(() => { /* no model: the tab stays empty */ });
     const loop = () => {
       if (stop) return;
       controls.update();
@@ -71,7 +71,15 @@ export function Model3D({ url }: { url: string }) {
       stop = true;
       ro.disconnect();
       controls.dispose();
+      scene.traverse((o) => {
+        const m = o as THREE.Mesh;
+        m.geometry?.dispose();
+        (Array.isArray(m.material) ? m.material : m.material ? [m.material] : []).forEach((x) => x.dispose());
+      });
       renderer.dispose();
+      // give the WebGL context back now: the browser keeps only about 16, and when a new one is made it drops the
+      // oldest, which can be the map's own (each 3D tab opened made one)
+      renderer.forceContextLoss();
       el.removeChild(renderer.domElement);
     };
   }, [url]);

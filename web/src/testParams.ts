@@ -14,7 +14,7 @@
 // ?on=timeOfDay,seasons as well.
 import type { Season } from "./scene";
 
-const q = new URLSearchParams(location.search);
+const q = new URLSearchParams(typeof location === "undefined" ? "" : location.search);
 
 function num(name: string): number | null {
   const v = q.get(name);
