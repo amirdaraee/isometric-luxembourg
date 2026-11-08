@@ -4,7 +4,7 @@ import type { MapHandle } from "./IsometricMap";
 import type { Season } from "../scene";
 import { asset } from "../config";
 import { on } from "../features";
-import { subscribe } from "../frame";
+import { canvasDpr, subscribe } from "../frame";
 import { CONSTITUTION_WHEEL, drawWheel, wheelAngle } from "./ferrisWheel";
 import type { WheelSpec } from "./ferrisWheel";
 import { drawEffects, type EventEffects } from "./eventEffects";
@@ -177,7 +177,8 @@ export function EventLayer({ map, night, hour, date, active = [], picked = null 
     const draw = () => {
       const cv = canvas.current, v = map.current?.getView();
       if (!cv || !v) return;
-      const dpr = window.devicePixelRatio || 1, W = window.innerWidth, H = window.innerHeight;
+      // at most 2 device pixels per CSS pixel (1 on the lowest quality tier), like the other layers
+      const dpr = canvasDpr(2), W = window.innerWidth, H = window.innerHeight;
       if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
       const g = cv.getContext("2d")!;
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -278,12 +279,11 @@ export function EventLayer({ map, night, hour, date, active = [], picked = null 
       }
       g.globalAlpha = 1;
     };
-    // Steady 24 fps for the rides and lights (slow movements), and also inside the map's own redraw, so the rides
-    // never trail the map while it moves.
-    const stop = still ? () => {} : subscribe(() => draw(), { fps: 24 });
-    const off = map.current?.onFrame(() => draw());
-    draw();
-    return () => { stop(); off?.(); };
+    // Steady 24 fps for the rides and lights (slow movements), and on every frame the map moves: the frame clock
+    // then calls it straight after the map's own redraw, so the rides never trail the map (and are drawn once).
+    // With reduced motion, only when the map moves.
+    const stop = subscribe(() => draw(), still ? { still: true, name: "events" } : { fps: 24, name: "events" });
+    return () => { stop(); };
   }, [map, key]);
 
   return <canvas ref={canvas} className="overlay" aria-hidden="true" />;

@@ -209,12 +209,54 @@ void main() {
 
 /** Centres of the water mask's blocks, in map px: places over the rivers (for example to start bird flocks). */
 export async function waterPoints(): Promise<{ x: number; y: number }[]> {
-  const info: MaskInfo = await fetch(asset("/data/water_mask.json")).then((r) => r.json());
+  const info = await maskInfo();
   const span = info.chunk * info.scale, pts: { x: number; y: number }[] = [];
   for (let k = 0; k < info.chunks.length; k += 2) {
     pts.push({ x: info.x0 + (info.chunks[k] + 0.5) * span, y: info.y0 + (info.chunks[k + 1] + 0.5) * span });
   }
   return pts;
+}
+
+let maskInfoP: Promise<MaskInfo> | null = null;
+/** The water mask's layout (water_mask.json), fetched once for every user. */
+function maskInfo(): Promise<MaskInfo> {
+  maskInfoP ??= fetch(asset("/data/water_mask.json")).then((r) => (r.ok ? r.json() : Promise.reject(r.status)));
+  maskInfoP.catch(() => { maskInfoP = null; });
+  return maskInfoP;
+}
+
+/**
+ * A test for OSM water polygons (map px, flat x, y list): is any of it painted as water? True when one of its
+ * points lies in a block of the water mask with water, or such a block's centre lies inside it (blocks of 256 map
+ * px). Polygons beyond the mask's area pass. The streets layer outlines only painted water.
+ */
+export async function paintedWaterTest(): Promise<(p: number[]) => boolean> {
+  const info = await maskInfo();
+  const span = info.chunk * info.scale, x1 = info.x0 + info.w * info.scale, y1 = info.y0 + info.h * info.scale;
+  const wet = new Set<number>();
+  const centres: [number, number][] = [];
+  for (let k = 0; k < info.chunks.length; k += 2) {
+    wet.add(info.chunks[k + 1] * 100000 + info.chunks[k]);
+    centres.push([info.x0 + (info.chunks[k] + 0.5) * span, info.y0 + (info.chunks[k + 1] + 0.5) * span]);
+  }
+  const inside = (px: number, py: number, p: number[]) => {
+    let r = false;
+    for (let i = 0, n = p.length / 2, j = n - 1; i < n; j = i++) {
+      const xi = p[2 * i], yi = p[2 * i + 1], xj = p[2 * j], yj = p[2 * j + 1];
+      if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) r = !r;
+    }
+    return r;
+  };
+  return (p) => {
+    let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+    for (let i = 0; i < p.length; i += 2) {
+      const x = p[i], y = p[i + 1];
+      if (wet.has(Math.floor((y - info.y0) / span) * 100000 + Math.floor((x - info.x0) / span))) return true;
+      bx0 = Math.min(bx0, x); by0 = Math.min(by0, y); bx1 = Math.max(bx1, x); by1 = Math.max(by1, y);
+    }
+    if (bx1 < info.x0 || bx0 > x1 || by1 < info.y0 || by0 > y1) return true;
+    return centres.some(([cx, cy]) => cx >= bx0 && cx <= bx1 && cy >= by0 && cy <= by1 && inside(cx, cy, p));
+  };
 }
 
 interface GlState {
@@ -343,7 +385,7 @@ export function Water({ map, night }: Props) {
     };
 
     Promise.all([
-      fetch(asset("/data/water_mask.json")).then((r) => (r.ok ? r.json() : Promise.reject(r.status))),
+      maskInfo(),
       new Promise<HTMLImageElement>((ok, fail) => {
         const im = new Image();
         im.onload = () => ok(im);

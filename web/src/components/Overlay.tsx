@@ -7,7 +7,7 @@ import { luxDayMask, luxSeconds, prepareShapes, stretch, transitSections, TRANSI
 import { drawLamps, drawVehicle, loadSprites, spriteLength, type Sprites } from "./sprites";
 import { DRIVABLE, loadDrivable, loadOcclusion, loadRoadFit, ROADFIT, type Drivable, type Occlusion, type Rect } from "./occlusion";
 import { drawRoadDebug, roadDebugOn } from "./roadDebug";
-import { waterPoints } from "./Water";
+import { paintedWaterTest, waterPoints } from "./Water";
 import { Traffic, type DrawableCar } from "../sim/traffic";
 import { testParams } from "../testParams";
 import { canvasDpr, quality, subscribe } from "../frame";
@@ -288,11 +288,12 @@ interface Glint { x: number; y: number; ph: number; len: number }
 
 export function Overlay({ map, meta, streets, traffic, night, hour, season }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
-  // Vehicles: 32-heading sprites, the foreground that hides them, and their own layer (cut, then copied over).
+  // Vehicles: 32-heading sprites, the foreground that hides them, and their own canvas over the street lines (the
+  // cut erases from it, so it cannot share the lines' canvas; being on screen, it needs no copy each frame).
   const sprites = useRef<Sprites | null>(null);
   const occl = useRef<Occlusion | null>(null);
-  const vlayer = useRef<HTMLCanvasElement | null>(null);
-  // The screen box drawn on the vehicle layer last frame (cleared the next).
+  const vlayer = useRef<HTMLCanvasElement>(null);
+  // The screen box drawn on the vehicle canvas last frame (cleared the next).
   const vbox = useRef<[number, number, number, number] | null>(null);
   // Tram and train sections at a tunnel portal, drawn here and clipped before they join the vehicle layer.
   const portalLayer = useRef<HTMLCanvasElement | null>(null);
@@ -365,6 +366,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       st.named = st.roads.filter((r) => r.n && r.k !== "footway" && r.k !== "path" && r.k !== "steps" && r.len > 120);
       st.rail = L.rail.filter((r) => !r.t).map(prepare);
       st.water = L.water.map(prepare);
+      // only the water that is painted as water (an OSM pond the painter drew as ground gets no blue outline)
+      paintedWaterTest().then((wet) => { st.water = st.water!.filter((w) => wet(w.p)); }).catch(() => {});
       st.waterways = L.waterways.filter((r) => !r.t).map(prepare);
       // Traffic only where the map is painted (src/sim/traffic.ts: road graph, junctions, signals, car following).
       if (!meta.painted?.length || !on("traffic")) return;
@@ -386,19 +389,27 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
     const draw = (now: number) => {
       const dt = Math.min(Math.max(now - last, 0) / 1000, 0.1);
       last = Math.max(last, now);
-      const cv = canvas.current, v = map.current?.getView(), st = state.current;
-      if (!cv || !v) return;
+      const cv = canvas.current, vl = vlayer.current, v = map.current?.getView(), st = state.current;
+      if (!cv || !vl || !v) return;
       // at most 2 device pixels per CSS pixel, and 1 on the lowest quality tier
       const dpr = canvasDpr(2), W = window.innerWidth, H = window.innerHeight;
       const bw = Math.round(W * dpr), bh = Math.round(H * dpr);
-      if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; vbox.current = null; }
-      const g = cv.getContext("2d")!;
+      if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
+      if (vl.width !== bw || vl.height !== bh) { vl.width = bw; vl.height = bh; vbox.current = null; }
+      const g = cv.getContext("2d")!, vg = vl.getContext("2d")!;
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, W, H);
+      vg.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // the vehicle canvas is cleared only in the box drawn last frame, here when nothing is drawn on it this frame
+      let vehiclesDrawn = false;
+      const clearVehicles = () => {
+        const b = vbox.current;
+        if (b) { vg.clearRect(b[0], b[1], b[2] - b[0], b[3] - b[1]); vbox.current = null; }
+      };
       const { streets, traffic, night, hour, season } = flags.current;
       // Birds by day, not on the lowest quality tier, and not with reduced motion (they would only hang in the air).
       const birds = on("birds") && st.flocks?.length && night < 0.6 && v.z >= 0.1 && quality.tier < 2 && !still.matches;
-      if (!streets && !traffic && !birds) return;
+      if (!streets && !traffic && !birds) { clearVehicles(); return; }
       // image px -> screen px
       const z = v.z, ox = W / 2 - v.x * z, oy = H / 2 - v.y * z;
       const vis = (b: number[]) => b[2] * z + ox > -50 && b[0] * z + ox < W + 50 && b[3] * z + oy > -50 && b[1] * z + oy < H + 50;
@@ -590,12 +601,9 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         }
         if (passes.some((l) => l.length)) {
           const endVehicles = perfSpan("vehicles");
-          const vl = vlayer.current ?? (vlayer.current = document.createElement("canvas"));
-          if (vl.width !== cv.width || vl.height !== cv.height) { vl.width = cv.width; vl.height = cv.height; }
-          const vg = vl.getContext("2d")!;
-          vg.setTransform(dpr, 0, 0, dpr, 0, 0);
-          // Only the box round the vehicles is cleared, cut and copied (with the last frame's box, so nothing old
-          // stays behind): a long train with its lamps, beams and halos fits in REACH_M of its ground centre.
+          vehiclesDrawn = true;
+          // Only the box round the vehicles is cleared and cut (with the last frame's box, so nothing old stays
+          // behind): a long train with its lamps, beams and halos fits in REACH_M of its ground centre.
           const m = (REACH_M / MPP) * z + 12;
           let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
           for (const list of passes) for (const it of list) {
@@ -656,27 +664,33 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
               endCut();
             }
           });
-          const [qx, qy, qw, qh] = [box[0] * dpr, box[1] * dpr, (box[2] - box[0]) * dpr, (box[3] - box[1]) * dpr];
-          if (qw > 0 && qh > 0) { g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(vl, qx, qy, qw, qh, qx, qy, qw, qh); g.restore(); }
           endVehicles();
         }
-        // Small signal heads at the stop lines, when zoomed in.
+        // Small signal heads at the stop lines, when zoomed in, over the vehicles (on their canvas, which is then
+        // cleared whole next frame).
         if (doCars && on("signals") && z > 0.6) {
+          if (!vehiclesDrawn) clearVehicles();
+          vehiclesDrawn = true;
+          vbox.current = [0, 0, W, H];
           const r = Math.max(1.6, (0.45 / MPP) * z);
           for (const sg of st.sim!.signals()) {
             if (!seen(sg.x, sg.y, false)) continue;
             const sx = sg.x * z + ox, sy = sg.y * z + oy;
-            g.fillStyle = "rgba(20,22,28,.85)";
-            g.beginPath(); g.arc(sx, sy, r + 1.2, 0, Math.PI * 2); g.fill();
-            g.fillStyle = SIGNAL_COLOURS[sg.state];
-            g.beginPath(); g.arc(sx, sy, r, 0, Math.PI * 2); g.fill();
+            vg.fillStyle = "rgba(20,22,28,.85)";
+            vg.beginPath(); vg.arc(sx, sy, r + 1.2, 0, Math.PI * 2); vg.fill();
+            vg.fillStyle = SIGNAL_COLOURS[sg.state];
+            vg.beginPath(); vg.arc(sx, sy, r, 0, Math.PI * 2); vg.fill();
           }
         }
       }
+      if (!vehiclesDrawn) clearVehicles();
     };
     const stop = subscribe(draw, { name: "overlay" });
     return () => { stop(); };
   }, [map]);
 
-  return <canvas ref={canvas} className="overlay" aria-hidden="true" />;
+  return <>
+    <canvas ref={canvas} className="overlay" aria-hidden="true" />
+    <canvas ref={vlayer} className="overlay" aria-hidden="true" />
+  </>;
 }

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import type { MapHandle, View } from "./IsometricMap";
+import type { MapHandle } from "./IsometricMap";
+import { useView } from "../viewStore";
 import { gauge, span } from "../perf";
 
 export interface Place {
@@ -16,7 +17,6 @@ export interface Place {
 
 interface Props {
   places: Place[];
-  view: View | null;
   map: React.RefObject<MapHandle>;
   active: Place | null;
   onPick: (p: Place) => void;
@@ -28,9 +28,12 @@ const LABEL_H = 34;
 // Places in priority order, keeping only those whose labels don't collide.
 // React decides which labels show; their positions are written straight to the DOM in the map's own redraw
 // (map.onFrame), so they never lag a frame behind the map while it moves.
-export function Pins({ places, view, map, active, onPick }: Props) {
+export function Pins({ places, map, active, onPick }: Props) {
+  // re-rendered on every move of the map (only this component, not the page)
+  const view = useView((v) => v);
   const featured = useMemo(() => places.filter((p) => p.f || p.q), [places]);
   const els = useRef(new Map<string, { el: HTMLElement; p: Place }>());
+  const trackers = useRef(new Map<Place, (el: HTMLElement | null) => void>());
 
   const place = useRef(() => {
     const m = map.current;
@@ -54,9 +57,15 @@ export function Pins({ places, view, map, active, onPick }: Props) {
   const placed: { x: number; y: number }[] = [];
   const out: JSX.Element[] = [];
   const ordered = [...(active ? [active] : []), ...featured.filter((p) => p !== active)];
-  const track = (p: Place) => (el: HTMLElement | null) => {
-    if (el) els.current.set(p.n, { el, p });
-    else els.current.delete(p.n);
+  // one ref callback per place for the page's life: a new one each render (every frame while the map moves) would
+  // make React detach and attach every label each time
+  const track = (p: Place) => {
+    let fn = trackers.current.get(p);
+    if (!fn) {
+      fn = (el: HTMLElement | null) => { if (el) els.current.set(p.n, { el, p }); else els.current.delete(p.n); };
+      trackers.current.set(p, fn);
+    }
+    return fn;
   };
   for (const p of ordered) {
     const isQuarter = !!p.q;

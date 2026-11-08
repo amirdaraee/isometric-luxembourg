@@ -21,6 +21,7 @@ import { luxSeconds } from "./components/Transit";
 import { asset, tilesBase } from "./config";
 import { on } from "./features";
 import { testParams, today } from "./testParams";
+import { setView, useView } from "./viewStore";
 
 const FOCUS_ZOOM = 0.75;
 
@@ -58,6 +59,13 @@ function liveScene(): SceneState {
 const OPENING_NAME = "Notre-Dame Cathedral";
 const REPO_URL = "https://github.com/amirdaraee/isometric-luxembourg";
 
+/** A note while the view is centred on a part of the map not painted yet (re-rendered only when that changes). */
+function Unpainted({ painted }: { painted: NonNullable<MapMeta["painted"]> }) {
+  const show = useView((v) => !!v && v.z >= 0.1 &&
+    !painted.some((a) => v.x >= a.x0 && v.x <= a.x0 + a.w && v.y >= a.y0 && v.y <= a.y0 + a.h));
+  return show ? <div className="unpainted glass" role="note">This part of the city is still being drawn: you're looking at the 3D model underneath.</div> : null;
+}
+
 function readHash(): View | null {
   const m = location.hash.match(/^#(-?\d+),(-?\d+),([\d.]+)$/);
   return m ? { x: +m[1], y: +m[2], z: +m[3] } : null;
@@ -68,7 +76,6 @@ export default function App() {
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [error, setError] = useState(false);
   const [ready, setReady] = useState(false);
-  const [view, setView] = useState<View | null>(null);
   const [active, setActive] = useState<Place | null>(null);
   const [toast, setToast] = useState("");
   const [about, setAbout] = useState(false);
@@ -125,7 +132,7 @@ export default function App() {
   // Every view has a URL, so any view can be sent to someone.
   const hashTimer = useRef<ReturnType<typeof setTimeout>>();
   const onViewChange = useCallback((v: View) => {
-    setView(v);
+    setView(v); // the view store (viewStore.ts), not React state: the page does not re-render on every move
     clearTimeout(hashTimer.current);
     hashTimer.current = setTimeout(() => {
       history.replaceState(null, "", `#${Math.round(v.x)},${Math.round(v.y)},${v.z.toFixed(3)}`);
@@ -222,7 +229,7 @@ export default function App() {
       {(on("timeOfDay") || on("seasons") || on("christmas") || on("weather")) && <SceneControl scene={scene} live={live} sun={sun} onLive={() => setLive(true)}
         onChange={(c) => { if (c.hour !== undefined) setLive(false); setScene((s) => changeScene(s, c, EVENT_SEASON)); }}
         date={date} extra={<WeatherControl map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} />} />}
-      {ready && on("pins") && <Pins places={places} view={view} map={map} active={active} onPick={pick} />}
+      {ready && on("pins") && <Pins places={places} map={map} active={active} onPick={pick} />}
       {ready && on("comments") && feedbackConfigured && <Feedback map={map} marking={marking} setMarking={setMarking}
         onToast={(m) => { setToast(m); setTimeout(() => setToast(""), 3200); }} />}
       {on("search") && <Search places={places} onPick={pick} onSurprise={on("surprise") ? surprise : undefined} />}
@@ -274,10 +281,7 @@ export default function App() {
 
       {toast && <div className="toast glass" role="status">{toast}</div>}
       {on("tiltShift") && <><div className="tilt tilt-top" aria-hidden="true" /><div className="tilt tilt-bottom" aria-hidden="true" /></>}
-      {on("previewBadge") && view && view.z >= 0.1 && meta.painted?.length &&
-        !meta.painted.some((a) => view.x >= a.x0 && view.x <= a.x0 + a.w && view.y >= a.y0 && view.y <= a.y0 + a.h) && (
-        <div className="unpainted glass" role="note">This part of the city is still being drawn: you're looking at the 3D model underneath.</div>
-      )}
+      {on("previewBadge") && !!meta.painted?.length && <Unpainted painted={meta.painted} />}
 
       {about && (
         <div className="about-wrap" onClick={() => setAbout(false)}>
