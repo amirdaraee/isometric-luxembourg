@@ -325,6 +325,21 @@ export function loadDrivable(): Promise<Drivable> {
   return drivableLoading;
 }
 
+/** Bits of the painted-road masks (pipeline/fit_roads.py, /data/roadfit): asphalt, rail bed, unpainted, the guard
+ * (painted road with small gaps closed, grown by 0.5 m: a road vehicle may be shown there) and painted road. */
+export const ROADFIT = { asphalt: 1, rail: 2, unpainted: 4, guard: 8, road: 16 } as const;
+
+let roadfitLoading: Promise<Drivable> | null = null;
+
+/** The painted-road masks: at() gives the bits (0 far from every street or off the map, -1 while loading). */
+export function loadRoadFit(): Promise<Drivable> {
+  if (!roadfitLoading) {
+    roadfitLoading = fetch(asset("/data/roadfit/index.json")).then((r) => r.json() as Promise<DrivableIndex>)
+      .then((idx) => new DrivableMap(idx, "roadfit", 0, 0));
+  }
+  return roadfitLoading;
+}
+
 /** Tiles kept decoded at most (each 256 KB), least recently used dropped first. */
 const DRIVABLE_KEEP = 96;
 
@@ -334,14 +349,18 @@ class DrivableMap implements Drivable {
   /** Decoded tiles in least recently used order (a Map keeps insertion order); null while loading. */
   private tiles = new Map<string, Uint8Array | null>();
 
-  constructor(idx: DrivableIndex) { this.idx = idx; this.have = new Set(idx.tiles); }
+  private dir: string; private outside: number; private off: number;
+  /** dir: the data folder; outside: the value where no tile is listed; off: the value off the map. */
+  constructor(idx: DrivableIndex, dir = "drivable", outside: number = DRIVABLE.none, off: number = DRIVABLE.unpainted) {
+    this.idx = idx; this.have = new Set(idx.tiles); this.dir = dir; this.outside = outside; this.off = off;
+  }
 
   at(x: number, y: number): number {
     const { cell, tile } = this.idx;
     const cx = Math.floor(x / cell), cy = Math.floor(y / cell);
-    if (cx < 0 || cy < 0) return DRIVABLE.unpainted;
+    if (cx < 0 || cy < 0) return this.off;
     const tx = Math.floor(cx / tile), ty = Math.floor(cy / tile), key = `${tx}_${ty}`;
-    if (!this.have.has(key)) return tx < this.idx.cols && ty < this.idx.rows ? DRIVABLE.none : DRIVABLE.unpainted;
+    if (!this.have.has(key)) return tx < this.idx.cols && ty < this.idx.rows ? this.outside : this.off;
     const t = this.tiles.get(key);
     if (t === undefined) { this.fetch(key); return -1; }
     if (t === null) return -1;
@@ -363,6 +382,6 @@ class DrivableMap implements Drivable {
       while (this.tiles.size > DRIVABLE_KEEP) this.tiles.delete(this.tiles.keys().next().value!);
     };
     img.onerror = () => this.tiles.delete(key);
-    img.src = asset(`/data/drivable/${key}.png`);
+    img.src = asset(`/data/${this.dir}/${key}.png`);
   }
 }

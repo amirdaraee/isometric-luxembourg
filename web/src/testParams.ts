@@ -7,6 +7,8 @@
 //   ?weather=rain:0.8,wind:12@250   the weather (read by Sky and WeatherControl)
 //   ?event=schueberfouer            the event shown (read by EventLayer)
 //   ?seed=42                        the traffic seed (TrafficOptions.seed)
+//   ?nofit                          vehicles on the OSM lines, as before the fit to the painted roads
+//   ?roaddebug                      painted-road masks, OSM lines, fitted lines and lanes (components/roadDebug.ts)
 //
 // They work with the feature switches: ?hour needs timeOfDay and ?season needs seasons, so in a release build add
 // ?on=timeOfDay,seasons as well.
@@ -40,6 +42,9 @@ export const testParams = {
   event: q.get("event"),
   /** Traffic seed, or null for the built-in one. */
   seed: num("seed"),
+  /** ?nofit: vehicles on the OSM lines as before pipeline/fit_roads.py (no fitted lines, no painted-road guard), to
+   * compare before and after. */
+  nofit: q.has("nofit"),
 };
 
 /** "Now", unless ?date= is given: then that day, at ?hour= if given (else noon), local time. */

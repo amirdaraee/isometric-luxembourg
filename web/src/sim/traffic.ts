@@ -1438,6 +1438,18 @@ export class Traffic {
   private pool: DrawableCar[] = [];
   private drawn: DrawableCar[] = [];
 
+  /** The lanes' centre lines (map px, [x, y, ...]) whose box meets r, for the ?roaddebug overlay. */
+  laneLines(r: Rect): number[][] {
+    const M = this.mpp, out: number[][] = [];
+    for (const l of this.lanes) {
+      if (l.bx1 < r.x0 || l.bx0 > r.x1 || l.by1 < r.y0 || l.by0 > r.y1) continue;
+      const p: number[] = [];
+      for (let i = 0; i < l.x.length; i++) p.push(l.x[i] / M, l.y[i] / M);
+      out.push(p);
+    }
+    return out;
+  }
+
   /**
    * Every car near the view, centre and heading in map px. The array and its objects are reused: they are valid
    * until the next call, so copy anything that has to be kept.

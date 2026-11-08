@@ -5,7 +5,8 @@ import type { MapHandle, MapMeta } from "./IsometricMap";
 import { luxDayMask, luxSeconds, prepareShapes, stretch, transitSections, TRANSIT_HEIGHT_M, type Section, type Shape,
   type TransitData } from "./Transit";
 import { drawLamps, drawVehicle, loadSprites, spriteLength, type Sprites } from "./sprites";
-import { DRIVABLE, loadDrivable, loadOcclusion, type Drivable, type Occlusion, type Rect } from "./occlusion";
+import { DRIVABLE, loadDrivable, loadOcclusion, loadRoadFit, ROADFIT, type Drivable, type Occlusion, type Rect } from "./occlusion";
+import { drawRoadDebug, roadDebugOn } from "./roadDebug";
 import { waterPoints } from "./Water";
 import { Traffic, type DrawableCar } from "../sim/traffic";
 import { testParams } from "../testParams";
@@ -15,7 +16,7 @@ import { currentAmounts } from "../weather";
 import { groundToScreen } from "../sky/weatherCore";
 
 // Projected OSM lines (web/public/data/lines.json, from pipeline/project_lines.py), in map image pixels.
-interface Line { id: number; n?: string; k?: string; b?: boolean; t?: boolean; o?: boolean; p: number[] }
+interface Line { id: number; n?: string; k?: string; b?: boolean; t?: boolean; o?: boolean; p: number[]; q?: number[] }
 interface Lines { roads: Line[]; rail: Line[]; waterways: Line[]; water: Line[] }
 interface Prepared extends Line { box: [number, number, number, number]; len: number; cum: number[]; path?: Path2D }
 
@@ -298,6 +299,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
   // When the last ?siren= vehicle was put on its street.
   const sirenAt = useRef(-1e9);
   const drivable = useRef<Drivable | null>(null);
+  // The painted-road masks (fit_roads.py): the guard shows a car only on the road as painted.
+  const roadfit = useRef<Drivable | null>(null);
   // Per car id: how visible it is (0..1, the guard's fade) and the frame it was last seen in.
   const fades = useRef(new Map<number, { a: number; stamp: number }>());
   const fadeStamp = useRef(0);
@@ -306,6 +309,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
     loadSprites().then((x) => { sprites.current = x; }).catch(() => {});
     loadOcclusion().then((x) => { occl.current = x; }).catch(() => {});
     loadDrivable().then((x) => { drivable.current = x; }).catch(() => {});
+    loadRoadFit().then((x) => { roadfit.current = x; }).catch(() => {});
   }, []);
   const state = useRef<{ lines?: Lines; roads?: Prepared[]; named?: Prepared[]; rail?: Prepared[]; water?: Prepared[];
     waterways?: Prepared[]; flocks?: Flock[]; sim?: Traffic }>({});
@@ -316,7 +320,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
   const vis_ = useRef<{ w: number; h: number; d: Uint8Array } | null>(null);
   const transit = useRef<{ d: TransitData; shapes: ReturnType<typeof prepareShapes> } | null>(null);
   useEffect(() => {
-    if (on("transit")) fetch(asset("/data/transit.json")).then((r) => r.json()).then((d: TransitData) => { transit.current = { d, shapes: prepareShapes(d) }; }).catch(() => {});
+    if (on("transit")) fetch(asset("/data/transit.json")).then((r) => r.json()).then((d: TransitData) => { transit.current = { d, shapes: prepareShapes(d, !testParams.nofit) }; }).catch(() => {});
   }, []);
   useEffect(() => {
     const img = new Image();
@@ -356,6 +360,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
     linesAsked.current = true;
     fetch(asset("/data/lines.json")).then((r) => r.json()).then((L: Lines) => {
       const st = state.current;
+      if (roadDebugOn) st.lines = L;
       st.roads = L.roads.filter((r) => !r.t).map(prepare);
       st.named = st.roads.filter((r) => r.n && r.k !== "footway" && r.k !== "path" && r.k !== "steps" && r.len > 120);
       st.rail = L.rail.filter((r) => !r.t).map(prepare);
@@ -364,7 +369,7 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
       // Traffic only where the map is painted (src/sim/traffic.ts: road graph, junctions, signals, car following).
       if (!meta.painted?.length || !on("traffic")) return;
       const build = () => {
-        st.sim = new Traffic(L.roads, { areas: meta.painted!, mpp: MPP, emergency: on("emergency"), seed: testParams.seed ?? undefined });
+        st.sim = new Traffic(L.roads, { areas: meta.painted!, mpp: MPP, emergency: on("emergency"), seed: testParams.seed ?? undefined, fitted: !testParams.nofit });
         // In development, the simulation is reachable from the console and from headless checks.
         if (import.meta.env.DEV) (window as unknown as { traffic?: Traffic }).traffic = st.sim;
       };
@@ -487,6 +492,8 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
         endBirds();
       }
 
+      if (roadDebugOn) drawRoadDebug(g, z, ox, oy, W, H, st.lines,
+        st.sim && z >= 0.3 ? st.sim.laneLines({ x0: -ox / z, y0: -oy / z, x1: (W - ox) / z, y1: (H - oy) / z }) : []);
       const doCars = traffic && on("traffic") && !!st.sim && z >= 0.08;
       const doTrains = traffic && on("transit") && !!transit.current && z >= 0.06;
       if (doCars || doTrains) {
@@ -521,13 +528,16 @@ export function Overlay({ map, meta, streets, traffic, night, hour, season }: Pr
           // The guard: where a car's drawn ground point is on water, inside a building, outside the painted art, or
           // behind a building that the occlusion cut does not hide it behind (it would show on the facade), the car
           // fades out over 0.3 s (and back in when it leaves). On a modelled deck it is fine. Without drivable data
-          // yet, the old visibility test decides.
+          // yet, the old visibility test decides. And off the road as painted (a street the painter left out or drew
+          // elsewhere: a cliff, a lawn, a roof; data/roadfit "guard", fit_roads.py) it fades too, except on a deck.
+          const rf = roadfit.current;
           const show = (c: DrawableCar, gy: number, onDeck: boolean) => {
             const v = drv ? drv.at(c.x, gy) : -1;
             if (v < 0) return seen(c.x, c.y, c.bridge);
             if (v === DRIVABLE.unpainted) return false;
             if (v === DRIVABLE.water || v === DRIVABLE.building) return onDeck;
             if (v === DRIVABLE.hidden) return onDeck || (occ ? occ.coverage(c.x, gy, 1.6) >= 0.5 : false);
+            if (rf && !onDeck && !testParams.nofit) { const r = rf.at(c.x, gy); if (r >= 0 && !(r & ROADFIT.guard)) return false; }
             return true;
           };
           const fade = fades.current, stamp = ++fadeStamp.current;
