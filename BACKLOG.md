@@ -68,9 +68,13 @@ Status key: **new** = not planned yet; **in plan** = already covered by PLAN_NEX
 
 ## D. Events and life
 
-### B9. Christmas Ferris wheel animation not good [5] — in plan (Stream B item 7), redo
+### B9. Christmas Ferris wheel animation not good [5] — done (Stream B)
 - Approach: replace the rotating flat image with a proper wheel drawn in the map's projection (an ellipse in the
   isometric view, gondolas hanging straight down while the rim turns), slow and smooth, lit at night.
+- Done: the painted face-on A-frame was taken out of the Constitution drawings (`xmas_v2.py unframe`, a masked
+  edit, $0.12), and the whole wheel, supports included, is drawn live by `web/src/components/ferrisWheel.ts`: its
+  plane on a map axis, so the rim is a tilted ellipse; 24 gondolas hang from their pins; one turn in 150 s from the
+  clock (no frames, so no cross-fade); at night lit rims, spokes and windows.
 
 ### B10. Famous statues as separate drawn objects on top [1] — new
 - What: monuments are too small or missing in the art (Gëlle Fra, the Grand Duchess Charlotte monument, the

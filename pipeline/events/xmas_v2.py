@@ -15,9 +15,14 @@ Two steps:
                                                       web/public/events/xmas/<site>_<day|night>.webp and xmas.json
                                                       (each patch's box in map px). Rerun it after every rebuild of
                                                       the winter or winter-night tiles.
+  xmas_v2.py unframe <cap usd>                        the chosen Constitution drawings with the Ferris wheel's
+                                                      painted support taken out (a masked edit, about $0.06 each,
+                                                      cached, so rerunning it is free); saved as the next try and
+                                                      recorded in chosen.json. Then run composite.
 
-The moving parts (the Ferris wheel's rim, spokes and gondolas, the carousel's horses, the pyramid's top blades) are
-left out of the drawings: they are live sprites (build_event_sprites.py, EventLayer.tsx).
+The moving parts (the carousel's horses, the pyramid's top blades) are left out of the drawings: they are live
+sprites (build_event_sprites.py, EventLayer.tsx). The Ferris wheel, supports included, is drawn live in the map's
+projection (web/src/components/ferrisWheel.ts).
 """
 import base64
 import fcntl
@@ -82,13 +87,17 @@ def spent():
     return sum(e["usd"] for e in json.loads(log_path.read_text()) if e["file"].startswith(TAG + ":"))
 
 
-def call(crop: Image.Image, prompt: str, tag: str) -> Image.Image:
+def call(crop: Image.Image, prompt: str, tag: str, mask: Image.Image | None = None) -> Image.Image:
+    """One paid edit. mask (optional): an RGBA image the size of `crop`, transparent where the drawing may change."""
     key = next(l.split("=", 1)[1].strip() for l in (ROOT / "pipeline/.env").read_text().splitlines() if l.startswith("OPENAI_API_KEY="))
     buf = io.BytesIO(); crop.save(buf, "JPEG", quality=94)
     b = uuid.uuid4().hex
     parts = [f'--{b}\r\nContent-Disposition: form-data; name="{kk}"\r\n\r\n{v}\r\n'.encode()
              for kk, v in {"model": MODEL, "prompt": prompt, "size": "1024x1024", "quality": "high", "n": "1"}.items()]
     parts.append(f'--{b}\r\nContent-Disposition: form-data; name="image"; filename="sq.jpg"\r\nContent-Type: image/jpeg\r\n\r\n'.encode() + buf.getvalue() + b"\r\n")
+    if mask is not None:
+        mb = io.BytesIO(); mask.save(mb, "PNG")
+        parts.append(f'--{b}\r\nContent-Disposition: form-data; name="mask"; filename="mask.png"\r\nContent-Type: image/png\r\n\r\n'.encode() + mb.getvalue() + b"\r\n")
     parts.append(f"--{b}--\r\n".encode())
     req = urllib.request.Request("https://api.openai.com/v1/images/edits", data=b"".join(parts),
                                  headers={"Authorization": f"Bearer {key}", "Content-Type": f"multipart/form-data; boundary={b}"})
@@ -187,8 +196,84 @@ def composite():
     print("composite done")
 
 
+# The painted Ferris-wheel support on Place de la Constitution faced the camera, which forced a flat, face-on wheel.
+# The whole wheel (supports included) is now drawn live in the map's projection (EventLayer.tsx), so the support is
+# taken out of the drawings: hand-traced polygons round its legs and hub, in drawing px (1024 square), per drawing.
+FRAME = {
+    "constitution_day_raw0": {
+        "legs": [[(316, 414), (337, 430), (318, 548), (281, 556), (280, 541)],
+                 [(326, 414), (346, 428), (399, 546), (365, 557), (352, 528)]],
+        "hub": (331.5, 423.5, 15), "grow": 2},
+    "constitution_night_raw1": {
+        "legs": [[(318, 414), (340, 430), (311, 551), (276, 553), (282, 536)],
+                 [(326, 414), (347, 428), (398, 552), (370, 556), (352, 528)]],
+        "hub": (333, 422, 16), "grow": 4},
+}
+
+
+UNFRAME = ("Remove the white steel Ferris-wheel A-frame support completely: its slanted legs, their feet and the round "
+           "hub. Where it stood, show what is behind it: the paved snowy square, the string lights and, at the bottom, "
+           "the empty round wooden boarding platform with its white railing, nothing standing on it. Keep everything "
+           "else exactly as it is: same inked illustration style, same camera, same colours and light.")
+
+
+def unframe(cap: float):
+    """Paid (about $0.06 a drawing): copies of the chosen Constitution drawings with the wheel's painted support
+    removed, saved as the next try and recorded in chosen.json (and in relit.json for the relit night). The drawing
+    service redraws inside the traced mask only; its result is pasted back inside that mask (feathered 1 px), so the
+    rest of the drawing stays exactly as chosen."""
+    ch = NEW / "chosen.json"
+    chosen = json.loads(ch.read_text()) if ch.exists() else {}
+    rl = NEW / "relit.json"
+    relit = json.loads(rl.read_text()) if rl.exists() else []
+    for when in ("day", "night"):
+        raw_p, sent_p = pick("constitution", when)
+        spec = FRAME.get(raw_p.stem)
+        if spec is None:
+            print("no traced support for", raw_p.name, "(already removed?)")
+            continue
+        raw = np.asarray(Image.open(raw_p).convert("RGB"))
+        m = np.zeros(raw.shape[:2], np.uint8)
+        for leg in spec["legs"]:
+            cv2.fillPoly(m, [np.array(leg, np.int32)], 255)
+        hx, hy, hr = spec["hub"]
+        cv2.circle(m, (int(hx), int(hy)), int(hr), 255, -1)
+        g = spec["grow"]
+        m = cv2.dilate(m, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * g + 1, 2 * g + 1)))
+        wide = cv2.dilate(m, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13)))   # room for the service to blend
+        alpha = np.where(wide > 0, 0, 255).astype(np.uint8)
+        mask = Image.fromarray(np.dstack([raw, alpha]), "RGBA")
+        light = LIGHT[when].split(":")[0] + "."
+        n = len(list(NEW.glob(f"constitution_{when}_raw*.png")))
+        cached = NEW / f"constitution_{when}_unframe{n}.png"
+        if cached.exists():   # the paid edit is kept, so the paste can be redone for free
+            ed = np.asarray(Image.open(cached).convert("RGB"))
+        else:
+            if spent() + 0.08 > cap:
+                sys.exit(f"cap reached: ${spent():.3f} of ${cap:.2f} spent")
+            ed = np.asarray(call(Image.fromarray(raw), f"{UNFRAME} {light}", f"constitution_{when}_unframe{n}", mask).convert("RGB")
+                            .resize(raw.shape[1::-1], Image.LANCZOS))
+            Image.fromarray(ed).save(cached)
+        # paste the whole hull of the support: the back legs show between the front ones, and the edit removed them
+        hull = cv2.convexHull(np.argwhere(m > 0)[:, ::-1].astype(np.int32))
+        m = cv2.fillPoly(m.copy(), [hull], 255)
+        soft = cv2.GaussianBlur(cv2.dilate(m, np.ones((5, 5), np.uint8)).astype(np.float32) / 255, (0, 0), 1.0)[..., None]
+        out = (ed * soft + raw * (1 - soft)).astype(np.uint8)
+        Image.fromarray(out).save(NEW / f"constitution_{when}_raw{n}.png")
+        Image.open(sent_p).save(NEW / f"constitution_{when}_sent{n}.png")
+        chosen[f"constitution_{when}"] = n
+        if raw_p.stem in relit:
+            relit.append(f"constitution_{when}_raw{n}")
+        print(raw_p.name, "->", f"constitution_{when}_raw{n}.png", f"({int((m > 0).sum())} px redrawn)")
+    ch.write_text(json.dumps(chosen, indent=1))
+    rl.write_text(json.dumps(relit))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+    if cmd == "unframe":
+        unframe(float(sys.argv[2]))
+        sys.exit()
     if cmd == "draw":
         rest = [a for a in sys.argv[4:] if not a.startswith("--")]
         draw(sys.argv[2], float(sys.argv[3]), rest[0].split(",") if rest else list(SITES), "--relight" in sys.argv)

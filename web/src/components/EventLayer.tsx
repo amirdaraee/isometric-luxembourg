@@ -5,6 +5,8 @@ import type { Season } from "../scene";
 import { asset } from "../config";
 import { on } from "../features";
 import { subscribe } from "../frame";
+import { CONSTITUTION_WHEEL, drawWheel, wheelAngle } from "./ferrisWheel";
+import type { WheelSpec } from "./ferrisWheel";
 
 export interface EventLayerProps {
   map: RefObject<MapHandle>;
@@ -22,8 +24,12 @@ export interface EventLayerProps {
 /** web/public/events/sprites.json, from pipeline/events/build_event_sprites.py */
 interface RideSprite { frame: [number, number]; anchor: [number, number]; frames: number; day: [number, number][]; night: [number, number][] }
 interface SpriteSheet { mpp: number; map_mpp: number; image: string; rides: Record<string, RideSprite> }
-/** A ride placed on the map (events/<event>/rides.json): ground anchor in map px, frames per second. */
-interface Ride { site: string; kind: string; x: number; y: number; fps: number; front?: { day: string; night: string; x0: number; y0: number; w: number; h: number } }
+/** A ride placed on the map (events/<event>/rides.json): ground anchor in map px, frames per second. A "wheel" is
+ * drawn live (ferrisWheel.ts), with optional changes to the default wheel. */
+interface Ride {
+  site: string; kind: string; x: number; y: number; fps?: number; wheel?: Partial<WheelSpec>;
+  front?: { day: string; night: string; x0: number; y0: number; w: number; h: number };
+}
 /** Warm points of light of a site (events/<event>/lights.json): [x, y, size] in map px. */
 interface Lights { site: string; pts: [number, number, number][] }
 
@@ -125,13 +131,21 @@ export function EventLayer({ map, night, active = [] }: EventLayerProps) {
         if (!d) continue;
         const k = (d.sheet.mpp / d.sheet.map_mpp) * z;   // sprite px -> screen px
         for (const r of d.rides) {
+          if (r.kind === "wheel") {
+            const spec = { ...CONSTITUTION_WHEEL, ...r.wheel };
+            const sx = r.x * z + ox, sy = r.y * z + oy;
+            const half = ((spec.radius + 4) / 0.25) * z, tall = ((spec.hub + spec.radius + 2) * 0.866 / 0.25) * z;
+            if (sx - half > W || sx + half < 0 || sy - tall > H || sy - tall * 0.2 - half > H || sy + half * 0.5 < 0) continue;
+            drawWheel(g, spec, { sx, sy, z, night: n, theta: still ? 0.3 : wheelAngle(spec, sec), sec, glow: d.glow });
+            continue;
+          }
           const s = d.sheet.rides[r.kind];
           if (!s) continue;
           const [fw, fh] = s.frame, [ax, ay] = s.anchor;
           const sx = r.x * z + ox - ax * k, sy = r.y * z + oy - ay * k;
           if (sx > W || sy > H || sx + fw * k < 0 || sy + fh * k < 0) continue;
           // between two frames, the next one fades in over the current one, so even a slow wheel turns smoothly
-          const pos = sec * r.fps, f = Math.floor(pos) % s.frames, f2 = (f + 1) % s.frames, frac = still ? 0 : pos - Math.floor(pos);
+          const pos = sec * (r.fps ?? 6), f = Math.floor(pos) % s.frames, f2 = (f + 1) % s.frames, frac = still ? 0 : pos - Math.floor(pos);
           for (const [cells, a] of [[s.day, 1 - n], [s.night, n]] as const) {
             if (a < 0.01) continue;
             g.globalAlpha = a;

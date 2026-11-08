@@ -2,7 +2,7 @@
 (the build_sprites.py renderer), by day and lit at night.
 
 Rides (Christmas first; the same code serves the Schueberfouer later):
-  wheel     Ferris wheel of about 32 m: two rims, 24 spokes a side and 24 gondolas that stay upright. It looks the
+  wheel     (no longer built: the wheel is drawn live, see web/src/components/ferrisWheel.ts) Ferris wheel of about 32 m: two rims, 24 spokes a side and 24 gondolas that stay upright. It looks the
             same after one gondola step (15 degrees), so 12 frames make the whole loop.
   carousel  8 outer and 8 inner horses on gold poles, rising and falling, under the painted canopy. It repeats
             every 45 degrees: 12 frames.
@@ -157,8 +157,8 @@ def pyramid(theta, radius=4.2, blades=6):
 
 
 RIDES = {
-    # name: (model, frames, step per frame in radians)
-    "wheel": (wheel, 12, (2 * math.pi / 24) / 12),
+    # name: (model, frames, step per frame in radians). The Ferris wheel is no longer a sprite: it is drawn live in
+    # the map's projection (web/src/components/ferrisWheel.ts), so it turns smoothly; wheel() stays for reference.
     "carousel": (carousel, 12, (math.pi / 4) / 12),
     "pyramid": (pyramid, 8, (math.pi / 3) / 8),
 }
@@ -249,11 +249,11 @@ def build():
 # ---- placing the rides on the Christmas patches -----------------------------------------------------------------
 
 # Ground anchors placed by eye on the Christmas patches (map px; the contact sheet from xmas_v2.py composite and
-# the shots b-rides-* show them). wheel: the foot of the painted A-frame, under its hub; carousel: the centre of the
+# the shots b-rides-* show them). wheel: the centre of the painted boarding platform; carousel: the centre of the
 # platform's top; pyramid: the tip of the painted spire.
 XMAS = OUT / "xmas"
 PLACED = [
-    {"site": "constitution", "kind": "wheel", "at": (6918, 6146), "fps": 1.0},     # 12 frames per 15 degrees: 1.25 rpm, cross-faded between frames
+    {"site": "constitution", "kind": "wheel", "at": (6919, 6147)},   # drawn live: the centre of the painted platform
     {"site": "knuedler", "kind": "carousel", "at": (7961, 6171), "fps": 6.0,       # 12 frames per 45 degrees: 3.75 rpm
      "front": {"apex": (7961, 6102), "rim": (7961, 6134, 50, 11)}},
     {"site": "constitution", "kind": "pyramid", "at": (7159.5, 6138), "fps": 6.0},  # 8 frames per 60 degrees: 7.5 rpm
@@ -303,7 +303,9 @@ def place():
     sites = {e["site"]: e for e in json.loads((XMAS / "xmas.json").read_text())}
     rides = []
     for r in PLACED:
-        e = {"site": r["site"], "kind": r["kind"], "x": r["at"][0], "y": r["at"][1], "fps": r["fps"]}
+        e = {"site": r["site"], "kind": r["kind"], "x": r["at"][0], "y": r["at"][1]}
+        if "fps" in r:
+            e["fps"] = r["fps"]
         if "front" in r:
             e["front"] = cut_front(sites[r["site"]], r["front"])
         rides.append(e)
