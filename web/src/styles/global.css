@@ -122,7 +122,16 @@ kbd { padding: 1px 7px; border: 1px solid var(--line); border-radius: 5px; color
 .scene button.on { background: #ef3340; color: #fff; }
 .scene button.xmas.on { background: #1f7a3d; }
 .scene button:focus-visible { outline: 2px solid #ef3340; outline-offset: 2px; }
-@media (max-width: 640px) { .scene { bottom: calc(60px + env(safe-area-inset-bottom)); } }
+.scene button:disabled, .scene input:disabled { opacity: .45; cursor: default; }
+/* Phones: the panel sits above the layer buttons and left of the tool buttons, and its rows wrap instead of running
+   off both edges of the screen. */
+@media (max-width: 640px) {
+  .scene { left: 8px; right: 64px; transform: none; bottom: calc(96px + env(safe-area-inset-bottom)); padding: 6px 8px; gap: 4px; }
+  .scene-row { flex-wrap: wrap; gap: 2px 4px; }
+  .scene button { padding: 6px 8px; }
+  .scene input[type=range] { width: auto; flex: 1 1 120px; min-width: 0; }
+  .scene-events { max-width: none; }
+}
 
 /* Shown while the view is centred on a part of the map that is not painted yet. */
 .unpainted { position: fixed; top: 72px; left: 50%; transform: translateX(-50%); z-index: 5; padding: 7px 14px;

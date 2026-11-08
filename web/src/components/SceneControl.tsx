@@ -46,7 +46,8 @@ export function SceneControl({ scene, live, onChange, onLive, sun, extra, date =
         <input type="range" min={0} max={23.99} step={0.05} value={scene.hour} aria-label="Time of day"
           aria-valuetext={hhmm(scene.hour)} onChange={(e) => onChange({ hour: +e.target.value })} />
         <output className="scene-time">{hhmm(scene.hour)}</output>
-        <button type="button" className={live ? "on" : ""} aria-pressed={live} onClick={onLive} title="Follow Luxembourg's real clock">Live</button>
+        <button type="button" className={live ? "on" : ""} aria-pressed={live} onClick={onLive} aria-label="Live time"
+          title="Follow Luxembourg's real clock">Live</button>
       </div>}
       {(on("seasons") || on("christmas")) && <div className="scene-row">
         {on("seasons") && SEASONS.map(([k, label]) => (
