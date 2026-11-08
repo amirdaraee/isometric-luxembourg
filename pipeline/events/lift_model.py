@@ -332,8 +332,8 @@ def sprites():
         "front": {"frame": [fw, fh], "anchor": [fax, fay], "day": [0, h], "night": [fw, h]},
         "tower": {"frame": [tw, th], "anchor": [tax, tay], "day": [0, h + fh], "night": [tw, h + fh]},
         # the base art has no tower yet (the painter made a wall of the old footbridge): draw the modelled
-        # structure live until the repaint (PLAN_NEXT item 6, step 4) is in, then set this to false
-        "structure": True,
+        # the repaint (PLAN_NEXT item 6, step 4) is in the art since 8 Nov 2026: the structure is no longer drawn live
+        "structure": False,
         "bottom": [round(bx, 1), round(by, 1)],      # map px of the cabin's bottom centre at the lower stop
         "rise": round(rise_px, 1),                   # map px up to the upper stop (60 m)
         "ride": 30, "wait": [25, 35],                # seconds: the ride, and the stop at the bottom and at the top

@@ -1,8 +1,8 @@
 # Task list, 8 Nov 2026 (owner's request, in this order)
 | # | Task | How | Cost | Status |
 |---|---|---|---|---|
-| T1 | Finish the paid repaints on RunPod (Modal is disabled): the 2 missing spring blocks (b13, b14), the painted-car repair (pilot, then full run, carried into the versions), the Pfaffenthal lift repaint | one pod for everything, deadline watchdog, delete after; then rebuild tiles, recomposite event patches, rebuild occlusion | cap $15 (RunPod balance $24.12) | running |
-| T2 | Match the roads to the paintings (no repainting): vehicles and trains must run on the roads and tracks as painted | detect the painted asphalt and rails in the art, fit lanes and tracks to them, use those for driving; debug overlay | free | done (first pass, see below) |
+| T1 | Finish the paid repaints on RunPod (Modal is disabled): the 2 missing spring blocks (b13, b14), the painted-car repair (pilot, then full run, carried into the versions), the Pfaffenthal lift repaint | one pod for everything, deadline watchdog, delete after; then rebuild tiles, recomposite event patches, rebuild occlusion | cap $15 (RunPod balance $24.12) | done: $10.36 spent, balance $13.76; pod deleted |
+| T2 | Match the roads to the paintings (no repainting): vehicles and trains must run on the roads and tracks as painted | detect the painted asphalt and rails in the art, fit lanes and tracks to them, use those for driving; debug overlay | free | first pass done; T2b (dense warp of the data onto the painting) running |
 | T3 | Refactoring, performance and tool bugs (time slider, season and event buttons, other controls) | audit, fix every reproducible bug with a test, simplify code, measure before/after | free | queued |
 | T4 | Famous statues as a separate layer, no repainting: Gëlle Fra, Grand Duchess Charlotte, William II, Dicks–Lentz, Hämmelsmarsch fountain, Princess Amélie, Wenzel, John the Blind and others | small drawings in the ink style placed on their plinths at their true positions, hidden behind buildings like vehicles, linked to their landmark cards | cap $3 (OpenAI) | done (8 Nov), see T4 result |
 
