@@ -30,6 +30,14 @@ function release(): Plugin {
         for (const folder of Object.values<string>(meta.variants ?? {})) rmSync(resolve(dist, "tiles", folder), { recursive: true, force: true });
         delete meta.variants;
         writeFileSync(metaPath, JSON.stringify(meta));
+      } else if (off.has("seasons") && off.has("christmas") && existsSync(metaPath)) {
+        // summer only: night and golden hour stay, the other seasons' versions stay home
+        const meta = JSON.parse(readFileSync(metaPath, "utf8"));
+        for (const v of ["winter", "winter_night", "autumn", "spring"]) {
+          if (meta.variants?.[v]) rmSync(resolve(dist, "tiles", meta.variants[v]), { recursive: true, force: true });
+          delete meta.variants?.[v];
+        }
+        writeFileSync(metaPath, JSON.stringify(meta));
       }
       if (off.has("christmas")) rmSync(resolve(dist, "events"), { recursive: true, force: true });
       if (off.has("models3d") && existsSync(resolve(dist, "landmarks")))
