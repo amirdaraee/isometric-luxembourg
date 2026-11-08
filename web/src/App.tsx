@@ -3,6 +3,7 @@ import { IsometricMap, type MapHandle, type MapMeta, type View } from "./compone
 import { Pins, type Place } from "./components/Pins";
 import { Search } from "./components/Search";
 import { Overlay } from "./components/Overlay";
+import { Statues } from "./components/Statues";
 import { Water } from "./components/Water";
 import { Clouds } from "./components/Clouds";
 import { LandmarkPanel, type Landmark } from "./components/LandmarkPanel";
@@ -208,6 +209,7 @@ export default function App() {
       </div>
       {ready && layersPocOn && <LayersPoc map={map} below />}
       {ready && on("water") && <Water map={map} night={sceneMix.night} />}
+      {ready && on("statues") && <Statues map={map} night={sceneMix.night} season={scene.season} onPick={pick} />}
       {ready && <Overlay map={map} meta={meta} streets={streets} traffic={traffic} night={sceneMix.night} hour={live ? null : scene.hour} season={scene.season} />}
       {ready && layersPocOn && <LayersPoc map={map} below={false} />}
       {ready && <EventLayer map={map} night={sceneMix.night} hour={scene.hour} season={scene.season} date={date} active={shown} picked={scene.event ?? null} />}

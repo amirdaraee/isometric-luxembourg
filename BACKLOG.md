@@ -4,7 +4,24 @@
 | T1 | Finish the paid repaints on RunPod (Modal is disabled): the 2 missing spring blocks (b13, b14), the painted-car repair (pilot, then full run, carried into the versions), the Pfaffenthal lift repaint | one pod for everything, deadline watchdog, delete after; then rebuild tiles, recomposite event patches, rebuild occlusion | cap $15 (RunPod balance $24.12) | running |
 | T2 | Match the roads to the paintings (no repainting): vehicles and trains must run on the roads and tracks as painted | detect the painted asphalt and rails in the art, fit lanes and tracks to them, use those for driving; debug overlay | free | done (first pass, see below) |
 | T3 | Refactoring, performance and tool bugs (time slider, season and event buttons, other controls) | audit, fix every reproducible bug with a test, simplify code, measure before/after | free | queued |
-| T4 | Famous statues as a separate layer, no repainting: Gëlle Fra, Grand Duchess Charlotte, William II, Dicks–Lentz, Hämmelsmarsch fountain, Princess Amélie, Wenzel, John the Blind and others | small drawings in the ink style placed on their plinths at their true positions, hidden behind buildings like vehicles, linked to their landmark cards | cap $3 (OpenAI) | queued |
+| T4 | Famous statues as a separate layer, no repainting: Gëlle Fra, Grand Duchess Charlotte, William II, Dicks–Lentz, Hämmelsmarsch fountain, Princess Amélie, Wenzel, John the Blind and others | small drawings in the ink style placed on their plinths at their true positions, hidden behind buildings like vehicles, linked to their landmark cards | cap $3 (OpenAI) | done (8 Nov), see T4 result |
+
+## T4 result (8 Nov)
+- **Layer:** `statues` switch (on in dev, off in the release list), `web/src/components/Statues.tsx`: its own canvas
+  under the street lines and vehicles, far to near, cut by the occlusion data in 8 bands up each statue (each band
+  with its own height above the base), a faint shadow to the lower right by day; at night a darker drawing fades in,
+  floodlit ones warm from the foot with a pool of light on the ground, and the eternal flame flickers. True size
+  (0.25 m/px), grown up to 2.5x from zoom 0.25-0.5 so the small ones stay at least 34 px tall. An invisible button
+  over each opens its landmark card (or the nearest, or a short name card).
+- **Statues (8):** Gëlle Fra (21 m), William II (8 m), Dicks–Lentz (7.5 m), Princess Amélie (5 m), Michel Rodange /
+  Renert (4.5 m), Grand Duchess Charlotte (3.4 m), Churchill (3.2 m), the eternal flame of the National Monument of
+  Solidarity (1.6 m). Positions from OSM with `to_px` plus the painter's offset of the block (about +0.2, +7 px);
+  Dicks–Lentz moved 4 m east onto the painted square (the OSM point is on a painted roof edge).
+- **Left out:** Hämmelsmarsch fountain and Kaddish (behind 15-20 m of buildings from this camera: fully hidden),
+  Melusina and the two lions (on painted roofs), John the Blind (a memorial stone under trees), Grand Duke Jean
+  (not yet unveiled), Wenzel / Count Siegfried (no statue).
+- **Rebuild:** `pipeline/.venv/bin/python pipeline/build_statues.py` (add `--draw` for missing drawings; capped,
+  logged as `statues:` in openai_spend.json). Drawings cost $0.57.
 
 ## T2 result (8 Nov)
 - **Painter's offset, per block** (`pipeline/fit_roads.py`, kept in `data/work/roadfit/shifts.json`): by edges against

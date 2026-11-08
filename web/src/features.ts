@@ -58,6 +58,8 @@ export const DEFAULTS = {
   // (The fixes for cars and trains sit inside traffic, transit and emergency, so they need no new switch.)
 
   // Art and events
+  /** Famous statues and monuments drawn on their plinths (Gëlle Fra, William II, Grand Duchess Charlotte…). */
+  statues: true,
   /** The moving cabin of the Pfaffenthal Panoramic Lift. */
   liftCabin: true,
   /** Moving rides and twinkling lights in event patches (Christmas first). */
