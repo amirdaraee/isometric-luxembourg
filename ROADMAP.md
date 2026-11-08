@@ -35,7 +35,7 @@ The order of work, step by step, is in **[PLAN.md](PLAN.md)**, along with the ru
 | I3 | Night is upscaled from a 4096 px preview after a pod stopped early. | quality | 5 (being repainted) |
 | I4 | Buildings go soft at full zoom; windows are warped and facade lines aren't parallel. See "Building quality" below. | quality | 2, 4 |
 | I5 | ~~Visible seams and colour drift~~ Fixed 7 Nov by the whole-canvas painter. | quality | closed |
-| I6 | The painter sometimes invents trees over streets and small cars on station roads. Painted vehicles are now found on all blocks (`pipeline/repair/`, PLAN_NEXT item 4); their repair with the painter waits for Modal. | quality | 2 (patch repair) |
+| I6 | The painter sometimes invents trees over streets and small cars on station roads. Painted vehicles are now found on all blocks (`pipeline/repair/`, PLAN_NEXT item 4); lone cars were repaired with the painter on RunPod (8 Nov, T1); dense car parks keep their painted cars for now. | quality | 2 (patch repair) |
 | I7 | ~~`transit.json` holds one service day~~ Fixed 7 Nov: weekday, Saturday, Sunday/holiday timetables. | data | closed |
 | I8 | ~~The viewer zooms past the painted resolution~~ Already capped in 1.0 (`maxZoomPixelRatio: 1.25`). | bug | 0, closed |
 | I9 | ~~Unpainted areas show the raw render~~ Fixed 7 Nov: a note says so, and the whole city is painted now. | UX | closed |
