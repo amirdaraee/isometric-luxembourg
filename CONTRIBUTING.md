@@ -21,14 +21,32 @@ we can agree on the approach.
 
     cd web
     npm install
-    npm run dev                 # http://localhost:3000
-    npx tsc --noEmit            # type-check before a pull request
-    npm run build               # production build in web/dist
+    npm run dev                 # http://localhost:3000, every feature switched on
+    npm run build               # the public release in web/dist (switches from .env.production)
+    npx vite preview --port 3001   # check that build: no buttons or rows for switched-off features
 
 You need the tiles in `web/public/tiles/` to see the map. Build them with the pipeline (see the README).
 
+Before a pull request, run the checks (Node 22.6 or newer runs the TypeScript tests directly):
+
+    npx tsc --noEmit -p .
+    node src/scene.test.ts                      # time, season, Christmas and event controls
+    node src/calendar.test.ts                   # event dates
+    node src/sim/traffic.test.ts                # traffic simulation
+    node src/components/transit.test.ts         # trams and trains
+    node src/sky/weatherCore.test.ts            # weather
+    node src/sky/flights.test.ts                # planes
+    node src/sim/roadfit.test.ts 5 0.75 --min 95   # cars on the painted roads (needs the road masks)
+
+Useful test parameters in the address (see `web/src/testParams.ts`): `?hour=21.5`, `?season=winter`,
+`?date=2026-12-24`, `?weather=rain:0.8`, `?event=schueberfouer`, `?seed=42`, `?roaddebug`, and `?on=perfHud` for a
+frame-time readout. `npm run perf` measures start-up and frame times on a desktop and a phone profile.
+
 - **New optional features need a switch.** Add a key to `DEFAULTS` in `web/src/features.ts` with a one-line
   comment, and check it with `on("yourFeature")` where the feature is drawn. Test it with `?off=yourFeature`.
+  A feature that is not ready for the public goes into `VITE_FEATURES_OFF` in `web/.env.production`.
+- **Animate through the frame clock** (`web/src/frame.ts`, `subscribe`), not your own `requestAnimationFrame`
+  loop, and don't put per-frame state in React state: the map moves sixty times a second.
 - **Load public files through `asset()`** from `web/src/config.ts`, never as a bare `"/data/..."` path. That way
   the site also works under a sub-path such as `https://<user>.github.io/isometric-luxembourg/`.
 - Map positions are in map pixels (the full mosaic). Convert to the screen through the base image, with
@@ -57,7 +75,17 @@ You need the tiles in `web/public/tiles/` to see the map. Build them with the pi
 API keys live in `pipeline/.env` (OpenAI) and `~/.runpod/config.toml` (RunPod). Both are outside git. Never
 paste a key into code, docs, logs or an issue. If one leaks, rotate it.
 
+## Reporting a problem
+
+Open an issue on [GitHub](https://github.com/amirdaraee/isometric-luxembourg/issues) with what you saw, what you
+expected, and a link to the view: every view has its own address (`#x,y,zoom`), so the share button gives the
+exact spot. Add the browser and device, and a screenshot for anything visible. On the site itself, "Mark a spot"
+sends a private note about a place on the map.
+
 ## Licences and credits
+
+Code is MIT. The art (the painted map, the drawings and the statues) is CC BY-NC 4.0 ([LICENSE-ART.md](LICENSE-ART.md)):
+contributions to the art are accepted under the same licence, and the art may not be used commercially.
 
 All map data must have an open licence that allows redistribution. Credit it in the README table and in the
 viewer's "About and credits" panel. Landmark photos must come with author, licence and source, which the card
