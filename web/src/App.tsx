@@ -320,7 +320,7 @@ export default function App() {
             </ul>
             {gaAvailable && <>
               <h2>Privacy</h2>
-              <p>Visits are counted with Cloudflare Web Analytics (no cookies, nothing personal) and, only if you allow it, Google Analytics (cookies). Google Analytics: {consent === "yes" ? "allowed" : "not allowed"}.{" "}
+              <p>Visits are counted with Cloudflare Web Analytics (no cookies, nothing personal) and, only if you allow it, Google Analytics (cookies). If the map breaks, the error and your browser and device type are sent to Sentry so it can be fixed (no cookies, no IP address). Google Analytics: {consent === "yes" ? "allowed" : "not allowed"}.{" "}
                 <button type="button" className="link" onClick={() => choose(consent === "yes" ? "no" : "yes")}>{consent === "yes" ? "Withdraw" : "Allow"}</button></p>
             </>}
           </section>

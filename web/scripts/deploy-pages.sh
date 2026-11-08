@@ -10,6 +10,12 @@
 # Optional: VITE_FEATURES_OFF="christmas,transit" to ship with features switched off. REMOTE (default origin).
 set -euo pipefail
 export CNAME="${CNAME:-isometric.lu}"   # the release domain
+# Readable error reports: with a Sentry org auth token in this file (never in the repo), the build uploads hidden
+# source maps to Sentry and deletes them before publishing.
+SENTRY_TOKEN_FILE="$HOME/.config/isometric-lu/sentry-token"
+if [ -z "${SENTRY_AUTH_TOKEN:-}" ] && [ -f "$SENTRY_TOKEN_FILE" ]; then export SENTRY_AUTH_TOKEN="$(cat "$SENTRY_TOKEN_FILE")"; fi
+export SENTRY_ORG="${SENTRY_ORG:-amirhossein-daraei}" SENTRY_PROJECT="${SENTRY_PROJECT:-isometric-lu}"
+[ -n "${SENTRY_AUTH_TOKEN:-}" ] || echo "note: no Sentry token, error reports will show minified stack traces" >&2
 cd "$(dirname "$0")/.."
 REMOTE_URL=$(git remote get-url "${REMOTE:-origin}")
 # commit as the same author as this repo (GitHub refuses pushes that expose a private email)
@@ -18,6 +24,7 @@ export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME" GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EM
 [ -f public/tiles/meta.json ] || { echo "public/tiles is missing: run pipeline/build_tiles.py first" >&2; exit 1; }
 
 npm run build
+! find dist -name "*.map" | grep -q . || { echo "source maps left in dist" >&2; exit 1; }
 [ ! -e dist/live ] && [ ! -e dist/style-test ] && [ ! -e dist/compare ] && [ ! -e dist/admin ] && [ ! -e dist/poc ] || { echo "local-only pages leaked into dist" >&2; exit 1; }
 SIZE=$(du -sm dist | cut -f1)
 echo "site size: ${SIZE} MB (GitHub Pages limit: 1024 MB)"

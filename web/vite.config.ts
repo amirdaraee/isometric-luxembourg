@@ -2,6 +2,8 @@ import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "no
 import { resolve } from "node:path";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
+import { execSync } from "node:child_process";
 
 // Work-in-progress pages that live in public/ for local use only and must never be published.
 const LOCAL_ONLY = ["live", "style-test", "compare", "admin", "poc", "layers"];
@@ -40,10 +42,24 @@ function release(): Plugin {
   };
 }
 
+// Error reports: with SENTRY_AUTH_TOKEN set (a local secret, never committed), a release build makes hidden
+// source maps, uploads them to Sentry and deletes them, so stack traces are readable but the maps are not published.
+const SENTRY = !!process.env.SENTRY_AUTH_TOKEN;
+const RELEASE = (() => { try { return execSync("git rev-parse --short HEAD").toString().trim(); } catch { return ""; } })();
+process.env.VITE_RELEASE = RELEASE;
+
 export default defineConfig({
   // "/" for a custom domain; "/isometric-luxembourg/" for https://<user>.github.io/isometric-luxembourg/
   base: process.env.VITE_BASE || "/",
-  plugins: [react(), release()],
+  plugins: [react(), release(), ...(SENTRY ? [sentryVitePlugin({
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT || "isometric-lu",
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    release: { name: RELEASE },
+    sourcemaps: { filesToDeleteAfterUpload: ["./dist/**/*.map"] },
+    telemetry: false,
+  })] : [])],
+  build: { sourcemap: SENTRY ? "hidden" : false },
   server: { port: 3000, open: false },
   define: {
     // Empty serves tiles from public/tiles. Set TILES_URL at build time to serve them from R2 (whole city).

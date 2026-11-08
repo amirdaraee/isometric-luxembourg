@@ -3,7 +3,9 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles/global.css";
 import { startAnalytics } from "./analytics";
+import { startMonitoring } from "./monitoring";
 
+startMonitoring();
 startAnalytics();
 
 // ?spritelab: the sprite test page instead of the map (development and tests). Loaded on demand, so the map's
