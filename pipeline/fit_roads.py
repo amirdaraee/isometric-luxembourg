@@ -33,7 +33,7 @@ Writes (keeping every original field):
   web/public/data/road_heights.json  "fx", "fy" per deck profile: its sample points moved like its way.
   web/public/data/roadfit/     index.json and <tx>_<ty>.png tiles (like drivable/) of the painted masks: bit 1 asphalt,
                                2 rail bed, 4 unpainted, 16 painted road (asphalt, gaps up to 3.5 m closed), 8 the guard
-                               (16 grown by 0.5 m: Overlay fades a car outside it); for the guard, ?roaddebug and the
+                               (16 grown by GUARD_M: Overlay fades a car outside it); for the guard, ?roaddebug and the
                                headless check.
   data/work/roadfit/shifts.json  the measured block offsets (the edge offsets are cached; --remeasure redoes them).
 
@@ -55,6 +55,7 @@ from scipy.ndimage import gaussian_filter1d
 
 from build_drivable import CELL, DRIVE, art, default_width, lateral, load_grid, osm_tags, painted_water, VALUES
 from common import ROOT, WORK
+from flowfield import Field as FlowField
 from roadfit_geom import Field, densify, pts, transit_fit
 
 Image.MAX_IMAGE_PIXELS = None
@@ -64,7 +65,10 @@ DATA = ROOT / "web/public/data"
 TILE = 512
 STEP_M = 4.0            # stations along a way
 WALK_M = 0.25           # sample step across it
-MAXOFF_M = 3.0          # largest local move
+MAXOFF_M = 3.0          # largest local move (on the block offsets)
+FIELD_MAXOFF_M = 1.0    # largest local move on the field (flow_field.py)
+GUARD_M = 1.5           # the guard: the painted road grown by this (with the field the lines are on it; the guard
+                        # only has to catch streets the painter left out)
 BLEND_M = 12.0          # junction blend
 RAIL_HALF_M = 1.5       # half the painted bed of one track
 WHY = {"clear": 0, "no template": 0, "blocked": 0, "little asphalt": 0, "flat": 0}   # station outcomes, for the log
@@ -165,10 +169,13 @@ def raster(ways, shape, half_m, key=None):
 class Shifts:
     """The block offset at any map px."""
 
-    def __init__(self, own, bl, sh):
+    def __init__(self, own, bl, sh, field=None):
         self.own, self.v = own, np.array([sh[b["block"]] for b in bl] + [np.median([sh[b["block"]] for b in bl], 0)])
+        self.field = field                # flowfield.Field (ground layer): replaces the block offsets
 
     def at(self, p):
+        if self.field is not None:
+            return self.field.at(p)
         H, W = self.own.shape
         cx = np.clip((p[:, 0] / CELL).astype(int), 0, W - 1)
         cy = np.clip((p[:, 1] / CELL).astype(int), 0, H - 1)
@@ -239,13 +246,13 @@ def sample(grid, P):
     return out
 
 
-def fit_way(q, mask, tmpl, half_m, blocked, maxoff=MAXOFF_M):
+def fit_way(q, mask, tmpl, half_m, blocked, maxoff=None):
     """Sideways move (m, along the lateral of `lateral`) per station of shifted polyline q: (stations, lat, dist,
     move or nan, painted width m or nan)."""
     S, L, D = stations(q, STEP_M)
     if not len(S):
         return S, L, D, np.zeros(0), np.zeros(0)
-    O = int(round(maxoff / WALK_M))
+    O = int(round((maxoff or MAXOFF_M) / WALK_M))
     Kw = int(math.ceil((half_m + 3.0) / WALK_M))
     k = np.arange(-Kw - O, Kw + O + 1) * WALK_M
     P = S[:, None, :] + L[:, None, :] * k[None, :, None]
@@ -404,7 +411,13 @@ def main():
     ap.add_argument("--shifts-only", action="store_true")
     ap.add_argument("--remeasure", action="store_true", help="measure the block offsets again (else cached)")
     ap.add_argument("--debug", nargs=5, metavar=("OUT", "X0", "Y0", "X1", "Y1"))
+    ap.add_argument("--no-field", action="store_true", help="block offsets and 3 m local moves (as T2), not the field")
     a = ap.parse_args()
+    global MAXOFF_M
+    FF = None if a.no_field else FlowField.load("road")
+    if FF is not None:
+        MAXOFF_M = FIELD_MAXOFF_M
+        print(f"base: the road layer of data/work/flowfit/field.npz; local moves up to {MAXOFF_M} m", flush=True)
     OUT.mkdir(parents=True, exist_ok=True)
     mos = json.loads((WORK / "mosaic.json").read_text())
     shape = (mos["rows"] * mos["frame"] // CELL, mos["cols"] * mos["frame"] // CELL)
@@ -427,7 +440,7 @@ def main():
     med = np.median(good, 0)
     phase = {k: (v["phase"][:2] if v["phase"][2] >= 20 else list(med)) for k, v in rec.items()}
     own = owner_grid(shape, bl)
-    sh0 = Shifts(own, bl, phase)
+    sh0 = Shifts(own, bl, phase, FF)
 
     # 1b. the art and the colour models (learnt on lines moved by the edge offsets)
     rgb = art(shape, a.tiles)
@@ -454,20 +467,21 @@ def main():
     asphalt, railbed, near_r, near_t = masks(lambda w: pts(w) + sh0.at(pts(w)))
 
     # 1c. road and rail offsets per block: cross-sections of the unshifted lines against the masks, each a sideways
-    # constraint on the block's 2D shift
+    # constraint on the block's 2D shift (with the field: of the lines moved through it, so what is left over)
     grid, _ = load_grid(DATA)
     blocked = (grid == VALUES["hidden"]) | (grid == VALUES["building"]) | (grid == VALUES["unpainted"])
     del grid
     cons = {"road": [[] for _ in bl], "rail": [[] for _ in bl]}
-    tm0 = raster([w for w in roads if not w.get("t")], shape, lambda w: w0[w["id"]] / 2)
-    tt0 = raster([w for w in rails if not w.get("t")], shape, lambda w: RAIL_HALF_M)
+    k0 = (lambda w: pts(w) + sh0.at(pts(w))) if FF else None
+    tm0 = raster([w for w in roads if not w.get("t")], shape, lambda w: w0[w["id"]] / 2, k0)
+    tt0 = raster([w for w in rails if not w.get("t")], shape, lambda w: RAIL_HALF_M, k0)
     H, W = shape
     for kind, ways, mask, tmpl in (("road", roads, asphalt, tm0), ("rail", rails, railbed, tt0)):
         for w in ways:
             if w.get("t") or w.get("b"):
                 continue
             hm = w0[w["id"]] / 2 if kind == "road" else RAIL_HALF_M
-            S, L, D, mv, wd = fit_way(pts(w), mask, tmpl, hm, blocked, maxoff=5.0)
+            S, L, D, mv, wd = fit_way(pts(w) + (sh0.at(pts(w)) if FF else 0), mask, tmpl, hm, blocked, maxoff=5.0)
             for i in np.flatnonzero(np.isfinite(mv)):
                 n = math.hypot(*L[i])
                 o = own[min(int(S[i, 1] / CELL), H - 1), min(int(S[i, 0] / CELL), W - 1)]
@@ -478,7 +492,7 @@ def main():
     # blocks with too few clear road sections (mostly unpainted) take the median of the blocks measured on roads
     rs = [block_shift(cons["road"][i]) for i in range(len(bl))]
     fallback = list(np.median([r[:2] for r in rs if r and r[2] >= 500], 0)) if any(r and r[2] >= 500 for r in rs) else list(med)
-    print("block offsets (map px; + is right / down):", flush=True)
+    print("block offsets (map px; + is right / down)" + (", left over after the field:" if FF else ":"), flush=True)
     for i, b in enumerate(bl):
         r = block_shift(cons["road"][i])
         t = block_shift(cons["rail"][i])
@@ -487,7 +501,7 @@ def main():
             rec[b["block"]]["roads"] = [round(r[0], 2), round(r[1], 2), r[2], round(r[3], 2), r[4]]
         if t:
             rec[b["block"]]["rails"] = [round(t[0], 2), round(t[1], 2), t[2], round(t[3], 2), t[4]]
-        use = [r[0], r[1]] if r and r[2] >= 500 else fallback
+        use = [0.0, 0.0] if FF else [r[0], r[1]] if r and r[2] >= 500 else fallback
         shifts[b["block"]] = use
         rec[b["block"]]["used"] = [round(float(use[0]), 2), round(float(use[1]), 2)]
         print(f"  {b['block']}: edges ({ph[0]:+.1f}, {ph[1]:+.1f}) from {ph[2]} tiles; roads " +
@@ -497,7 +511,7 @@ def main():
     sf.write_text(json.dumps(rec, indent=1))
     if a.shifts_only:
         return
-    sh = Shifts(own, bl, shifts)
+    sh = Shifts(own, bl, shifts, FF)
 
     # 2. local fit, twice: the second time with colour models learnt on the lines of the first
     moved = lambda w: pts(w) + sh.at(pts(w))
@@ -575,9 +589,10 @@ def main():
 
     # masks for the overlay, the guard and the checks, near the lines only: bit 1 asphalt, bit 2 rail bed, bit 4
     # unpainted (the empty map edge), bit 16 painted road: asphalt with gaps up to 3.5 m closed (painted cars,
-    # markings, manholes), bit 8 the same grown by 0.5 m: where the viewer may show a road vehicle (the guard)
+    # markings, manholes), bit 8 the same grown by GUARD_M: where the viewer may show a road vehicle (the guard)
     closed = cv2.morphologyEx(asphalt.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8))
-    road = cv2.dilate(closed, np.ones((3, 3), np.uint8)).astype(bool)
+    g = 2 * int(round(GUARD_M / 0.5)) + 1
+    road = cv2.dilate(closed, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (g, g))).astype(bool)
     m = ((asphalt & near_r).astype(np.uint8) | ((railbed & near_t).astype(np.uint8) << 1)
          | ((unpainted & (near_r | near_t)).astype(np.uint8) << 2) | ((road & near_r).astype(np.uint8) << 3)
          | ((closed.astype(bool) & near_r).astype(np.uint8) << 4))

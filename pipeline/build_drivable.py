@@ -44,6 +44,7 @@ from PIL import Image
 from scipy.ndimage import binary_closing, label
 
 from common import ELEV, RAW, ROOT, WORK, R
+from flowfield import Field as FlowField
 
 Image.MAX_IMAGE_PIXELS = None
 CELL = 2                 # map px per cell
@@ -93,13 +94,23 @@ def lateral(dx, dy):
     return (-fy / n * 4, fx / n / 2 * 4), (n / 4) / (math.hypot(dx, dy) or 1.0)
 
 
+def line_pts(w):
+    """A way's points where the painting has it: lines.json "p" moved through the road layer of the render ->
+    painting field (flow_field.py), when MOVE is set (main(), unless --no-field)."""
+    p = np.array(w["p"], float).reshape(-1, 2)
+    return MOVE.move(p) if MOVE is not None else p
+
+
+MOVE = None
+
+
 def corridor(lines, shape, half_m, shift_m=lambda w: 0.0):
     """Union of bands along the streets, half_m(way) metres either side of a line shift_m(way) metres to the right
     of the drawn one, at cell resolution."""
     H, W = shape
     m = np.zeros((H, W), np.uint8)
     for w in lines:
-        p = np.array(w["p"], float).reshape(-1, 2)
+        p = line_pts(w)
         hm, sh = half_m(w), shift_m(w)
         for (ax, ay), (bx, by) in zip(p[:-1], p[1:]):
             (lx, ly), _ = lateral(bx - ax, by - ay)
@@ -255,7 +266,7 @@ def measure_widths(roads, grid, tags):
         if w.get("k") not in DRIVE or w.get("t"):
             continue
         w0 = default_width(w, tags)
-        p = np.array(w["p"], float).reshape(-1, 2)
+        p = line_pts(w)
         lo, hi = 0.5 * w0, 1.5 * w0
         reach = min(max(w0 * 0.75 + 1.5, 3.0), 14.0)
         n = int(math.ceil(reach / WALK_STEP_M))
@@ -344,7 +355,12 @@ def main():
                     help="write the map over the art for a map px box")
     ap.add_argument("--no-widths", action="store_true", help="leave lines.json alone")
     ap.add_argument("--widths-only", action="store_true", help="only measure the widths again, on the map as built")
+    ap.add_argument("--no-field", action="store_true", help="leave the render's parts where the render has them")
     a = ap.parse_args()
+    global MOVE
+    MOVE = None if a.no_field else FlowField.load("road")
+    FB = None if a.no_field else FlowField.load("built")
+    FG = None if a.no_field else FlowField.load("ground")
 
     mos = json.loads((WORK / "mosaic.json").read_text())
     MW, MH = mos["cols"] * mos["frame"], mos["rows"] * mos["frame"]
@@ -364,12 +380,22 @@ def main():
     ring = corridor(roads, shape, lambda w: min(max(w0[w["id"]] * 0.75 + 1.5, 3.0), 14.0) + 6.0) & ~near
     print("corridors", f"{near.mean():.1%} of the map", flush=True)
     ground, deck = kinds(shape)
+    if FB is not None:
+        # the render's parts to where the painting has them: what the kinds pass shows as ground ends at building
+        # outlines (the built layer moves those), bridge decks and OSM water are on the ground layer
+        ground = FB.warp(ground.astype(np.uint8), CELL).astype(bool)
+        deck = FG.warp(deck.astype(np.uint8), CELL).astype(bool)
+        print("kinds moved through the field (flow_field.py)", flush=True)
     print("kinds", flush=True)
     water = painted_water(shape, a.data)
     wosm = osm_water(lines, shape)
+    if FG is not None:
+        wosm = FG.warp(wosm.astype(np.uint8), CELL).astype(bool)
     rgb = art(shape, a.tiles)
     unpainted = (np.abs(rgb.astype(np.int16) - BACKGROUND).max(axis=2) <= 8)
     foot = footprints(shape)
+    if FB is not None:
+        foot = FB.warp(foot.astype(np.uint8), CELL).astype(bool)
     print("art and footprints", flush=True)
     roadc, painted_bld = colour_model(rgb, centre & ground & ~water & ~deck, ring & ground & ~water & ~wosm,
                                       near & ~ground & ~deck & ~unpainted)

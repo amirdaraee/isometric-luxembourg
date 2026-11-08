@@ -367,7 +367,11 @@ def canopy_layer(tiles, data, ground_px, lines, box, S, H, W):
     """The B layer: soft coverage (0..255) of tree crowns in front of the lanes, on the output grid."""
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import build_drivable
     from build_drivable import VALUES, lane_band, load_grid
+    from flowfield import Field as FlowField
+    # the crowns are found in the painting and the drivable map is in its positions: lay the lanes there too
+    build_drivable.MOVE = FlowField.load("road")
     grid, idx = load_grid(data)
     assert idx["cell"] == CANOPY_CELL, "the canopy uses the drivable map's grid"
     C = CANOPY_CELL
