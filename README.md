@@ -5,14 +5,28 @@ It runs from the Pétrusse and Alzette gorges up to Kirchberg.
 
 See it at **[isometric.lu](https://isometric.lu)**.
 
+![The old town by day: Place Guillaume II, the cathedral and the Pétrusse valley](docs/screenshots/old-town-day.jpg)
+
+| Golden hour | Night |
+|---|---|
+| ![The old town at golden hour](docs/screenshots/old-town-golden-hour.jpg) | ![The old town and the Grund at night, streets and windows lit](docs/screenshots/old-town-night.jpg) |
+
+| Landmark card | Streets layer |
+|---|---|
+| ![The Grand Ducal Palace card with its story, inside, 3D and photos tabs](docs/screenshots/landmark-card.jpg) | ![Pont Adolphe with the Streets layer on](docs/screenshots/streets.jpg) |
+
+| The whole city | On a phone |
+|---|---|
+| ![The whole map in a sea of clouds](docs/screenshots/whole-city.jpg) | <img src="docs/screenshots/phone.jpg" alt="The map on a phone" width="260"> |
+
 **Version 1** paints central Luxembourg City in summer, by day and by night. More of the city, the other seasons
 and the moving life (traffic, trams, trains, planes, weather) are built and switched on locally, and will be
 switched on publicly one by one (see [ROADMAP.md](ROADMAP.md)).
 
 ## What's in version 1
 
-- **Time of day:** the map follows Luxembourg's real clock ("Live"). It cross-fades through golden hour into a
-  painted night with lit windows and streets. The slider picks any hour.
+- **Time of day:** the map opens at midday; the slider picks any hour, and "Live" follows Luxembourg's real clock.
+  It cross-fades through golden hour into a painted night with lit windows and streets.
 - **Living details:** light glinting on the rivers, and a soft sea of cloud round the edges of the map.
 - **Landmarks:** pins with labels, and cards with history, interiors and cutaway drawings, credited photos and, for
   many, a 3D model you can turn.
