@@ -27,6 +27,8 @@ Writes web/public/data/transit.json:
   {"days", "source", "shapes": [[x, y, ...] map px], "runs": [[[way id, s from, s to], ...] per shape], "tunnels",
    "trips": [{"s" shape, "k" "tram"|"train", "n" line, "t" [[arr s, dep s, px along the shape], ...], "d" mask}]}
   tunnels: the ids of the rail ways in "runs" that are tunnels.
+  fit: when lines.json has rail ways fitted to the painted rails ("q", fit_roads.py), the shapes are densified
+  (geometry unchanged) and "fit" holds the same points moved onto the painted rails; the viewer draws on "fit".
   runs: the shape as consecutive stretches of lines.json rail ways, s in map px along the way's lines.json polyline
   (the same units as road_heights.json and deckLift); a shape that kept its GTFS geometry has no runs ([]).
 Also pipeline/data/rail_ways.json (in git): the rail ways' ground positions (LUREF metres), so that the timetable can be
@@ -47,6 +49,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import dijkstra
 
 from common import ELEV, ORIGIN_E, ORIGIN_N, PILOT_LONLAT, RAW, ROOT, WORK, R, lonlat_to_en
+from roadfit_geom import transit_fit
 
 GTFS = RAW / "gtfs" / "20261104" / "gtfs"
 DAYS = [("20261110", 1, 1), ("20261114", 5, 2), ("20261115", 6, 4)]  # (date, weekday index, mask): Tue, Sat, Sun
@@ -535,10 +538,15 @@ def main():
     out_trips = list(merged.values())
     # the tunnel ways the shapes run through (lines.json "t"): the viewer hides the vehicles there
     tunnels = sorted({r[0] for rr in out_runs for r in rr if ways[r[0]][1]})
-    a.out.write_text(json.dumps({"days": [d for d, _, _ in days],
-                                 "source": "GTFS, Administration des transports publics / data.public.lu, CC BY",
-                                 "shapes": out_shapes, "runs": out_runs, "tunnels": tunnels, "trips": out_trips},
-                                separators=(",", ":")))
+    out = {"days": [d for d, _, _ in days], "source": "GTFS, Administration des transports publics / data.public.lu, CC BY",
+           "shapes": out_shapes, "runs": out_runs, "tunnels": tunnels, "trips": out_trips}
+    # the tracks as painted: where lines.json has the rail ways fitted to the art (fit_roads.py), the shapes are
+    # densified (same geometry) and "fit" holds them moved onto the painted rails
+    tf = transit_fit(out_shapes, lines)
+    if tf:
+        out["shapes"], out["fit"] = tf
+        print("fitted to the painted rails")
+    a.out.write_text(json.dumps(out, separators=(",", ":")))
     print("trips", len(out_trips), {k: sum(1 for x in out_trips if x["k"] == k) for k in ("tram", "train")},
           f"{a.out.stat().st_size / 1e6:.2f} MB")
 

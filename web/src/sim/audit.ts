@@ -15,7 +15,7 @@
  * Cars in tunnels are not drawn and not counted.
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { inflateSync } from "node:zlib";
+import { readPng, type Png } from "./png.ts";
 import { Traffic, type RoadLine } from "./traffic.ts";
 
 const PUB = new URL("../../public/", import.meta.url).pathname;
@@ -29,35 +29,6 @@ const pos = args.filter((a, i) => !a.startsWith("--") && !skip.has(i));
 const dumped: [number, number, number][] = [];
 const minutes = Number(pos[0] ?? 10), busy = Number(pos[1] ?? 1);
 
-// --- a small PNG reader (8-bit grey, RGB, RGBA or palette indices), enough for the map's data files -------------
-interface Png { w: number; h: number; ch: number; d: Uint8Array }
-function readPng(file: string): Png {
-  const b = readFileSync(file);
-  let o = 8, w = 0, h = 0, type = 0;
-  const idat: Buffer[] = [];
-  while (o < b.length) {
-    const len = b.readUInt32BE(o), kind = b.toString("latin1", o + 4, o + 8), data = b.subarray(o + 8, o + 8 + len);
-    if (kind === "IHDR") {
-      w = data.readUInt32BE(0); h = data.readUInt32BE(4); type = data[9];
-      if (data[8] !== 8 || data[12] !== 0) throw new Error(`${file}: only 8-bit, non-interlaced PNGs`);
-    } else if (kind === "IDAT") idat.push(data);
-    else if (kind === "IEND") break;
-    o += 12 + len;
-  }
-  const ch = type === 0 || type === 3 ? 1 : type === 2 ? 3 : type === 4 ? 2 : 4;
-  const raw = inflateSync(Buffer.concat(idat)), stride = w * ch, d = new Uint8Array(w * h * ch);
-  for (let y = 0; y < h; y++) {
-    const f = raw[y * (stride + 1)], src = y * (stride + 1) + 1, dst = y * stride;
-    for (let x = 0; x < stride; x++) {
-      const a = x >= ch ? d[dst + x - ch] : 0, up = y ? d[dst - stride + x] : 0, ul = y && x >= ch ? d[dst - stride + x - ch] : 0;
-      let v = raw[src + x];
-      if (f === 1) v += a; else if (f === 2) v += up; else if (f === 3) v += (a + up) >> 1;
-      else if (f === 4) { const p = a + up - ul, pa = Math.abs(p - a), pb = Math.abs(p - up), pc = Math.abs(p - ul); v += pa <= pb && pa <= pc ? a : pb <= pc ? up : ul; }
-      d[dst + x] = v & 255;
-    }
-  }
-  return { w, h, ch, d };
-}
 
 // --- data --------------------------------------------------------------------------------------------------------
 const lines = JSON.parse(readFileSync(PUB + "data/lines.json", "utf8")) as { roads: RoadLine[] };
@@ -102,11 +73,11 @@ function cut(x: number, y: number): boolean {
   return hid * 2 > n;
 }
 // Deck profiles: the nearest sample within 12 map px gives the lift (as occlusion.ts deckAt).
-const prof = JSON.parse(readFileSync(PUB + "data/road_heights.json", "utf8")) as Record<string, { x: number[]; y: number[]; dz: number[] }>;
+const prof = JSON.parse(readFileSync(PUB + "data/road_heights.json", "utf8")) as Record<string, { x: number[]; y: number[]; fx?: number[]; fy?: number[]; dz: number[] }>;
 const UP = 0.8660254 / 0.25, CELL = 64, deckCells = new Map<number, [number, number, number][]>();
-for (const p of Object.values(prof)) for (let i = 0; i < p.x.length; i++) {
-  const k = Math.floor(p.y[i] / CELL) * 100000 + Math.floor(p.x[i] / CELL);
-  (deckCells.get(k) ?? deckCells.set(k, []).get(k)!).push([p.x[i], p.y[i], p.dz[i] * UP]);
+for (const p of Object.values(prof)) for (let i = 0, X = p.fx ?? p.x, Y = p.fy ?? p.y; i < p.x.length; i++) {
+  const k = Math.floor(Y[i] / CELL) * 100000 + Math.floor(X[i] / CELL);
+  (deckCells.get(k) ?? deckCells.set(k, []).get(k)!).push([X[i], Y[i], p.dz[i] * UP]);
 }
 function deckLift(x: number, y: number): number | null {
   let best: number | null = null, bd = 144;

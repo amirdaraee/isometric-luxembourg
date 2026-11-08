@@ -10,6 +10,9 @@ import { today } from "../testParams.ts";
 
 export interface TransitData {
   shapes: number[][];
+  /** Per shape, the same points moved onto the rails as painted (pipeline/fit_roads.py). Distances are measured on
+   * `shapes` (stop times refer to them); positions and headings are drawn on `fit`. */
+  fit?: number[][];
   /** Per shape: the stretches of lines.json rail ways it runs over, [way id, s from, s to] (map px along the way). */
   runs?: [number, number, number][][];
   /** The ids of the ways in `runs` that are tunnels. */
@@ -20,19 +23,23 @@ export interface TransitData {
 /** One stretch of a shape along one way: shape distance d0..d1 maps onto way distance s0 + (d - d0) * k. */
 interface Run { d0: number; d1: number; id: number; s0: number; k: number; tunnel: boolean }
 export interface Shape {
-  p: number[]; cum: number[]; len: number; box: [number, number, number, number];
+  /** p: the shape (distances along it); q: where it is drawn (the fitted points, else p), same number of points. */
+  p: number[]; q: number[]; cum: number[]; len: number; box: [number, number, number, number];
   runs: Run[];
   /** Shape distance intervals in tunnels, merged. */
   tunnels: [number, number][];
 }
 
-export function prepareShapes(d: TransitData): Shape[] {
+export function prepareShapes(d: TransitData, fitted = true): Shape[] {
   const tun = new Set(d.tunnels ?? []);
   return d.shapes.map((p, si) => {
+    const f0 = fitted ? d.fit?.[si] : undefined;
+    const q = f0 && f0.length === p.length ? f0 : p;
     const cum = [0];
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (let i = 0; i < p.length; i += 2) {
-      x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]); y0 = Math.min(y0, p[i + 1]); y1 = Math.max(y1, p[i + 1]);
+      x0 = Math.min(x0, p[i], q[i]); x1 = Math.max(x1, p[i], q[i]);
+      y0 = Math.min(y0, p[i + 1], q[i + 1]); y1 = Math.max(y1, p[i + 1], q[i + 1]);
       if (i) cum.push(cum[cum.length - 1] + Math.hypot(p[i] - p[i - 2], p[i + 1] - p[i - 1]));
     }
     const len = cum[cum.length - 1];
@@ -54,7 +61,7 @@ export function prepareShapes(d: TransitData): Shape[] {
       const last = tunnels[tunnels.length - 1];
       if (last && r.d0 - last[1] < 1) last[1] = r.d1; else tunnels.push([r.d0, r.d1]);
     }
-    return { p, cum, len, box: [x0, y0, x1, y1], runs, tunnels };
+    return { p, q, cum, len, box: [x0, y0, x1, y1], runs, tunnels };
   });
 }
 
@@ -64,8 +71,8 @@ export function at(s: Shape, d: number): [number, number, number] {
   let lo = 1, hi = s.cum.length - 1;
   while (lo < hi) { const mid = (lo + hi) >> 1; if (s.cum[mid] < d) lo = mid + 1; else hi = mid; }
   const i = lo, a = (i - 1) * 2, seg = s.cum[i] - s.cum[i - 1] || 1, f = (d - s.cum[i - 1]) / seg;
-  const dx = s.p[a + 2] - s.p[a], dy = s.p[a + 3] - s.p[a + 1];
-  return [s.p[a] + dx * f, s.p[a + 1] + dy * f, Math.atan2(dy, dx)];
+  const q = s.q, dx = q[a + 2] - q[a], dy = q[a + 3] - q[a + 1];
+  return [q[a] + dx * f, q[a + 1] + dy * f, Math.atan2(dy, dx)];
 }
 
 /** The lines.json way at distance d along a shape and the distance along that way (map px), or null for a shape
@@ -84,7 +91,7 @@ export function stretch(s: Shape, d0: number, d1: number): number[] {
   d0 = Math.max(0, d0); d1 = Math.min(s.len, d1);
   if (d1 <= d0) return [];
   const a = at(s, d0), b = at(s, d1), out = [a[0], a[1]];
-  for (let i = 1; i < s.cum.length - 1; i++) if (s.cum[i] > d0 && s.cum[i] < d1) out.push(s.p[i * 2], s.p[i * 2 + 1]);
+  for (let i = 1; i < s.cum.length - 1; i++) if (s.cum[i] > d0 && s.cum[i] < d1) out.push(s.q[i * 2], s.q[i * 2 + 1]);
   out.push(b[0], b[1]);
   return out;
 }

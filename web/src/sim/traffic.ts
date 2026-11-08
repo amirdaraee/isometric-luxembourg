@@ -20,7 +20,12 @@ export interface RoadLine { id: number; n?: string; k?: string; o?: boolean; b?:
   /** Carriageway width in metres, and where the painted road's centre lies across the line (metres to the right of
    * the drawn direction), both measured on the drivable map (pipeline/build_drivable.py). */
   w?: number; c?: number;
-  p: number[] }
+  p: number[];
+  /** The line fitted to the road as painted (pipeline/fit_roads.py): q, map px, densified; qi, the index in q of
+   * each vertex of p. The graph is built from p (OSM topology), the lanes are laid along q. */
+  q?: number[]; qi?: number[];
+  /** Carriageway width (m) measured on the painted road along q, where clear (fit_roads.py). */
+  qw?: number }
 /** A rectangle in map pixels. */
 export interface Rect { x0: number; y0: number; x1: number; y1: number }
 export type VehicleType = "car" | "van" | "bus" | "police" | "ambulance" | "fire";
@@ -46,6 +51,9 @@ export interface TrafficOptions {
   mpp?: number;
   /** Police cars, ambulances and fire engines (default true). Off: none, and pedestrian streets are left out. */
   emergency?: boolean;
+  /** Lay lanes along the lines fitted to the painted roads (RoadLine q) where present (default true). False: the
+   * OSM lines with the measured sideways shift (c), as before the fit; for before/after checks. */
+  fitted?: boolean;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -302,6 +310,7 @@ export class Traffic {
     /** Set by the viewer: cars near the view it is fading out (drawn on water, in a building, ...). Near zero. */
     guarded: 0 };
   private readonly emergencyOn: boolean;
+  private readonly fitted: boolean;
   /** Emergency vehicles alive with the siren on. */
   private sirens: Car[] = [];
   /** Deadlock removals by cause, for tuning. */
@@ -333,6 +342,7 @@ export class Traffic {
     this.maxCars = opts.maxCars ?? 1400;
     this.rnd = mulberry32(opts.seed ?? 20240607);
     this.emergencyOn = opts.emergency ?? true;
+    this.fitted = opts.fitted ?? true;
     this.build(roads, opts.areas);
   }
 
@@ -384,16 +394,27 @@ export class Traffic {
       }
       return best;
     };
-    const seqs: number[][] = [];
+    const seqs: number[][] = [], vixs: number[][] = [];
     for (const w of ways) {
-      const layer = w.t ? -1 : w.b ? 1 : 0, n = w.p.length / 2, seq: number[] = [];
+      const layer = w.t ? -1 : w.b ? 1 : 0, n = w.p.length / 2, seq: number[] = [], vix: number[] = [];
       for (let i = 0; i < n; i++) {
         const end = i === 0 || i === n - 1;
         const id = find(w.p[2 * i], w.p[2 * i + 1], layer, end);
         if (end) nEnd[id] = 1;
-        if (seq[seq.length - 1] !== id) { seq.push(id); nRefs[id]++; }
+        if (seq[seq.length - 1] !== id) { seq.push(id); vix.push(i); nRefs[id]++; }
       }
-      seqs.push(seq);
+      seqs.push(seq); vixs.push(vix);
+    }
+    // Fitted lines: the topology stays that of p, every node moves to where the fitted lines put it (the mean over
+    // the ways through it; fit_roads.py gives shared vertices one displacement, so they agree).
+    const fit = (w: RoadLine) => this.fitted && !!w.q && !!w.qi && w.qi.length === w.p.length / 2;
+    if (this.fitted) {
+      const sx = new Float64Array(nx.length), sy = new Float64Array(nx.length), cnt = new Uint16Array(nx.length);
+      ways.forEach((w, wi) => {
+        if (!fit(w)) return;
+        seqs[wi].forEach((id, j) => { const k = w.qi![vixs[wi][j]]; sx[id] += w.q![2 * k]; sy[id] += w.q![2 * k + 1]; cnt[id]++; });
+      });
+      for (let id = 0; id < nx.length; id++) if (cnt[id]) { nx[id] = sx[id] / cnt[id]; ny[id] = sy[id] / cnt[id]; }
     }
 
     // 2. Edges: split every way where it meets another (shared vertices, not only way ends).
@@ -424,8 +445,17 @@ export class Traffic {
       for (let j = 1; j < seq.length; j++) {
         if (!(isGraph(seq[j]) || j === seq.length - 1)) continue;
         const ids = seq.slice(start, j + 1);
+        let px: Float64Array, py: Float64Array;
+        if (fit(w)) {
+          // the fitted points between the two nodes, ends on the nodes themselves
+          const k0 = w.qi![vixs[wi][start]], k1 = w.qi![vixs[wi][j]];
+          px = new Float64Array(k1 - k0 + 1); py = new Float64Array(k1 - k0 + 1);
+          for (let k = k0; k <= k1; k++) { px[k - k0] = w.q![2 * k]; py[k - k0] = w.q![2 * k + 1]; }
+          px[0] = nx[ids[0]]; py[0] = ny[ids[0]]; px[px.length - 1] = nx[ids[ids.length - 1]]; py[py.length - 1] = ny[ids[ids.length - 1]];
+        } else {
+          px = Float64Array.from(ids.map((i) => nx[i])); py = Float64Array.from(ids.map((i) => ny[i]));
+        }
         start = j;
-        const px = Float64Array.from(ids.map((i) => nx[i])), py = Float64Array.from(ids.map((i) => ny[i]));
         let len = 0;
         for (let i = 1; i < ids.length; i++) len += Math.hypot(px[i] - px[i - 1], py[i] - py[i - 1]) * M;
         if (len < 0.3) continue;
@@ -437,7 +467,7 @@ export class Traffic {
         const e: Edge = { id: this.edges.length, kind, oneway, bridge: !!w.b, tunnel: !!w.t, perDir,
           a: ids[0], b: ids[ids.length - 1], px, py, len, bx0, by0, bx1, by1,
           allowed: inArea((px[0] + px[px.length - 1] + px[mid]) / 3, (py[0] + py[py.length - 1] + py[mid]) / 3, 0),
-          active: false, stamp: 0, lanes: [], acc: accOf(w), wid: w.w ?? 0, shift: w.c ?? 0, name: w.n ?? "" };
+          active: false, stamp: 0, lanes: [], acc: accOf(w), wid: w.w ?? 0, shift: fit(w) ? 0 : w.c ?? 0, name: w.n ?? "" };
         // Pedestrian streets and bus-only roads never take private cars, whatever the tags.
         if (!DRIVE.has(kind)) e.acc &= ~(A_CAR | A_DEST);
         if (!this.emergencyOn && !(e.acc & (A_CAR | A_BUS))) continue;

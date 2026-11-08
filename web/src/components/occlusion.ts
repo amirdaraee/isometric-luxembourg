@@ -63,7 +63,8 @@ export type Rect = [number, number, number, number];
 export interface DeckHit { id: number; z: number; dz: number; h: number; lift: number }
 
 interface Meta { x0: number; y0: number; scale: number; w: number; h: number; unit: number; tile: number; tiles: string[] }
-interface Profile { x: number[]; y: number[]; s: number[]; z: number[]; dz: number[]; h: number[] }
+/** A deck profile; fx, fy: its samples moved onto the road as painted (pipeline/fit_roads.py), used for deckAt. */
+interface Profile { x: number[]; y: number[]; fx?: number[]; fy?: number[]; s: number[]; z: number[]; dz: number[]; h: number[] }
 /** One decoded data tile: its size and the three layers. */
 interface DataTile { w: number; h: number; ground: Uint8Array; deck: Uint8Array; crown: Uint8Array }
 
@@ -135,7 +136,7 @@ class Occ implements Occlusion {
     this.m = m; this.prof = prof; this.listed = new Set(m.tiles);
     for (const [id, p] of Object.entries(prof)) {
       for (let i = 0; i < p.x.length; i++) {
-        const k = this.cellKey(Math.floor(p.x[i] / CELL), Math.floor(p.y[i] / CELL));
+        const k = this.cellKey(Math.floor((p.fx ?? p.x)[i] / CELL), Math.floor((p.fy ?? p.y)[i] / CELL));
         let a = this.cells.get(k);
         if (!a) this.cells.set(k, (a = []));
         a.push([+id, i]);
@@ -277,7 +278,7 @@ class Occ implements Occlusion {
       for (let cx = c0x; cx <= c1x; cx++) {
         for (const [id, i] of this.cells.get(this.cellKey(cx, cy)) ?? []) {
           const p = this.prof[id];
-          const dd = (p.x[i] - x) ** 2 + (p.y[i] - y) ** 2;
+          const dd = ((p.fx ?? p.x)[i] - x) ** 2 + ((p.fy ?? p.y)[i] - y) ** 2;
           if (dd <= bd) { bd = dd; best = { id, z: p.z[i], dz: p.dz[i], h: p.h[i], lift: p.dz[i] * UP }; }
         }
       }
