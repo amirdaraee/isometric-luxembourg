@@ -56,6 +56,7 @@ function liveScene(): SceneState {
   };
 }
 const OPENING_NAME = "Notre-Dame Cathedral";
+const REPO_URL = "https://github.com/amirdaraee/isometric-luxembourg";
 
 function readHash(): View | null {
   const m = location.hash.match(/^#(-?\d+),(-?\d+),([\d.]+)$/);
@@ -259,10 +260,15 @@ export default function App() {
             <path d="M12 15V4m0 0L8 8m4-4 4 4M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>}
+        <a className="round glass gh" href={REPO_URL} target="_blank" rel="noopener" aria-label="Source code on GitHub" title="Source code on GitHub">
+          <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
+            <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+          </svg>
+        </a>
       </div>
 
       <div className="foot">
-        {on("previewBadge") && meta.art !== "final" && <span className="badge">{meta.art === "painted" ? ((meta.painted?.length ?? 0) > 1 ? "Preview: the whole city is painted; details are still being refined" : "Preview: old town painted, the rest is 3D data") : "Preview: 3D data, final art coming"}</span>}
+        {on("previewBadge") && meta.art !== "final" && <span className="badge">{meta.art === "painted" ? ((meta.painted?.length ?? 0) > 1 ? "Preview: central Luxembourg City painted; more to come" : "Preview: old town painted, the rest is 3D data") : "Preview: 3D data, final art coming"}</span>}
         <button type="button" className="link" onClick={() => setAbout(true)}>About and credits</button>
       </div>
 
@@ -278,7 +284,7 @@ export default function App() {
           <section className="about glass" role="dialog" aria-label="About and credits" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="ibtn close" aria-label="Close" onClick={() => setAbout(false)}>×</button>
             <h1>Isometric Luxembourg</h1>
-            <p>Luxembourg City seen from the south-east, from its gorges to Kirchberg, drawn as an inked illustration. This first release paints the old town in full, by day and night and through the seasons; the rest of the city is still shown as 3D data and will be painted next.</p>
+            <p>Luxembourg City seen from the south-east, from its gorges to Kirchberg, drawn as an inked illustration. This first release paints central Luxembourg City in summer, by day and by night, with golden hour in between; more of the city and the other seasons will follow.</p>
             <p>The art is painted tile by tile by an image model trained for this map on the real city: 3D buildings, terrain, streets, rail and rivers decide what goes where.</p>
             <h2>Data</h2>
             <ul>
@@ -293,7 +299,7 @@ export default function App() {
             <ul>
               <li>Viewer built from <a href="https://github.com/cannoneyed/isometric-nyc" target="_blank" rel="noopener">isometric-nyc</a> by Andy Coenen, MIT</li>
               <li><a href="https://openseadragon.github.io" target="_blank" rel="noopener">OpenSeadragon</a> and <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a></li>
-              <li><a href="https://github.com/amirdaraee/isometric-luxembourg" target="_blank" rel="noopener">Source on GitHub</a>: code MIT, art CC BY-NC 4.0</li>
+              <li><a href={REPO_URL} target="_blank" rel="noopener">Source on GitHub</a>: code MIT, art CC BY-NC 4.0</li>
             </ul>
           </section>
         </div>
