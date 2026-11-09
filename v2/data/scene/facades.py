@@ -139,10 +139,21 @@ def build(ctx):
         out.append({"building": w["building"], "wall": w["wall"], "base": [[round(x, 3) for x in q] for q in w["base"]],
                     "normal": [round(float(x), 4) for x in w["n"]], "length": round(w["L"], 3), "height": round(H, 3),
                     "outline": [[round(x, 3), round(y, 3)] for x, y in w["poly"].exterior.coords] if w["poly"].geom_type == "Polygon" else [],
-                    "floors": floors, "bays": bays, "party": bool(party[i]), "no_windows": reason, "windows": wins})
-    ctx.write_json("facades.json", {"rule": p, "walls": out})
+                    "floors": floors, "bays": bays, "party": bool(party[i]), "no_windows": reason, "windows": wins,
+                    "b": w["b"]})
+    # doors and shop fronts (entrances.py): OSM entrances and shops, else the street-door and commercial-street rules
+    from v2.data.scene import entrances
+    import json as _json
+    graph = _json.loads((ctx.dep("scene_transport") / "graph.json").read_text())
+    pois = _json.loads((ctx.dep("fetch_osm_pois") / "pois.json").read_text())
+    ds, unplaced, commercial = entrances.place(out, blds, fps, graph, pois, p)
+    for w in out:
+        w.pop("b", None)
+    ctx.write_json("facades.json", {"rule": p, "walls": out, "unplaced_entrances": unplaced,
+                                    "commercial_streets": commercial})
     return {"walls": len(out), "with_windows": sum(1 for w in out if w["windows"]), "party_walls": int(party.sum()),
-            "windows": n_win, "floors_max": max((w["floors"] for w in out), default=0)}
+            "windows": sum(len(w["windows"]) for w in out), "windows_before_doors": n_win,
+            "floors_max": max((w["floors"] for w in out), default=0), **ds}
 
 
 def window_world(w, win):

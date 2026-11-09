@@ -19,7 +19,9 @@ import zipfile
 import mapbox_earcut as earcut
 import numpy as np
 from lxml import etree
+import shapely
 from shapely.geometry import Point, Polygon
+from shapely.validation import explain_validity
 from shapely.ops import unary_union
 
 from v2.config import raw_dir
@@ -156,6 +158,7 @@ def build(ctx):
         return pre.contains(Point(c))
 
     out, V, T, TK, TB = [], [], [], [], []
+    repairs = []
     nv = 0
     for meta, polys in parse(raw_dir() / BATI, keep, log=ctx.log):
         fp = footprint(polys)
@@ -191,6 +194,15 @@ def build(ctx):
         ground_z = float(min(zs_ground)) if zs_ground else float(min(r[0][:, 2].min() for _, r, _, _ in polys))
         ridge = max((r["z"][1] for r in roofs), default=ground_z)
         eave = min((r["z"][0] for r in roofs), default=ridge)
+        # the footprint is stored at 1 mm; an ACT outline whose rings nearly touch can cross itself once rounded:
+        # repair it (shapely make_valid, polygonal parts only) and record which and why
+        fp_r = shapely.set_precision(fp, 0.001)
+        if not fp_r.is_valid or fp_r.is_empty:
+            why = explain_validity(fp_r)
+            fp_r = shapely.make_valid(fp_r)
+            fp_r = shapely.union_all([g for g in getattr(fp_r, "geoms", [fp_r]) if g.geom_type in ("Polygon", "MultiPolygon")])
+            repairs.append({"id": meta["id"], "reason": why, "area_before_m2": round(fp.area, 2), "area_after_m2": round(fp_r.area, 2)})
+        fp = fp_r
         rings = [fp] if fp.geom_type == "Polygon" else list(fp.geoms)
         # the terrain under the footprint: does the building sit on the ground model?
         c = fp.representative_point()
@@ -208,7 +220,7 @@ def build(ctx):
             "roofs": roofs, "walls": walls,
             "parts": [{**q, "zmin": round(q["zmin"], 2), "zmax": round(q["zmax"], 2)} for q in parts.values()],
         })
-    ctx.write_json("buildings.json", {"buildings": out})
+    ctx.write_json("buildings.json", {"buildings": out, "repairs": repairs})
     np.savez_compressed(ctx.out / "mesh.npz", verts=np.vstack(V), tris=np.vstack(T).astype(np.int32),
                         tri_kind=np.concatenate(TK), tri_bld=np.concatenate(TB), origin_en=np.array([oe, on]))
     shapes = {}
@@ -216,6 +228,7 @@ def build(ctx):
         k = b["roof_shape"].split(":")[-1]
         shapes[k] = shapes.get(k, 0) + 1
     return {"buildings": len(out), "triangles": int(sum(len(t) for t in T)), "roof_shapes": shapes,
+            "repaired_footprints": len(repairs),
             "walls": sum(len(b["walls"]) for b in out), "parts": sum(len(b["parts"]) for b in out),
             "height_max_m": max((b["height"] for b in out), default=0)}
 

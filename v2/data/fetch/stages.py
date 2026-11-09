@@ -48,7 +48,7 @@ def lidar_params(area: str) -> dict:
     a = params()["areas"][area]
     f = params()["fetch"]
     return {"step_m": a["terrain_step_m"], "margin_m": a["margin_m"], "mnt": f["lidar_mnt"], "mns": f["lidar_mns"],
-            "snapshot": f["snapshot"]}
+            "snapshot": f["snapshot"], "aggregate": f["lidar_aggregate"]}
 
 
 def fetch_lidar(ctx):
@@ -61,7 +61,8 @@ def fetch_lidar(ctx):
     out = {}
     for name in ("mnt", "mns"):
         ctx.log(f"{name} {e1 - e0:.0f} x {n1 - n0:.0f} m at {s} m")
-        z, grid = read_window(p[name], e0, n0, e1, n1, s, log=lambda m: None)
+        agg = p["aggregate"][name] if s > 0.5 else None      # coarser than full resolution: reduce it ourselves
+        z, grid = read_window(p[name], e0, n0, e1, n1, s, log=lambda m: None, aggregate=agg)
         out[name] = (z, grid)
         ctx.log(f"{name}: {z.shape}, {grid['bytes'] / 1e6:.0f} MB downloaded, no data {np.isnan(z).mean():.4f}")
     gm, gs = out["mnt"][1], out["mns"][1]

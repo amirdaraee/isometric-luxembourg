@@ -25,6 +25,17 @@ from v2.data.scene.transport import clearance, deck_key, grade_key, load as load
 from v2.data.scene.water import load_polygons
 
 VEHICLE = {"road", "rail", "tram", "funicular"}
+EXCEPTIONS = __import__("v2.config", fromlist=["V2"]).V2 / "data" / "exceptions.json"
+
+
+def excepted(check):
+    """The OSM ways listed in v2/data/exceptions.json for a check, with their reason."""
+    out = {}
+    for x in json.loads(EXCEPTIONS.read_text())["exceptions"]:
+        if check in x["checks"]:
+            for f in x["features"]:
+                out[int(f.split("/")[1])] = x["reason"]
+    return out
 
 
 def _arr(a):
@@ -120,6 +131,8 @@ def check_buildings(ctx):
     for b in blds:
         shapes[b["roof_shape"]] += 1
     r.info("B7", "roof shapes", dict(shapes))
+    rep = json.loads((ctx.dep("scene_buildings") / "buildings.json").read_text()).get("repairs", [])
+    r.info("B8", "ACT footprints repaired (recorded with their reason in buildings.json)", [[x["id"], x["reason"]] for x in rep])
     return r.result()
 
 
@@ -162,6 +175,62 @@ def check_facades(ctx):
     tall = [b for b in blds if b["height"] >= 5 and b["footprint_m2"] >= 40]
     share = sum(1 for b in tall if b["id"] in with_win) / max(len(tall), 1)
     r.at_least("F6", "share of buildings >= 5 m tall and >= 40 m2 with at least one window", round(share, 4), 0.9)
+    # doors and shop fronts (G0 review, 9 Nov)
+    from v2.data.scene.entrances import bottom_at
+    f_all = json.loads((ctx.dep("scene_facades") / "facades.json").read_text())
+    by_b = {}
+    for w in walls:
+        by_b.setdefault(w["building"], []).append(w)
+    bmap = {b["id"]: b for b in blds}
+    missing = []
+    for bid, ws in by_b.items():
+        b = bmap.get(bid)
+        if b is None or b["height"] < p["min_wall_height_m"] or b["footprint_m2"] < p["door_min_footprint_m2"]:
+            continue
+        sw = [w for w in ws if w.get("street")]
+        if sw and not any(w["doors"] for w in sw):
+            missing.append(bid)
+    r.at_most("F8", "buildings with a street-facing wall but no door on one", len(missing), 0, missing)
+    on_party = [w["wall"] for w in walls if w["party"] and (w.get("doors") or w.get("shopfronts"))]
+    r.at_most("F9", "doors or shop fronts on a party (shared) wall", len(on_party), 0, on_party)
+    high, outside, floating, clash = [], [], [], []
+    for w in walls:
+        if not (w.get("doors") or w.get("shopfronts")):
+            continue
+        poly = Polygon(w["outline"]) if len(w["outline"]) >= 4 else None
+        if poly is not None and not poly.is_valid:
+            poly = poly.buffer(0)
+        for kind, rects in (("door", w["doors"]), ("shopfront", w["shopfronts"])):
+            for x in rects:
+                u0, v0, u1, v1 = x[:4]
+                bot = bottom_at(poly, u0, u1) if poly is not None else None
+                if poly is None or not poly.buffer(0.03).contains(box(u0, v0, u1, v1)):
+                    outside.append([w["wall"], kind])
+                if bot is None or abs(v0 - bot) > 0.05:
+                    floating.append([w["wall"], kind])
+                if kind == "shopfront" and (v1 - v0 > p["ground_floor_m"] - 0.4 + 1e-6):
+                    high.append(w["wall"])
+                for win in w["windows"]:
+                    if box(*win).intersects(box(u0 - p["door_window_gap_m"] + 1e-6, v0, u1 + p["door_window_gap_m"] - 1e-6, v1 + p["door_window_gap_m"] - 1e-6)):
+                        clash.append(w["wall"])
+    r.at_most("F10", "shop fronts reaching above the ground floor", len(high), 0, high)
+    r.at_most("F11", "doors or shop fronts outside their wall outline", len(outside), 0, outside)
+    r.at_most("F12", "doors or shop fronts not standing on the bottom of their wall (the ground)", len(floating), 0, floating)
+    r.at_most("F13", "windows overlapping a door or a shop front", len(set(clash)), 0, sorted(set(clash)))
+    un = f_all.get("unplaced_entrances", [])
+    placed = sum(1 for w in walls for d in w.get("doors", []) if str(d[4]).startswith("osm:"))
+    share = placed / max(placed + len(un), 1)
+    r.at_least("F14", "share of OSM entrances at a building placed as doors", round(share, 4), 0.9,
+               [[x["osm"], x["reason"]] for x in un])
+    src = {}
+    for w in walls:
+        for d in w.get("doors", []):
+            k = "door " + str(d[4]).split(":")[0] + (" garage" if d[5] == "garage" else "")
+            src[k] = src.get(k, 0) + 1
+        for sf in w.get("shopfronts", []):
+            k = "shopfront " + str(sf[4]).split(":")[0]
+            src[k] = src.get(k, 0) + 1
+    r.info("F15", "doors and shop fronts by source", src)
     r.info("F7", "walls, with windows, party walls, windows",
            [len(walls), sum(1 for w in walls if w["windows"]), sum(1 for w in walls if w["party"]), sum(len(w["windows"]) for w in walls)])
     return r.result()
@@ -203,6 +272,8 @@ def check_transport_profiles(ctx):
     tp = params()["transport"]
     g = load_graph(ctx.dep("scene_transport"))
     poly = area_polygon(ctx.area)
+    ex56 = {w for w in excepted("P5")} | {w for w in excepted("P6")}
+    skipped56 = []
     N = {n["id"]: n for n in g["nodes"]}
     nonfinite, discont, jumps, jumps_path, grades, below_ground, deck_off, deep, above, relaxed = ([] for _ in range(10))
     deck_med = []
@@ -225,7 +296,9 @@ def check_transport_profiles(ctx):
             (jumps if veh else jumps_path).append([e["id"], e["mode"], round(float(dz.max()), 2)])
         if "+grade" in e["solved"] or "+linear" in e["solved"]:
             relaxed.append([e["id"], e["mode"], e["structure"], e["name"], e["solved"]])
-        if e["structure"] == "bridge" and veh:
+        if e["structure"] == "bridge" and veh and e["way"] in ex56:
+            skipped56.append(e["id"])
+        elif e["structure"] == "bridge" and veh:
             gr = _arr(e["ground"])
             if (z < gr - 0.5).any():
                 below_ground.append(e["id"])
@@ -238,7 +311,7 @@ def check_transport_profiles(ctx):
                     deck_off.append([e["id"], e["name"], round(med, 2)])
         if e["structure"] == "tunnel" and veh:
             cov, d = _arr(e["cover"]), _arr(e["tunnel_d"])
-            need = clearance(e["mode"], tp) + c["tunnel_min_cover_m"]
+            need = e.get("clearance_m", clearance(e["mode"], tp)) + c["tunnel_min_cover_m"]
             en = np.array(e["en"])
             in_area = shapely.contains_xy(poly, en[:, 0], en[:, 1])   # the cover (buildings) is known inside the area
             interior = (d >= c["portal_max_from_end_m"]) & in_area
@@ -267,6 +340,13 @@ def check_transport_profiles(ctx):
            [len(jumps_path), len([x for x in relaxed if x[1] not in VEHICLE])])
     r.info("P11", "median |deck - LiDAR surface| over bridge edges (m)", round(float(np.median(deck_med)), 3) if deck_med else None)
     r.info("P12", "portals found / total", [sum(p["found"] for p in g["portals"]), len(g["portals"])])
+    r.info("P13", "bridge edges excepted from P5/P6 (v2/data/exceptions.json)", skipped56)
+    on = [e for e in g["edges"] if e.get("on_structure_m")]
+    r.info("P14", "approach edges found on a structure past the OSM bridge tag (edges, m)",
+           [len(on), round(sum(e["on_structure_m"] for e in on), 1)])
+    bl = [e["deck_blocked_share"] for e in g["edges"] if "deck_blocked_share" in e]
+    r.info("P15", "share of deck samples not observed (under buildings, crowns or higher bridges)",
+           round(float(np.mean(bl)), 3) if bl else 0)
     return r.result()
 
 
@@ -312,8 +392,11 @@ def check_transport_graph(ctx):
                    [[k, round(v, 1)] for k, v in comp_len.items() if k != big and not comp_bound[k]][:8])
     # bridges and tunnels joined at both ends to the network
     dead = lambda e: any(N[x]["deg"] == 1 and not N[x]["boundary"] for x in (e["a"], e["b"]))  # noqa: E731
+    ex5 = excepted("G5")
     dangling = [e["id"] for e in g["edges"] if e["mode"] in VEHICLE and e["structure"] in ("bridge", "tunnel")
-                and e["cls"] != "service" and dead(e)]
+                and e["cls"] != "service" and dead(e) and e["way"] not in ex5]
+    r.info("G5c", "dead ends excepted (v2/data/exceptions.json)",
+           [e["id"] for e in g["edges"] if e["way"] in ex5 and dead(e)])
     r.at_most("G5", "vehicle bridges or tunnels with a dead end (driveways into garages excepted)", len(dangling), 0, dangling)
     r.info("G5b", "service roads (garage driveways) ending in a tunnel or on a bridge",
            [e["id"] for e in g["edges"] if e["cls"] == "service" and e["structure"] in ("bridge", "tunnel") and dead(e)])

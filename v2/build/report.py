@@ -199,19 +199,26 @@ def previews(ctx):
         # buildings in front hide them
         fac = json.loads((part(sc, "facades") / "facades.json").read_text())["walls"]
         from v2.data.scene.facades import window_world
-        wins = [window_world(w, x) for w in fac for x in w["windows"] if w["normal"][0] - w["normal"][1] > 0.05]
+        facing = [w for w in fac if w["normal"][0] - w["normal"][1] > 0.05]
         polys = np.stack([px, py], -1)
         cols = np.column_stack((col, np.ones(len(col))))
         deps, edge_w = dep, np.full(len(dep), 1.0)
-        if wins:
-            W = np.array(wins)
+        # windows (blue-grey), shop fronts (teal, under) and doors (dark brown, over): quads on their walls
+        for key, rgba, lift in (("windows", (0.23, 0.29, 0.35, 1.0), 0.05), ("shopfronts", (0.20, 0.52, 0.55, 1.0), 0.05),
+                                ("doors", (0.36, 0.20, 0.12, 1.0), 0.08)):
+            quads = [window_world(w, x[:4]) for w in facing for x in w.get(key, [])]
+            if not quads:
+                continue
+            # sort each quad at its wall's middle height, just in front of it (painter's order by face centre
+            # would put a door at the foot of a tall wall behind the wall)
+            zmid = np.array([w["base"][0][2] + w["height"] / 2 for w in facing for _ in w.get(key, [])])
+            W = np.array(quads)
             wx, wy = en_to_px(W[..., 0], W[..., 1], W[..., 2])
-            wd = depth(W[..., 0].mean(1), W[..., 1].mean(1), W[..., 2].mean(1)) - 0.05
-            # a window is a quad: split it into two triangles to share the face array
-            q = np.stack([wx, wy], -1)
+            wd = depth(W[..., 0].mean(1), W[..., 1].mean(1), zmid) - lift
+            q = np.stack([wx, wy], -1)                 # a quad as two triangles, to share the face array
             polys = np.concatenate([polys, q[:, [0, 1, 2]], q[:, [0, 2, 3]]])
-            wc = np.tile(np.array([[0.23, 0.29, 0.35, 1.0]]), (2 * len(q), 1))
-            cols = np.concatenate([cols, wc]); deps = np.concatenate([dep, wd, wd])
+            cols = np.concatenate([cols, np.tile(np.array([rgba]), (2 * len(q), 1))])
+            deps = np.concatenate([deps, wd, wd])
             edge_w = np.concatenate([edge_w, np.zeros(2 * len(q))])
         order = np.argsort(-deps)
         fig, ax = plt.subplots(figsize=(16, 11), dpi=150)
@@ -234,6 +241,20 @@ def previews(ctx):
         ax.set_aspect("equal"); ax.set_xticks([]); ax.set_yticks([])
         ax.set_title("the Grund and Neumünster Abbey: windows placed by the facade rule (straight rows by construction)")
         save(fig, img / "iso_grund_windows.jpg"); made.append("iso_grund_windows.jpg")
+        # closer still: doors and shop fronts in the Grund (Rue Munster, Bisserweg, Montée du Grund)
+        cx, cy = en_to_px(np.array([77935.0]), np.array([75330.0]), np.array([245.0]))
+        fig, ax = plt.subplots(figsize=(14, 10), dpi=150)
+        ax.set_facecolor("#efe8dc")
+        ax.add_collection(PolyCollection(polys[order], facecolors=cols[order], edgecolors=(0.18, 0.15, 0.13, 0.7),
+                                         linewidths=(edge_w * 0.4)[order]))
+        ax.set_xlim(cx[0] - 1100, cx[0] + 1100); ax.set_ylim(cy[0] + 780, cy[0] - 780)
+        ax.set_aspect("equal"); ax.set_xticks([]); ax.set_yticks([])
+        ax.plot([], [], "s", color=(0.36, 0.20, 0.12), label="door (OSM entrance, else one per building on its street wall)")
+        ax.plot([], [], "s", color=(0.20, 0.52, 0.55), label="shop front (OSM shop, else along a commercial street)")
+        ax.plot([], [], "s", color=(0.23, 0.29, 0.35), label="window (facade rule)")
+        ax.legend(loc="lower left", fontsize=9)
+        ax.set_title("the Grund close up: doors and shop fronts on the ground floor, windows giving way to them")
+        save(fig, img / "iso_grund_doors.jpg"); made.append("iso_grund_doors.jpg")
     return {"images": made, "bytes": {f: (img / f).stat().st_size for f in made}}
 
 

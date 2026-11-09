@@ -32,7 +32,7 @@ def _with(base, *keys):
 
 
 def graph() -> Graph:
-    from v2.data.scene import buildings, facades, places, structures, terrain, transit, transport, trees, water, scene
+    from v2.data.scene import buildings, entrances, facades, places, structures, terrain, transit, transport, trees, water, scene
     from v2.checks import data_checks as dc, repo_checks as rc
     from v2.build import report
 
@@ -45,6 +45,9 @@ def graph() -> Graph:
               kind="fetch", shared=True, doc="OSM land use, water, walls, cliffs, squares, lamps (Overpass)"),
         Stage("fetch_trees", fetch.fetch_trees, params=fetch.trees_params, code=GEO + ("v2.data.fetch.gpkg_stream", "v2.data.fetch.http"),
               kind="fetch", shared=True, doc="ACT LiDAR 2024 tree survey, streamed and cut to the commune"),
+        Stage("fetch_osm_pois", entrances.fetch_osm_pois, params=fetch.extent_params,
+              code=GEO + ("v2.data.fetch.overpass", "v2.data.fetch.http"), kind="fetch", shared=True,
+              doc="OSM entrances, shops, crafts and amenities (Overpass)"),
         Stage("fetch_lidar", fetch.fetch_lidar, params=fetch.lidar_params, code=GEO + ("v2.data.fetch.cog", "v2.data.fetch.http"),
               kind="fetch", doc="ACT LiDAR 2024 MNT and MNS over the area (COG windows)"),
     ]
@@ -56,15 +59,15 @@ def graph() -> Graph:
         Stage("scene_water", water.build, deps=("fetch_osm_ground",), code=GEO, doc="water polygons and river lines"),
         Stage("scene_buildings", buildings.build, deps=("scene_terrain",), params=_p("buildings"), raw=bati, code=GEO,
               doc="ACT LoD2 buildings: id, roof shape, heights, footprint, walls, mesh"),
-        Stage("scene_facades", facades.build, deps=("scene_buildings",), params=_p("facades"), code=GEO,
-              doc="facade layout per wall: floors and window grid"),
+        Stage("scene_facades", facades.build, deps=("scene_buildings", "scene_transport", "fetch_osm_pois"), params=_p("facades"),
+              code=GEO + ("v2.data.scene.entrances",), doc="facade layout per wall: floors, windows, doors and shop fronts"),
         Stage("scene_trees", trees.build, deps=("fetch_trees", "scene_buildings", "scene_water", "scene_terrain"),
               params=_p("trees"), code=GEO, doc="LiDAR trees, thinned over water and buildings"),
         Stage("scene_places", places.build, deps=("scene_terrain",), code=GEO + CAM,
               raw=lambda area: [REPO / "web/public/data/landmarks.json", REPO / "web/public/data/places.json",
                                 v1_work() / "terrain.npz"],
               doc="v1's landmarks and places, back in LUREF metres"),
-        Stage("scene_transport", transport.build, deps=("fetch_osm_transport", "scene_terrain", "scene_buildings"),
+        Stage("scene_transport", transport.build, deps=("fetch_osm_transport", "scene_terrain", "scene_buildings", "fetch_trees"),
               params=_p("transport"), code=GEO + ("v2.data.scene.profile",),
               doc="roads, rail and tram graph with height profiles, bridges and tunnels"),
         Stage("scene_structures", structures.build, deps=("scene_transport", "scene_terrain", "fetch_osm_transport"),
@@ -78,7 +81,8 @@ def graph() -> Graph:
               code=GEO + CAM, doc="the scene index: every part, its files, counts and extent"),
     ]
     # ---------------------------------------------------------------- checks (gates)
-    chk = dict(kind="check", params=_p("checks"), code=GEO + ("v2.checks.framework",))
+    chk = dict(kind="check", params=_p("checks"), code=GEO + ("v2.checks.framework",),
+               raw=lambda area: [REPO / "v2/data/exceptions.json"])
     S += [
         Stage("check_scope", dc.check_scope, deps=("scene",), **chk, doc="every part of the scene lies within the area"),
         Stage("check_terrain", dc.check_terrain, deps=("scene_terrain", "scene_buildings"), **chk, doc="terrain complete; buildings sit on it"),
