@@ -390,7 +390,9 @@ def structures_mesh(scene, edge_ok=lambda e: True, thickness=1.0, parapet=1.0, m
         if len(en) < 2 or not shapely.contains_xy(poly, *en[len(en) // 2]):
             continue
         w = float(e["width"])
-        red = "Grande-Duchesse Charlotte" in (e.get("bridge_name") or "") or "Pont Rouge" in (e.get("bridge_name") or "")
+        # the Red Bridge: OSM names it on the way (name), not always on the bridge (bridge_name)
+        names = (e.get("bridge_name") or "") + " " + (e.get("name") or "")
+        red = "Grande-Duchesse Charlotte" in names or "Pont Rouge" in names
         col = "structures.red_bridge" if red else "structures.stone"
         L, R = ribbon(en, z, w)
         Lb, Rb = L.copy(), R.copy()

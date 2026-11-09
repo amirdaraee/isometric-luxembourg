@@ -261,7 +261,9 @@ class ArtA:
         return rgb
 
     def openings_rgb(self, O, ti, P, bi):
-        """Opening pixels from their local (s, t) in [0, 1] across and up the rectangle."""
+        """Opening pixels from their local (s, t) across and up the rectangle (metres): (albedo, class). Each part is
+        a material of its own for the shadow detector (L5.1): glass "window", frames, bars and sills "trim", door
+        panels "door", shutters "shutter", awnings "shopfront"."""
         k = O["open_kind"][ti]
         F = O["frame"][ti]
         o, au, av = F[:, 0:3], F[:, 3:6], F[:, 6:9]
@@ -271,6 +273,9 @@ class ArtA:
         s = (rel * au).sum(1) / np.maximum(W ** 2, 1e-9) * W               # metres across
         t = (rel * av).sum(1) / np.maximum(H ** 2, 1e-9) * H               # metres up
         rgb = np.zeros((len(k), 3))
+        cls = np.select([k == OPEN_KIND["shutter"], np.isin(k, (OPEN_KIND["door"], OPEN_KIND["garage"])),
+                         k == OPEN_KIND["shopfront"]], [CLASS["shutter"], CLASS["door"], CLASS["shopfront"]],
+                        CLASS["window"]).astype(np.int64)
         trim, glass = B("trim"), B("window")
         done = np.zeros(len(k), bool)
         st = [self.styles[b] for b in bi]
@@ -286,6 +291,7 @@ class ArtA:
         c = np.where((bar & ~edge)[:, None], trim, c)
         c = np.where((t < 0.05)[:, None], trim * 0.85, c)
         rgb[m] = c[m]
+        cls[m & (edge | bar | (t < 0.05))] = CLASS["trim"]
         # shutters: slats
         m = k == OPEN_KIND["shutter"]
         c = shut * np.where(band(t, 0.14, 0.03), 0.78, 1.0)[:, None]
@@ -297,13 +303,17 @@ class ArtA:
         c = np.where(fan[:, None], glass, door)
         panel = (~fan) & ((np.abs(s - W / 2) < 0.03) | band(t, 0.9, 0.05, phase=0.2))
         c = np.where(panel[:, None], door * 0.8, c)
-        c = np.where(edge[:, None] | (np.abs(t - (H - 0.44)) < 0.04)[:, None], trim, c)
+        dtrim = edge | (np.abs(t - (H - 0.44)) < 0.04)
+        c = np.where(dtrim[:, None], trim, c)
         rgb[m] = c[m]
+        cls[m & fan & ~dtrim] = CLASS["window"]
+        cls[m & dtrim] = CLASS["trim"]
         # garage doors: horizontal panels
         m = k == OPEN_KIND["garage"]
         c = door * np.where(band(t, 0.5, 0.05), 0.75, 1.0)[:, None]
         c = np.where(edge[:, None], trim, c)
         rgb[m] = c[m]
+        cls[m & edge] = CLASS["trim"]
         # shop fronts: a striped awning band on top, glazing bars, a dark frame
         if self.materials:
             for kk, nm in ((OPEN_KIND["window"], "window_casement"), (OPEN_KIND["door"], "door_panel"),
@@ -323,10 +333,13 @@ class ArtA:
         stripe = np.floor(s / 0.3) % 2 == 0
         ca = np.where(stripe[:, None], awn, mix(awn, trim, 0.85))
         ca = np.where((t > H - 0.08)[:, None], awn * 0.75, ca)
-        cg = np.where((band(s, 1.25, 0.08) | (np.abs(t - 0.45) < 0.05) | edge)[:, None], door * 0.9, glass)
+        bars = band(s, 1.25, 0.08) | (np.abs(t - 0.45) < 0.05) | edge
+        cg = np.where(bars[:, None], door * 0.9, glass)
         c = np.where(aw[:, None], ca, cg)
         rgb[m] = c[m]
-        return rgb
+        cls[m & ~aw & bars] = CLASS["door"]                  # the shop's painted frame
+        cls[m & ~aw & ~bars] = CLASS["window"]
+        return rgb, cls
 
     # ------------------------------------------------------------------ structures and trees
     @staticmethod

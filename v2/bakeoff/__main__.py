@@ -68,20 +68,20 @@ def cmd_inputs(a):
     R, g = _renderer(a.area, "plain")
     out = v2_data() / a.area / "bakeoff" / a.method
     if a.method == "c":
-        rel = g.folder("release", a.area)
+        rel = Path(a.release) if a.release else g.folder("release", a.area)
         idx = json.loads((rel / "index.json").read_text())
         wins = I.windows(R.scene, list(idx["layers"]["buildings"]["tiles"]["0"]))
         crops = pick_crops(wins, 80)
         (out).mkdir(parents=True, exist_ok=True)
         (out / "windows.json").write_text(json.dumps({"windows": wins, "train_crops": crops, "pilot_crops": crops[:8],
-                                                      "win_px": I.WIN, "stride_px": I.STRIDE}, indent=0))
+                                                      "win_px": I.WIN, "stride_px": I.STRIDE, "release": str(rel)}, indent=0))
         print(f"{len(wins)} windows to paint (C3), {len(crops)} training crops (C1), 8 in the pilot (C1p)")
         todo = wins[: a.limit] if a.limit else wins
         for x0, y0 in todo:
             name = f"{x0}_{y0}"
             if (out / "inputs" / f"{name}.unlit.png").exists():
                 continue
-            rgb, layout, mask, extra = I.render_window(R, x0, y0)
+            rgb, layout, mask, extra = I.render_window(R, x0, y0, rel=rel)
             I.write_window(out / "inputs", name, rgb, layout, mask, {"x0": x0, "y0": y0, "px": I.WIN, "m_per_px": 0.125},
                            extra)
             print("wrote", name, flush=True)
@@ -114,9 +114,10 @@ def cmd_smoke(a):
     from v2.bakeoff.compose import painted_rgb
     from v2.bakeoff.dataset import flat_light
     R, g = _renderer(a.area, "plain")
-    w = json.loads((v2_data() / a.area / "bakeoff" / "c" / "windows.json").read_text())["windows"]
+    wj = json.loads((v2_data() / a.area / "bakeoff" / "c" / "windows.json").read_text())
+    w = wj["windows"]
     x0, y0 = w[len(w) // 2]
-    rgb, layout, mask, extra = I.render_window(R, x0, y0, size=1024)
+    rgb, layout, mask, extra = I.render_window(R, x0, y0, size=1024, rel=Path(wj["release"]) if wj.get("release") else None)
     tmp = v2_data() / a.area / "bakeoff" / "c" / "smoke"
     (tmp / "painted").mkdir(parents=True, exist_ok=True)
     Image.fromarray(rgb).save(tmp / "painted" / f"{x0}_{y0}.png")
@@ -162,6 +163,7 @@ def main(argv=None):
     q = sub.add_parser("quote"); q.add_argument("--record", action="store_true")
     i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c"]); i.add_argument("--limit", type=int, default=0)
     i.add_argument("--crops", action="store_true", help="b: also each landmark's unlit crop")
+    i.add_argument("--release", help="c: the built release whose layers 1-4 are used (default: this checkout's)")
     s = sub.add_parser("smoke"); s.add_argument("method", choices=["c"])
     r = sub.add_parser("run"); r.add_argument("job"); r.add_argument("--go", action="store_true",
                                                                        help="really start it (needs the owner's approval in the ledger)")

@@ -819,7 +819,7 @@ class Renderer:
             rgb[on_b] = sub
         on_o = mi == 1
         if on_o.any():
-            rgb[on_o] = A.openings_rgb(o, ti[on_o], P[on_o], o["open_bld"][ti[on_o]])
+            rgb[on_o], pcls[on_o] = A.openings_rgb(o, ti[on_o], P[on_o], o["open_bld"][ti[on_o]])
         return rgb, pcls
 
     def buildings(self, tile) -> LayerTile:

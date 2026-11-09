@@ -47,9 +47,24 @@ def windows(scene, building_tiles):
     return out
 
 
-def render_window(R_plain, x0, y0, size=WIN, layers=COLOUR_LAYERS):
+class _Built:
+    """A built tile of a release as a LayerTile-like object (rgb, depth, normal, k, ids), empty where none."""
+
+    def __init__(self, rel, layer, tile):
+        from v2.checks.layer_checks import load
+        t = load(rel, layer, tile.name)
+        n = TILE
+        self.rgb = t["rgb"] if t and "rgb" in t else np.zeros((n, n, 3), np.uint8)
+        self.depth = t["depth"] if t and "depth" in t else np.full((n, n), np.inf)
+        self.normal = t["normal"] if t and "normal" in t else np.zeros((n, n, 3))
+        self.k = t["k"] if t and "k" in t else np.zeros((n, n), np.uint8)
+        self.ids = t.get("ids") if t else None
+
+
+def render_window(R_plain, x0, y0, size=WIN, layers=COLOUR_LAYERS, rel=None):
     """Unlit render, layout and mask of one window, composited by depth (ties to the later layer), relief
-    multiplied onto the ground under it."""
+    multiplied onto the ground under it. With `rel` (a built release), layers 1-4 are read from its tiles (they are
+    the same for every art method) and only layers 5-7 are drawn here, plain."""
     rgb = np.zeros((size, size, 3)); depth = np.full((size, size), np.inf)
     which = np.zeros((size, size), np.uint8); edge = np.zeros((size, size), bool); win = np.zeros((size, size), bool)
     ids = np.zeros((size, size), np.uint32); nrm = np.zeros((size, size, 3))
@@ -63,7 +78,7 @@ def render_window(R_plain, x0, y0, size=WIN, layers=COLOUR_LAYERS):
             sl = (slice(b0 - ty * TILE, b1 - ty * TILE), slice(a0 - tx * TILE, a1 - tx * TILE))
             dl = (slice(b0 - y0, b1 - y0), slice(a0 - x0, a1 - x0))
             for li, L in enumerate(layers):
-                t = R_plain.layer(L, tile)
+                t = _Built(rel, L, tile) if rel is not None and L in COLOUR_LAYERS[:4] else R_plain.layer(L, tile)
                 d = t.depth[sl]; c = t.rgb[sl].astype(float)
                 if L == "relief":
                     k = t.k[sl]
