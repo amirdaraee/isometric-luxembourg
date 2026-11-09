@@ -6,3 +6,11 @@
 {"ts":"2026-11-09T17:02:31","type":"quote","id":"q0006","goal":"phase2_bakeoff","provider":"runpod","job":"C2: unshadowed style LoRA training, the rest","worst_usd":4.71,"note":"runpod H100 SXM community $2.69/h (read 2026-11-09); est 1.62 h = $4.36; hard cap 1.75 h = $4.71; steps 200-2,000 (1,800 x 2.94 s); model Qwen/Qwen-Image-Edit-2511 (ai-toolkit)"}
 {"ts":"2026-11-09T17:02:31","type":"quote","id":"q0007","goal":"phase2_bakeoff","provider":"runpod","job":"C3: paint the test area's buildings from unlit renders","worst_usd":2.15,"note":"runpod H100 SXM community $2.69/h (read 2026-11-09); est 0.6 h = $1.61; hard cap 0.8 h = $2.15; 107 windows of 1024 x 1024 at 0.125 m/px (189 building tiles, stride 768), 8 steps (~10 s each); model Qwen/Qwen-Image-Edit-2511 + lightx2v/Qwen-Image-Edit-2511-Lightning (8 steps) + luxembourg-ink-unshadowed"}
 {"ts":"2026-11-09T17:02:31","type":"quote","id":"q0008","goal":"phase2_bakeoff","provider":"runpod","job":"C4: facade front-on trial: paint ~10 buildings' facades flat, project them onto their 3D walls","worst_usd":0.94,"note":"runpod H100 SXM community $2.69/h (read 2026-11-09); est 0.25 h = $0.67; hard cap 0.35 h = $0.94; 10 buildings, ~40 facades x 2 = 80 paintings, 8 steps; runs in C3's pod session (no new setup); model Qwen/Qwen-Image-Edit-2511 + lightx2v/Qwen-Image-Edit-2511-Lightning (8 steps) + luxembourg-ink-unshadowed"}
+{"ts":"2026-11-09T23:28:12","type":"approve","quote":"q0001","by":"owner","note":"owner approved in chat 9 Nov 2026"}
+{"ts":"2026-11-09T23:28:12","type":"approve","quote":"q0002","by":"owner","note":"owner approved in chat 9 Nov 2026"}
+{"ts":"2026-11-09T23:28:12","type":"approve","quote":"q0003","by":"owner","note":"owner approved in chat 9 Nov 2026"}
+{"ts":"2026-11-09T23:28:12","type":"approve","quote":"q0004","by":"owner","note":"owner approved in chat 9 Nov 2026"}
+{"ts":"2026-11-09T23:28:12","type":"approve","quote":"q0005","by":"owner","note":"owner approved in chat 9 Nov 2026"}
+{"ts":"2026-11-09T23:28:13","type":"approve","quote":"q0006","by":"owner","note":"owner approved in chat 9 Nov 2026"}
+{"ts":"2026-11-09T23:28:13","type":"approve","quote":"q0007","by":"owner","note":"owner approved in chat 9 Nov 2026"}
+{"ts":"2026-11-09T23:28:13","type":"approve","quote":"q0008","by":"owner","note":"owner approved in chat 9 Nov 2026"}
