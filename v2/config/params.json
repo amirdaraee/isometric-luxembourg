@@ -66,6 +66,8 @@
   "deck_max_grade": {"road": 0.1, "path": 0.25, "rail": 0.035, "tram": 0.07, "other": 0.25},
   "clearance_m": {"road": 4.5, "path": 2.5, "rail": 5.5, "tram": 4.5, "other": 3.0},
   "deck_min_above_ground_m": 0.3,
+  "abutment_ignore_m": 6.0,
+  "abutment_agree_m": 3.0,
   "deck_lateral_m": 0.35,
   "deck_outlier_m": 2.0,
   "node_search_m": 3.0,

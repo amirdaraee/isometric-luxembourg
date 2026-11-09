@@ -38,7 +38,8 @@ def build(ctx):
     out = []
     for src, items in (("landmark", lm), ("place", pl)):
         x = np.array([i["x"] for i in items], float); y = np.array([i["y"] for i in items], float)
-        e, n, z1 = v1_px_to_en(x, y, g)
+        e, n, _ = v1_px_to_en(x, y, g)
+        z1 = g(e, n)                          # v1 terrain at the place (what v1 projected with)
         keep = shapely.contains_xy(poly, e, n)
         z2 = terrain.sample(e, n)
         px, py = en_to_px(e, n, np.where(np.isfinite(z2), z2, z1))

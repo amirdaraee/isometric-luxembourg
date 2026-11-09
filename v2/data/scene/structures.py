@@ -114,7 +114,7 @@ def build(ctx):
             zdeck = float(np.interp(mid, ts, zs))
             crown = zdeck - dflt["deck_thickness_m"]
             gmid = float(np.nanmin(np.interp([a, mid, b], ts, ground)))
-            spring = max(crown - r, gmid) if v["structure"] == "arch" else crown
+            spring = min(crown, max(crown - r, gmid)) if v["structure"] == "arch" else crown
             pa, pb = ctr + u * a, ctr + u * b
             arches.append({"i": i, "t": [round(a - t0, 2), round(b - t0, 2)], "from": [round(pa[0], 2), round(pa[1], 2)],
                            "to": [round(pb[0], 2), round(pb[1], 2)], "span_m": round(span, 2), "crown_z": round(crown, 2),

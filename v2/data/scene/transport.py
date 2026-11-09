@@ -165,7 +165,11 @@ def ways_to_edges(elements, grid: Grid, select, p):
                     edges.append({"el": el, "mode": mode, "cls": cls, "a": nodes[ks[0]], "b": nodes[ks[-1]],
                                   "en": en, "k": len(edges)})
                 start = j
-    sel = [ed for ed in edges if shapely.intersects(select, shapely.linestrings(ed["en"]))]
+    keep = [shapely.intersects(select, shapely.linestrings(ed["en"])) for ed in edges]
+    sel = [ed for ed, k in zip(edges, keep) if k]
+    dropped_ends = {x for ed, k in zip(edges, keep) if not k for x in (ed["a"], ed["b"])}
+    kept_ends = {x for ed in sel for x in (ed["a"], ed["b"])}
+    boundary |= dropped_ends & kept_ends            # the network goes on outside the selection here
     return sel, boundary
 
 
@@ -181,30 +185,36 @@ def node_heights(edges, mnt: Grid, mns: Grid, p):
     for nid, eds in inc.items():
         st = {ed["structure"] for ed in eds}
         x, y = pos[nid]
+        # each incident edge's own estimate of this end: its profile solved with free ends (robust to a wall or
+        # a kerb next to the node, where point samples of the ground model jump)
+        def ends(structs):
+            # vehicle ways set the level of a node they share with paths (a path leaving a bridge end down a ramp
+            # or a stair must not pull the road down with it)
+            use = [ed for ed in eds if ed["structure"] in structs and ed.get("free") is not None]
+            veh = [ed for ed in use if ed["mode"] in ("road", "rail", "tram", "funicular")]
+            v = [ed["free"][0 if ed["a"] == nid else 1] for ed in (veh or use)]
+            return [x for x in v if np.isfinite(x)]
         if st <= {"ground", "passage", "indoor", "elevator"}:
             kind[nid] = "ground"
-            z[nid] = float(np.nanmedian(mnt.sample(x + off[:, 0], y + off[:, 1])))
+            v = ends(("ground", "passage", "indoor"))
+            z[nid] = float(np.median(v)) if v else float(np.nanmedian(mnt.sample(x + off[:, 0], y + off[:, 1])))
         elif st & {"ground", "passage", "indoor"}:
-            # an abutment or a portal: the road's level is the ground a few metres back along the open approach
-            # (the ground model under the first metres of a span already dips into the valley, and above a portal
-            # it is the cliff)
+            # an abutment or a portal: the level of the open approach (the ground model under the first metres of a
+            # span already dips into the valley, and above a portal it is the cliff)
             kind[nid] = "abutment"
-            vals = []
-            for ed in eds:
-                if ed["structure"] not in ("ground", "passage", "indoor"):
-                    continue
-                en = ed["en"] if ed["a"] == nid else ed["en"][::-1]
-                pts, s = resample(en, 1.0)
-                k = (s >= 2.0) & (s <= 6.0)
-                if k.any():
-                    vals += list(mnt.sample(pts[k, 0], pts[k, 1]))
-            if not vals:
-                vals = list(mnt.sample(x + off[:, 0], y + off[:, 1]))
-            z[nid] = float(np.nanmedian(vals))
+            v = ends(("ground", "passage", "indoor"))
+            approach = float(np.median(v)) if v else float(np.nanmedian(mnt.sample(x + off[:, 0], y + off[:, 1])))
+            d = ends(("bridge",))
+            deck = float(np.median(d)) if d else math.nan
+            # at a bridge end the deck's own surface is the road level; the ground model there is cut out. Keep the
+            # approach's level only when the deck reading is far off (a tree over the deck end)
+            # (an approach too short to say anything leaves only the raw ground model, which the deck beats)
+            z[nid] = deck if np.isfinite(deck) and (not v or abs(deck - approach) <= p["abutment_agree_m"]) else approach
         elif "bridge" in st and "tunnel" not in st:
             kind[nid] = "deck"
+            v = ends(("bridge",))
             r = p["node_search_m"] / 3
-            z[nid] = float(np.nanmedian(mns.sample(x + off[:, 0] * r, y + off[:, 1] * r)))
+            z[nid] = float(np.median(v)) if v else float(np.nanmedian(mns.sample(x + off[:, 0] * r, y + off[:, 1] * r)))
         else:
             kind[nid] = "tunnel" if st == {"tunnel"} else "mixed"
             z[nid] = math.nan
@@ -228,6 +238,24 @@ def node_heights(edges, mnt: Grid, mns: Grid, p):
             v = sum(est[m] * w for m, w in nb[nid]) / s
             delta = max(delta, abs(v - est[nid])); est[nid] = v
         if delta < 1e-3:
+            break
+    caps = defaultdict(list)
+    for ed in edges:
+        if ed["mode"] not in ("road", "rail", "tram", "funicular"):
+            continue                 # paths and steps may be steep (stairs): they do not constrain the nodes
+        g = p["deck_max_grade"][deck_key(ed["mode"])] if ed["structure"] == "bridge" else p["max_grade"][grade_key(ed["mode"])]
+        cap = 0.9 * g * float(np.hypot(*np.diff(ed["en"], axis=0).T).sum())   # 10% headroom for the profile
+        caps[ed["a"]].append((ed["b"], cap)); caps[ed["b"]].append((ed["a"], cap))
+    # project the node heights into the band their vehicle edges' grade caps allow: the unobserved ones (tunnels)
+    # freely, the observed ones only where two estimates disagree by a little more than the cap allows (short edges)
+    for _ in range(60):
+        moved = 0.0
+        for nid in est:
+            lo = max((est[m] - c for m, c in caps[nid] if np.isfinite(est[m])), default=-np.inf)
+            hi = min((est[m] + c for m, c in caps[nid] if np.isfinite(est[m])), default=np.inf)
+            v = min(max(est[nid], lo), hi) if lo <= hi else (lo + hi) / 2
+            moved = max(moved, abs(v - est[nid])); est[nid] = v
+        if moved < 1e-3:
             break
     return est, kind, pos, inc
 
@@ -311,6 +339,47 @@ def find_portals(recs, portal_nodes, p):
     return out
 
 
+def prepare(ed, mnt, mns, p, special):
+    """Samples, ground and deck observations of an edge, and its profile with free ends (pass 1).
+
+    Next to an abutment or a portal (`special` nodes) the ground model is not the road: ACT cuts bridges out of it and
+    the cut and the OSM node rarely agree within a few metres, and above a portal it is the cliff. Ground samples
+    within abutment_ignore_m of such a node get no weight; the profile carries the approach's level to the node."""
+    tg = ed["el"].get("tags", {})
+    ed["width"], ed["lanes"] = width_lanes(tg, ed["cls"], ed["mode"], p)
+    pts, s = resample(ed["en"], p["sample_m"])
+    ed["pts"], ed["s"] = pts, s
+    ed["ds"] = ds = float(s[1] - s[0]) if len(s) > 1 else 0.0
+    nrm = normals(pts)
+    lat = np.array(p["lateral_samples"]) * ed["width"]
+    ed["ground"] = np.nanmedian(np.stack([mnt.sample(pts[:, 0] + nrm[:, 0] * o, pts[:, 1] + nrm[:, 1] * o) for o in lat]), axis=0)
+    ed["free"] = None
+    st, mode = ed["structure"], ed["mode"]
+    w = np.ones(len(s))
+    if st in ("ground", "passage", "indoor"):
+        if ed["a"] in special:
+            w[s < p["abutment_ignore_m"]] = 0.0
+        if ed["b"] in special:
+            w[s > s[-1] - p["abutment_ignore_m"]] = 0.0
+    ed["w"] = w
+    # where samples have no weight, hold the nearest observed level (a weak prior, so the profile is defined there)
+    ok = (w > 0) & np.isfinite(ed["ground"])
+    ed["hold"] = np.interp(s, s[ok], ed["ground"][ok]) if ok.any() else None
+    sm = max(1, int(round(p["smooth_window_m"] / max(ds, 0.1)))) | 1
+    if st == "bridge":
+        dl = np.array([-1, 0, 1]) * max(0.0, ed["width"] / 2 - p["deck_lateral_m"])
+        ed["deck"] = np.nanmedian(np.stack([mns.sample(pts[:, 0] + nrm[:, 0] * o, pts[:, 1] + nrm[:, 1] * o) for o in dl]), axis=0)
+        z = solve(ed["deck"], ds, p["deck_max_grade"][deck_key(mode)], lo_soft=ed["ground"] + p["deck_min_above_ground_m"],
+                  bin_m=p["profile_bin_m"], smooth_n=sm)
+    elif st in ("ground", "passage", "indoor"):
+        z = solve(ed["ground"], ds, p["max_grade"][grade_key(mode)], w=w, prior=ed["hold"], prior_w=0.01,
+                  bin_m=p["profile_bin_m"], smooth_n=sm) if w.any() else None
+    else:
+        z = None
+    if z is not None and len(z):
+        ed["free"] = (float(z[0]), float(z[-1]))
+
+
 def build(ctx):
     p = ctx.params["transport"]
     chk = params()["checks"]
@@ -327,6 +396,12 @@ def build(ctx):
         if ed["mode"] == "elevator":
             ed["structure"] = "elevator"
         ed["L"] = float(np.hypot(*np.diff(ed["en"], axis=0).T).sum())
+    sts = defaultdict(set)
+    for ed in edges:
+        sts[ed["a"]].add(ed["structure"]); sts[ed["b"]].add(ed["structure"])
+    special = {nid for nid, st in sts.items() if st & {"ground", "passage", "indoor"} and st & {"bridge", "tunnel"}}
+    for ed in edges:
+        prepare(ed, mnt, mns, p, special)
     nz, nkind, npos, inc = node_heights(edges, mnt, mns, p)
     tdist, portal_nodes = tunnel_distances(edges, inc, nkind)
     chain_of, chain_len = tunnel_chains(edges)
@@ -339,12 +414,7 @@ def build(ctx):
     for ed in edges:
         tg = ed["el"].get("tags", {})
         mode, st = ed["mode"], ed["structure"]
-        width, lanes = width_lanes(tg, ed["cls"], mode, p)
-        pts, s = resample(ed["en"], p["sample_m"])
-        ds = float(s[1] - s[0]) if len(s) > 1 else 0.0
-        nrm = normals(pts)
-        lat = np.array(p["lateral_samples"]) * width
-        ground = np.nanmedian(np.stack([mnt.sample(pts[:, 0] + nrm[:, 0] * o, pts[:, 1] + nrm[:, 1] * o) for o in lat]), axis=0)
+        width, lanes, pts, s, ds, ground = ed["width"], ed["lanes"], ed["pts"], ed["s"], ed["ds"], ed["ground"]
         z0, z1 = nz[ed["a"]], nz[ed["b"]]
         rec_extra = {}
         if st == "tunnel":
@@ -359,20 +429,19 @@ def build(ctx):
             grade = p["max_grade"][grade_key(mode)]
             kw = dict(z0=z0, z1=z1, bin_m=p["profile_bin_m"], smooth_n=max(1, int(round(p["smooth_window_m"] / max(ds, 0.1)))) | 1)
             if st == "bridge":
-                dl = np.array([-1, 0, 1]) * max(0.0, width / 2 - p["deck_lateral_m"])
-                deck = np.nanmedian(np.stack([mns.sample(pts[:, 0] + nrm[:, 0] * o, pts[:, 1] + nrm[:, 1] * o) for o in dl]), axis=0)
+                deck = ed["deck"]
                 z = solve(deck, ds, p["deck_max_grade"][deck_key(mode)], lo_soft=ground + p["deck_min_above_ground_m"], **kw)
                 rec_extra["deck_obs"] = deck
                 how = "mns"
             elif st == "tunnel":
                 need = clearance(mode, p) + chk["tunnel_min_cover_m"]
                 ramp = np.clip(tun_d / chk["portal_max_from_end_m"], 0, 1)
-                hi_soft = cover - need * ramp
+                hi_soft = cover - (need + 0.3) * ramp     # aim a little deeper than the check (smoothing)
                 lin = np.linspace(z0, z1, len(s))
                 z = solve(np.full(len(s), np.nan), ds, grade, prior=lin, prior_w=0.01, hi_soft=hi_soft, **kw)
                 how = "tunnel"
             else:
-                z = solve(ground, ds, grade, **kw)
+                z = solve(ground, ds, grade, w=ed["w"], prior=ed["hold"], prior_w=0.01, **kw)
                 how = "mnt"
             relax = 1.0
             while z is None and relax < 16:
@@ -384,7 +453,7 @@ def build(ctx):
                 elif st == "tunnel":
                     z = solve(np.full(len(s), np.nan), ds, grade * relax, prior=lin, prior_w=0.01, hi_soft=hi_soft, **kw2)
                 else:
-                    z = solve(ground, ds, grade * relax, **kw2)
+                    z = solve(ground, ds, grade * relax, w=ed["w"], prior=ed["hold"], prior_w=0.01, **kw2)
             if relax > 1:
                 unsolved += 1
                 how += f"+grade_x{relax:g}"

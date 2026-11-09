@@ -45,12 +45,15 @@ def solve(h, ds, grade, w=None, lo=None, hi=None, z0=None, z1=None, prior=None, 
     if not vals:
         return None
     zmin, zmax = min(vals) - 3.0, max(vals) + 3.0
-    if grade * ds > 0:
-        bin_m = min(bin_m, grade * ds / 4)      # at least 4 bins per step, so the cap is not rounded down
     bin_m = max(bin_m, (zmax - zmin) / 20000)
+    if grade * ds > 0:
+        # a whole number k of bins per step, exactly the cap: the cap is never rounded down
+        k = max(4, int(math.ceil(grade * ds / bin_m)))
+        bin_m = grade * ds / k
+    else:
+        k = 1
     nb = int(math.ceil((zmax - zmin) / bin_m)) + 1
     zb = zmin + np.arange(nb) * bin_m
-    k = max(1, int(math.floor(grade * ds / bin_m + 1e-9)))
     INF = 1e18
 
     def cost(i):

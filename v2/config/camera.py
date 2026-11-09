@@ -81,23 +81,46 @@ def v1_to_v2_px(x, y):
     return (np.asarray(x) + c["v1_offset_px"][0]) * k, (np.asarray(y) + c["v1_offset_px"][1]) * k
 
 
-def v1_px_to_en(x, y, ground):
+def v1_px_to_en(x, y, ground, zmin=150.0, zmax=480.0, dz=0.02):
     """v1 map pixels (on the ground) to LUREF metres, solving for the ground height with `ground(e, n)`.
 
-    v1's pixels were made with v1's terrain, so pass v1's terrain sampler for exact round trips."""
+    A pixel is a ray; the place is where the ray meets the ground. On cliffs the ray can meet it more than once, so
+    the ray is scanned from the camera side (high z first) and the first crossing is kept (the visible one), then
+    refined by bisection. v1's pixels were made with v1's terrain, so pass v1's sampler for exact round trips."""
     c = camera()
     v = c["v1"]
-    sx = v["sx0"] + np.asarray(x, float) * v["mpp"]
-    sy = v["sy1"] - np.asarray(y, float) * v["mpp"]
+    sx = v["sx0"] + np.atleast_1d(np.asarray(x, float)) * v["mpp"]
+    sy = v["sy1"] - np.atleast_1d(np.asarray(y, float)) * v["mpp"]
     oe, on, el, _ = _c()
-    z = np.full(np.shape(sx), 300.0)
-    for _ in range(30):
+
+    def at(z):
         f = (sy - z * math.cos(el)) / math.sin(el)
-        e, n = (sx - f) * R + oe, (sx + f) * R + on
-        z2 = ground(e, n)
-        if np.all(np.abs(z2 - z) < 1e-3):
-            break
-        z = z2
+        return (sx - f) * R + oe, (sx + f) * R + on
+
+    zs = np.arange(zmax, zmin, -dz)
+    hi = np.full(sx.shape, np.nan); lo = np.full(sx.shape, np.nan)
+    exact = np.full(sx.shape, np.nan)
+    prev = None
+    for z in zs:
+        e, n = at(np.full(sx.shape, z))
+        d = z - ground(e, n)                     # > 0 above the ground
+        if prev is not None:
+            hit = np.isnan(hi) & (prev > 0) & (d <= 0)
+            hi[hit] = z + dz; lo[hit] = z
+        near = np.isnan(exact) & (np.abs(d) <= dz / 2)
+        exact[near] = z                          # a true root (a stepped terrain can jump past one)
+        prev = d
+    for _ in range(30):
+        mid = (hi + lo) / 2
+        e, n = at(mid)
+        above = mid - ground(e, n) > 0
+        hi = np.where(above, mid, hi); lo = np.where(above, lo, mid)
+    z = (hi + lo) / 2
+    # prefer a true root to a jump in a stepped (cell-valued) terrain
+    e, n = at(z)
+    off = np.abs(z - ground(e, n)) > dz
+    z = np.where(off & np.isfinite(exact), exact, z)
+    e, n = at(z)
     return e, n, z
 
 

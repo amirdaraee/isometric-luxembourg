@@ -195,18 +195,29 @@ def previews(ctx):
         shade = 0.55 + 0.45 * np.abs(nrm @ sun)
         basec = np.where(kind[:, None] == 1, np.array([0.62, 0.36, 0.3]), np.array([0.86, 0.8, 0.7]))
         col = np.clip(basec * shade[:, None], 0, 1)
-        order = np.argsort(-dep)
-        fig, ax = plt.subplots(figsize=(16, 11), dpi=150)
-        ax.set_facecolor("#efe8dc")
-        ax.add_collection(PolyCollection(np.stack([px, py], -1)[order], facecolors=col[order], edgecolors=(0.18, 0.15, 0.13, 0.5),
-                                         linewidths=0.08))
+        # windows of the walls that face the camera (south-east), sorted with the building faces by depth so the
+        # buildings in front hide them
         fac = json.loads((part(sc, "facades") / "facades.json").read_text())["walls"]
         from v2.data.scene.facades import window_world
-        wins = [window_world(w, x) for w in fac for x in w["windows"] if w["normal"][1] < 0.2 or w["normal"][0] > -0.2]
+        wins = [window_world(w, x) for w in fac for x in w["windows"] if w["normal"][0] - w["normal"][1] > 0.05]
+        polys = np.stack([px, py], -1)
+        cols = np.column_stack((col, np.ones(len(col))))
+        deps, edge_w = dep, np.full(len(dep), 1.0)
         if wins:
             W = np.array(wins)
             wx, wy = en_to_px(W[..., 0], W[..., 1], W[..., 2])
-            ax.add_collection(PolyCollection(np.stack([wx, wy], -1), facecolors="#3b4a5a", edgecolors="none", alpha=0.85))
+            wd = depth(W[..., 0].mean(1), W[..., 1].mean(1), W[..., 2].mean(1)) - 0.05
+            # a window is a quad: split it into two triangles to share the face array
+            q = np.stack([wx, wy], -1)
+            polys = np.concatenate([polys, q[:, [0, 1, 2]], q[:, [0, 2, 3]]])
+            wc = np.tile(np.array([[0.23, 0.29, 0.35, 1.0]]), (2 * len(q), 1))
+            cols = np.concatenate([cols, wc]); deps = np.concatenate([dep, wd, wd])
+            edge_w = np.concatenate([edge_w, np.zeros(2 * len(q))])
+        order = np.argsort(-deps)
+        fig, ax = plt.subplots(figsize=(16, 11), dpi=150)
+        ax.set_facecolor("#efe8dc")
+        ax.add_collection(PolyCollection(polys[order], facecolors=cols[order], edgecolors=(0.18, 0.15, 0.13, 0.5),
+                                         linewidths=(edge_w * 0.08)[order]))
         ax.set_xlim(px.min(), px.max()); ax.set_ylim(py.max(), py.min())
         ax.set_aspect("equal"); ax.set_xticks([]); ax.set_yticks([])
         ax.set_title(f"{ctx.area}: buildings through the v2 camera (south-east view, 30 degrees, v2 map pixels) "
@@ -217,10 +228,8 @@ def previews(ctx):
         ax_lim = (cx[0] - 2400, cx[0] + 2400, cy[0] + 1700, cy[0] - 1700)
         fig, ax = plt.subplots(figsize=(14, 10), dpi=150)
         ax.set_facecolor("#efe8dc")
-        ax.add_collection(PolyCollection(np.stack([px, py], -1)[order], facecolors=col[order], edgecolors=(0.18, 0.15, 0.13, 0.7),
-                                         linewidths=0.25))
-        if wins:
-            ax.add_collection(PolyCollection(np.stack([wx, wy], -1), facecolors="#3b4a5a", edgecolors="none", alpha=0.9))
+        ax.add_collection(PolyCollection(polys[order], facecolors=cols[order], edgecolors=(0.18, 0.15, 0.13, 0.7),
+                                         linewidths=(edge_w * 0.25)[order]))
         ax.set_xlim(ax_lim[0], ax_lim[1]); ax.set_ylim(ax_lim[2], ax_lim[3])
         ax.set_aspect("equal"); ax.set_xticks([]); ax.set_yticks([])
         ax.set_title("the Grund and Neumünster Abbey: windows placed by the facade rule (straight rows by construction)")
