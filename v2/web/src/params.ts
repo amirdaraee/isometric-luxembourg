@@ -56,7 +56,7 @@ export function today(): Date {
 
 /** The instant of a Luxembourg wall-clock time (Europe/Luxembourg, with summer time). */
 export function luxDate(y: number, m: number, d: number, hour: number): Date {
-  const guess = Date.UTC(y, m - 1, d, Math.floor(hour), Math.round((hour % 1) * 60));
+  const guess = Date.UTC(y, m - 1, d) + Math.round(hour * 3600_000);   // to the millisecond
   for (const off of [1, 2]) {
     const t = new Date(guess - off * 3600_000);
     const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Luxembourg", hour: "2-digit", hourCycle: "h23" })

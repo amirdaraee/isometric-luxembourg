@@ -1,0 +1,2122 @@
+{
+ "area": "test",
+ "gate": "G1",
+ "passed": true,
+ "checks": {
+  "check_layers": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "L1.1",
+     "title": "ground pixels of the area without a class (of 50443085)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L1.2",
+     "title": "no shading: worst relative luminance difference of a ground class, north vs south slopes",
+     "passed": true,
+     "value": 0.0004,
+     "threshold": "<= 0.02",
+     "severity": "gate",
+     "examples": [
+      {
+       "class": "water",
+       "north": 100.31,
+       "south": 100.28,
+       "diff": 0.0004
+      },
+      {
+       "class": "parking",
+       "north": 168.33,
+       "south": 168.3,
+       "diff": 0.0002
+      },
+      {
+       "class": "wood",
+       "north": 95.03,
+       "south": 95.05,
+       "diff": 0.0002
+      },
+      {
+       "class": "square",
+       "north": 201.29,
+       "south": 201.31,
+       "diff": 0.0001
+      },
+      {
+       "class": "grass",
+       "north": 139.98,
+       "south": 139.97,
+       "diff": 0.0001
+      },
+      {
+       "class": "meadow",
+       "north": 164.47,
+       "south": 164.45,
+       "diff": 0.0001
+      },
+      {
+       "class": "scrub",
+       "north": 119.75,
+       "south": 119.76,
+       "diff": 0.0001
+      },
+      {
+       "class": "paved",
+       "north": 194.88,
+       "south": 194.88,
+       "diff": 0.0
+      }
+     ]
+    },
+    {
+     "id": "L2.1",
+     "title": "flat ground changed by the relief (of 13027164 flat pixels)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L8.1",
+     "title": "pixels where a layer's depth differs from layer 8's by > 1.0 cm (of 51217481)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L8.2",
+     "title": "normals not unit or facing away from the camera (of 51217481)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L8.3",
+     "title": "ids not in the scene",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L8.3b",
+     "title": "buildings with at least one pixel in layer 8",
+     "passed": true,
+     "value": "1099 of 1135",
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "L2.2",
+     "title": "walls (drop >= 1.5 m, in the area, in view) drawn along < 90% of their visible length (of 331)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L3.1",
+     "title": "OSM water pixels not drawn as water, and water pixels outside OSM water (+- 1 px; 1467950 water pixels)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": [
+      {
+       "missing": 0,
+       "outside": 0
+      }
+     ]
+    },
+    {
+     "id": "L4.1",
+     "title": "road, rail and tram centre-line samples (every 0.5 m) inside the drawn surface (of 63132; 4183 behind the terrain; 183 within 1 px of the surface's edge)",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 1.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L4.3",
+     "title": "drawn pixels of tunnel ways (portals are drawn, tunnels are not)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P-1",
+     "title": "colour literals in the layer code (every colour comes from palette.json)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    }
+   ]
+  },
+  "check_independence": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "C1a",
+     "title": "layer tiles that change when another layer's inputs are removed (504 renders, 12 tiles x 7 layers x 6 others)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C1b",
+     "title": "built tiles whose geometry differs from the renderer's",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C1c",
+     "title": "mean colour difference of a built tile from the renderer (lossy WebP q90 coding)",
+     "passed": true,
+     "value": 2.97,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C1d",
+     "title": "layer off in the viewer: no pixel of it, no shadow of it (check_viewer V1, V2)",
+     "passed": true,
+     "value": "see check_viewer",
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_shadows": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "L9.0",
+     "title": "the released shadow height map is the scene's",
+     "passed": true,
+     "value": null,
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L5.1/L9.2",
+     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 349 compared)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L5.1b",
+     "title": "worst relative difference by layer",
+     "passed": true,
+     "value": {
+      "ground": 0.003,
+      "buildings": 0.0104,
+      "water": 0.0,
+      "structures": 0.0132,
+      "transport": 0.0129
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "L9.1-08",
+     "title": "shadow direction vs the sun at 08:00 on 2026-06-21 (az 78.3, el 21.3): median angle error over 863 buildings (deg; 90th pct 23.1)",
+     "passed": true,
+     "value": 7.71,
+     "threshold": "<= 10.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L9.1-13",
+     "title": "shadow direction vs the sun at 13:00 on 2026-06-21 (az 161.0, el 62.8): median angle error over 435 buildings (deg; 90th pct 43.4)",
+     "passed": true,
+     "value": 9.82,
+     "threshold": "<= 10.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L9.1-19",
+     "title": "shadow direction vs the sun at 19:00 on 2026-06-21 (az 279.1, el 23.6): median angle error over 836 buildings (deg; 90th pct 25.2)",
+     "passed": true,
+     "value": 7.63,
+     "threshold": "<= 10.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L2.3",
+     "title": "the relief layer is identical for a morning and an evening sun",
+     "passed": true,
+     "value": null,
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    }
+   ]
+  },
+  "check_seams": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "S-ground",
+     "title": "ground: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 375 chunks)",
+     "passed": true,
+     "value": 2.477,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-ground-v1",
+     "title": "ground: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 3073",
+     "passed": true,
+     "value": {
+      "borders": 18,
+      "middles": 6.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-relief",
+     "title": "relief: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 350 chunks)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-relief-v1",
+     "title": "relief: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 3077",
+     "passed": true,
+     "value": {
+      "borders": 14,
+      "middles": 7.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-water",
+     "title": "water: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 66 chunks)",
+     "passed": true,
+     "value": 1.502,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-water-v1",
+     "title": "water: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 38",
+     "passed": true,
+     "value": {
+      "borders": 0,
+      "middles": 0.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-transport",
+     "title": "transport: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 55 chunks)",
+     "passed": true,
+     "value": 2.21,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-transport-v1",
+     "title": "transport: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 100",
+     "passed": true,
+     "value": {
+      "borders": 0,
+      "middles": 0.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-buildings",
+     "title": "buildings: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 187 chunks)",
+     "passed": true,
+     "value": 1.295,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-buildings-v1",
+     "title": "buildings: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 741",
+     "passed": true,
+     "value": {
+      "borders": 10,
+      "middles": 3.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-structures",
+     "title": "structures: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 16 chunks)",
+     "passed": true,
+     "value": 1.209,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-structures-v1",
+     "title": "structures: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 54",
+     "passed": true,
+     "value": {
+      "borders": 3,
+      "middles": 0.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-trees",
+     "title": "trees: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 82 chunks)",
+     "passed": true,
+     "value": 2.804,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-trees-v1",
+     "title": "trees: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 136",
+     "passed": true,
+     "value": {
+      "borders": 0,
+      "middles": 0.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "L8.4",
+     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1435 of 193055 vs 1338 of 188348; a seam would make it larger)",
+     "passed": true,
+     "value": 1.046,
+     "threshold": "<= 1.5",
+     "severity": "gate",
+     "examples": []
+    }
+   ]
+  },
+  "check_vehicles": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "V0",
+     "title": "audit: samples over a simulated day",
+     "passed": true,
+     "value": {
+      "car_samples": 901179,
+      "transit_samples": 30106,
+      "every_s": 20,
+      "audit_s": 78.5
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "V0b",
+     "title": "vehicle samples in the area behind the terrain (not in view)",
+     "passed": true,
+     "value": 21979,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "V0c",
+     "title": "vehicle samples under another way's deck (not in view)",
+     "passed": true,
+     "value": 3096,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "L4.2",
+     "title": "car samples on drawn road (of 558942 in the area, out of tunnels)",
+     "passed": true,
+     "value": 0.99937,
+     "threshold": ">= 0.995",
+     "severity": "gate",
+     "examples": [
+      {
+       "e": 77546.5,
+       "n": 75947.5,
+       "edge": "w9882486_117"
+      },
+      {
+       "e": 77301.8,
+       "n": 75795.2,
+       "edge": "w159842128_1286"
+      },
+      {
+       "e": 77546.0,
+       "n": 75947.5,
+       "edge": "w9882486_117"
+      },
+      {
+       "e": 77919.1,
+       "n": 75461.5,
+       "edge": "w274961870_1946"
+      },
+      {
+       "e": 77508.1,
+       "n": 74669.0,
+       "edge": "w848209495_3481"
+      },
+      {
+       "e": 77301.8,
+       "n": 75795.2,
+       "edge": "w159842128_1286"
+      },
+      {
+       "e": 77476.4,
+       "n": 75033.4,
+       "edge": "w50786532_545"
+      },
+      {
+       "e": 77548.2,
+       "n": 75947.0,
+       "edge": "w9882486_117"
+      }
+     ]
+    },
+    {
+     "id": "L12.4",
+     "title": "tram and train samples on drawn track (of 18860)",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 0.995",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L12.3",
+     "title": "share of car samples the v1 fade guard would act on (off the drawn road)",
+     "passed": true,
+     "value": 0.00063,
+     "threshold": "<= 0.001",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L12.1a",
+     "title": "vehicle pixels drawn inside tunnels past their portals (5628 samples in tunnels)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C4a",
+     "title": "probed: tunnel portals, bridge edges, ways under a deck; probe vehicles",
+     "passed": true,
+     "value": {
+      "portals": 39,
+      "bridges": 30,
+      "under_crossings": 40,
+      "probes": 3262
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "C4",
+     "title": "probe pixels where the viewer's depth test disagrees with the exact geometry (of 12516108; 1793 more on silhouettes, within 1 px of an edge)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C4b",
+     "title": "share of probe pixels on silhouettes (edge rounding)",
+     "passed": true,
+     "value": 0.00014,
+     "threshold": "<= 0.01",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C4c",
+     "title": "probe pixels hidden (under decks or past portals)",
+     "passed": true,
+     "value": {
+      "deck_and_under": 1552760,
+      "portals": 2117473
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "L12.2a",
+     "title": "largest height change of a car between two frames (m; 34309718 car-frames)",
+     "passed": true,
+     "value": 0.332,
+     "threshold": "<= 0.5",
+     "severity": "gate",
+     "examples": [
+      {
+       "id": 128,
+       "rid": 2058,
+       "x": 8259.644983998001,
+       "y": 10783.996428217377,
+       "z": 264.92942330135367,
+       "prev": 265.26135876549387
+      }
+     ]
+    },
+    {
+     "id": "L12.2b",
+     "title": "largest height change of a tram or train section between frames (m; 29546655)",
+     "passed": true,
+     "value": 0.046,
+     "threshold": "<= 0.5",
+     "severity": "gate",
+     "examples": [
+      {
+       "trip": "RB",
+       "shape": 30,
+       "edge": 1844,
+       "s": 6.411382076246272,
+       "z": 277.06750949913794,
+       "prev": 277.11329656962505,
+       "sec": 67398.26666668261
+      }
+     ]
+    },
+    {
+     "id": "V9",
+     "title": "seconds",
+     "passed": true,
+     "value": 202.2,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_no_cars": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "D0",
+     "title": "detector",
+     "passed": true,
+     "value": {
+      "model": "google/owlv2-base-patch16-ensemble",
+      "device": "mps",
+      "images": 979,
+      "seconds": 381.5,
+      "queries": [
+       "a car",
+       "a parked car",
+       "a van",
+       "a bus",
+       "a truck"
+      ]
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "D-ground",
+     "title": "ground: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-relief",
+     "title": "relief: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-water",
+     "title": "water: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-transport",
+     "title": "transport: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-buildings",
+     "title": "buildings: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-structures",
+     "title": "structures: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-trees",
+     "title": "trees: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D9",
+     "title": "highest score of any query on any tile (below the threshold)",
+     "passed": true,
+     "value": 0.1428,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_viewer": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "V0",
+     "title": "browser and GPU",
+     "passed": true,
+     "value": {
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Pro, Unspecified Version)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "V0b",
+     "title": "page errors",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-ground",
+     "title": "?off=ground: pixels still showing layer ground",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-relief",
+     "title": "?off=relief: pixels still showing layer relief",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-water",
+     "title": "?off=water: pixels still showing layer water",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-transport",
+     "title": "?off=transport: pixels still showing layer transport",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-buildings",
+     "title": "?off=buildings: pixels still showing layer buildings",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-structures",
+     "title": "?off=structures: pixels still showing layer structures",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-trees",
+     "title": "?off=trees: pixels still showing layer trees",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V3-10",
+     "title": "shadows at 10:00 on 2026-06-21 match the Python reference (share of pixels; 16.9% in shadow)",
+     "passed": true,
+     "value": 0.9872,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V3-16",
+     "title": "shadows at 16:00 on 2026-06-21 match the Python reference (share of pixels; 34.7% in shadow)",
+     "passed": true,
+     "value": 0.9768,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V3-13",
+     "title": "shadows at 13:00 on 2026-06-21 match the Python reference (share of pixels; 10.1% in shadow)",
+     "passed": true,
+     "value": 0.9962,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V2",
+     "title": "?off=buildings: the viewer's shadows equal the reference without buildings (share of pixels)",
+     "passed": true,
+     "value": 0.9891,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V3b",
+     "title": "share of pixels whose shadow changes between 10:00 and 16:00 (shadows move with ?hour)",
+     "passed": true,
+     "value": 0.4296,
+     "threshold": ">= 0.02",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V4",
+     "title": "pixels changed by the night layer at 13:00 (no light by day, L10.2)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V5",
+     "title": "pixels changed by the season outside the tree and green-ground masks (L11.1)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V6",
+     "title": "overlapping labels at the reference views (L15.2)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V7",
+     "title": "the look pass applied again to the viewer's output: largest channel change (L14.1, in 1/255)",
+     "passed": true,
+     "value": 1,
+     "threshold": "<= 1",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C2",
+     "title": "speed (desktop, this machine's GPU)",
+     "passed": true,
+     "value": {
+      "first_view_cold_s": 0.1562000000178814,
+      "first_view_warm_s": 0.09,
+      "pan_whole_area": {
+       "fps": 119.88011988011989,
+       "frame_ms_median": 0.5,
+       "tiles_missing": 0
+      },
+      "pan_zoom1": {
+       "fps": 94.7452627371455,
+       "frame_ms_median": 0.29999998211860657,
+       "tiles_missing": 0
+      },
+      "pan_fps": 94.7452627371455,
+      "throttled": {
+       "cpu_slowdown": 4,
+       "pan_zoom1": {
+        "fps": 118.90190592814082,
+        "frame_ms_median": 0.800000011920929,
+        "tiles_missing": 0
+       }
+      },
+      "viewport": "1600x1000 CSS px, device pixel ratio 1"
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "C2a",
+     "title": "first view, warm (s)",
+     "passed": true,
+     "value": 0.09,
+     "threshold": "<= 0.5",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C2b",
+     "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
+     "passed": true,
+     "value": 94.7,
+     "threshold": ">= 60",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C2c",
+     "title": "mid phone: not measured on a device (see the report); 4x CPU throttle",
+     "passed": true,
+     "value": {
+      "cpu_slowdown": 4,
+      "pan_zoom1": {
+       "fps": 118.90190592814082,
+       "frame_ms_median": 0.800000011920929,
+       "tiles_missing": 0
+      }
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_scope": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "S1",
+     "title": "buildings whose footprint lies outside the area",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S2",
+     "title": "trees outside the area",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S3",
+     "title": "places outside the area",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S4",
+     "title": "transport edges not touching the area + 150 m",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S5",
+     "title": "terrain grid covers the area and its margin",
+     "passed": true,
+     "value": [
+      76993.5,
+      74357.5,
+      78580.5,
+      76271.0
+     ],
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S6",
+     "title": "the area (z 180-450 m) lies inside the v2 pixel frame",
+     "passed": true,
+     "value": [
+      57761,
+      28151
+     ],
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S7",
+     "title": "area km2",
+     "passed": true,
+     "value": 1.566,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_terrain": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "TR1",
+     "title": "share of terrain cells that had no data (filled)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 0.001",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TR2",
+     "title": "non-finite terrain cells after filling",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TR3",
+     "title": "share of cells where the surface is > 0.5 m below the ground",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 0.001",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TR4",
+     "title": "median |building ground - LiDAR terrain| (m)",
+     "passed": true,
+     "value": 1.04,
+     "threshold": "<= 1.5",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TR5",
+     "title": "90th percentile |building ground - terrain| (m)",
+     "passed": true,
+     "value": 3.84,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "TR6",
+     "title": "steep / cliff area (m2)",
+     "passed": true,
+     "value": [
+      245139.25,
+      73925.25
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "TR7",
+     "title": "OSM walls and cliffs measured",
+     "passed": true,
+     "value": [
+      761,
+      46.05
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_buildings": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "B1",
+     "title": "every footprint ring is closed",
+     "passed": true,
+     "value": null,
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B2",
+     "title": "invalid or empty footprints",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B3",
+     "title": "share of buildings without a roof or with fewer than 3 walls",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 0.01",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B4",
+     "title": "pairs of buildings overlapping (> 1 m2 and > 2% of the smaller)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B5",
+     "title": "buildings with impossible heights (0 < h <= 150, ground <= eave <= ridge)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B6",
+     "title": "building ids unique",
+     "passed": true,
+     "value": 1135,
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B7",
+     "title": "roof shapes",
+     "passed": true,
+     "value": {
+      "mixed:gable": 100,
+      "mixed:mansard": 37,
+      "hip": 271,
+      "gable": 342,
+      "mixed:hip": 66,
+      "mansard": 121,
+      "flat": 120,
+      "mixed:shed": 13,
+      "complex": 9,
+      "mixed:complex": 5,
+      "shed": 51
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "B8",
+     "title": "ACT footprints repaired (recorded with their reason in buildings.json)",
+     "passed": true,
+     "value": [],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_facades": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "F1",
+     "title": "walls with a window outside the wall outline",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F2",
+     "title": "walls with windows closer than the minimum gap",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F3",
+     "title": "walls whose window rows are not on their floor lines (straight rows)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F4",
+     "title": "party walls with windows",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F5",
+     "title": "walls with more floors than their eave height allows",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F6",
+     "title": "share of buildings >= 5 m tall and >= 40 m2 with at least one window",
+     "passed": true,
+     "value": 0.996,
+     "threshold": ">= 0.9",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F8",
+     "title": "buildings with a street-facing wall but no door on one",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F9",
+     "title": "doors or shop fronts on a party (shared) wall",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F10",
+     "title": "shop fronts reaching above the ground floor",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F11",
+     "title": "doors or shop fronts outside their wall outline",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F12",
+     "title": "doors or shop fronts not standing on the bottom of their wall (the ground)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F13",
+     "title": "windows overlapping a door or a shop front",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F14",
+     "title": "share of OSM entrances at a building placed as doors",
+     "passed": true,
+     "value": 0.9359,
+     "threshold": ">= 0.9",
+     "severity": "gate",
+     "examples": [
+      [
+       "node/634300483",
+       "no wall within reach"
+      ],
+      [
+       "node/667030391",
+       "does not fit the wall outline"
+      ],
+      [
+       "node/1234191779",
+       "nearest walls are party walls"
+      ],
+      [
+       "node/1268121440",
+       "nearest walls are party walls"
+      ],
+      [
+       "node/9200934657",
+       "no wall within reach"
+      ]
+     ]
+    },
+    {
+     "id": "F15",
+     "title": "doors and shop fronts by source",
+     "passed": true,
+     "value": {
+      "door rule": 1062,
+      "shopfront rule": 535,
+      "shopfront osm": 288,
+      "door osm": 73
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "F7",
+     "title": "walls, with windows, party walls, windows",
+     "passed": true,
+     "value": [
+      22544,
+      6216,
+      4421,
+      37786
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_trees": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "TE1",
+     "title": "trees standing inside a building",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE2",
+     "title": "trees standing in water",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE3",
+     "title": "largest share of a crown over buildings or water",
+     "passed": true,
+     "value": 0.3,
+     "threshold": "<= 0.32",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE4",
+     "title": "heights within 2.0-50.0 m",
+     "passed": true,
+     "value": [
+      2.3399999141693115,
+      44.52000045776367
+     ],
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE5",
+     "title": "trees",
+     "passed": true,
+     "value": 12414,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_transport_profiles": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "P1",
+     "title": "edges with a missing height",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P2",
+     "title": "edge ends off their node height (> 0.3 m)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P3",
+     "title": "vehicle edges with a height jump between samples (beyond the grade cap)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P4",
+     "title": "vehicle edges whose grade cap had to be relaxed",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P5",
+     "title": "vehicle bridge edges with the deck below the ground",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P6",
+     "title": "vehicle bridge edges whose deck is off the LiDAR surface (median > 0.5 m)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P7",
+     "title": "vehicle tunnels (inside the area) not a clearance + cover below their cover beyond the portal zone",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P8",
+     "title": "vehicle tunnels (inside the area, past the portal mouth) rising more than 1 m above their cover",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P9",
+     "title": "portals of vehicle tunnels (>= 80 m, ends inside the area) not found within 40 m of the tunnel end",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P10",
+     "title": "paths/steps with a jump or relaxed grade (not gated: stairs and lifts are often mapped as paths)",
+     "passed": true,
+     "value": [
+      50,
+      56
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "P11",
+     "title": "median |deck - LiDAR surface| over bridge edges (m)",
+     "passed": true,
+     "value": 0.01,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "P12",
+     "title": "portals found / total",
+     "passed": true,
+     "value": [
+      99,
+      103
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "P13",
+     "title": "bridge edges excepted from P5/P6 (v2/data/exceptions.json)",
+     "passed": true,
+     "value": [],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "P14",
+     "title": "approach edges found on a structure past the OSM bridge tag (edges, m)",
+     "passed": true,
+     "value": [
+      11,
+      82.8
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "P15",
+     "title": "share of deck samples not observed (under buildings, crowns or higher bridges)",
+     "passed": true,
+     "value": 0.118,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_transport_graph": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "G1",
+     "title": "edges whose end nodes are missing",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "G2",
+     "title": "vehicle dead ends within 0.5 m of another edge end (unjoined junctions)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "G3",
+     "title": "share of roads length connected (to the main network or out of the area)",
+     "passed": true,
+     "value": 0.9922,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": [
+      [
+       660645169,
+       48.8
+      ],
+      [
+       9504685692,
+       29.6
+      ],
+      [
+       667558428,
+       77.1
+      ],
+      [
+       3895789434,
+       110.7
+      ],
+      [
+       8600267316,
+       18.7
+      ],
+      [
+       9368112088,
+       7.5
+      ]
+     ]
+    },
+    {
+     "id": "G4",
+     "title": "share of rail and tram length connected (to the main network or out of the area)",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "G5c",
+     "title": "dead ends excepted (v2/data/exceptions.json)",
+     "passed": true,
+     "value": [],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "G5",
+     "title": "vehicle bridges or tunnels with a dead end (driveways into garages excepted)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "G5b",
+     "title": "service roads (garage driveways) ending in a tunnel or on a bridge",
+     "passed": true,
+     "value": [
+      "w49839120_414",
+      "w347088630_2305",
+      "w406252558_2380"
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "G6",
+     "title": "km by mode",
+     "passed": true,
+     "value": {
+      "elevator": 0.03,
+      "funicular": 0.63,
+      "path": 51.26,
+      "rail": 6.46,
+      "road": 37.56,
+      "steps": 4.4,
+      "tram": 2.08
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_structures": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "V1",
+     "title": "viaducts in the area not modelled",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V2",
+     "title": "viaduct decks off the transport graph (median > 0.3 m)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V3",
+     "title": "piers whose foot is above the ground (> 0.5 m)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V4",
+     "title": "piers not between ground + 1 m and the deck",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V5",
+     "title": "arches with the crown above the deck or the springing above the crown",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V6",
+     "title": "viaducts whose modelled length is off the documented length by > 15%",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V7",
+     "title": "modelled vs documented height (m)",
+     "passed": true,
+     "value": [
+      [
+       "pulvermuhl",
+       34.4,
+       37
+      ],
+      [
+       "clausen",
+       33.2,
+       44
+      ],
+      [
+       "pfaffenthal",
+       30.6,
+       32
+      ]
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_transit": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "TT1",
+     "title": "share of GTFS tram and train track in the area matched onto the rail graph",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 0.99",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TT2",
+     "title": "share of GTFS samples within 17 m of their matched rail path",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 0.9",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TT3",
+     "title": "shapes in the area with no matched run",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TT4",
+     "title": "shapes by kind",
+     "passed": true,
+     "value": {
+      "tram": 6,
+      "train": 29,
+      "funicular": 0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_places": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "PL1",
+     "title": "95th percentile round-trip error back to v1 pixels (px)",
+     "passed": true,
+     "value": 0.03,
+     "threshold": "<= 0.75",
+     "severity": "gate",
+     "examples": [
+      [
+       "\u00c0 nos morts 1940-1945",
+       1.49
+      ],
+      [
+       "Rue Wiltheim",
+       2.03
+      ]
+     ]
+    },
+    {
+     "id": "PL2a",
+     "title": "largest round-trip error back to v1 pixels (px; cliff edges)",
+     "passed": true,
+     "value": 2.029,
+     "threshold": "<= 4.0",
+     "severity": "gate",
+     "examples": [
+      [
+       "\u00c0 nos morts 1940-1945",
+       1.49
+      ],
+      [
+       "Rue Wiltheim",
+       2.03
+      ]
+     ]
+    },
+    {
+     "id": "PL2",
+     "title": "median |v2 terrain - v1 terrain| at the places (m)",
+     "passed": true,
+     "value": 0.11,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "PL3",
+     "title": "places, landmarks",
+     "passed": true,
+     "value": [
+      338,
+      62
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_no_patching": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "N1",
+     "title": "stages or stage functions named like a fix on finished art",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "N2",
+     "title": "v2 modules named like a fix on finished art",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "N3",
+     "title": "stages in the build graph",
+     "passed": true,
+     "value": 51,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_ledger": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "L1",
+     "title": "ledger problems (bad events, spends without an approved quote, goals over cap)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L2",
+     "title": "total spent + committed (USD)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 100.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L3",
+     "title": "Phase 0 spend (USD)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0.0",
+     "severity": "gate",
+     "examples": []
+    }
+   ]
+  }
+ },
+ "speed": {
+  "first_view_cold_s": 0.1562000000178814,
+  "first_view_warm_s": 0.09,
+  "pan_whole_area": {
+   "fps": 119.88011988011989,
+   "frame_ms_median": 0.5,
+   "tiles_missing": 0
+  },
+  "pan_zoom1": {
+   "fps": 94.7452627371455,
+   "frame_ms_median": 0.29999998211860657,
+   "tiles_missing": 0
+  },
+  "pan_fps": 94.7452627371455,
+  "throttled": {
+   "cpu_slowdown": 4,
+   "pan_zoom1": {
+    "fps": 118.90190592814082,
+    "frame_ms_median": 0.800000011920929,
+    "tiles_missing": 0
+   }
+  },
+  "viewport": "1600x1000 CSS px, device pixel ratio 1"
+ },
+ "previews": [
+  "test_g1_day_1300.jpg",
+  "test_g1_golden_hour.jpg",
+  "test_g1_night.jpg",
+  "test_g1_night_grund.jpg",
+  "test_g1_shadows_1000.jpg",
+  "test_g1_shadows_1600.jpg",
+  "test_g1_portal_vehicles.jpg",
+  "test_g1_viaduct_vehicles.jpg",
+  "test_g1_shadows_pair.jpg",
+  "test_g1_layer_toggles.jpg"
+ ],
+ "preview_views": {
+  "test_day_1300": {
+   "q": "hour=13&date=2026-06-24",
+   "sun": {
+    "az": 160.70677659942908,
+    "el": 62.76593090146609,
+    "hour": 13
+   }
+  },
+  "test_golden_hour": {
+   "q": "hour=21.317&date=2026-06-24",
+   "sun": {
+    "az": 303.7873308983723,
+    "el": 3.036635516140799,
+    "hour": 21.316666666666666
+   }
+  },
+  "test_night": {
+   "q": "hour=23.25&date=2026-06-24",
+   "sun": {
+    "az": 326.9581373854063,
+    "el": -10.34746407827303,
+    "hour": 23.25
+   }
+  },
+  "test_night_grund": {
+   "q": "hour=23.25&date=2026-06-24&x=62600&y=34400&z=0.55&nosim",
+   "sun": {
+    "az": 326.9581373854063,
+    "el": -10.34746407827303,
+    "hour": 23.25
+   }
+  },
+  "test_shadows_1000": {
+   "q": "hour=10&date=2026-06-24&x=62600&y=34400&z=0.7&nosim",
+   "sun": {
+    "az": 101.25876265305465,
+    "el": 40.415388223062166,
+    "hour": 10
+   }
+  },
+  "test_shadows_1600": {
+   "q": "hour=16&date=2026-06-24&x=62600&y=34400&z=0.7&nosim",
+   "sun": {
+    "az": 239.6854627390524,
+    "el": 51.88185733694722,
+    "hour": 16
+   }
+  },
+  "test_portal_vehicles": {
+   "q": "date=2026-06-24&hour=8.1069&nosim&simtime=900&x=60845&y=35602&z=1.4",
+   "sun": {
+    "az": 79.30918723229172,
+    "el": 22.084318718423727,
+    "hour": 8.1
+   },
+   "train_second": 29185
+  },
+  "test_viaduct_vehicles": {
+   "q": "date=2026-06-24&hour=8.1042&nosim&simtime=900&x=62111&y=35444&z=1.4",
+   "sun": {
+    "az": 79.30918723229172,
+    "el": 22.084318718423727,
+    "hour": 8.1
+   },
+   "train_second": 29175
+  },
+  "toggle_all": {
+   "q": "hour=15&date=2026-06-24&x=61900&y=33900&z=0.45&nosim",
+   "sun": {
+    "az": 218.98210986636718,
+    "el": 59.27020040530851,
+    "hour": 15
+   }
+  },
+  "toggle_nolight": {
+   "q": "hour=15&date=2026-06-24&x=61900&y=33900&z=0.45&nosim&off=light,look",
+   "sun": {
+    "az": 218.98210986636718,
+    "el": 59.27020040530851,
+    "hour": 15
+   }
+  },
+  "toggle_nobuildings": {
+   "q": "hour=15&date=2026-06-24&x=61900&y=33900&z=0.45&nosim&off=buildings",
+   "sun": {
+    "az": 218.98210986636718,
+    "el": 59.27020040530851,
+    "hour": 15
+   }
+  },
+  "toggle_notrees": {
+   "q": "hour=15&date=2026-06-24&x=61900&y=33900&z=0.45&nosim&off=trees",
+   "sun": {
+    "az": 218.98210986636718,
+    "el": 59.27020040530851,
+    "hour": 15
+   }
+  },
+  "toggle_base": {
+   "q": "hour=15&date=2026-06-24&x=61900&y=33900&z=0.45&nosim&off=transport,buildings,structures,trees,vehicles",
+   "sun": {
+    "az": 218.98210986636718,
+    "el": 59.27020040530851,
+    "hour": 15
+   }
+  },
+  "toggle_layers": {
+   "q": "hour=15&date=2026-06-24&x=61900&y=33900&z=0.45&nosim&debug=layer",
+   "sun": {
+    "az": 218.98210986636718,
+    "el": 59.27020040530851,
+    "hour": 15
+   }
+  }
+ },
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/b6bc236f5405"
+}
