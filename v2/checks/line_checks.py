@@ -23,10 +23,15 @@ from v2.layers.common import Scene, TILE, lum, project
 from v2.layers import geometry as G
 
 
-def feature_edges(M, min_len=0.5):
-    """3D segments (a, b) of a mesh where two triangles of different surface groups meet, or a surface ends, and the
-    object (building) each belongs to."""
+def feature_edges(M, min_len=0.5, crease_deg=20.0):
+    """3D segments (a, b) of a mesh where a surface ends, or two surfaces meet at a crease (of different objects or
+    classes, or turning by crease_deg or more: the facets of a round tower are one smooth wall, as layer 5 draws it),
+    and the object (building) each belongs to."""
+    from v2.layers.geometry import tri_normals
     V, T, grp = M["V"], M["T"], M["group"]
+    nrm, _ = tri_normals(V, T)
+    cls = M["cls"]
+    cosc = np.cos(np.radians(crease_deg))
     q = np.round(V * 100).astype(np.int64)
     seen = {}
     for t in range(len(T)):
@@ -38,7 +43,11 @@ def feature_edges(M, min_len=0.5):
     obj = M["obj"]
     for (ka, kb), ts in seen.items():
         groups = {int(grp[t]) for t in ts}
-        if len(ts) == 1 or len(groups) > 1:
+        crease = len(ts) == 1
+        if not crease and len(groups) > 1:
+            t0, t1 = ts[0], ts[1]
+            crease = (obj[t0] != obj[t1]) or (cls[t0] != cls[t1]) or abs(float(nrm[t0] @ nrm[t1])) <= cosc
+        if crease:
             a, b = np.array(ka) / 100.0, np.array(kb) / 100.0
             if np.linalg.norm(b - a) >= min_len:
                 A.append(a); B.append(b); O.append(int(obj[ts[0]]))

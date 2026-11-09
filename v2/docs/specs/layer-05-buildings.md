@@ -31,10 +31,10 @@ index) for hover.
 - L5.1 (gate) No baked shadows: on each building the mean luminance of the same material on sunlit and shadow
   sides (for the photo's sun) differs by ≤ 5%; the shadow detector finds nothing (brief 5).
 - L5.2 (gate) Line score: building edges and window rows within 1 px of the 3D model's lines over 95% of their
-  length (brief 6). Measured (`check_lines`, phase 2): every crease and outline of the model and the top and bottom
-  of every window, sampled every 0.25 m where layer 5 shows them; the drawn line is the largest luminance step
-  (>= 12/255) across the projected line within 3 px; it must lie within 1 px. Building edges and window rows are
-  scored separately, each >= 95%.
+  length (brief 6). Measured (`check_lines`, phase 2): every crease (surfaces meeting at 20° or more, or of
+  different classes) and outline of the model, and the top and bottom of every window, sampled every 0.25 m where
+  layer 5 shows that building; the drawn line is the luminance step (>= 12/255) across the projected line nearest
+  to it, within 3 px; it must lie within 1 px. Building edges and window rows are scored separately, each >= 95%.
 - L5.3 (gate) 0 pixels outside the outline + 2 px (cut rule); 0 building pixels missing inside it (> 99.5%).
 - L5.4 (gate) No cars (vehicle detector on every input and output; brief 9).
 - L5.5 (gate) Seams and layer-off checks.
