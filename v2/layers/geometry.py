@@ -21,7 +21,7 @@ import math
 
 import numpy as np
 
-from v2.layers.common import CLASS
+from v2.layers.common import CLASS, VIEW
 
 
 class Mesh:
@@ -192,37 +192,122 @@ def vehicle_mode(e):
     return e["mode"] in ("road", "rail", "tram", "funicular")
 
 
-def on_deck(e) -> bool:
-    """Drawn as a deck at its profile (layer 4 rule 1), not on the terrain: bridges, and approaches the profile
-    holds on a structure above the ground (median more than 1 m over the terrain: the surface model sees a deck past
-    the OSM bridge tag, transport-graph.md rule 0)."""
+DECK_CORE_M = 1.0      # a way whose profile stands this far over the terrain is on a structure (Phase 1's rule)
+DECK_EDGE_M = 0.1      # ... and the structure runs on until the profile is back within this of the terrain
+
+
+def deck_mask(e, terrain, abutment=(False, False)) -> np.ndarray:
+    """Per sample of an edge: drawn at its profile as a deck (True) or on the terrain (False) (layer 4 rule 1).
+
+    Bridges are decks all along. A ground way is a deck on every stretch where its profile stands more than
+    DECK_CORE_M over the terrain, grown along the way while it stays more than DECK_EDGE_M over it: so an approach
+    the terrain model has cut away (ACT cuts bridges out past OSM's bridge tag; transport-graph.md rule 0) is drawn
+    at the road's level and meets the terrain where the road does, with no gap or step at the abutment.
+    A ground way leaving a bridge (`abutment`: its first / last node is a bridge's end) also stays at its profile
+    from that end while it is more than DECK_EDGE_M over the terrain, so the bridge's deck never ends in a step.
+    `terrain(e, n)` is the drawn terrain's height (the renderer's height field)."""
+    n = len(e["en"])
     if e["structure"] == "bridge":
-        return True
-    if e["structure"] != "ground" or not e.get("ground"):
-        return False
-    z, g = np.array(e["z"], float), np.array(e["ground"], float)
-    ok = np.isfinite(g)
-    return bool(ok.any() and np.median(z[ok] - g[ok]) > 1.0)
+        return np.ones(n, bool)
+    if e["structure"] != "ground" or n < 2:
+        return np.zeros(n, bool)
+    en = np.array(e["en"], float)
+    d = np.array(e["z"], float) - terrain(en[:, 0], en[:, 1])
+    d = np.where(np.isfinite(d), d, 0.0)
+    over = d > DECK_EDGE_M
+    seed = d > DECK_CORE_M
+    seed[0] |= bool(abutment[0])
+    seed[-1] |= bool(abutment[1])
+    seed &= over
+    if not seed.any():
+        return np.zeros(n, bool)
+    from scipy import ndimage
+    lab, k = ndimage.label(over)
+    keep = np.unique(lab[seed])
+    return np.isin(lab, keep[keep > 0])
 
 
-def deck_mesh(scene, edge_ok=lambda e: True):
-    """The top of every bridge deck (the road, path or track surface on it)."""
+def runs(mask):
+    """(first, last) sample indices of each run of True."""
+    m = np.r_[False, np.asarray(mask, bool), False].astype(np.int8)
+    a = np.flatnonzero(np.diff(m) == 1)
+    b = np.flatnonzero(np.diff(m) == -1) - 1
+    return list(zip(a.tolist(), b.tolist()))
+
+
+def pieces(mask):
+    """The edge cut into (deck, i0, i1) pieces of samples i0..i1; neighbouring pieces share their end sample, so
+    the drawn surfaces meet (the deck's end is within DECK_EDGE_M of the terrain there)."""
+    n = len(mask)
+    if n < 2:
+        return []
+    out, i = [], 0
+    while i < n - 1:
+        v = bool(mask[i]) or bool(mask[i + 1])
+        j = i + 1
+        while j < n - 1 and (bool(mask[j]) or bool(mask[j + 1])) == v:
+            j += 1
+        out.append((v, i, j))
+        i = j
+    return out
+
+
+def densify(e, step=0.5):
+    """The edge with its polyline, profile and distances resampled every `step` m (and at its own samples' ends), so
+    deck and terrain pieces are cut within half a metre of where the profile leaves the terrain."""
+    en = np.array(e["en"], float)
+    if len(en) < 2:
+        return e
+    s0 = np.array(e["s"], float) if e.get("s") is not None and len(e["s"]) == len(en) else \
+        np.r_[0, np.cumsum(np.linalg.norm(np.diff(en, axis=0), axis=1))]
+    L = float(s0[-1])
+    n = max(int(math.ceil(L / step)), 1)
+    s = np.linspace(0, L, n + 1)
+    out = dict(e)
+    out["en"] = np.column_stack([np.interp(s, s0, en[:, 0]), np.interp(s, s0, en[:, 1])])
+    out["z"] = np.interp(s, s0, np.array(e["z"], float))
+    out["s"] = s
+    return out
+
+
+def deck_at(e, mask, s) -> np.ndarray:
+    """Whether the points at distances s along the edge are drawn on its deck pieces (as pieces())."""
+    s0 = np.asarray(e["s"], float)
+    mask = np.asarray(mask, bool)
+    if len(s0) < 2:
+        return np.zeros(np.shape(s), bool)
+    k = np.clip(np.searchsorted(s0, s, side="right") - 1, 0, len(s0) - 2)
+    return mask[k] | mask[k + 1]
+
+
+def on_deck(e) -> bool:
+    """A bridge (decks of raised approaches are per stretch: deck_mask)."""
+    return e["structure"] == "bridge"
+
+
+def deck_mesh(scene, edge_ok=lambda e: True, masks=None, edges=None):
+    """The top of every bridge deck and raised approach (the road, path or track surface on it). `edges` (the graph's,
+    densified as the masks were) default to the graph's own."""
     M = Mesh()
-    for i, e in enumerate(scene.graph["edges"]):
-        if not on_deck(e) or not edge_ok(e):
+    for i, e in enumerate(edges if edges is not None else scene.graph["edges"]):
+        if not edge_ok(e) or len(e["en"]) < 2:
             continue
+        mask = masks[i] if masks is not None else np.full(len(e["en"]), on_deck(e))
         en = np.array(e["en"], float)
         z = np.array(e["z"], float)
-        if len(en) < 2:
-            continue
         w = float(e["width"])
-        L, R = ribbon(en, z, w)
-        strip(M, L, R, CLASS["deck"], i, "transport.road")
+        for deck, i0, i1 in pieces(mask):
+            if not deck:
+                continue
+            L, R = ribbon(en[i0:i1 + 1], z[i0:i1 + 1], w)
+            strip(M, L, R, CLASS["deck"], i, "transport.road")
     return M.done()
 
 
-def portal_mesh(scene, edge_ok=lambda e: True):
-    """A dark arch face where each tunnel leaves the open: at the tunnel's end node, across the way, facing out."""
+def portal_mesh(scene, edge_ok=lambda e: True, ceiling=None):
+    """A dark arch face where each tunnel leaves the open: at the tunnel's end node, across the way, facing out.
+    `ceiling(e, n, z, r)`, if given, is the lowest underside of a deck within r m above z: a portal under a bridge
+    is cut to it (its arch never rises through the deck over it)."""
     g = scene.graph
     nodes = {n["id"]: n for n in g["nodes"]}
     by_node = {}
@@ -249,17 +334,23 @@ def portal_mesh(scene, edge_ok=lambda e: True):
             if Ld < 1e-6:
                 continue
             out = d / Ld                                  # pointing out of the tunnel
+            if out[0] * VIEW[0] + out[1] * VIEW[1] > 0:
+                continue                                  # a mouth facing away from the camera is never seen
             left = np.array([-out[1], out[0]])
             w = float(e["width"]) + 1.0
             h = float(e.get("clearance_m", 4.5))
+            if ceiling is not None:
+                h = min(h, max(float(ceiling(p[0], p[1], zz, w / 2 + 1.0)) - zz, 1.0))
             ring = 24
-            # an arch: a rectangle w x (h - w/2) topped by a half disc, as a fan from the base centre
+            # an arch: a rectangle w x (h - w/2) topped by a half ellipse (a half disc when there is room), as a fan
+            # from the base centre
             pts = [(-w / 2, 0.0)]
             sh = max(h - w / 2, 0.5)
+            ry = max(min(w / 2, h - sh), 0.2)
             pts.append((-w / 2, sh))
             for k in range(ring + 1):
                 a = math.pi - math.pi * k / ring
-                pts.append((w / 2 * math.cos(a), sh + w / 2 * math.sin(a)))
+                pts.append((w / 2 * math.cos(a), sh + ry * math.sin(a)))
             pts.append((w / 2, 0.0))
             base = np.array([p[0], p[1], zz]) + np.array([out[0], out[1], 0]) * 0.3
             V = [base + np.array([left[0] * s, left[1] * s, t]) for s, t in pts]
@@ -284,7 +375,7 @@ def box(M, c, ax, w, l, z0, z1, cls, obj, col):
         M.quad(lo[k], lo[(k + 1) % 4], hi[(k + 1) % 4], hi[k], cls, obj, col)
 
 
-def structures_mesh(scene, edge_ok=lambda e: True, thickness=1.0, parapet=1.0):
+def structures_mesh(scene, edge_ok=lambda e: True, thickness=1.0, parapet=1.0, masks=None, terrain=None, dense=None):
     import shapely
     st = scene.structures
     M = Mesh()
@@ -299,7 +390,9 @@ def structures_mesh(scene, edge_ok=lambda e: True, thickness=1.0, parapet=1.0):
         if len(en) < 2 or not shapely.contains_xy(poly, *en[len(en) // 2]):
             continue
         w = float(e["width"])
-        red = "Grande-Duchesse Charlotte" in (e.get("bridge_name") or "") or "Pont Rouge" in (e.get("bridge_name") or "")
+        # the Red Bridge: OSM names it on the way (name), not always on the bridge (bridge_name)
+        names = (e.get("bridge_name") or "") + " " + (e.get("name") or "")
+        red = "Grande-Duchesse Charlotte" in names or "Pont Rouge" in names
         col = "structures.red_bridge" if red else "structures.stone"
         L, R = ribbon(en, z, w)
         Lb, Rb = L.copy(), R.copy()
@@ -314,6 +407,22 @@ def structures_mesh(scene, edge_ok=lambda e: True, thickness=1.0, parapet=1.0):
         rail = "structures.railing" if vehicle_mode(e) or red else "structures.stone"
         strip(M, L, Lp, CLASS["parapet"], i, rail)
         strip(M, R, Rp, CLASS["parapet"], i, rail)
+    # raised approaches (deck_mask on a ground way): the abutment's sides, from the deck's edges down into the terrain
+    if masks is not None and terrain is not None:
+        for i, e in enumerate(dense if dense is not None else g["edges"]):
+            if e["structure"] != "ground" or not edge_ok(e) or not masks[i].any():
+                continue
+            en = np.array(e["en"], float)
+            z = np.array(e["z"], float)
+            w = float(e["width"])
+            for deck, i0, i1 in pieces(masks[i]):
+                if not deck or not shapely.contains_xy(poly, *en[(i0 + i1) // 2]):
+                    continue
+                L, R = ribbon(en[i0:i1 + 1], z[i0:i1 + 1], w)
+                for A in (L, R):
+                    B = A.copy()
+                    B[:, 2] = np.minimum(terrain(A[:, 0], A[:, 1]), A[:, 2]) - 0.3
+                    strip(M, A, B, CLASS["structure"], i, "structures.stone")
     for vi, v in enumerate(st["viaducts"]):
         if v.get("status") != "ok" or not v.get("deck"):
             continue

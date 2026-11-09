@@ -93,6 +93,15 @@ def module_source_hash(mods) -> str:
     return h.hexdigest()
 
 
+def _where(p: Path) -> str:
+    """A raw input's path for its fingerprint: relative to the repository when it is in it, so two checkouts (a
+    worktree, CI) of the same files share their stage keys."""
+    try:
+        return "repo:" + str(Path(p).resolve().relative_to(REPO.resolve()))
+    except ValueError:
+        return str(p)
+
+
 def fingerprint(p: Path) -> dict:
     """Small files by content; big files (over 64 MB) by size and modification time."""
     p = Path(p)
@@ -104,11 +113,11 @@ def fingerprint(p: Path) -> dict:
         for q in files:
             st = q.stat()
             h.update(f"{q.relative_to(p)}:{st.st_size}:{int(st.st_mtime)}".encode())
-        return {"path": str(p), "dir_files": len(files), "hash": h.hexdigest()}
+        return {"path": _where(p), "dir_files": len(files), "hash": h.hexdigest()}
     st = p.stat()
     if st.st_size > 64 << 20:
-        return {"path": str(p), "size": st.st_size, "mtime": int(st.st_mtime)}
-    return {"path": str(p), "size": st.st_size, "sha256": _sha(p.read_bytes())}
+        return {"path": _where(p), "size": st.st_size, "mtime": int(st.st_mtime)}
+    return {"path": _where(p), "size": st.st_size, "sha256": _sha(p.read_bytes())}
 
 
 def git_version() -> str:

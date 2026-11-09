@@ -111,7 +111,15 @@ def graph() -> Graph:
 
 
 LAYER_CODE = GEO + CAM + ("v2.layers.common", "v2.layers.raster", "v2.layers.geometry", "v2.layers.render",
-                          "v2.layers.tiles", "v2.layers.light", "v2.layers.data", "v2.data.scene.facades")
+                          "v2.layers.tiles", "v2.layers.light", "v2.layers.data", "v2.data.scene.facades",
+                          "v2.layers.art_a", "v2.layers.bakeoff", "v2.config.art")
+
+
+def _art(area):
+    """The art method (PLAN_V2 section 7) is part of every stage that draws or reads layers 5-7, so each bake-off
+    option builds into its own folders (V2_ART=b python -m v2.build test release)."""
+    from v2.config.art import art_method
+    return {"art": art_method()}
 
 
 def _layer_raw(area):
@@ -122,20 +130,22 @@ def _layer_raw(area):
 def phase1(g0_checks) -> list:
     """Phase 1 (PLAN_V2 section 10): the code layers on the test area, the viewer's data and the gate G1 checks."""
     from v2.layers import stages as L
-    from v2.checks import layer_checks as lc, g1_checks as gc
+    from v2.checks import layer_checks as lc, g1_checks as gc, line_checks as lic
     from v2.build import report1
     base = ("scene", "fetch_osm_ground", "fetch_osm_transport")
     lay = dict(code=LAYER_CODE, raw=_layer_raw)
-    S = [Stage(f"layer_{n}", L.colour_layer(n), deps=base, doc=f"layer {i + 1}: {n}" + (" (placeholder)" if i >= 4 else ""), **lay)
+    art = dict(lay, params=_art)
+    S = [Stage(f"layer_{n}", L.colour_layer(n), deps=base, doc=f"layer {i + 1}: {n}" + (" (by the art method)" if i >= 4 else ""),
+               **(art if i >= 4 else lay))
          for i, n in enumerate(L.COLOUR_LAYERS)]
     S += [
-        Stage("layer_buffers", L.layer_buffers, deps=base, doc="layer 8: depth, normal, height, ids of the nearest surface", **lay),
-        Stage("layer_light", L.layer_light, deps=base, doc="layer 9: the shadow height map", **lay),
-        Stage("layer_night", L.layer_night, deps=base, doc="layer 10: windows, doors, shop fronts, street lamps", **lay),
+        Stage("layer_buffers", L.layer_buffers, deps=base, params=_art, doc="layer 8: depth, normal, height, ids of the nearest surface", **lay),
+        Stage("layer_light", L.layer_light, deps=base, params=_art, doc="layer 9: the shadow height map", **lay),
+        Stage("layer_night", L.layer_night, deps=base, params=_art, doc="layer 10: windows, doors, shop fronts, street lamps", **lay),
         Stage("layer_vehicles", L.layer_vehicles, deps=("scene",), params=_p("transit"), code=LAYER_CODE,
               raw=lambda area: _layer_raw(area) + [raw_dir() / params()["transit"]["gtfs_dir"]],
               doc="layer 12: roads and profiles for the simulation; trams and trains on the graph"),
-        Stage("layer_labels", L.layer_labels, deps=base, doc="layer 15: labels and pins", **lay),
+        Stage("layer_labels", L.layer_labels, deps=base, params=_art, doc="layer 15: labels and pins", **lay),
         Stage("layer_far", L.layer_far, deps=tuple(f"layer_{n}" for n in L.COLOUR_LAYERS), code=LAYER_CODE,
               doc="far zoom: the colour layers merged by depth, from zoom 2 out"),
     ]
@@ -143,8 +153,8 @@ def phase1(g0_checks) -> list:
     S.append(Stage("release", L.release, deps=("scene",) + layers, code=LAYER_CODE, raw=_layer_raw,
                    doc="the viewer's folder: every layer behind one index.json"))
     web = lambda area: sorted(p for p in (REPO / "v2/web/src").rglob("*.ts")) + [REPO / "v2/web/index.html"]  # noqa: E731
-    chk = dict(kind="check", params=_p("checks", "g1"), code=LAYER_CODE + ("v2.checks.framework", "v2.checks.layer_checks",
-                                                                            "v2.checks.g1_checks"),
+    chk = dict(kind="check", params=_with(_art, "checks", "g1"), code=LAYER_CODE + ("v2.checks.framework", "v2.checks.layer_checks",
+                                                                            "v2.checks.g1_checks", "v2.checks.line_checks"),
                raw=lambda area: _layer_raw(area) + [REPO / "v2/data/exceptions.json"])
     S += [
         Stage("check_layers", lc.check_layers, deps=("release",) + base, **chk,
@@ -156,12 +166,15 @@ def phase1(g0_checks) -> list:
         Stage("check_seams", gc.check_seams, deps=("release",) + base, **chk, doc="no edge or tone step at tile borders"),
         Stage("check_vehicles", gc.check_vehicles, deps=("release",) + base, **{**chk, "raw": lambda area: chk["raw"](area) + web(area)},
               doc="briefs 7 and 8: vehicles on drawn road; hidden in tunnels, under decks and trees; smooth heights"),
+        Stage("check_lines", lic.check_lines, deps=("release", "scene"), **chk,
+              doc="brief 6: the line score of layer 5, building edges and window rows within 1 px of the 3D model's"),
         Stage("check_no_cars", gc.check_no_cars, deps=("release",), **chk,
               doc="brief 9: the vehicle detector finds no car in any colour layer"),
         Stage("check_viewer", gc.check_viewer, deps=("release",) + base, **{**chk, "raw": lambda area: chk["raw"](area) + web(area)},
               doc="the viewer: layers off leave no trace, shadows move with ?hour, speed"),
     ]
     g1c = tuple(s.name for s in S if s.kind == "check")
-    S.append(Stage("g1", report1.g1, deps=g1c + g0_checks + ("release",), code=("v2.build.report1",), kind="report",
+    S.append(Stage("g1", report1.g1, deps=g1c + g0_checks + ("release",), code=("v2.build.report1", "v2.config.art"),
+                   params=_art, kind="report",
                    doc="gate G1: every phase 1 check, speed, previews"))
     return S

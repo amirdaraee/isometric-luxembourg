@@ -22,7 +22,9 @@ import numpy as np
 from v2.layers.common import COLOUR_LAYERS, Scene, TILE, pack_bin, write_tile
 from v2.layers.tiles import layer_writer, levels_for, pyramid, run_tiles, write_index
 
-LOSSLESS = {"relief", "water"}
+# lossless colour: relief and water (masks-like), and layers 5-7: their drawn detail (windows, tiles, leaves) loses
+# more than C1c's 3/255 in lossy WebP q90 (measured 2.3-3.7 per tile, up to 6.5); about 2x the bytes
+LOSSLESS = {"relief", "water", "buildings", "structures", "trees"}
 OUT_OF_SCOPE_NOTE = {
     "buildings": "placeholder for layer 5 (bake-off): plain evenly lit code buildings",
     "structures": "placeholder for layer 6 (bake-off): plain code bridges, viaducts and the lift",

@@ -1,7 +1,9 @@
 # Layer 7: Trees and greenery
 
 **Purpose.** Every tree at its measured place and size, as part of the drawing, changing with the seasons.
-**Made by:** code crowns (A, B) or an AI-painted canopy field (C), decided at the bake-off.
+**Made by:** code crowns (A, B) or an AI-painted canopy field (C), decided at the bake-off. Methods A and B: the
+crown fills the measured height down to a trunk of a quarter of it (at least 2 m), its width the survey's (L7.1);
+method A adds leaf clumps (a 0.8 m cell pattern on the crown's surface, lighter and darker clumps, darker gaps).
 
 **Inputs.** Scene trees (`trees.npz`: LiDAR 2024 survey position, height, crown radius after thinning, type), the
 palette (`trees.*`), terrain and buildings (depth).

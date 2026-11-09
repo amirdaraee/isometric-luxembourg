@@ -1,7 +1,8 @@
 # Layer 6: Bridges and structures
 
 **Purpose.** Viaducts, bridges, the Pfaffenthal lift, walls and casemate faces as objects with depth, so trains and
-cars pass over and under them correctly. **Made by:** as layer 5 (bake-off winner), from geometry made in code.
+cars pass over and under them correctly. **Made by:** as layer 5 (bake-off winner), from geometry made in code. Method A: ashlar courses (0.5 m) and
+staggered joints (0.9 m) on stone faces, a tone per block; railings and the lift as bars.
 
 **Inputs.** Scene structures (`structures.json`: the modelled viaducts' deck, piers and arches; every OSM bridge
 outline in the area), bridge decks from the transport graph, the lift (OSM highway=elevator + v1's lift research),
@@ -15,6 +16,8 @@ walls from `walls.json`.
 2. A deck's top surface is drawn by layer 4 (the road or track on it); this layer draws the deck's sides, parapets,
    piers and arches.
 3. Albedo only, as layer 5.
+4. A raised approach (a ground way drawn as a deck, layer 4 rule 1) stands on an abutment: its two sides from the
+   deck's edges down into the terrain, in stone. A tunnel portal under a deck is cut to the deck's underside (layer 4).
 
 **Checks.**
 - L6.1 (gate) Every bridge edge of the graph in the area has its deck sides drawn (≥ 95% of its length), and

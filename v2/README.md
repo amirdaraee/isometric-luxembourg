@@ -33,6 +33,11 @@ export ISOLUX_DATA=/path/to/repo/data       # where data/raw (v1's downloads) li
 .venv/bin/python -m v2.ledger.ledger status
 .venv/bin/python -m v2.build test g1         # phase 1: the code layers, the viewer's data and every G1 check
 .venv/bin/python -m v2.view test            # the viewer: http://localhost:5174/ (Node 22+; installs its packages once)
+# phase 2, the bake-off (PLAN_V2 section 7; docs/PHASE2_REPORT.md, docs/PHASE2_QUOTE.md)
+.venv/bin/python -m v2.build test g1         # method A (params.json art.method = "a"), with every G1 check and L5.2
+.venv/bin/python -m v2.bakeoff register a     # put the release into the bake-off viewer
+.venv/bin/python -m v2.view test --bakeoff --port 5175   # A, B and C side by side at fixed views
+.venv/bin/python -m v2.bakeoff status         # B and C's paid jobs, their quotes, and whether the owner approved them
 ```
 
 ## The build graph

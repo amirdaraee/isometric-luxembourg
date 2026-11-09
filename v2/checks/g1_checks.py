@@ -101,7 +101,7 @@ def check_independence(ctx):
             if ok.any():
                 cmax = max(cmax, float(np.abs(built["rgb"][ok].astype(float) - crop(r.rgb)[ok]).mean()))
     rep.at_most("C1b", "built tiles whose geometry differs from the renderer's", gbad, 0, ex2)
-    rep.at_most("C1c", "mean colour difference of a built tile from the renderer (lossy WebP q90 coding)", round(cmax, 2), 3.0)
+    rep.at_most("C1c", "mean colour difference of a built tile from the renderer (WebP: lossy q90; lossless for relief, water, layers 5-7)", round(cmax, 2), 3.0)
     rep.info("C1d", "layer off in the viewer: no pixel of it, no shadow of it (check_viewer V1, V2)", "see check_viewer")
     return rep.result()
 
@@ -491,6 +491,26 @@ def box_pixels(V, T):
     return c + x0, r + y0, zb[r, c]
 
 
+def drawn_on_deck(R, edges, EDGE, E, N):
+    """Per vehicle sample on edge EDGE at (E, N): drawn on a deck piece of its edge (geometry.pieces), else on the
+    terrain."""
+    from shapely.geometry import LineString
+    from v2.layers.geometry import deck_at
+    out = np.zeros(len(EDGE), bool)
+    for i in np.unique(EDGE):
+        m = R.deck_masks[int(i)]
+        if not m.any():
+            continue
+        sel = EDGE == i
+        if m.all():
+            out[sel] = True
+            continue
+        line = LineString(edges[int(i)]["en"])
+        s = shapely.line_locate_point(line, shapely.points(E[sel], N[sel]))
+        out[sel] = deck_at(R.dense_edges[int(i)], m, s)
+    return out
+
+
 def check_vehicles(ctx):
     P = ctx.params["g1"]
     rel = ctx.dep("release")
@@ -517,8 +537,7 @@ def check_vehicles(ctx):
                                                             "every_s": P["sim_day_sample_s"], "audit_s": round(J["seconds"], 1)})
     # ------------------------------------------------------------ L4.2, L12.4 on drawn road / track
     tr = TileCache(rel, "transport", maxn=400)
-    from v2.layers.geometry import on_deck
-    deck = np.array([on_deck(edges[i]) for i in EDGE])
+    deck = drawn_on_deck(R, edges, EDGE, E, N)
     zdraw = np.where(deck, Z, R.hf.sample(E, N))                  # ground ways are drawn on the terrain
     px, py, dd = project(E, N, zdraw)
     # a way behind a hill is not in view: its vehicles are hidden there, not off the road (as L4.1)

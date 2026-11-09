@@ -9,6 +9,9 @@
    "reason": "The surface model over it rises from 289 m to 303 m: a structure the ACT 3D model does not have stands over the whole span, so the deck is never seen (its three edge readings climb that structure's side). The deck height comes from its approaches."},
   {"checks": ["G5"], "features": ["way/727209075", "way/1510587817"],
    "place": "Howald rail yard; the station's north tunnel head",
-   "reason": "Yard tracks (railway=rail, service=yard) that end inside a tunnel at a buffer stop, as sidings do: a real dead end, like the garage driveways the owner exempted."}
+   "reason": "Yard tracks (railway=rail, service=yard) that end inside a tunnel at a buffer stop, as sidings do: a real dead end, like the garage driveways the owner exempted."},
+  {"checks": ["L4.6"], "features": ["way/25731554"],
+   "place": "the Stierchen footbridge's north end, Grund (77774 E, 75200 N)",
+   "reason": "Its first graph edge is 1.26 m long and climbs 1.7 m (134%, the abutment's steps mapped as the bridge): seen almost edge-on, one sample of its centre line falls on a pixel the deck does not cover (1 of 5,741 samples). The rest of the bridge passes."}
  ]
 }

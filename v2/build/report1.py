@@ -52,7 +52,10 @@ def grid(srcs, labels, dst: Path, cols=3, cell=(800, 500)):
 
 def g1(ctx):
     from v2.checks.g1_checks import viewer_server
+    from v2.config.art import art_method
     area = ctx.area
+    art = art_method()
+    tag = area if art == "plain" else f"{area}_{art}"          # Phase 1's files (plain) are kept as they were
     rel = ctx.dep("release")
     checks = {}
     passed = True
@@ -76,22 +79,22 @@ def g1(ctx):
     published = []
     for n in ("test_day_1300", "test_golden_hour", "test_night", "test_night_grund", "test_shadows_1000", "test_shadows_1600",
               "test_portal_vehicles", "test_viaduct_vehicles"):
-        dst = img / f"{n.replace('test_', area + '_g1_')}.jpg"
+        dst = img / f"{n.replace('test_', tag + '_g1_')}.jpg"
         jpeg(shots / f"{n}.png", dst)
         published.append(dst.name)
-    pair = img / f"{area}_g1_shadows_pair.jpg"
+    pair = img / f"{tag}_g1_shadows_pair.jpg"
     grid([shots / "test_shadows_1000.png", shots / "test_shadows_1600.png"], ["10:00", "16:00 (same view)"], pair, cols=2,
          cell=(1000, 625))
     published.append(pair.name)
-    tog = img / f"{area}_g1_layer_toggles.jpg"
+    tog = img / f"{tag}_g1_layer_toggles.jpg"
     grid([shots / f"toggle_{k}.png" for k in ("all", "nolight", "nobuildings", "notrees", "base", "layers")],
          ["all layers, 15:00", "light off (the layers' own colour)", "buildings off (no building shadows)", "trees off",
           "only ground, relief and water", "which layer is nearest (debug)"], tog)
     published.append(tog.name)
     meta = json.loads((shots / "previews.json").read_text())
-    res = {"area": area, "gate": "G1", "passed": passed, "checks": checks, "speed": speed, "previews": published,
+    res = {"area": area, "art": art, "gate": "G1", "passed": passed, "checks": checks, "speed": speed, "previews": published,
            "preview_views": meta, "release": str(rel)}
-    out = V2 / "docs" / "results" / f"g1_{area}.json"
+    out = V2 / "docs" / "results" / f"g1_{tag}.json"
     out.write_text(json.dumps(res, indent=1, default=str))
     ctx.write_json("g1.json", res, indent=1, default=str)
     return {"passed": passed, "checks": {k: v["passed"] for k, v in checks.items()}, "previews": published}
