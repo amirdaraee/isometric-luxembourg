@@ -1,0 +1,45 @@
+{
+ "about": "The viaducts ACT's 3D model lacks (it has buildings only; v1's bridges had piers but no arches). Modelled once, as data. Deck heights come from the transport graph (LiDAR surface model); everything else here is from the sources listed, and every number not in a source is marked as an assumption. Spec: v2/docs/specs/structures.md. Checked by check_structures.",
+ "defaults": {
+  "pier_thickness_m": {"value": 3.0, "assumption": "masonry piers of the 1860s Waring Brothers viaducts, typical 2.5-3.5 m along the deck; to verify on photos"},
+  "deck_thickness_m": {"value": 1.6, "assumption": "arch crown + spandrel to rail level over the crown (v1 used 1.6 m fascia)"},
+  "parapet_m": {"value": 1.1, "assumption": "standard parapet height"},
+  "arch_shape": {"value": "semicircular", "assumption": "the Luxembourg viaducts of 1859-1862 (Passerelle, Clausen, Pfaffenthal) use round arches"}
+ },
+ "viaducts": [
+  {
+   "id": "pulvermuhl",
+   "name": "Pulvermühl viaduct (Viaduc de Pulvermühl, Biisserbréck)",
+   "osm_outline": "way/576297593",
+   "rail_ways": [49916335, 172705747, 220940361, 660703222],
+   "length_m": 242, "height_m": 37,
+   "structure": "arch",
+   "spans": {"count": 5, "source": "en.wikipedia 'Pulvermuhl Viaduct': two abutments and four intermediate supports", "assumption": "equal spans"},
+   "notes": "Two parallel structures since 2019 (2 + 2 tracks): modelled as one deck over the OSM outline's width. OSM tags the outline bridge:structure=arch; fr.wikipedia describes hollow reinforced-concrete piers and a composite metal deck for the rebuilt structure. Arch vs beam is an open question for the owner (G0).",
+   "sources": ["https://en.wikipedia.org/wiki/Pulvermuhl_Viaduct", "https://fr.wikipedia.org/wiki/Viaduc_de_Pulverm%C3%BChl", "research/01-landmarks/README.md#pulvermuhl-viaduct", "OpenStreetMap way 576297593"]
+  },
+  {
+   "id": "clausen",
+   "name": "Clausen viaduct (Viaduc de Clausen, Clausener Viaduc)",
+   "osm_outline": "way/583203779",
+   "rail_ways": [37786035, 840229557, 1505124388, 1505124389],
+   "length_m": 208, "height_m": 44,
+   "structure": "arch",
+   "spans": {"span_m": 15.0, "source": "fr/lb.wikipedia: largest span 15 m, length 208 m, height 44 m, 2 tracks",
+             "assumption": "all arches 15 m; count = round((length + pier) / (span + pier))"},
+   "sources": ["https://fr.wikipedia.org/wiki/Viaduc_de_Clausen", "https://lb.wikipedia.org/wiki/Clausener_Viaduc", "research/01-landmarks/README.md#clausen-railway-viaduct", "OpenStreetMap way 583203779"]
+  },
+  {
+   "id": "pfaffenthal",
+   "name": "Pfaffenthal viaduct (Viaduc de Pfaffenthal, Pafendaller Viaduc)",
+   "osm_outline": "way/1512745574",
+   "rail_ways": [26435587, 840229558],
+   "length_m": 257, "height_m": 32,
+   "structure": "arch",
+   "spans": {"span_m": 15.0, "source": "fr.wikipedia: 257 m (lb: about 260 m, 32 m high), masonry arch bridge by the same builders as Clausen",
+             "assumption": "arches like the Clausen viaduct's (15 m); count = round((length + pier) / (span + pier))"},
+   "notes": "Continues the Clausen viaduct directly (a bridge over the Montée de Clausen joins them). OSM maps only part of its deck as rail bridge ways; the deck line here is the OSM outline's long axis where the rail ways do not cover it.",
+   "sources": ["https://fr.wikipedia.org/wiki/Viaduc_de_Pfaffenthal", "https://lb.wikipedia.org/wiki/Pafendaller_Viaduc", "research/01-landmarks/README.md (Pfaffenthal Viaduct)", "OpenStreetMap way 1512745574"]
+  }
+ ]
+}

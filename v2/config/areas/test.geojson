@@ -1,0 +1,13 @@
+{
+ "type": "FeatureCollection",
+ "name": "test",
+ "about": "PLAN_V2.md section 4: Grund, Pfaffenthal and the Bock. Drawn on 9 Nov 2026 around: the Grund and Neumünster Abbey, the Bock and its casemates, the Corniche, the Pfaffenthal and its panoramic lift, the rail line from the north portal of the station tunnels over the Pulvermühl viaduct, the Clausen and Pfaffenthal viaducts to Pfaffenthal-Kirchberg station and funicular, both ends of the Clausen viaduct, the east end of the Red Bridge (tram over the valley), Clausen and Fort Thüngen. About 1.3 x 1.5 km (1.4 km2).",
+ "features": [
+  {"type": "Feature",
+   "properties": {"name": "Grund, Pfaffenthal and the Bock"},
+   "geometry": {"type": "Polygon", "coordinates": [[
+    [6.1286, 49.6174], [6.1290, 49.6125], [6.1318, 49.6078], [6.1352, 49.6052], [6.1420, 49.6056],
+    [6.1462, 49.6098], [6.1464, 49.6146], [6.1408, 49.6180], [6.1340, 49.6197], [6.1300, 49.6192],
+    [6.1286, 49.6174]]]}}
+ ]
+}

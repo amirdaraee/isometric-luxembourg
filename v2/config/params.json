@@ -1,0 +1,107 @@
+{
+ "about": "Every build parameter and check threshold in one place. Changing a value changes the keys of the stages that read it, so they rebuild. Specs: v2/docs/specs/.",
+ "fetch": {
+  "snapshot": "2026-11-09",
+  "extent_area": "commune",
+  "extent_margin_m": 300,
+  "lidar_mnt": "https://download.data.public.lu/resources/bd-l-lidar2024-releve-3d-du-territoire-luxembourgeois/20241223-093912/MNT_Lidar2024.tif",
+  "lidar_mns": "https://download.data.public.lu/resources/bd-l-lidar2024-releve-3d-du-territoire-luxembourgeois/20241223-093912/MNS_Lidar2024.tif",
+  "trees": "https://download.data.public.lu/resources/lidar-2024-arbres/20261001-130836/act2024-lidar-trees-points.zip"
+ },
+ "areas": {
+  "test": {"terrain_step_m": 0.5, "margin_m": 150},
+  "commune": {"terrain_step_m": 1.0, "margin_m": 300}
+ },
+ "terrain": {
+  "steep_deg": 35.0,
+  "cliff_deg": 60.0,
+  "cliff_min_drop_m": 2.5,
+  "osm_wall_tags": {"barrier": ["retaining_wall", "city_wall", "wall"], "historic": ["citywalls"], "natural": ["cliff"], "man_made": ["embankment"]}
+ },
+ "buildings": {
+  "flat_roof_max_slope_deg": 8.0,
+  "min_footprint_m2": 2.0,
+  "terrain_tolerance_m": 1.5
+ },
+ "facades": {
+  "ground_floor_m": 3.6,
+  "floor_m": 3.0,
+  "min_wall_len_m": 2.2,
+  "min_wall_height_m": 2.4,
+  "bay_m": 2.7,
+  "edge_margin_m": 0.6,
+  "window_w_m": 1.1,
+  "window_h_m": 1.45,
+  "sill_m": 0.9,
+  "inset_m": 0.2,
+  "party_wall_tol_m": 0.4,
+  "party_wall_min_overlap": 0.5,
+  "max_floors": 40
+ },
+ "trees": {
+  "min_height_m": 2.0,
+  "max_height_m": 50.0,
+  "crown_scale": 0.85,
+  "max_overlap_share": 0.3,
+  "types": ["deciduous_green", "deciduous_red", "conifer", "other"]
+ },
+ "transport": {
+  "sample_m": 2.0,
+  "lateral_samples": [-0.25, 0.0, 0.25],
+  "profile_bin_m": 0.05,
+  "smooth_window_m": 6.0,
+  "default_width_m": {"motorway": 7.5, "trunk": 7.5, "primary": 7.0, "secondary": 6.5, "tertiary": 6.0, "unclassified": 5.0,
+                      "residential": 5.0, "living_street": 4.5, "service": 3.5, "pedestrian": 5.0, "busway": 4.0,
+                      "motorway_link": 5.0, "trunk_link": 5.0, "primary_link": 5.0, "secondary_link": 5.0, "tertiary_link": 5.0,
+                      "footway": 2.0, "path": 1.6, "cycleway": 2.2, "steps": 2.2, "track": 3.0, "bridleway": 2.0,
+                      "corridor": 2.0, "platform": 3.0, "road": 5.0, "raceway": 5.0, "construction": 5.0, "proposed": 5.0,
+                      "elevator": 2.0, "via_ferrata": 1.0, "services": 5.0, "rest_area": 5.0,
+                      "rail": 3.5, "tram": 3.0, "light_rail": 3.0, "subway": 3.5, "funicular": 2.5, "narrow_gauge": 2.5,
+                      "preserved": 3.5, "disused": 3.5, "aerialway": 1.0},
+  "default_lanes": {"motorway": 2, "trunk": 2, "primary": 2, "secondary": 2, "tertiary": 2, "unclassified": 2, "residential": 2,
+                    "living_street": 1, "service": 1, "busway": 1, "motorway_link": 1, "trunk_link": 1, "primary_link": 1,
+                    "secondary_link": 1, "tertiary_link": 1, "pedestrian": 0, "rail": 1, "tram": 1, "light_rail": 1},
+  "lane_width_m": 3.25,
+  "max_grade": {"road": 0.24, "path": 0.6, "steps": 1.2, "rail": 0.045, "tram": 0.08, "funicular": 0.8, "other": 0.6},
+  "deck_max_grade": {"road": 0.1, "path": 0.25, "rail": 0.035, "tram": 0.07, "other": 0.25},
+  "clearance_m": {"road": 4.5, "path": 2.5, "rail": 5.5, "tram": 4.5, "other": 3.0},
+  "deck_min_above_ground_m": 0.3,
+  "deck_lateral_m": 0.35,
+  "deck_outlier_m": 2.0,
+  "node_search_m": 3.0,
+  "skip_highway": ["proposed", "abandoned", "razed", "platform"],
+  "underground_tags": {"tunnel": ["yes", "building_passage", "culvert", "avalanche_protector"], "covered": ["yes"]},
+  "indoor_tags": {"highway": ["corridor", "elevator"], "indoor": ["yes"]}
+ },
+ "transit": {
+  "gtfs_dir": "gtfs/20261104/gtfs",
+  "days": [["20261110", 1, 1], ["20261114", 5, 2], ["20261115", 6, 4]],
+  "sample_m": 20.0,
+  "cand_m": 40.0,
+  "sigma_m": 12.0,
+  "beta_m": 25.0,
+  "side_m": 2.0,
+  "max_cand": 8,
+  "gap_samples": 5,
+  "running_side": {"tram": "right", "train": "left"},
+  "covered_within_m": 15.0
+ },
+ "checks": {
+  "profile_max_step_m": 0.5,
+  "profile_max_step_extra_m": 0.25,
+  "node_height_tol_m": 0.3,
+  "tunnel_min_cover_m": 1.0,
+  "portal_max_from_end_m": 40.0,
+  "deck_min_clearance_m": 2.0,
+  "graph_min_component_share": 0.97,
+  "transit_min_match_share": 0.99,
+  "building_max_overlap_m2": 1.0,
+  "building_max_overlap_share": 0.02,
+  "facade_window_min_gap_m": 0.3,
+  "trees_max_inside": 0,
+  "scene_outside_tol_m": 1.0,
+  "place_max_height_error_m": 0.5,
+  "forbidden_stage_words": ["warp", "repaint", "fit_to_art", "fit_roads", "despeckle", "water_tone", "carry_to_versions", "flowfit", "fix_"]
+ },
+ "workers": 2
+}

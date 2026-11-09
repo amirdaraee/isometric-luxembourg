@@ -1,0 +1,14 @@
+{
+ "about": "v2 budget lines from PLAN_V2.md section 10 (approved 9 Nov 2026). Caps are in US dollars and add up to at most the owner's cap. Changing a cap is the owner's decision (research/v2/DECISIONS.md). Spec: v2/docs/specs/ledger.md.",
+ "owner_cap_usd": 100.0,
+ "goals": {
+  "phase0_foundation":   {"cap_usd": 0.0,  "plan_usd": 0.0, "phase": 0, "what": "folders, build graph, data, scene, checks, specs: no GPU"},
+  "phase1_code_layers":  {"cap_usd": 0.0,  "plan_usd": 0.0, "phase": 1, "what": "code layers 1-4, 8-12, 14-15 and the compositor on the test area: no GPU"},
+  "phase2_bakeoff":      {"cap_usd": 17.0, "plan_usd": 15.0, "phase": 2, "what": "A ($0), B (~$3-5 materials + test landmarks), C (~$8-12 unshadowed style training + test area)"},
+  "phase3_lock_look":    {"cap_usd": 8.0,  "plan_usd": 6.0, "phase": 3, "what": "palette/grade/ink tuning, code vs AI night and golden hour, landmark portraits if B/C"},
+  "phase4_city":         {"cap_usd": 60.0, "plan_usd": 40.0, "phase": 4, "what": "production for the commune, 10% pilot first; by winner: A $0, B ~$10-20, C ~$40-60"},
+  "phase5_launch":       {"cap_usd": 3.0,  "plan_usd": 2.0, "phase": 5, "what": "R2 storage and transfer for the launch month (then ~$1-3/month, a running cost)"}
+ },
+ "providers": ["runpod", "modal", "openai", "cloudflare-r2"],
+ "reserve_usd_note": "100 - 88 = 12 dollars unallocated; spending it needs a new line from the owner"
+}
