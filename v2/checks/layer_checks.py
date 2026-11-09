@@ -5,6 +5,8 @@ L2.1  flat ground untouched by the relief                          south slopes 
 L2.2  every OSM wall with a drop >= 1.5 m drawn (>= 90%)      L3.1  water exactly where OSM has it (+- 1 px)
 L4.1  100% of road, rail and tram centre lines inside the      L4.3  no drawn pixel of a tunnel
       drawn surface (brief 7)
+L4.6  every bridge's ends are continuous with the ways that leave them: no gap and no step over 2 px in the drawn
+      transport surface (colour and depth) within 6 m of each abutment
 L8.1  every colour layer's depth equals layer 8's where it is the nearest (<= 1 cm)
 L8.2  normals unit length and facing the camera                L8.3  every id exists in the scene
 P-1   no colour literal in the layer code: every colour from the palette
@@ -21,7 +23,7 @@ import shapely
 
 from v2.checks.framework import Report
 from v2.config import V2
-from v2.layers.common import (CLASS, COLOUR_LAYERS, TILE, Scene, Tile, VIEW, lum, project, read_tile, unproject)
+from v2.layers.common import (BUILDING_CLASSES, CLASS, COLOUR_LAYERS, TILE, Scene, Tile, VIEW, lum, project, read_tile, unproject)
 from v2.layers.render import GROUND_CLASSES, Renderer
 
 
@@ -147,14 +149,14 @@ def check_layers(ctx):
         nrm_bad += int(((np.abs(np.linalg.norm(nn, axis=1) - 1) > P["normal_unit_tol"]) | (facing < -0.02)).sum())
         ids = b["ids"][okb]
         cls, obj = ids & 255, ids >> 8
-        bad_ids = ((np.isin(cls, [CLASS["building"], CLASS["window"], CLASS["door"], CLASS["shopfront"], CLASS["part"], CLASS["roof"]]) & (obj >= nb)) |
+        bad_ids = ((np.isin(cls, [CLASS[c] for c in BUILDING_CLASSES]) & (obj >= nb)) |
                    (np.isin(cls, [CLASS["road"], CLASS["rail"], CLASS["tram"], CLASS["path"], CLASS["steps"], CLASS["deck"],
                                   CLASS["portal"]]) & ((obj < 1) | (obj > ne))) |
                    ((cls == CLASS["tree"]) & (obj >= nt)))
         id_bad += int(bad_ids.sum())
         if bad_ids.any() and len(id_ex) < 8:
             id_ex.append({"tile": name, "ids": [int(x) for x in ids[bad_ids][:3]]})
-        seen_b.update(obj[np.isin(cls, [CLASS["building"], CLASS["window"], CLASS["door"], CLASS["shopfront"], CLASS["part"], CLASS["roof"]])].tolist())
+        seen_b.update(obj[np.isin(cls, [CLASS[c] for c in BUILDING_CLASSES])].tolist())
     rep.at_most("L1.1", "ground pixels of the area without a class (of %d)" % area_px, missing_cls, 0, miss_ex)
     worst, wex = 0.0, []
     for k, (sn, nn_, ss, ns) in sorted(slope_lum.items()):
@@ -176,6 +178,8 @@ def check_layers(ctx):
     _l31(rep, R, rel, P)
     # ------------------------------------------------------------------ L4.1, L4.3
     _l41(rep, R, rel, P)
+    # ------------------------------------------------------------------ L4.6 bridge ends
+    _l46(rep, R, rel, P)
     # ------------------------------------------------------------------ P-1 palette
     _palette(rep)
     return rep.result()
@@ -272,6 +276,191 @@ def _l31(rep, R, rel, P):
                 f"{n} water pixels)", bad_in + bad_out, 0, [{"missing": bad_in, "outside": bad_out}])
 
 
+def abutment_samples(sc, span, step):
+    """Centre-line samples next to every bridge end (an abutment: a node joining a bridge and a ground way): the
+    bridge's last `span` metres and the first `span` metres of every drawn way leaving the node (not tunnels, steps
+    or lifts), from the node outwards. Rows: (edge, node, e, n, profile z, run, distance from the node, grazing),
+    where grazing is the cosine between the way's top and the direction to the camera (near 0: seen edge-on; below
+    0: a steep ramp turned away from the camera, its top not seen at all)."""
+    from v2.layers.common import VIEW
+    edges = sc.graph["edges"]
+    ends = {int(e[k]) for e in edges if e["structure"] == "bridge" for k in ("a", "b")}
+    by_node = {}
+    for i, e in enumerate(edges):
+        for k in ("a", "b"):
+            if int(e[k]) in ends:
+                by_node.setdefault(int(e[k]), []).append((i, k))
+    out, run = [], 0
+    for nid, inc in sorted(by_node.items()):
+        if "ground" not in {edges[i]["structure"] for i, _ in inc}:
+            continue                                   # bridges joining bridges: no abutment
+        for i, k in inc:
+            e = edges[i]
+            if e["structure"] in ("tunnel", "indoor", "elevator") or e["mode"] in ("steps", "elevator"):
+                continue
+            en, s0, z0 = np.array(e["en"], float), np.array(e["s"], float), np.array(e["z"], float)
+            if len(en) < 2:
+                continue
+            L = s0[-1]
+            dist = np.arange(0, min(span, L) + 1e-9, step)
+            ss = dist if k == "a" else L - dist
+            E, N, Z = np.interp(ss, s0, en[:, 0]), np.interp(ss, s0, en[:, 1]), np.interp(ss, s0, z0)
+            h = 0.5
+            t = np.column_stack([np.interp(ss + h, s0, en[:, 0]) - np.interp(ss - h, s0, en[:, 0]),
+                                 np.interp(ss + h, s0, en[:, 1]) - np.interp(ss - h, s0, en[:, 1]),
+                                 np.interp(ss + h, s0, z0) - np.interp(ss - h, s0, z0)])
+            left = np.column_stack([-t[:, 1], t[:, 0], np.zeros(len(t))])
+            nrm = np.cross(t, left)
+            nrm /= np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-12)
+            nrm *= np.where(nrm[:, 2] < 0, -1.0, 1.0)[:, None]          # the way's top
+            graze = -(nrm @ VIEW)                # how squarely its top faces the camera (<= 0: turned away)
+            out += [(i, nid, E[j], N[j], Z[j], run, dist[j], graze[j]) for j in range(len(ss))]
+            run += 1
+    return np.array(out, float).reshape(-1, 8)
+
+
+def abutment_continuity(sc, get, terrain, span, step, max_px, graze_min=0.15, detail=False, ground_depth=None,
+                        skip_ways=()):
+    """L4.6 on transport tiles (`get(tx, ty)` -> dict with depth and ids, or None; `terrain(e, n)` the drawn terrain).
+
+    The drawn way at each sample is found where it can be: at its profile (a deck) or on the terrain (a drape); a
+    candidate matches when the transport layer draws a surface there within max_px pixels of height of it. A sample
+    fails as a *gap* when neither is drawn (and no nearer transport surface covers both), and as a *step* when the
+    drawn height changes faster than both the profile and the terrain by more than max_px pixels and stays changed
+    (medians of 4 samples, 1 m, either side), or the ways meeting at the node are drawn at heights apart by more. Samples where the way's top is seen edge-on or not at all (cos < graze_min)
+    are not judged. Heights for the steps are read at the sample's own pixel only (a neighbouring pixel of a sloping
+    surface shows another point of it); the neighbours count for the gap test, as L4.1's edge rule."""
+    from v2.config.camera import camera
+    mpp = camera()["mpp"]
+    k = math.sqrt(3) / 2 / mpp                           # screen pixels per metre of height
+    rows = abutment_samples(sc, span, step)
+    if len(rows):
+        rows = rows[shapely.contains_xy(sc.polygon.buffer(-1.0), rows[:, 2], rows[:, 3])]
+    n_skipped = 0
+    if len(rows) and skip_ways:
+        way = np.array([int(sc.graph["edges"][int(i)]["way"]) for i in rows[:, 0]])
+        keep = ~np.isin(way, list(skip_ways))
+        n_skipped = int((~keep).sum())
+        rows = rows[keep]
+    nrow = len(rows)
+    allowed = {}
+    for i, e in enumerate(sc.graph["edges"]):
+        for kk in ("a", "b"):
+            allowed.setdefault(int(e[kk]), set()).add(i)
+    zc = np.stack([rows[:, 4], terrain(rows[:, 2], rows[:, 3])], 1)        # candidates: profile, terrain
+    drawn = np.full(nrow, np.nan)
+    seen_any = np.zeros(nrow, bool)
+    state = np.zeros(nrow, np.int8)                      # 0 gap, 1 drawn, 2 hidden, 3 edge-on
+    best = np.full(nrow, np.inf)
+    covered = np.ones(nrow, bool)
+    def look(px, py):
+        tx, ty, r, cc = pixel_of(px, py)
+        dd = np.full(len(px), np.inf); iv = np.zeros(len(px), np.int64); front = np.full(len(px), np.inf)
+        for key in set(zip(tx.tolist(), ty.tolist())):
+            m = np.flatnonzero((tx == key[0]) & (ty == key[1]))
+            t = get(*key)
+            if t is not None:
+                dd[m] = t["depth"][r[m], cc[m]]
+                iv[m] = t["ids"][r[m], cc[m]]
+            g = ground_depth(*key) if ground_depth is not None else None
+            if g is not None:
+                front[m] = g[r[m], cc[m]]
+        return dd, iv, front
+
+    edge_px = np.zeros(nrow, bool)
+    for c in range(2):
+        z = np.where(np.isfinite(zc[:, c]), zc[:, c], rows[:, 4])
+        px, py, d = project(rows[:, 2], rows[:, 3], z)
+        # the pixel itself, then its neighbours (rounding at a surface's edge, as L4.1 accepts)
+        for dx, dy in [(0, 0)] + [(a, b) for a in (-1, 0, 1) for b in (-1, 0, 1) if a or b]:
+            dd, iv, front = look(px + dx, py + dy)
+            ok = np.isfinite(dd) & (iv != 0)
+            # the way itself, or a way meeting it at the node (they share the node's surface)
+            pe = (iv >> 8) - 1
+            own = ok & np.array([int(p) in allowed[int(n)] for p, n in zip(pe, rows[:, 1])], bool)
+            _, _, zd = unproject(px + dx, py + dy, np.where(ok, dd, d))
+            off = np.abs(zd - z) * k
+            got = ok & (off <= max_px)
+            if dx or dy:
+                edge_px |= got & ~seen_any
+            seen_any |= got                                 # a transport surface at the way's level is drawn here
+            hit = own & (off <= max_px) & (off < best)      # ... and it is the way's own (or its junction's)
+            best[hit] = off[hit]
+            drawn[hit] = zd[hit]
+            if not (dx or dy):
+                # covered: a transport surface in front of it (a deck over it, a way it joins drawn over it at a
+                # junction), or the terrain (a hill, a wall's top)
+                covered &= (ok & (dd < d - 0.1)) | (front < d - 1.0)
+    state[seen_any] = 1
+    state[(state == 0) & covered] = 2
+    state[(state == 0) & (rows[:, 7] < graze_min)] = 3
+    # steps: along each run (from the node outwards) the drawn height may rise or fall as fast as the way's profile or
+    # the terrain it is draped on (it follows one or the other, and passes from one to the other where they meet);
+    # a step is a change beyond both, that stays: medians of the next `w` samples against the previous `w` (one
+    # sample read off a neighbouring pixel is not a step). Between the runs meeting at a node: the medians of their
+    # first `w` samples' offsets from the node's height.
+    w = 4
+    terr = zc[:, 1]
+    step_bad = np.zeros(nrow, bool)
+    worst = 0.0
+    first = {}
+    for run in np.unique(rows[:, 5]):
+        m = np.flatnonzero(rows[:, 5] == run)
+        m = m[np.argsort(rows[m, 6])]
+        m = m[np.isfinite(drawn[m])]
+        if not len(m):
+            continue
+        dz, pz, tz = drawn[m], rows[m, 4], np.where(np.isfinite(terr[m]), terr[m], rows[m, 4])
+        first.setdefault(int(rows[m[0], 1]), []).append(float(np.median(dz[:w] - pz[:w])))
+        for j in range(1, len(m)):
+            a, b = slice(max(0, j - w), j), slice(j, j + w)
+            ch = abs(float(np.median(dz[b]) - np.median(dz[a])))
+            allow = max(abs(float(np.median(pz[b]) - np.median(pz[a]))), abs(float(np.median(tz[b]) - np.median(tz[a]))))
+            jump = max(ch - allow, 0.0) * k
+            worst = max(worst, jump)
+            if jump > max_px:
+                step_bad[m[j]] = True
+    for nid, meds in first.items():
+        if len(meds) >= 2:
+            spread = (max(meds) - min(meds)) * k
+            worst = max(worst, spread)
+            if spread > max_px:
+                step_bad[(rows[:, 1] == nid) & (rows[:, 6] == 0)] = True
+    bad = (state == 0) | step_bad
+    ex = []
+    for nid in np.unique(rows[bad, 1]):
+        m = (rows[:, 1] == nid) & bad
+        j = np.flatnonzero(m)[0]
+        ex.append({"node": int(nid), "edge": sc.graph["edges"][int(rows[j, 0])]["id"], "mode": sc.graph["edges"][int(rows[j, 0])]["mode"], "gaps": int((m & (state == 0)).sum()),
+                   "steps": int((m & step_bad).sum()), "e": round(float(rows[j, 2]), 1), "n": round(float(rows[j, 3]), 1)})
+    ex.sort(key=lambda x: -(x["gaps"] + x["steps"]))
+    if detail:
+        return rows, state, step_bad, drawn
+    return {"samples": int((state != 2).sum() - (state == 3).sum()), "gaps": int((state == 0).sum()),
+            "edge_px": int(edge_px.sum()), "excepted": n_skipped,
+            "steps": int(step_bad.sum()), "hidden": int((state == 2).sum()), "edge_on": int((state == 3).sum()),
+            "worst_step_px": round(worst, 2), "nodes": len(np.unique(rows[:, 1])), "bad_nodes": len(ex), "examples": ex}
+
+
+def _l46(rep, R, rel, P):
+    tr = TileCache(rel, "transport")
+    gr = TileCache(rel, "ground")
+
+    def ground_depth(tx, ty):
+        t = gr.get(tx, ty)
+        return None if t is None else t["depth"]
+    from v2.checks.data_checks import excepted
+    skip = excepted("L4.6")
+    res = abutment_continuity(R.scene, tr.get, R.hf.sample, P["abutment_span_m"], P["abutment_step_m"],
+                              P["abutment_step_px"], ground_depth=ground_depth, skip_ways=set(skip))
+    rep.at_most("L4.6", f"samples within {P['abutment_span_m']} m of the {res['nodes']} bridge ends in the area where the "
+                f"drawn way has a gap, or a step over {P['abutment_step_px']} px (of {res['samples']}; {res['hidden']} under "
+                f"another deck, {res['edge_on']} seen edge-on; largest step {res['worst_step_px']} px)",
+                res["gaps"] + res["steps"], 0, res["examples"])
+    rep.info("L4.6b", "samples of ways excepted from L4.6 (v2/data/exceptions.json)",
+             {"samples": res["excepted"], "ways": sorted(f"way/{w}" for w in skip)})
+
+
 def _l41(rep, R, rel, P):
     sc = R.scene
     tr = TileCache(rel, "transport")
@@ -294,9 +483,9 @@ def _l41(rep, R, rel, P):
             continue
         ee, nn, s = ee[ok], nn[ok], s[ok]
         # ground ways are drawn on the terrain, decks at their profile
-        from v2.layers.geometry import on_deck
-        deck = on_deck(e)
-        z = np.interp(s, s0, z0) if deck else R.hf.sample(ee, nn)
+        from v2.layers.geometry import deck_at
+        deck = deck_at(R.dense_edges[i], R.deck_masks[i], s)
+        z = np.where(deck, np.interp(s, s0, z0), R.hf.sample(ee, nn))
         px, py, d = project(ee, nn, z)
         tdep = tr.lookup(px, py, "depth")
         near = [tr.lookup(px + dx, py + dy, "depth") for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
@@ -314,10 +503,10 @@ def _l41(rep, R, rel, P):
             if not drawn:
                 # a drape is drawn where its terrain is seen: behind a hill it is not in view at all
                 g = gdep[k]
-                if not deck and np.isfinite(g) and g < d[k] - 0.5:
+                if not deck[k] and np.isfinite(g) and g < d[k] - 0.5:
                     n_hidden += 1
                     continue
-                if deck and tdep[k] is not None and np.isfinite(tdep[k]) and tdep[k] < d[k] - 0.5:
+                if deck[k] and tdep[k] is not None and np.isfinite(tdep[k]) and tdep[k] < d[k] - 0.5:
                     n_hidden += 1
                     continue
             n_in += 1

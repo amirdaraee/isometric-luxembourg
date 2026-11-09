@@ -20,7 +20,7 @@ import numpy as np
 import shapely
 from PIL import Image, ImageDraw
 from scipy import ndimage
-from shapely.geometry import LineString, Polygon, box
+from shapely.geometry import LineString, Point, Polygon, box
 from shapely.strtree import STRtree
 
 from v2.layers import geometry as G
@@ -153,8 +153,10 @@ class Renderer:
     PRIVATE = {"ground": "ground_osm", "relief": "walls", "water": "water_draw", "transport": "transport_draw",
                "buildings": "buildings", "structures": "structures", "trees": "trees"}
 
-    def __init__(self, scene, ground_osm=None, transport_osm=None, omit=frozenset()):
+    def __init__(self, scene, ground_osm=None, transport_osm=None, omit=frozenset(), art=None):
+        from v2.config.art import art_method
         self.scene = scene
+        self.art = art or art_method()
         self.ground_osm_path = ground_osm
         self.transport_osm_path = transport_osm
         self.omit = set(omit)
@@ -446,23 +448,47 @@ class Renderer:
         return self.scene.graph["edges"]
 
     @cached_property
+    def deck_masks(self):
+        """Per edge, per sample: drawn at its profile as a deck, or on the terrain (geometry.deck_mask). Shared by
+        layer 4 (the deck surfaces), layer 6 (the abutments under raised approaches), layer 9 and the checks."""
+        bridge_nodes = {int(e[k]) for e in self.edges if e["structure"] == "bridge" for k in ("a", "b")}
+        return [G.deck_mask(e, self.hf.sample, (int(e["a"]) in bridge_nodes, int(e["b"]) in bridge_nodes))
+                for e in self.dense_edges]
+
+    @cached_property
+    def dense_edges(self):
+        """The graph's edges resampled every 0.5 m (geometry.densify): the pieces of layer 4 and 6 are cut on them."""
+        return [G.densify(e) for e in self.edges]
+
+    @cached_property
     def surfaces(self):
-        """Per drawn edge: (index, style, polygon of its surface). Tunnels and indoor ways are not drawn."""
+        """Per drawn piece of an edge: (index, style, polygon of its surface, centre line, on a deck). Tunnels and
+        indoor ways are not drawn. An edge is cut where it leaves the terrain for a deck (geometry.pieces)."""
         if "transport" in self.omit:
             return []
         out = []
         for i, e in enumerate(self.edges):
             if e["structure"] in ("tunnel", "indoor", "elevator") or e["mode"] == "elevator":
                 continue
-            en = np.array(e["en"], float)
+            en = np.array(self.dense_edges[i]["en"], float)
             if len(en) < 2:
                 continue
             style = surface_style(e)
             w = float(e["width"])
-            line = LineString(en)
-            poly = line.buffer(w / 2, cap_style="flat" if e["mode"] in ("rail", "tram", "funicular") else "round",
-                               join_style="round", quad_segs=6)
-            out.append((i, style, poly, line))
+            parts = G.pieces(self.deck_masks[i])
+            for deck, i0, i1 in parts:
+                line = LineString(en[i0:i1 + 1])
+                # a piece on the terrain runs 0.5 m on under the deck next to it (hidden there by the deck, which is
+                # nearer at the joint), so no rounding at the joint leaves a sliver of ground between them
+                drape = line if deck else extend_line(en, i0, i1, 0.5)
+                # round ends where a way ends (junctions), flat where it continues as the other kind of piece
+                cap = "flat" if e["mode"] in ("rail", "tram", "funicular") or len(parts) > 1 else "round"
+                poly = drape.buffer(w / 2, cap_style=cap, join_style="round", quad_segs=6)
+                if cap == "flat" and e["mode"] not in ("rail", "tram", "funicular"):
+                    ends = [Point(en[k]).buffer(w / 2, quad_segs=6) for k, last in ((0, i0 == 0), (-1, i1 == len(en) - 1)) if last]
+                    if ends:
+                        poly = shapely.union_all([poly] + ends)
+                out.append((i, style, poly, line, deck))
         return out
 
     @cached_property
@@ -473,13 +499,25 @@ class Renderer:
     def decks(self):
         if "transport" in self.omit:
             return G.Mesh().done()
-        return G.deck_mesh(self.scene)
+        return G.deck_mesh(self.scene, masks=self.deck_masks, edges=self.dense_edges)
 
     @cached_property
     def portals(self):
         if "transport" in self.omit:
             return G.Mesh().done()
-        return G.portal_mesh(self.scene)
+        return G.portal_mesh(self.scene, ceiling=self.deck_ceiling)
+
+    def deck_ceiling(self, e, n, z, r, thickness=1.0):
+        """The lowest underside (deck top - thickness, as layer 6 builds it) of a deck within r m (plan) of (e, n)
+        and above z + 0.5 m; inf if none."""
+        D = self.decks
+        if not len(D["V"]):
+            return np.inf
+        V, T = D["V"], D["T"]
+        cand = np.flatnonzero((np.hypot(V[T, 0] - e, V[T, 1] - n).min(1) <= r + 15) & (V[T, 2].min(1) > z + 0.5))
+        disc = Point(e, n).buffer(r)
+        zs = [V[T[t], 2].min() for t in cand if disc.intersects(Polygon(V[T[t], :2]))]
+        return float(min(zs)) - thickness if zs else np.inf
 
     def _draw_transport(self, cv, bridge: bool):
         """The transport canvas (colour, ids) for ground-level ways or for bridge decks."""
@@ -490,24 +528,24 @@ class Renderer:
         if self.surface_tree is None:
             return np.asarray(rgb), np.asarray(ids), np.asarray(has)
         hits = [self.surfaces[i] for i in self.surface_tree.query(fp)]
-        hits = [h for h in hits if G.on_deck(self.edges[h[0]]) == bridge]
+        hits = [h for h in hits if h[4] == bridge]
         hits.sort(key=lambda h: STYLE_ORDER.index(h[1]))
         ink = tuple(int(x) for x in np.round(pal("ink", "line_soft") * 0.45 + pal("ground", "paved") * 0.55))
         d_rgb, d_ids, d_has = ImageDraw.Draw(rgb), ImageDraw.Draw(ids), ImageDraw.Draw(has)
         px1 = 1 / DU
         # pass 1: casings (outline), pass 2: surfaces, pass 3: markings
-        for i, style, poly, line in hits:
+        for i, style, poly, line, _ in hits:
             g = cv.geom(poly.buffer(0.18, quad_segs=4))
             fill_geom(rgb, g, ink)
             fill_geom(ids, g, (i + 1) << 8 | STYLE_CLASS[style])
             fill_geom(has, g, 1)
-        for i, style, poly, line in hits:
+        for i, style, poly, line, _ in hits:
             e = self.edges[i]
             g = cv.geom(poly)
             fill_geom(rgb, g, tuple(int(x) for x in np.round(STYLE_COLOUR[style]())))
             fill_geom(ids, g, (i + 1) << 8 | STYLE_CLASS[style])
             fill_geom(has, g, 1)
-        for i, style, poly, line in hits:
+        for i, style, poly, line, _ in hits:
             e = self.edges[i]
             en = np.array(line.coords)
             if style in ("rail", "funicular", "tram"):
@@ -637,16 +675,17 @@ class Renderer:
         s = tile.size
         return np.flatnonzero((x.max(1) >= 0) & (x.min(1) < s) & (y.max(1) >= 0) & (y.min(1) < s))
 
-    def _mesh_layer(self, tile, meshes, outline=True) -> LayerTile:
+    def _mesh_layer(self, tile, meshes, outline=True, shader=None) -> LayerTile:
         """Rasterise meshes (dicts from geometry) with flat palette colours (albedo, no light) and ink outlines
-        where the surface changes."""
+        where the surface changes. `shader(mesh_index, tri_index, world, normal, base_rgb, px, py, cls, obj)`, if
+        given, returns each covered pixel's albedo from its place on its surface (bake-off method A's detail)."""
         H = W = tile.size
         out = empty(tile)
         zb = np.full((H, W), np.inf)
         tb = np.full((H, W), -1, np.int64)
         off = 0
-        allP, allT, groups, cols, cls, obj, nrms = [], [], [], [], [], [], []
-        for M in meshes:
+        allP, allT, groups, cols, cls, obj, nrms, src, biases = [], [], [], [], [], [], [], [], []
+        for mi, M in enumerate(meshes):
             if not len(M["T"]):
                 continue
             px, py, dd = project(M["V"][:, 0], M["V"][:, 1], M["V"][:, 2])
@@ -658,12 +697,14 @@ class Renderer:
                 raster_tris(P, dd, M["T"][sel], W, H, zb, tb, tri_offset=off,
                             bias=None if bias is None else bias[sel])
             colours = np.array([colour_of(c) for c in M["col_keys"]])
+            biases.append(np.zeros(len(sel)) if M.get("bias") is None else M["bias"][sel])
             allT.append(sel)
             groups.append(M["group"][sel] + (0 if not groups else 0))
             cols.append(colours[M["col"][sel]])
             cls.append(M["cls"][sel])
             obj.append(M["obj"][sel])
             nrms.append(nrm[sel])
+            src.append(np.column_stack([np.full(len(sel), mi), sel]))
             off += len(sel)
         if off == 0:
             return out
@@ -675,8 +716,22 @@ class Renderer:
         nr = np.concatenate(nrms)
         got = tb >= 0
         t = tb[got]
+        zb[got] -= np.concatenate(biases)[t]          # a decal's bias decides what is seen, never the depth stored
         rgb = np.zeros((H, W, 3))
         rgb[got] = col[t]
+        pix_cls = None
+        if shader is not None and len(t):
+            from v2.layers.common import unproject
+            sm = np.concatenate(src)
+            pxc, pyc = tile.centres
+            rr, cc = np.nonzero(got)
+            X, Y = pxc[cc], pyc[rr]
+            wx, wy, wz = unproject(X, Y, zb[got])
+            nn0 = nr[t] * np.sign(-(nr[t] @ VIEW) + 1e-12)[:, None]
+            res = shader(sm[t, 0], sm[t, 1], np.column_stack([wx, wy, wz]), nn0, col[t], X, Y, cl[t], ob[t])
+            if isinstance(res, tuple):                    # (albedo, the pixels' classes: a shader's own materials)
+                res, pix_cls = res
+            rgb[got] = res
         gid = np.full((H, W), -1, np.int64)
         gid[got] = group[t]
         if outline:
@@ -708,7 +763,8 @@ class Renderer:
         out.normal = n
         out.k = np.where(got, 1, 0).astype(np.uint8)
         idv = np.zeros((H, W), np.uint32)
-        idv[got] = (ob[t].astype(np.uint32) << 8) | cl[t].astype(np.uint32)
+        pcls = pix_cls if pix_cls is not None else cl[t]
+        idv[got] = (ob[t].astype(np.uint32) << 8) | pcls.astype(np.uint32)
         out.ids = idv
         return out
 
@@ -717,29 +773,89 @@ class Renderer:
         if "buildings" in self.omit:
             return []
         b = G.buildings_mesh(self.scene)
-        o = G.openings_mesh(self.scene)
+        if self.art == "a":
+            o = self.art_a.openings_mesh()
+        else:
+            o = G.openings_mesh(self.scene)
         o["group"] = o["group"] + int(b["group"].max()) + 1 if len(b["group"]) else o["group"]
         return [b, o]
 
+    @cached_property
+    def art_a(self):
+        from v2.layers.art_a import ArtA
+        return ArtA(self.scene, G.buildings_mesh(self.scene))
+
+    def _shade_buildings_a(self, mi, ti, P, nrm, base, px, py, cls, obj):
+        A = self.art_a
+        b, o = self.building_meshes
+        rgb = base.copy()
+        pcls = cls.copy()
+        on_b = mi == 0
+        if on_b.any():
+            tb_, P_, n_, x_, y_ = ti[on_b], P[on_b], nrm[on_b], px[on_b], py[on_b]
+            kind = b["kind"][tb_]
+            bi = obj[on_b]
+            sub = np.zeros((len(tb_), 3))
+            wall = kind == 2
+            wc = pcls[on_b][wall]
+            sub[wall] = A.walls_rgb(bi[wall], A.tri_wall[tb_[wall]], P_[wall], x_[wall], y_[wall], cls_out=wc)
+            sc_ = pcls[on_b]
+            sc_[wall] = wc
+            pcls[on_b] = sc_
+            roof = kind == 1
+            sub[roof] = A.roofs_rgb(bi[roof], P_[roof], n_[roof], x_[roof], y_[roof])
+            part = kind == 3
+            if part.any():
+                vert = np.abs(n_[part][:, 2]) < 0.3
+                pw = np.array([A.styles[x].wall for x in bi[part]]).reshape(-1, 3)
+                pr = A.roofs_rgb(bi[part], P_[part], n_[part], x_[part], y_[part])
+                sub[part] = np.where(vert[:, None], pw, pr)
+                # a dormer's or chimney's sloped faces are roof (the building's roof material), its sides are part
+                sc_ = pcls[on_b]
+                pc = sc_[part]
+                pc[~vert] = CLASS["roof"]
+                sc_[part] = pc
+                pcls[on_b] = sc_
+            rgb[on_b] = sub
+        on_o = mi == 1
+        if on_o.any():
+            rgb[on_o] = A.openings_rgb(o, ti[on_o], P[on_o], o["open_bld"][ti[on_o]])
+        return rgb, pcls
+
     def buildings(self, tile) -> LayerTile:
-        """Placeholder for layer 5 (the bake-off decides the real one): plain, evenly lit code buildings with
-        straight outlines and the facade layout's windows, doors and shop fronts. No light, no shadow."""
+        """Layer 5 by the art method (config art_method): "a" the inked code render with generated detail
+        (art_a.py); "plain" Phase 1's flat placeholder. Both evenly lit (albedo), with straight outlines and the facade
+        layout's windows, doors and shop fronts. No light, no shadow. "b" and "c" draw from their painted inputs
+        (bakeoff.py)."""
         self._guard("buildings")
         if not self.building_meshes:
             return empty(tile)
-        return self._mesh_layer(tile, self.building_meshes)
+        if self.art in ("b", "c"):
+            from v2.layers import bakeoff
+            return bakeoff.painted_layer(self, "buildings", tile)
+        return self._mesh_layer(tile, self.building_meshes,
+                                shader=self._shade_buildings_a if self.art == "a" else None)
 
     @cached_property
     def structure_meshes(self):
         if "structures" in self.omit:
             return []
-        return [G.structures_mesh(self.scene)]
+        return [G.structures_mesh(self.scene, masks=self.deck_masks, terrain=self.hf.sample, dense=self.dense_edges)]
 
     def structures(self, tile) -> LayerTile:
         """Placeholder for layer 6: bridge sides, parapets, the viaducts' slab, arches and piers, the lift."""
         self._guard("structures")
         if not self.structure_meshes:
             return empty(tile)
+        if self.art in ("b", "c"):
+            from v2.layers import bakeoff
+            return bakeoff.painted_layer(self, "structures", tile)
+        if self.art == "a":
+            from v2.layers.art_a import ArtA
+
+            def shade(mi, ti, P, nrm, base, px, py, cls, obj):
+                return ArtA.stone_rgb(base, P, nrm, px, py, cls)
+            return self._mesh_layer(tile, self.structure_meshes, shader=shade)
         return self._mesh_layer(tile, self.structure_meshes)
 
     # ---------------------------------------------------------------- layer 7 placeholder: trees
@@ -753,6 +869,10 @@ class Renderer:
         r = T["crown_r"].astype(float)
         typ = T["type"].astype(int)
         b = np.where(typ == 2, np.clip(h * 0.42, 1.0, None), np.clip(np.minimum(h * 0.36, r * 1.7), 0.8, None))
+        if self.art != "plain":
+            # the crown fills the tree's measured height down to a trunk of a quarter of it (at least 2 m), as a
+            # crown does; its width stays the survey's (L7.1)
+            b = np.maximum(b, (h - np.maximum(2.0, h * 0.25)) / 2)
         b = np.minimum(b, np.maximum(h / 2 - 0.2, 0.5))
         cz = base + h - b
         C = np.column_stack([e, n, cz])
@@ -765,9 +885,12 @@ class Renderer:
         return {"C": C, "r": r, "b": b, "type": typ, "trunks": M.done()}
 
     def trees(self, tile) -> LayerTile:
-        """Placeholder for layer 7: every surveyed tree at its measured place and size, a flat crown colour by type
+        """Layer 7 (code crowns for methods A and B; "a" adds leaf clumps): every surveyed tree at its measured place and size, a flat crown colour by type
         (albedo; layer 9 lights and shades it), a trunk under it."""
         self._guard("trees")
+        if self.art == "c":
+            from v2.layers import bakeoff
+            return bakeoff.painted_layer(self, "trees", tile)
         out = empty(tile)
         g = self.tree_geo
         if g is None:
@@ -791,6 +914,15 @@ class Renderer:
             px, py = tile.centres
             leaf = grain(px, py, 0.08, seed=7)[crown]
             col = (dark[typ] * (1 - mix[:, None]) + light[typ] * mix[:, None]) * leaf[:, None]
+            if self.art == "a":
+                # method A: leaf clumps on the crown's surface (art_a.crown_rgb), from the pixel's world point
+                from v2.layers.art_a import ArtA
+                from v2.layers.common import unproject
+                rr, cc = np.nonzero(crown)
+                X, Y = px[cc], py[rr]
+                wx, wy, wz = unproject(X, Y, zb[crown])
+                base = dark[typ] * (1 - mix[:, None]) + light[typ] * mix[:, None]
+                col = ArtA.crown_rgb(base, np.column_stack([wx, wy, wz]), ib[crown], X, Y)
             rgb[crown] = col
             # crown outline: 1 px of soft ink where a crown meets anything else
             idg = np.where(crown, ib, -1)
@@ -850,6 +982,22 @@ def surface_style(e) -> str:
     if c in ("service", "track", "unclassified", "residential"):
         return "road_minor"
     return "road"
+
+
+def extend_line(en, i0, i1, by):
+    """The polyline en[i0..i1], run on by `by` metres along en at either end where en continues."""
+    pts = [np.asarray(p, float) for p in en[i0:i1 + 1]]
+    if i0 > 0:
+        d = en[i0 - 1] - en[i0]
+        L = float(np.linalg.norm(d))
+        if L > 1e-9:
+            pts.insert(0, en[i0] + d / L * min(by, L))
+    if i1 < len(en) - 1:
+        d = en[i1 + 1] - en[i1]
+        L = float(np.linalg.norm(d))
+        if L > 1e-9:
+            pts.append(en[i1] + d / L * min(by, L))
+    return LineString(pts)
 
 
 def _c(key):

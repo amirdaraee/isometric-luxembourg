@@ -138,8 +138,12 @@
   "water_px_tol": 1,
   "centreline_share": 1.0,
   "centreline_step_m": 0.5,
+  "abutment_span_m": 6.0,
+  "abutment_step_m": 0.25,
+  "abutment_step_px": 2.0,
   "line_score_px": 1.0,
   "line_score_share": 0.95,
+  "line_min_step": 12,
   "align_cm": 1.0,
   "normal_unit_tol": 0.01,
   "palette_tol": 2.0,
@@ -169,6 +173,10 @@
   "speed_first_view_s": 0.5,
   "speed_pan_fps_desktop": 60,
   "speed_pan_fps_phone": 30
+ },
+ "art": {
+  "about": "Art method of layers 5-7 (PLAN_V2 section 7, the bake-off): a = all code (built, $0); b = code + AI materials and landmark portraits; c = code + AI-painted buildings; plain = Phase 1's placeholder. V2_ART overrides it to build another option. B and C need their painted inputs (v2/layers/bakeoff.py), made only after the owner approves their quote in the ledger.",
+  "method": "a"
  },
  "workers": 2
 }

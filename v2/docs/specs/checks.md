@@ -98,7 +98,7 @@ and two yard sidings that end at buffer stops inside tunnels (G5).
 | 4 Layers | layer-off pixel diff L1.3 (and in each layer) | layers 1–7 |
 | 5 No baked shadows | L5.1, L9.1, L9.2, L1.2, L2.3 | layers 5, 9 |
 | 6 Straight lines and windows | F1–F5 (built), L5.2, L4.5 | facades, layer 5 |
-| 7 Roads and rails match | P1–P9, G1–G5, TT1–TT3 (built), L4.1, L4.2 | transport graph, layer 4 |
+| 7 Roads and rails match | P1–P9, G1–G5, TT1–TT3 (built), L4.1, L4.2, L4.6 | transport graph, layer 4 |
 | 8 Tunnels and bridges | P5–P9 (built), L6.2, L12.1, L12.2 | layers 6, 12 |
 | 9 No painted cars | L1.5 and every layer's no-cars check (v1's OWLv2 detector) | layers 1–7 |
 | Seams | seam check in every tiled layer | conventions |
@@ -114,7 +114,7 @@ Stages of the build graph (`python -m v2.build test g1`), each a gate; threshold
 
 | Stage | Checks | Brief |
 |---|---|---|
-| `check_layers` (`v2/checks/layer_checks.py`) | L1.1, L1.2, L2.1, L2.2, L3.1, L4.1, L4.3, L8.1-L8.3, P-1 | 7 |
+| `check_layers` (`v2/checks/layer_checks.py`) | L1.1, L1.2, L2.1, L2.2, L3.1, L4.1, L4.3, L4.6, L8.1-L8.3, P-1 | 7 |
 | `check_independence` (`g1_checks.py`) | C1a every layer re-rendered without each other layer's own inputs is identical; C1b/C1c the tiles are the renderer's | 4 |
 | `check_shadows` | L5.1/L9.2 shadow detector (median luminance of a material in the 3D shadow of the photo's sun vs lit next to it), L9.0, L9.1 (08, 13, 19 h), L2.3 | 5 |
 | `check_seams` | v1's seam rule per colour layer at the tiles' scale; L8.4 depth across borders against the tiles' middle lines | seams |
