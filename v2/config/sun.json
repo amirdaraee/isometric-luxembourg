@@ -1,0 +1,12 @@
+{
+ "about": "Site for the sun model (v2/config/sun.py): the Place d'Armes, Luxembourg City. The commune spans 0.1 degree, which moves the sun by under 0.1 degree: one site serves the whole map.",
+ "lat": 49.6112,
+ "lon": 6.1300,
+ "timezone": "Europe/Luxembourg",
+ "algorithm": "NOAA solar position (Meeus), with refraction",
+ "presets": {
+  "golden_hour": "sun elevation between 0 and 6 degrees",
+  "blue_hour": "sun elevation between -6 and 0 degrees",
+  "night": "sun elevation below -6 degrees (civil twilight over)"
+ }
+}

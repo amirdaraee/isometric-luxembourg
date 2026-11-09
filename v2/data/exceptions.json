@@ -1,0 +1,14 @@
+{
+ "about": "Per-feature exceptions to a data check, each with its reason (owner's rule, G0 review 9 Nov 2026: fix causes, never loosen a threshold; a genuine exception is listed here, and the list stays short). A check skips only the listed features for the listed checks and reports them. Spec: v2/docs/specs/checks.md.",
+ "exceptions": [
+  {"checks": ["P5", "P6"], "features": ["way/532311327", "way/643092132", "way/532311331", "way/1537425718", "way/1421705482"],
+   "place": "Howald (6.128-6.133 E, 49.581 N): tram and service bridges over the railway",
+   "reason": "The LiDAR 2024 surface model shows no deck over the whole span (it equals the terrain model, 7 m under the abutments): the structure is not in the survey. The deck heights come from its abutments; there is nothing to compare them with."},
+  {"checks": ["P5", "P6"], "features": ["way/483037581"],
+   "place": "Gasperich (76047 E, 72036 N): a 17 m service bridge (bridge=yes, layer 1) over flat ground",
+   "reason": "The surface model over it rises from 289 m to 303 m: a structure the ACT 3D model does not have stands over the whole span, so the deck is never seen (its three edge readings climb that structure's side). The deck height comes from its approaches."},
+  {"checks": ["G5"], "features": ["way/727209075", "way/1510587817"],
+   "place": "Howald rail yard; the station's north tunnel head",
+   "reason": "Yard tracks (railway=rail, service=yard) that end inside a tunnel at a buffer stop, as sidings do: a real dead end, like the garage driveways the owner exempted."}
+ ]
+}

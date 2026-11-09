@@ -33,3 +33,8 @@ one is a decision for the owner, written here with its date.
 | Plan approved (9 Nov) | PLAN_V2.md approved; Phase 0 starts. |
 | Test area (9 Nov) | Grund, Pfaffenthal and the Bock. |
 | Far zoom (9 Nov) | Exact at normal zoom; gentle simplification far out (small clutter dropped, main streets slightly emphasised). |
+| G0 review: test area (9 Nov) | Keep the larger test area as drawn: 1.29 x 1.61 km (1.57 km2), `v2/config/areas/test.geojson`. |
+| G0 review: facades (9 Nov) | Add doors and shop fronts before the bake-off: from OSM entrances and shop/amenity POIs where mapped (on the nearest street-facing wall), else a rule (at least one door on each building's street-facing wall; shop fronts on the ground floor along commercial streets). Ground-floor windows give way to them. Numbered checks in the facades spec. Dormers can wait. |
+| G0 review: commune checks (9 Nov) | Fix the four failing commune check stages (TR3, B2, P5-P9, G5) before G1, at their causes; no threshold is loosened to pass. Genuine exceptions go per feature, with a reason, in a short data file. |
+| G0 review: accepted as built (9 Nov) | Tunnel clearances road 4.5 m, rail 5.5 m, tram 4.5 m, + 1 m cover; 40 m portal zone and 6 m portal mouth; garage-driveway exemption from the dead-end check; path and step slopes recorded, not gated. |
+| G0 review: still open (9 Nov) | Viaduct arch counts, the funicular schedule, the R2 bucket, the GTFS licence version; the commune terrain stays at 1 m for now. |

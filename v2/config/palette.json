@@ -1,0 +1,69 @@
+{
+ "about": "The one v2 palette (OTHERS 7.3.1): code layers draw with these colours, and the bake-off's AI layers get them as a reference. Starting values are v1's (sources per entry); they are tuned once, at gate G3 (PLAN_V2 section 10), on the test area. sRGB 0-255. Spec: v2/docs/specs/palette.md.",
+ "ink": {
+  "line":        {"rgb": [52, 44, 40],   "src": "pipeline/layers/draw_ground.py INK"},
+  "line_soft":   {"rgb": [48, 40, 36],   "src": "pipeline/layers/v2_ink.py INK"},
+  "paper":       {"rgb": [239, 232, 220], "src": "v2 (the warm off-white the v1 art sits on)"}
+ },
+ "ground": {
+  "paved":       {"rgb": [206, 194, 168], "src": "draw_ground.py FALLBACK[PAVED]"},
+  "square":      {"rgb": [214, 200, 174], "src": "FALLBACK[SQUARE]"},
+  "grass":       {"rgb": [128, 150, 74],  "src": "FALLBACK[GRASS]"},
+  "meadow":      {"rgb": [168, 170, 96],  "src": "FALLBACK[MEADOW]"},
+  "garden":      {"rgb": [140, 150, 84],  "src": "FALLBACK[GARDEN]"},
+  "wood":        {"rgb": [78, 104, 52],   "src": "FALLBACK[WOOD]"},
+  "scrub":       {"rgb": [112, 128, 62],  "src": "FALLBACK[SCRUB]"},
+  "pitch":       {"rgb": [104, 160, 72],  "src": "FALLBACK[PITCH]"},
+  "cemetery":    {"rgb": [122, 140, 80],  "src": "FALLBACK[CEMETERY]"},
+  "parking":     {"rgb": [170, 168, 162], "src": "FALLBACK[PARKING]"},
+  "railground":  {"rgb": [150, 136, 118], "src": "FALLBACK[RAILGROUND]"},
+  "buildsite":   {"rgb": [196, 170, 130], "src": "FALLBACK[BUILDSITE]"}
+ },
+ "relief": {
+  "rock":        {"rgb": [176, 160, 132], "src": "v2 (Luxembourg sandstone, to tune on the Bock)"},
+  "hatch":       {"rgb": [92, 78, 64],    "src": "v2 (ink at 70%)"}
+ },
+ "water": {
+  "river":       {"rgb": [52, 112, 120],  "src": "FALLBACK[WATER]"},
+  "river_ink":   {"rgb": [34, 98, 122],   "src": "v2_ink.py water"},
+  "bank":        {"rgb": [36, 52, 64],    "src": "v2_ink.py bank"}
+ },
+ "transport": {
+  "road":        {"rgb": [132, 130, 128], "src": "draw_ground.py ROAD_COL road"},
+  "pedestrian":  {"rgb": [206, 192, 164], "src": "ROAD_COL ped"},
+  "path":        {"rgb": [200, 180, 140], "src": "ROAD_COL path"},
+  "steps":       {"rgb": [196, 184, 160], "src": "ROAD_COL steps"},
+  "lane_dash":   {"rgb": [238, 234, 222], "src": "v2_ink.py dash"},
+  "rail":        {"rgb": [36, 32, 30],    "src": "v2_ink.py rail"},
+  "tram":        {"rgb": [58, 54, 52],    "src": "v2_ink.py tram"},
+  "sleeper":     {"rgb": [78, 62, 50],    "src": "v2_ink.py sleepers"}
+ },
+ "structures": {
+  "stone":       {"rgb": [186, 176, 158], "src": "pipeline/build_bridges.py STONE"},
+  "red_bridge":  {"rgb": [172, 44, 40],   "src": "build_bridges.py RED (Pont Grande-Duchesse Charlotte)"},
+  "railing":     {"rgb": [196, 198, 200], "src": "build_bridges.py RAIL"}
+ },
+ "buildings": {
+  "note": "for the code-drawn buildings of bake-off method A and the material library of B; v1's buildings were painted",
+  "wall_render": {"rgb": [222, 212, 190], "src": "v2 (lime render of the old town)"},
+  "wall_stone":  {"rgb": [196, 178, 140], "src": "v2 (yellow sandstone)"},
+  "roof_slate":  {"rgb": [92, 96, 104],   "src": "v2 (blue-grey slate, the city's roofs)"},
+  "roof_tile":   {"rgb": [160, 78, 58],   "src": "v2 (red tile)"},
+  "window":      {"rgb": [59, 74, 90],    "src": "v2"},
+  "window_lit":  {"rgb": [255, 214, 140], "src": "v2 (night)"}
+ },
+ "trees": {
+  "summer_dark":   {"rgb": [28, 44, 24],   "src": "pipeline/layers/v2_canopy.py dark"},
+  "summer_light":  {"rgb": [150, 178, 84], "src": "v2_canopy.py light"},
+  "conifer_dark":  {"rgb": [20, 40, 30],   "src": "v2_canopy.py conifer"},
+  "conifer_light": {"rgb": [96, 132, 84],  "src": "v2_canopy.py conifer"},
+  "red_dark":      {"rgb": [48, 26, 30],   "src": "v2_canopy.py red"},
+  "red_light":     {"rgb": [150, 88, 78],  "src": "v2_canopy.py red"},
+  "trunk":         {"rgb": [84, 66, 50],   "src": "v2_canopy.py trunk"}
+ },
+ "light": {
+  "shadow_tint":   {"rgb": [70, 72, 110],  "src": "v2 (cast shadows are tinted, never black: OTHERS 7.1)"},
+  "golden":        {"rgb": [255, 196, 120], "src": "v2"},
+  "night_sky":     {"rgb": [16, 24, 40],   "src": "pipeline/layers/layers_common.py BG"}
+ }
+}

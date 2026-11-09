@@ -1,0 +1,20 @@
+{
+ "about": "The v2 layer stack (PLAN_V2 section 5), bottom to top. Each layer has a spec with numbered checks in v2/docs/specs/<spec>. 'made_by': code, ai or bakeoff (A/B/C, section 7). 'tiles': the tile set it publishes (none for viewer-only layers). Phase 1 builds the code layers on the test area.",
+ "layers": [
+  {"n": 1,  "id": "ground",     "name": "Ground colour",                 "made_by": "code",    "tiles": "rgba",   "depth": "terrain", "spec": "layer-01-ground.md"},
+  {"n": 2,  "id": "relief",     "name": "Relief: terrain and cliffs",    "made_by": "code",    "tiles": "rgba",   "depth": "terrain", "spec": "layer-02-relief.md"},
+  {"n": 3,  "id": "water",      "name": "Water",                         "made_by": "code",    "tiles": "rgba+mask", "depth": "water surface", "spec": "layer-03-water.md"},
+  {"n": 4,  "id": "transport",  "name": "Roads, paths, rail, tram",      "made_by": "code",    "tiles": "rgba",   "depth": "profile", "spec": "layer-04-transport.md"},
+  {"n": 5,  "id": "buildings",  "name": "Building colour (albedo)",      "made_by": "bakeoff", "tiles": "rgba",   "depth": "mesh", "spec": "layer-05-buildings.md"},
+  {"n": 6,  "id": "structures", "name": "Bridges and structures",        "made_by": "bakeoff", "tiles": "rgba",   "depth": "mesh", "spec": "layer-06-structures.md"},
+  {"n": 7,  "id": "trees",      "name": "Trees and greenery",            "made_by": "bakeoff", "tiles": "rgba",   "depth": "crowns", "spec": "layer-07-trees.md"},
+  {"n": 8,  "id": "buffers",    "name": "Geometry buffers",              "made_by": "code",    "tiles": "depth, normal, height, id", "depth": "is depth", "spec": "layer-08-buffers.md"},
+  {"n": 9,  "id": "light",      "name": "Light: sun, shadows, sky",      "made_by": "code",    "tiles": "none (viewer) + shadow-map tiles", "depth": "uses 8", "spec": "layer-09-light.md"},
+  {"n": 10, "id": "night",      "name": "Night lights",                  "made_by": "code",    "tiles": "lamp/window points", "depth": "uses 8", "spec": "layer-10-night.md"},
+  {"n": 11, "id": "seasons",    "name": "Seasons and weather",           "made_by": "code",    "tiles": "none (viewer) + snow masks", "depth": "uses 8", "spec": "layer-11-seasons.md"},
+  {"n": 12, "id": "vehicles",   "name": "Vehicles, trams, trains, planes", "made_by": "code",  "tiles": "none (viewer)", "depth": "tested against 8", "spec": "layer-12-vehicles.md"},
+  {"n": 13, "id": "events",     "name": "Events",                        "made_by": "code+ai sprites", "tiles": "sprites", "depth": "tested against 8", "spec": "layer-13-events.md"},
+  {"n": 14, "id": "look",       "name": "Final look: grade and ink",     "made_by": "code",    "tiles": "none (viewer shader)", "depth": "uses 8", "spec": "layer-14-look.md"},
+  {"n": 15, "id": "labels",     "name": "Labels, pins, search, hover",   "made_by": "code",    "tiles": "id tiles from 8", "depth": "uses 8", "spec": "layer-15-labels.md"}
+ ]
+}

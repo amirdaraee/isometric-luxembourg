@@ -1,0 +1,16 @@
+{
+ "about": "v2 camera = v1 camera (pipeline/common.py, data/work/mosaic.json, web/src/components/IsometricMap.tsx). Spec: v2/docs/specs/camera.md",
+ "crs": "EPSG:2169",
+ "origin_en": [70000.0, 65000.0],
+ "view": "orthographic 2:1 dimetric, camera in the south-east looking north-west; screen right = north-east",
+ "elevation_deg": 30.0,
+ "right_en": [0.7071067811865476, 0.7071067811865476, 0.0],
+ "forward_en": [-0.7071067811865476, 0.7071067811865476, 0.0],
+ "mpp": 0.125,
+ "tile_px": 512,
+ "v1": {"mpp": 0.25, "sx0": 10373.3037109375, "sy1": 2774.111328125, "frame_px": 2048, "cols": 13, "rows": 7,
+        "source": "data/work/mosaic.json"},
+ "frame": {"sx0": 4741.3037109375, "sy1": 5334.111328125, "width_px": 121856, "height_px": 66048,
+           "about": "v1 origin moved 11 v1 frames left and 5 up (512 m each): the commune bbox + 300 m, z 150-480 m, is all positive"},
+ "v1_offset_px": [22528, 10240]
+}
