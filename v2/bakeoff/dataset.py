@@ -26,15 +26,28 @@ def flat_light(rgb, ids, normal, min_px=150, tol=0.05):
     """Faces of one building's material turned different ways (N, E, S, W quadrants of the wall normal; roofs by
     their slope's quadrant) must have the same median luminance within tol. Returns (worst relative difference,
     [(building id, class, worst)]) over buildings with >= min_px pixels on at least two sides."""
+    from scipy import ndimage
     L = lum(np.asarray(rgb, float))
     cls = ids & 255
     obj = ids >> 8
     h = np.hypot(normal[..., 0], normal[..., 1])
     az = np.degrees(np.arctan2(normal[..., 0], normal[..., 1])) % 360
     quad = (((az + 45) % 360) // 90).astype(int)
+    # as L5.1: pixels within 2 px of a change of object, class or facing are left out (the ink lines at edges are
+    # the drawing, not light)
+    key = ids.astype(np.int64) * 4 + quad
+    edge = np.zeros(key.shape, bool)
+    edge[:, 1:] |= key[:, 1:] != key[:, :-1]
+    edge[:, :-1] |= key[:, 1:] != key[:, :-1]
+    edge[1:, :] |= key[1:, :] != key[:-1, :]
+    edge[:-1, :] |= key[1:, :] != key[:-1, :]
+    inner = ~ndimage.binary_dilation(edge, iterations=2)
+    # faces seen at a grazing angle are all ink (their depth steps past the outline rule every pixel): left out
+    from v2.layers.common import VIEW
+    inner &= -(normal @ VIEW) > 0.3
     worst, bad = 0.0, []
     for c in (11, 23):                                   # walls (building), roofs
-        m = (cls == c) & (h > (0.7 if c == 11 else 0.1))
+        m = (cls == c) & (h > (0.7 if c == 11 else 0.1)) & inner
         if not m.any():
             continue
         for o in np.unique(obj[m]):

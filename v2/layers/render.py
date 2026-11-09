@@ -736,18 +736,40 @@ class Renderer:
         gid[got] = group[t]
         if outline:
             ink = pal("ink", "line_soft")
+            # a crease is where one object's surface turns by 20 degrees or more: facets of a round tower (ACT models
+            # them as planes a few degrees apart) are one smooth wall, and a line between each pair would darken the
+            # tower's side towards its outline like shading (a baked light); nor is there a line between surfaces in
+            # one plane (ACT repeats some walls), where their rasters interleave
+            npx = np.zeros((H, W, 3)); npx[got] = nr[t]
+            obp = np.full((H, W), -1, np.int64); obp[got] = ob[t]
+            clp = np.full((H, W), -1, np.int64); clp[got] = cl[t]
+
+            def same_surface(a, b, ga, gb, za, zb_):
+                """One surface: the same group, or one object's surface of one class (a wall, a roof; a window is
+                never the wall's) turning by less than 20 degrees with no gap in depth (a surface seen at a grazing
+                angle steps in depth from pixel to pixel without a break)."""
+                smooth = (np.abs((npx[a] * npx[b]).sum(-1)) > 0.94) & (np.abs(za - zb_) < 1.0) & \
+                    (obp[a] == obp[b]) & (clp[a] == clp[b])
+                return (ga == gb) | smooth
+            zf = np.where(got, zb, 1e9)
+            sh = same_surface((slice(None), slice(None, -1)), (slice(None), slice(1, None)), gid[:, :-1], gid[:, 1:],
+                              zf[:, :-1], zf[:, 1:]) & got[:, :-1] & got[:, 1:]
+            sv = same_surface((slice(None, -1), slice(None)), (slice(1, None), slice(None)), gid[:-1, :], gid[1:, :],
+                              zf[:-1, :], zf[1:, :]) & got[:-1, :] & got[1:, :]
+            gdh = (gid[:, :-1] != gid[:, 1:]) & ~sh
+            gdv = (gid[:-1, :] != gid[1:, :]) & ~sv
             e = np.zeros((H, W), bool)
-            dz = np.abs(np.diff(np.where(got, zb, 1e9), axis=1)) > 0.6
-            e[:, :-1] |= ((gid[:, :-1] != gid[:, 1:]) | dz) & (got[:, :-1] | got[:, 1:])
-            dzy = np.abs(np.diff(np.where(got, zb, 1e9), axis=0)) > 0.6
-            e[:-1, :] |= ((gid[:-1, :] != gid[1:, :]) | dzy) & (got[:-1, :] | got[1:, :])
+            dz = (np.abs(np.diff(zf, axis=1)) > 0.6) & ~sh
+            e[:, :-1] |= (gdh | dz) & (got[:, :-1] | got[:, 1:])
+            dzy = (np.abs(np.diff(zf, axis=0)) > 0.6) & ~sv
+            e[:-1, :] |= (gdv | dzy) & (got[:-1, :] | got[1:, :])
             # the line goes on the nearer side of a change (so outlines hug the object, not what is behind it)
             e2 = np.zeros((H, W), bool)
             zz = np.where(got, zb, np.inf)
             right_nearer = np.zeros((H, W), bool); right_nearer[:, :-1] = zz[:, 1:] < zz[:, :-1]
             down_nearer = np.zeros((H, W), bool); down_nearer[:-1, :] = zz[1:, :] < zz[:-1, :]
-            eh = np.zeros((H, W), bool); eh[:, :-1] = ((gid[:, :-1] != gid[:, 1:]) | dz) & (got[:, :-1] | got[:, 1:])
-            ev = np.zeros((H, W), bool); ev[:-1, :] = ((gid[:-1, :] != gid[1:, :]) | dzy) & (got[:-1, :] | got[1:, :])
+            eh = np.zeros((H, W), bool); eh[:, :-1] = (gdh | dz) & (got[:, :-1] | got[:, 1:])
+            ev = np.zeros((H, W), bool); ev[:-1, :] = (gdv | dzy) & (got[:-1, :] | got[1:, :])
             e2 |= eh & ~right_nearer
             e2[:, 1:] |= eh[:, :-1] & right_nearer[:, :-1]
             e2 |= ev & ~down_nearer
