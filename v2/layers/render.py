@@ -299,12 +299,12 @@ class Renderer:
         footprint = cv.bounds_en()
         cls = Image.new("L", (cv.W, cv.H), GROUND_CLASSES.index("meadow"))
         if not urban.is_empty and urban.intersects(footprint):
-            fill_geom(cls, cv.geom(urban.intersection(footprint)), GROUND_CLASSES.index("paved"))
+            fill_geom(cls, cv.geom(urban), GROUND_CLASSES.index("paved"))   # whole polygons: a cut would differ per tile
         if self.ground_tree is not None:
             hits = sorted(self.ground_tree.query(footprint), key=lambda i: GROUND_CLASSES.index(polys[i][0]))
             for i in hits:
                 c, p = polys[i]
-                fill_geom(cls, cv.geom(p.intersection(footprint)), GROUND_CLASSES.index(c))
+                fill_geom(cls, cv.geom(p), GROUND_CLASSES.index(c))
         cls = np.asarray(cls)
         k = np.zeros(m.shape, np.uint8)
         k[m] = cv.sample(cls, t["u"][m], t["f"][m])
@@ -419,7 +419,7 @@ class Renderer:
         fp = cv.bounds_en()
         for p in self.water_polys:
             if p.intersects(fp):
-                fill_geom(img, cv.geom(p.intersection(fp)), 1)
+                fill_geom(img, cv.geom(p), 1)
         wm = np.zeros(m.shape, bool)
         wm[m] = cv.sample(np.asarray(img), t["u"][m], t["f"][m]) > 0
         if not wm.any():
