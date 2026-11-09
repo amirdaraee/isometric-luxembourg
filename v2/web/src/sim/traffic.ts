@@ -44,6 +44,8 @@ export interface DrawableCar {
   length: number; width: number;
   /** v2: the RoadLine (graph edge) the car is on, or heading for when it is crossing a junction. */
   rid: number;
+  /** v2: crossing a junction: the RoadLine it comes from and how far across it is (0..1); rid0 -1 on a lane. */
+  rid0: number; u: number;
 }
 export interface SignalLight { x: number; y: number; state: "green" | "amber" | "red" }
 export interface TrafficOptions {
@@ -1476,10 +1478,11 @@ export class Traffic {
       if (off) { o.x -= Math.sin(o.h) * off; o.y += Math.cos(o.h) * off; }
       const lane = el.kind === 0 ? el : el.to, e = lane.edge, e2 = el.kind === 1 ? el.from.edge : e;
       const d = this.pool[n] ?? (this.pool[n] = { id: 0, x: 0, y: 0, headingScreenRad: 0, type: "car", variant: 0,
-        braking: false, siren: false, bridge: false, tunnel: false, length: 0, width: 0, rid: -1 });
+        braking: false, siren: false, bridge: false, tunnel: false, length: 0, width: 0, rid: -1, rid0: -1, u: 0 });
       d.id = c.id; d.x = o.x / M; d.y = o.y / M; d.headingScreenRad = o.h; d.type = c.type; d.variant = c.variant;
       d.braking = c.acc < -0.8 || c.v < 0.5; d.siren = c.siren; d.bridge = e.bridge || e2.bridge;
       d.tunnel = e.tunnel && e2.tunnel; d.length = c.len / M; d.width = c.wid / M; d.rid = e.rid;
+      d.rid0 = el.kind === 1 ? el.from.edge.rid : -1; d.u = el.kind === 1 ? Math.min(Math.max(s / (el.len || 1), 0), 1) : 0;
       out[n++] = d;
     };
     for (const l of this.activeLanes) for (const c of l.cars) one(c);

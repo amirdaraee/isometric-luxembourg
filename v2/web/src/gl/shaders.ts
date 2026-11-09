@@ -92,7 +92,13 @@ void main() {
   if (dcm < 0.0) discard;
   gl_FragDepth = frag01(dcm);
   float k = uHasK > 0.5 ? texelFetch(uK, p, 0).r : 0.0;
-  oAlbedo = vec4(texture(uC, uv).rgb, uLayer / 255.0);
+  float layer = uLayer;
+  if (uLayer < 0.5) {                       // the far-zoom set: k = layer * 16 + class
+    float kv = floor(k * 255.0 + 0.5);
+    layer = floor(kv / 16.0);
+    k = mod(kv, 16.0) / 255.0;
+  }
+  oAlbedo = vec4(texture(uC, uv).rgb, layer / 255.0);
   oNormal = vec4(g.b, g.a, k, 0.0);
 }`;
 

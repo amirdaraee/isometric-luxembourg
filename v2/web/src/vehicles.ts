@@ -97,6 +97,15 @@ export class Vehicles {
     return interp(e.s, e.z, bs);
   }
 
+  /** A car's height: on a lane, its road's profile; crossing a junction (whose box can join nodes up to 20 m
+   * apart), from the road it leaves to the road it enters, in step with how far across it is. */
+  carZ(c: { rid: number; rid0: number; u: number; x: number; y: number }): number {
+    const z1 = this.roadZ(c.rid, c.x, c.y);
+    if (c.rid0 < 0 || c.rid0 === c.rid) return z1;
+    const z0 = this.roadZ(c.rid0, c.x, c.y);
+    return z0 + (z1 - z0) * c.u;
+  }
+
   edgeZ(edge: number, s: number): number {
     const e = this.data.edges[edge];
     return e ? interp(e.s, e.z, s) : 0;
@@ -122,7 +131,7 @@ export class Vehicles {
       n++;
     };
     for (const c of this.traffic.cars()) {
-      put(c.id, c.type, c.x, c.y, this.roadZ(c.rid, c.x, c.y), c.headingScreenRad, c.rid, c.tunnel, c.bridge);
+      put(c.id, c.type, c.x, c.y, this.carZ(c), c.headingScreenRad, c.rid, c.tunnel, c.bridge);
     }
     const box: [number, number, number, number] = [this.area.x0 - 2000, this.area.y0 - 2000, this.area.x1 + 2000, this.area.y1 + 2000];
     for (const s of transitSections(this.transit, this.shapes, secOfDay, dayMask, box)) {

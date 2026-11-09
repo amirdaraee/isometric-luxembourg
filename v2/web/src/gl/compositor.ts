@@ -264,11 +264,16 @@ export class Compositor {
     return out;
   }
 
+  useFar(z: number, off: Set<string>): boolean {
+    const f = this.idx.layers.far;
+    return !!f && z >= (f as { from_zoom?: number }).from_zoom! && !Object.keys(LAYER_ID).some((L) => off.has(L));
+  }
+
   /** Tiles of the view not yet loaded (for "first view drawn" timing). */
   missing(view: View, off: Set<string>): number {
     const z = this.level(view);
     let n = 0;
-    for (const [tx, ty] of this.visibleTiles(view, z)) for (const L of Object.keys(LAYER_ID)) {
+    for (const [tx, ty] of this.visibleTiles(view, z)) for (const L of this.useFar(z, off) ? ["far"] : Object.keys(LAYER_ID)) {
       if (off.has(L)) continue;
       if (this.tile(L, z, `${tx}_${ty}`) === undefined) n++;
     }
@@ -338,9 +343,11 @@ export class Compositor {
     this.stats.tilesDrawn = 0; this.stats.tilesMissing = 0;
     const pal = this.idx.palette;
     const paper = pal.ink.paper.rgb.map((v) => v / 255);
+    // far zoom: one merged set while every colour layer is on (tiles-hosting.md "Far zoom")
+    const far = this.useFar(z, st.off);
     // layers 1 + 2
     const gOn = !st.off.has("ground"), rOn = !st.off.has("relief");
-    if (gOn || rOn) {
+    if ((gOn || rOn) && !far) {
       const p = this.progGround;
       gl.useProgram(p.p);
       this.setView(p, view);
@@ -380,9 +387,9 @@ export class Compositor {
       p.f("uDepthRangeT", this.idx.depth_cm[0], this.idx.depth_cm[1]);
       this.bindQuad(p);
       p.i("uC", 0); p.i("uG", 1); p.i("uK", 2);
-      for (const L of DRAW_ORDER) {
+      for (const L of far ? ["far"] : DRAW_ORDER) {
         if (st.off.has(L)) continue;
-        p.f("uLayer", LAYER_ID[L]);
+        p.f("uLayer", LAYER_ID[L] ?? 0);
         for (const [tx, ty] of tiles) {
           const f = this.find(L, z, tx, ty);
           if (!f) continue;

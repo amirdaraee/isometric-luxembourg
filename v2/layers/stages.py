@@ -162,7 +162,62 @@ def layer_labels(ctx):
 
 
 # ------------------------------------------------------------------------------------------------ release
-RELEASE_LAYERS = COLOUR_LAYERS + ["buffers"]
+FAR_FROM_ZOOM = 2
+
+
+def layer_far(ctx):
+    """Far zoom (tiles-hosting.md "Far zoom", PLAN_V2 section 5): from zoom 2 out, the colour layers merged into one
+    tile set by depth (the nearest surface per pixel, ties to the later layer, the relief multiplied onto the ground
+    under it), so a far view loads one set of tiles instead of seven. k = layer * 16 + the layer's class. Near zooms
+    stay per layer; the viewer uses this set only while every colour layer is on."""
+    from v2.layers.common import read_tile, write_tile
+    src = {L: ctx.dep(f"layer_{L}") / "tiles" for L in COLOUR_LAYERS}
+    idx = {L: json.loads((src[L] / "index.json").read_text())["tiles"] for L in COLOUR_LAYERS}
+    out = ctx.out / "tiles"
+    res = {}
+    for z in sorted(int(k) for k in idx["ground"]):
+        if z < FAR_FROM_ZOOM:
+            continue
+        names = sorted(set().union(*(set(idx[L].get(str(z), {})) for L in COLOUR_LAYERS)))
+        res[z] = {}
+        for name in names:
+            depth = np.full((TILE, TILE), np.inf)
+            rgb = np.zeros((TILE, TILE, 3))
+            oct_ = np.zeros((TILE, TILE, 2), np.uint8)
+            k = np.zeros((TILE, TILE), np.uint8)
+            g = None
+            for li, L in enumerate(COLOUR_LAYERS):
+                dm = idx[L].get(str(z), {}).get(name)
+                if dm is None:
+                    continue
+                t = read_tile(src[L] / str(z), name, dm, z=z)
+                d = t["depth"]
+                if L == "ground":
+                    g = t
+                if L == "relief":
+                    # shading: a multiply on the ground where the ground is the surface; walls: surfaces
+                    mul = (t["k"] != 3) & np.isfinite(d) & (li > 0)
+                    if g is not None:
+                        on = mul & (depth == g["depth"]) & np.isfinite(depth)
+                        rgb[on] = rgb[on] * t["rgb"][on] / 255.0
+                    d = np.where(t["k"] == 3, d, np.inf)
+                m = d <= depth
+                depth[m] = d[m]
+                rgb[m] = t["rgb"][m]
+                oct_[m] = t["oct"][m]
+                k[m] = (li + 1) * 16 + np.minimum(t["k"][m] if "k" in t else 0, 15)
+            if not np.isfinite(depth).any():
+                continue
+            from v2.layers.common import oct_decode
+            res[z][name] = write_tile(out / str(z), name, rgb=np.round(rgb).astype(np.uint8), depth=depth,
+                                      normal=oct_decode(oct_), k=k, z=z)
+    d = {"layer": "far", "tile_px": TILE, "levels": max(res), "from_zoom": FAR_FROM_ZOOM,
+         "tiles": {str(z): v for z, v in res.items()}, "files": ["c.webp", "g.bin", "k.bin"]}
+    (out / "index.json").write_text(json.dumps(d, separators=(",", ":")))
+    return {"from_zoom": FAR_FROM_ZOOM, "tiles": {z: len(v) for z, v in res.items()}}
+
+
+RELEASE_LAYERS = COLOUR_LAYERS + ["buffers", "far"]
 
 
 def release(ctx):
@@ -178,12 +233,15 @@ def release(ctx):
         os.symlink(src, ctx.out / name)
         li = json.loads((src / "index.json").read_text())
         idx["layers"][name] = {"levels": li["levels"], "tiles": li["tiles"], "files": li["files"]}
+        if "from_zoom" in li:
+            idx["layers"][name]["from_zoom"] = li["from_zoom"]
         for z, v in li["tiles"].items():
             for n, dm in v.items():
                 r = depth_ref(n, int(z)) * 100
                 lo, hi = min(lo, int(math.floor(dm + r.min()))), max(hi, int(math.ceil(dm + 65535 + r.max())))
     idx["depth_cm"] = [lo, hi]
     idx["levels"] = max(v["levels"] for v in idx["layers"].values())
+    idx["far_from_zoom"] = FAR_FROM_ZOOM
     tx = [int(n.split("_")[0]) for n in idx["layers"]["buffers"]["tiles"]["0"]]
     ty = [int(n.split("_")[1]) for n in idx["layers"]["buffers"]["tiles"]["0"]]
     idx["extent_px"] = [min(tx) * TILE, min(ty) * TILE, (max(tx) + 1) * TILE, (max(ty) + 1) * TILE]

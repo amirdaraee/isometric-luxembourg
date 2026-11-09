@@ -43,7 +43,7 @@ test("cars drive on the graph at their edge's profile height, with no jump betwe
   for (let f = 0; f < 30 * 120; f++) {
     v.step(1 / 30, 8.5);
     for (const c of v.traffic.cars()) {
-      const z = v.roadZ(c.rid, c.x, c.y);
+      const z = v.carZ(c);
       // the height of the point of the road under the car
       const x = c.x * U;
       const want = c.rid === 0 ? 300 + Math.min(Math.max(x, 0), 400) / 400 * 10 : 310;

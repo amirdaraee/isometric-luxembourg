@@ -136,6 +136,8 @@ def phase1(g0_checks) -> list:
               raw=lambda area: _layer_raw(area) + [raw_dir() / params()["transit"]["gtfs_dir"]],
               doc="layer 12: roads and profiles for the simulation; trams and trains on the graph"),
         Stage("layer_labels", L.layer_labels, deps=base, doc="layer 15: labels and pins", **lay),
+        Stage("layer_far", L.layer_far, deps=tuple(f"layer_{n}" for n in L.COLOUR_LAYERS), code=LAYER_CODE,
+              doc="far zoom: the colour layers merged by depth, from zoom 2 out"),
     ]
     layers = tuple(s.name for s in S)
     S.append(Stage("release", L.release, deps=("scene",) + layers, code=LAYER_CODE, raw=_layer_raw,

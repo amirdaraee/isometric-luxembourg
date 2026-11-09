@@ -1,7 +1,7 @@
 // Loading the release: index.json, tiles and data files. Data tiles (g.bin, k.bin, i.bin, h.bin) are rows of bytes
 // delta-coded per byte and zlib-compressed (v2/layers/common.py pack_bin): decoded exactly with DecompressionStream.
 
-export interface LayerIndex { levels: number; tiles: Record<string, Record<string, number>>; files: string[] }
+export interface LayerIndex { levels: number; tiles: Record<string, Record<string, number>>; files: string[]; from_zoom?: number }
 export interface ReleaseIndex {
   area: string;
   camera: { origin_en: [number, number]; elevation_deg: number; mpp: number; frame: { sx0: number; sy1: number };

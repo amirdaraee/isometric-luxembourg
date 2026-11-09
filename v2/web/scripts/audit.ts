@@ -41,7 +41,7 @@ for (let s = 0; s < 600; s += 0.1) v2.step(0.1, 8.5);
 for (let f = 0; f < 3600 * 30; f++) {
   v2.traffic.step(fr, v2.area, 1);
   for (const c of v2.traffic.cars()) {
-    const z = v2.roadZ(c.rid, c.x, c.y);
+    const z = v2.carZ(c);
     const p = last.get(c.id);
     if (p !== undefined) {
       const d = Math.abs(z - p);
