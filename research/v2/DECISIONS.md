@@ -46,3 +46,4 @@ one is a decision for the owner, written here with its date.
 | Trees in method A (9 Nov) | Make crowns rounder: keep the measured height, but widen crowns sensibly by species and age so they no longer look like poplars. Update the layer-07 spec, rebuild A, and keep every gate passing. |
 | Phase 2 checks accepted (9 Nov) | Accepted: checks L4.6 and L5.2, the Stierchen footbridge exception, and lossless tiles for layers 5–7. |
 | Bake-off paused (9 Nov) | Paused by owner 9 Nov 2026 after no job ran (before B1). No pod was started and $0 was spent. The approvals q0001–q0008 stay recorded but unused. |
+| Bake-off resumed (9 Nov) | Resumed by owner 9 Nov 2026 ("resume"). The paid jobs run through `python -m v2.bakeoff run <job> --go` in the runner's order, pilots first; a pilot that fails its checks stops its branch, with no new quote. Results: `v2/docs/PHASE2_RESULTS.md`. |

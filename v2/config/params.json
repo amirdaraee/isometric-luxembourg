@@ -62,6 +62,18 @@
   "max_height_m": 50.0,
   "crown_scale": 0.85,
   "max_overlap_share": 0.3,
+  "crown_shape": {
+   "about": "Drawn crown width by species and age (owner, 9 Nov 2026: rounder crowns, measured height kept). Width = height x a ratio that grows from young (height <= young_h_m) to mature (>= mature_h_m), at most max_width_m, at most neighbour_factor x the distance to the nearest tree each side, never under the survey's width. Height is the age proxy.",
+   "young_h_m": 6.0,
+   "mature_h_m": 20.0,
+   "neighbour_factor": 1.25,
+   "by_type": {
+    "deciduous_green": {"young": 0.42, "mature": 0.52, "max_width_m": 13.0},
+    "deciduous_red": {"young": 0.42, "mature": 0.52, "max_width_m": 13.0},
+    "conifer": {"young": 0.28, "mature": 0.30, "max_width_m": 8.0},
+    "other": {"young": 0.40, "mature": 0.48, "max_width_m": 12.0}
+   }
+  },
   "types": ["deciduous_green", "deciduous_red", "conifer", "other"]
  },
  "transport": {
