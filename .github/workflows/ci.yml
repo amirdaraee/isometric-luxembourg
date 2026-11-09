@@ -29,3 +29,14 @@ jobs:
           python-version: "3.12"
       - run: pip install -r v2/requirements.txt
       - run: python -m pytest -q v2
+      # phase 1: the viewer's pure logic (sun, simulation on the v2 graph, labels) with Node's own test runner, then
+      # the viewer's type check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: v2/web/package-lock.json
+      - run: node --experimental-strip-types --no-warnings --test src/*.test.ts
+        working-directory: v2/web
+      - run: npm ci --ignore-scripts && npx tsc --noEmit
+        working-directory: v2/web

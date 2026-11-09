@@ -107,3 +107,19 @@ and two yard sidings that end at buffer stops inside tunnels (G5).
 ## Unit tests
 `python -m pytest v2` (31 tests, under a second, no downloads): build graph, profile solver, transport graph on a
 synthetic valley, facades, camera and sun, ledger, check framework, the streaming SQLite reader.
+
+## G1 checks (built in phase 1, run on the test area)
+
+Stages of the build graph (`python -m v2.build test g1`), each a gate; thresholds in `params.json` "g1".
+
+| Stage | Checks | Brief |
+|---|---|---|
+| `check_layers` (`v2/checks/layer_checks.py`) | L1.1, L1.2, L2.1, L2.2, L3.1, L4.1, L4.3, L8.1-L8.3, P-1 | 7 |
+| `check_independence` (`g1_checks.py`) | C1a every layer re-rendered without each other layer's own inputs is identical; C1b/C1c the tiles are the renderer's | 4 |
+| `check_shadows` | L5.1/L9.2 shadow detector (median luminance of a material in the 3D shadow of the photo's sun vs lit next to it), L9.0, L9.1 (08, 13, 19 h), L2.3 | 5 |
+| `check_seams` | v1's seam rule per colour layer at the tiles' scale; L8.4 depth across borders against the tiles' middle lines | seams |
+| `check_vehicles` | L4.2, L12.4 on drawn road/track over a simulated day; L12.1a none drawn in a tunnel past its portal; C4 probes at every portal, bridge and way under a deck vs the exact geometry; L12.2 heights between frames; L12.3 | 7, 8 |
+| `check_no_cars` (`owl_detect.py`) | OWLv2 (v1's detector, local cache, offline) on every colour layer tile: 0 vehicles >= 0.1 | 9 |
+| `check_viewer` (`v2/web/scripts/viewer_checks.mjs`) | V1 layer off leaves no pixel; V2 no shadow of a layer that is off; V3 viewer shadows = Python reference at 10, 13, 16 h and they move; V4 no light by day; V5 seasons only on their masks; V6 labels never overlap; V7 look pass idempotent; C2 speed | 4, 5, speed |
+
+Exceptions: none were needed for G1 (`v2/data/exceptions.json` is unchanged).

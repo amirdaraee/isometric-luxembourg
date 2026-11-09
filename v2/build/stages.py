@@ -106,4 +106,62 @@ def graph() -> Graph:
         Stage("previews", report.previews, deps=("scene",), code=GEO + CAM, kind="report", doc="preview images of the scene"),
         Stage("g0", report.g0, deps=checks + ("previews", "scene"), kind="report", doc="gate G0: all data checks, sizes, previews"),
     ]
+    S += phase1(checks)
     return Graph(S)
+
+
+LAYER_CODE = GEO + CAM + ("v2.layers.common", "v2.layers.raster", "v2.layers.geometry", "v2.layers.render",
+                          "v2.layers.tiles", "v2.layers.light", "v2.layers.data", "v2.data.scene.facades")
+
+
+def _layer_raw(area):
+    from v2.config import CONFIG
+    return [CONFIG / "palette.json", CONFIG / "light.json", CONFIG / "camera.json"]
+
+
+def phase1(g0_checks) -> list:
+    """Phase 1 (PLAN_V2 section 10): the code layers on the test area, the viewer's data and the gate G1 checks."""
+    from v2.layers import stages as L
+    from v2.checks import layer_checks as lc, g1_checks as gc
+    from v2.build import report1
+    base = ("scene", "fetch_osm_ground", "fetch_osm_transport")
+    lay = dict(code=LAYER_CODE, raw=_layer_raw)
+    S = [Stage(f"layer_{n}", L.colour_layer(n), deps=base, doc=f"layer {i + 1}: {n}" + (" (placeholder)" if i >= 4 else ""), **lay)
+         for i, n in enumerate(L.COLOUR_LAYERS)]
+    S += [
+        Stage("layer_buffers", L.layer_buffers, deps=base, doc="layer 8: depth, normal, height, ids of the nearest surface", **lay),
+        Stage("layer_light", L.layer_light, deps=base, doc="layer 9: the shadow height map", **lay),
+        Stage("layer_night", L.layer_night, deps=base, doc="layer 10: windows, doors, shop fronts, street lamps", **lay),
+        Stage("layer_vehicles", L.layer_vehicles, deps=("scene",), params=_p("transit"), code=LAYER_CODE,
+              raw=lambda area: _layer_raw(area) + [raw_dir() / params()["transit"]["gtfs_dir"]],
+              doc="layer 12: roads and profiles for the simulation; trams and trains on the graph"),
+        Stage("layer_labels", L.layer_labels, deps=base, doc="layer 15: labels and pins", **lay),
+        Stage("layer_far", L.layer_far, deps=tuple(f"layer_{n}" for n in L.COLOUR_LAYERS), code=LAYER_CODE,
+              doc="far zoom: the colour layers merged by depth, from zoom 2 out"),
+    ]
+    layers = tuple(s.name for s in S)
+    S.append(Stage("release", L.release, deps=("scene",) + layers, code=LAYER_CODE, raw=_layer_raw,
+                   doc="the viewer's folder: every layer behind one index.json"))
+    web = lambda area: sorted(p for p in (REPO / "v2/web/src").rglob("*.ts")) + [REPO / "v2/web/index.html"]  # noqa: E731
+    chk = dict(kind="check", params=_p("checks", "g1"), code=LAYER_CODE + ("v2.checks.framework", "v2.checks.layer_checks",
+                                                                            "v2.checks.g1_checks"),
+               raw=lambda area: _layer_raw(area) + [REPO / "v2/data/exceptions.json"])
+    S += [
+        Stage("check_layers", lc.check_layers, deps=("release",) + base, **chk,
+              doc="layers 1-4 and 8: coverage, no shading, relief and walls, water, centre lines, alignment, palette"),
+        Stage("check_independence", gc.check_independence, deps=("release",) + base, **chk,
+              doc="brief 4: every layer re-rendered without each other layer's inputs is identical"),
+        Stage("check_shadows", gc.check_shadows, deps=("release",) + base, **chk,
+              doc="brief 5: no baked shadows in the colour layers; cast shadows follow the sun"),
+        Stage("check_seams", gc.check_seams, deps=("release",) + base, **chk, doc="no edge or tone step at tile borders"),
+        Stage("check_vehicles", gc.check_vehicles, deps=("release",) + base, **{**chk, "raw": lambda area: chk["raw"](area) + web(area)},
+              doc="briefs 7 and 8: vehicles on drawn road; hidden in tunnels, under decks and trees; smooth heights"),
+        Stage("check_no_cars", gc.check_no_cars, deps=("release",), **chk,
+              doc="brief 9: the vehicle detector finds no car in any colour layer"),
+        Stage("check_viewer", gc.check_viewer, deps=("release",) + base, **{**chk, "raw": lambda area: chk["raw"](area) + web(area)},
+              doc="the viewer: layers off leave no trace, shadows move with ?hour, speed"),
+    ]
+    g1c = tuple(s.name for s in S if s.kind == "check")
+    S.append(Stage("g1", report1.g1, deps=g1c + g0_checks + ("release",), code=("v2.build.report1",), kind="report",
+                   doc="gate G1: every phase 1 check, speed, previews"))
+    return S

@@ -31,6 +31,8 @@ export ISOLUX_DATA=/path/to/repo/data       # where data/raw (v1's downloads) li
 .venv/bin/python -m v2.build commune scene_transport check_transport_profiles
 .venv/bin/python -m pytest v2               # unit tests (no downloads, about a second)
 .venv/bin/python -m v2.ledger.ledger status
+.venv/bin/python -m v2.build test g1         # phase 1: the code layers, the viewer's data and every G1 check
+.venv/bin/python -m v2.view test            # the viewer: http://localhost:5174/ (Node 22+; installs its packages once)
 ```
 
 ## The build graph

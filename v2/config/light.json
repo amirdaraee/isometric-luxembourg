@@ -1,0 +1,36 @@
+{
+ "about": "Code lighting (layers 9-11, 14): the one set of constants the viewer's shaders (v2/web/src/gl) and the Python reference (v2/layers/light.py) both use, so what the checks measure is what is seen. Spec: v2/docs/specs/layer-09-light.md, layer-10-night.md, layer-11-seasons.md, layer-14-look.md.",
+ "heightmap": {
+  "step_m": 0.5,
+  "margin_m": 80.0,
+  "terrain_cm": "uint16 cm above zbase",
+  "building_unit_m": 0.3,
+  "tree_unit_m": 0.25,
+  "structure_unit_m": 0.25
+ },
+ "march": {"t0_m": 0.35, "growth": 1.055, "steps": 110, "bias_m": 0.3},
+ "sun": {"wrap": 0.35, "ambient": 0.58, "direct": 0.62, "shadow_keep": 0.42},
+ "grade": {
+  "golden_deg": [0.0, 6.0],
+  "blue_deg": [-6.0, 0.0],
+  "night_deg": -6.0,
+  "day_tint": [1.0, 0.995, 0.98],
+  "golden_tint": [1.0, 0.82, 0.62],
+  "blue_tint": [0.55, 0.62, 0.85],
+  "night_tint": [0.30, 0.36, 0.58],
+  "night_level": 0.55
+ },
+ "night": {"window_lit_share_evening": 0.55, "window_lit_share_late": 0.18, "lamp_height_m": 5.0, "lamp_radius_px": 26,
+           "depth_eps_m": 0.35},
+ "seasons": {
+  "spring": {"tree": [1.02, 1.08, 0.92], "green": [1.02, 1.06, 0.95], "sat": 1.08},
+  "summer": {"tree": [1.0, 1.0, 1.0], "green": [1.0, 1.0, 1.0], "sat": 1.0},
+  "autumn": {"tree": [1.45, 0.92, 0.55], "green": [1.12, 1.0, 0.78], "sat": 1.05},
+  "winter": {"tree": [0.82, 0.72, 0.66], "green": [0.95, 0.94, 0.92], "sat": 0.55},
+  "snow_cos": 0.766
+ },
+ "look": {"sat_max": 0.62, "lum_min": 0.035, "lum_max": 0.97, "ink_depth_m": 1.2, "ink_normal_cos": 0.86},
+ "vehicles": {"depth_eps_m": 0.25, "car": [4.4, 1.8, 1.45], "van": [5.4, 2.0, 2.2], "bus": [12.0, 2.55, 3.1],
+              "tram_end": [9.5, 2.65, 3.6], "tram_mid": [8.7, 2.65, 3.6], "train_cab": [26.8, 2.9, 4.6],
+              "train_coach": [26.8, 2.9, 4.6], "train_loco": [19.0, 2.9, 4.6], "funicular": [14.0, 2.6, 3.4]}
+}

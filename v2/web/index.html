@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Isometric Luxembourg v2 (test area)</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #efe8dc; font: 13px system-ui, sans-serif; color: #2e2824; }
+    #map { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+    #map:active { cursor: grabbing; }
+    #labels { position: absolute; inset: 0; pointer-events: none; }
+    .lab { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; text-shadow: 0 0 3px #efe8dc, 0 0 3px #efe8dc, 0 0 2px #efe8dc; }
+    .lab.p1, .lab.p2 { font-weight: 600; font-size: 13px; }
+    .lab.p3 { font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: #5a4c40; }
+    .lab.p4 { font-size: 12px; color: #3b332c; }
+    .lab.p5 { font-size: 11px; font-style: italic; color: #4c443c; }
+    .pin { display: block; width: 9px; height: 9px; margin: 0 auto 2px; border-radius: 50%; background: #b8442f; border: 2px solid #fff6e8; }
+    #tip { position: absolute; display: none; padding: 3px 7px; background: #fff8ee; border: 1px solid #c8b9a4; border-radius: 4px; pointer-events: none; }
+    #panel { position: absolute; top: 10px; left: 10px; padding: 10px 12px; background: rgba(255, 249, 240, 0.93); border: 1px solid #d4c6b2;
+      border-radius: 8px; max-width: 250px; }
+    #panel h1 { font-size: 13px; margin: 0 0 6px; }
+    #panel .row { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+    #toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 8px; margin-top: 6px; }
+    #toggles label { white-space: nowrap; }
+    .err { position: absolute; bottom: 0; left: 0; right: 0; max-height: 40%; overflow: auto; background: #fee; color: #900; margin: 0; padding: 8px; }
+    @media (max-width: 520px) { #panel { max-width: 180px; font-size: 12px; } }
+  </style>
+</head>
+<body>
+  <canvas id="map"></canvas>
+  <div id="labels"></div>
+  <div id="tip"></div>
+  <div id="panel">
+    <h1>Isometric Luxembourg v2 &middot; test area</h1>
+    <div class="row">Time <input id="hour" type="range" min="0" max="23.99" step="0.05"> <span id="hourOut"></span></div>
+    <div class="row">Season <select id="season"><option value="auto">from date</option><option>spring</option><option>summer</option>
+      <option>autumn</option><option>winter</option></select> <label><input id="snow" type="checkbox"> snow</label></div>
+    <div id="toggles"></div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
