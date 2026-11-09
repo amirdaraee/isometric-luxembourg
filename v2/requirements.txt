@@ -1,0 +1,12 @@
+# v2 build and tests (Python 3.12). Install: uv venv .venv -p 3.12 && uv pip install -p .venv/bin/python -r v2/requirements.txt
+numpy>=2.3
+scipy>=1.16
+shapely>=2.1
+pyproj>=3.7
+lxml>=6.0
+mapbox-earcut>=1.0
+pillow>=11
+matplotlib>=3.10
+tifffile>=2025.1
+imagecodecs>=2025.1
+pytest>=8

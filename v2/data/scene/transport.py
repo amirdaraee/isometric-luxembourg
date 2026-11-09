@@ -390,6 +390,19 @@ def build(ctx):
     els = json.loads((ctx.dep("fetch_osm_transport") / "transport.json").read_text())["elements"]
     edges, boundary = ways_to_edges(els, mnt, area.buffer(margin / 2), p)
     ctx.log(f"{len(edges)} edges")
+    from v2.data.scene.buildings import footprints, load as load_buildings
+    fps = list(footprints(load_buildings(ctx.dep("scene_buildings"))))
+    nodes, out_edges, portals, unsolved = solve_graph(edges, boundary, mnt, mns, p, chk, fps)
+    ctx.write_json("graph.json", {"nodes": nodes, "edges": out_edges, "portals": portals})
+    by = defaultdict(float)
+    for e in out_edges:
+        by[f"{e['mode']}/{e['structure']}"] += e["length"]
+    return {"nodes": len(nodes), "edges": len(out_edges), "portals": len(portals), "unsolved": unsolved,
+            "km": {k: round(v / 1000, 2) for k, v in sorted(by.items())}}
+
+
+def solve_graph(edges, boundary, mnt, mns, p, chk, footprints_=()):
+    """Heights for a list of edges (from ways_to_edges): node heights, then each edge's profile, then portals."""
     for ed in edges:
         tg = ed["el"].get("tags", {})
         ed["structure"] = structure(tg, p)
@@ -406,8 +419,7 @@ def build(ctx):
     tdist, portal_nodes = tunnel_distances(edges, inc, nkind)
     chain_of, chain_len = tunnel_chains(edges)
     # what covers a tunnel: the earth (MNT), or a building or bridge deck built over it (then the surface, MNS)
-    from v2.data.scene.buildings import footprints, load as load_buildings
-    built = list(footprints(load_buildings(ctx.dep("scene_buildings"))))
+    built = list(footprints_)
     built += [shapely.linestrings(ed["en"]).buffer(4.0) for ed in edges if ed["structure"] == "bridge"]
     built = shapely.union_all(built) if built else None
     out_edges, portals, unsolved = [], [], 0
@@ -478,12 +490,7 @@ def build(ctx):
     portals = find_portals(out_edges, portal_nodes, p)
     nodes = [{"id": nid, "e": round(float(npos[nid][0]), 2), "n": round(float(npos[nid][1]), 2), "z": round(float(nz[nid]), 2),
               "kind": nkind[nid], "deg": len(inc[nid]), "boundary": nid in boundary} for nid in npos]
-    ctx.write_json("graph.json", {"nodes": nodes, "edges": out_edges, "portals": portals})
-    by = defaultdict(float)
-    for e in out_edges:
-        by[f"{e['mode']}/{e['structure']}"] += e["length"]
-    return {"nodes": len(nodes), "edges": len(out_edges), "portals": len(portals), "unsolved": unsolved,
-            "km": {k: round(v / 1000, 2) for k, v in sorted(by.items())}}
+    return nodes, out_edges, portals, unsolved
 
 
 def load(path):

@@ -6,7 +6,7 @@ Windows are known positions, straight by construction (PLAN_V2 section 6). For e
   2. Walls that get no windows: shorter than min_wall_len_m, lower than min_wall_height_m, not vertical (> 10 deg
      off), or party walls (another building's wall within party_wall_tol_m, facing the other way, overlapping at
      least party_wall_min_overlap of the shorter one).
-  3. Floors: the wall's eave height H (the lowest top of the outline over its middle half) gives
+  3. Floors: the wall's eave height H (the lowest top of the outline along it) gives
      floors = max(1, min(max_floors, 1 + floor((H - ground_floor_m) / floor_m + 0.35))) when H >= ground_floor_m,
      else 1. Floor k's floor line is v = 0 for k = 0, ground_floor_m + (k - 1) floor_m after.
   4. Bays: n = floor((L - 2 edge_margin_m) / bay_m); n = 1 when the wall fits one window. Bays are centred on the
@@ -55,9 +55,9 @@ def wall_frame(ring, centre):
 
 
 def eave_height(poly: Polygon, L: float) -> float:
-    """Lowest top of the outline over the middle half of the wall."""
+    """Lowest top of the outline along the wall (a gable rises above it, so it is the eave)."""
     tops = []
-    for f in np.linspace(0.25, 0.75, 9):
+    for f in np.linspace(0.02, 0.98, 25):
         line = LineString([(f * L, -1), (f * L, 1e4)])
         x = poly.intersection(line)
         if not x.is_empty:
