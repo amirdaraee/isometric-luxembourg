@@ -41,7 +41,7 @@ R2 = 1 / math.sqrt(2)
 # Object classes (layer 8 id tiles: id << 8 | class).
 CLASS = {"none": 0, "ground": 1, "wall": 2, "water": 3, "road": 4, "rail": 5, "tram": 6, "path": 7, "steps": 8,
          "deck": 9, "portal": 10, "building": 11, "window": 12, "door": 13, "shopfront": 14, "structure": 15,
-         "pier": 16, "arch": 17, "tree": 18, "trunk": 19, "parapet": 20, "lift": 21, "vehicle": 30}
+         "pier": 16, "arch": 17, "tree": 18, "trunk": 19, "parapet": 20, "lift": 21, "part": 22, "roof": 23, "vehicle": 30}
 
 # Layer order (ties in depth go to the later layer, compositor.md design 2). 5-7 are placeholders in phase 1.
 COLOUR_LAYERS = ["ground", "relief", "water", "transport", "buildings", "structures", "trees"]

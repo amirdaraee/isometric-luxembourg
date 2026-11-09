@@ -153,6 +153,7 @@
   "seam_de_max": 3.0,
   "seam_band_px": 64,
   "seam_run": 3,
+  "seam_pairs": 24,
   "vehicles_on_road_share": 0.995,
   "transit_on_track_share": 0.995,
   "vehicle_jump_m": 0.5,

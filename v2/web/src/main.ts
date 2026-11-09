@@ -241,7 +241,7 @@ async function main() {
     const cls = b.id & 255, obj = b.id >>> 8;
     const names: Record<number, string> = { 1: "ground", 2: "wall", 3: "water", 4: "road", 5: "railway", 6: "tram line", 7: "path",
       8: "steps", 9: "bridge", 10: "tunnel portal", 11: "building", 12: "window", 13: "door", 14: "shop front", 15: "bridge",
-      16: "viaduct pier", 17: "viaduct arch", 18: "tree", 19: "tree", 20: "parapet", 21: "lift" };
+      16: "viaduct pier", 17: "viaduct arch", 18: "tree", 19: "tree", 20: "parapet", 21: "lift", 22: "building", 23: "roof" };
     let text = names[cls] ?? "";
     if ((cls >= 4 && cls <= 9) && veh) {
       const e = (veh as Vehicles).data.edges[obj - 1];

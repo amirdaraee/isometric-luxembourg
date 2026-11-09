@@ -132,7 +132,8 @@ def buildings_mesh(scene):
                 cols.append("buildings.roof_slate")
     keys = sorted(set(cols))
     ki = {c: i for i, c in enumerate(keys)}
-    cls = np.where(kind == 2, CLASS["building"], CLASS["building"]).astype(np.int16)
+    # walls, roofs and parts (dormers, chimneys) are told apart in the ids: they are different materials
+    cls = np.select([kind == 1, kind == 3], [CLASS["roof"], CLASS["part"]], CLASS["building"]).astype(np.int16)
     return {"V": V, "T": T, "group": groups, "cls": cls, "obj": bld, "col": np.array([ki[c] for c in cols]),
             "col_keys": keys, "kind": kind}
 
@@ -382,7 +383,7 @@ def wall_tops(w, P, top, ground=None):
     return np.where(np.isfinite(g), np.maximum(top, g), top)
 
 
-def wall_mesh(scene, min_drop=1.5, top_width=0.4, poly=None, ground=None):
+def wall_mesh(scene, min_drop=1.5, top_width=0.6, poly=None, ground=None):
     """OSM walls (retaining, city walls, cliffs, embankments) with a measured drop: vertical faces foot to top,
     and a flat top band (the ink edge)."""
     import shapely
@@ -427,8 +428,8 @@ def wall_mesh(scene, min_drop=1.5, top_width=0.4, poly=None, ground=None):
             j = k
             while j + 1 < len(P) and inside[j + 1]:
                 j += 1
-            if j > k:
-                sl = slice(k, j + 1)
+            if j > k or len(P) > 1:
+                sl = slice(max(k - 1, 0), min(j + 2, len(P)))   # half a metre past the area's edge: no gap there
                 A = np.column_stack([P[sl], top[sl] + 0.05])
                 B = np.column_stack([P[sl], foot[sl] - 0.3])
                 strip(M, A, B, CLASS["wall"], wi, "structures.stone|relief.rock|0.5")

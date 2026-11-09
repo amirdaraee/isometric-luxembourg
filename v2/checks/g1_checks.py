@@ -167,9 +167,7 @@ def check_shadows(ctx):
                 key = np.zeros(ok.shape, np.int64)
             else:
                 ids = t["ids"].astype(np.int64)
-                key = (ids >> 8) * 512 + (ids & 255) * 2
-                if L == "buildings":
-                    key += (np.abs(t["normal"][..., 2]) > 0.5).astype(np.int64)
+                key = (ids >> 8) * 512 + (ids & 255) * 2           # walls, roofs, parts, windows: own classes
             for which, m in (("sh", sh & inner), ("lit", near & inner)):
                 kk = key[m]
                 vv = Lm[m]
@@ -335,26 +333,86 @@ def seams_of(get, names, P, at=TILE):
     return bad, total, ex
 
 
+class _Straddle(Tile):
+    """A tile window moved half a tile right (dx) or down (dy): it straddles a border."""
+
+    def __init__(self, tx, ty, dx, dy):
+        super().__init__(tx, ty)
+        object.__setattr__(self, "dx", dx)
+        object.__setattr__(self, "dy", dy)
+
+    @property
+    def px0(self):
+        return self.tx * TILE - self.apron + self.dx
+
+    @property
+    def py0(self):
+        return self.ty * TILE - self.apron + self.dy
+
+    @property
+    def name(self):
+        return f"s{self.tx}_{self.ty}_{self.dx}_{self.dy}"
+
+
 def check_seams(ctx):
+    """A seam is a step the tile cut or the tile's coding makes. For sampled borders, the built tiles either side
+    are compared with one render of a window straddling the border (no cut there): the LAB difference over the 4 px
+    either side of the border, per 64 px chunk, must stay <= 3 (conventions.md). v1's seam rule (a jump at the border
+    larger than the jumps on lines beside it) is also reported, against the same rule through the tiles' middles."""
     P = ctx.params["g1"]
     rel = ctx.dep("release")
     rep = Report("seams")
+    R = _renderer(ctx)
+    rng = np.random.default_rng(11)
     for L in COLOUR_LAYERS:
         names = release_tiles(rel, L)
+        pairs = []
+        for n in sorted(names):
+            tx, ty = (int(v) for v in n.split("_"))
+            for dx, dy in ((1, 0), (0, 1)):
+                if f"{tx + dx}_{ty + dy}" in names:
+                    pairs.append((tx, ty, dx, dy))
+        pick = [pairs[i] for i in rng.choice(len(pairs), min(len(pairs), P["seam_pairs"]), replace=False)] if pairs else []
+        worst, nchunks, ex = 0.0, 0, []
+        for tx, ty, dx, dy in pick:
+            a, b = load(rel, L, f"{tx}_{ty}"), load(rel, L, f"{tx + dx}_{ty + dy}")
+            ax = 1 if dx else 0
+            mosaic = np.concatenate([a["rgb"], b["rgb"]], axis=ax).astype(float)
+            ok = np.concatenate([np.isfinite(a["depth"]), np.isfinite(b["depth"])], axis=ax)
+            R._tcache.clear()
+            st = _Straddle(tx, ty, TILE // 2 if dx else 0, TILE // 2 if dy else 0)
+            s = R.layer(L, st)
+            raw = st.crop(s.rgb).astype(float)
+            sl = (slice(None), slice(TILE // 2, TILE + TILE // 2)) if dx else (slice(TILE // 2, TILE + TILE // 2), slice(None))
+            m, okm = mosaic[sl], ok[sl]
+            lm, lr = _lab(m), _lab(raw)
+            for side in (-1, 1):                    # each side of the border on its own: a step shows on one side
+                band = slice(TILE // 2 - 4, TILE // 2) if side < 0 else slice(TILE // 2, TILE // 2 + 4)
+                bm, br, ob = (lm[:, band], lr[:, band], okm[:, band]) if dx else (lm[band], lr[band], okm[band])
+                for c in range(0, TILE, 64):
+                    ch = (slice(c, c + 64), slice(None)) if dx else (slice(None), slice(c, c + 64))
+                    o = ob[ch]
+                    if o.mean() < 0.5:
+                        continue
+                    nchunks += 1
+                    # the step: the band's mean colour as built against the same band rendered without a cut
+                    e = float(np.linalg.norm(bm[ch][o].mean(0) - br[ch][o].mean(0)))
+                    if e > worst:
+                        worst = e
+                    if e > P["seam_de_max"] and len(ex) < 8:
+                        ex.append({"tiles": [f"{tx}_{ty}", f"{tx + dx}_{ty + dy}"], "chunk": c, "dE": round(e, 2)})
+        rep.at_most(f"S-{L}", f"{L}: largest LAB step of a 64 x 4 px band beside a border (its mean colour), "
+                    f"built tiles vs one render across the border ({len(pick)} borders, {nchunks} chunks)",
+                    round(worst, 3), P["seam_de_max"], ex)
 
         def get(n, L=L):
             t = load(rel, L, n)
             return None if t is None else (t["rgb"], np.isfinite(t["depth"]))
-        bad, total, ex = seams_of(get, names, P)
-        # the control (v1's seam_check run on cell centres): the same rule on lines through the tiles' middles,
-        # where no seam can be: a building corner or a class edge running along a line for 192 px is content
-        c1, t1, _ = seams_of(get, names, P, at=TILE // 2)
-        c2, t2, _ = seams_of(get, names, P, at=TILE + TILE // 2)
-        ctrl = (c1 + c2) / 2
-        rep.add(f"S-{L}", f"{L}: seam chunks at tile borders vs the same rule through the tiles' middles ({bad} of "
-                f"{total} chunks of 64 px at borders, {ctrl:.1f} at the middles; a seam adds to the borders)",
-                bad <= 1.5 * ctrl + P["seam_run"], {"borders": bad, "middles": ctrl},
-                f"<= 1.5 x middles + {P['seam_run']}", ex)
+        bad, total, _ = seams_of(get, names, P)
+        c1, _, _ = seams_of(get, names, P, at=TILE // 2)
+        c2, _, _ = seams_of(get, names, P, at=TILE + TILE // 2)
+        rep.info(f"S-{L}-v1", f"{L}: v1's seam rule, flagged chunks at the borders and (control) through the tiles' "
+                 f"middles, of {total}", {"borders": bad, "middles": (c1 + c2) / 2})
     # depth continuity across tile borders where the same surface goes on (L8.4)
     names = release_tiles(rel, "buffers")
     jumps, n, ctrl_j, ctrl_n = 0, 0, 0, 0
@@ -717,8 +775,21 @@ def check_viewer(ctx):
         px = meta["x0"] + np.arange(meta["W"]) + 0.5
         py = meta["y0"] + np.arange(meta["H"]) + 0.5
         PX, PY = np.meshgrid(px, py)
-        bt = TileCache(rel, "buffers", maxn=64)
-        dep = np.array([np.inf if v is None else v for v in bt.lookup(PX.ravel(), PY.ravel(), "depth")]).reshape(PX.shape)
+        if "nobuildings" in name:
+            # the surface the viewer shows with the buildings off: the nearest of the other layers
+            dep = np.full(PX.shape, np.inf)
+            for L in COLOUR_LAYERS:
+                if L == "buildings":
+                    continue
+                tc = TileCache(rel, L, maxn=64)
+                d = np.array([np.inf if v is None else v for v in tc.lookup(PX.ravel(), PY.ravel(), "depth")]).reshape(PX.shape)
+                if L == "relief":
+                    k = np.array([0 if v is None else v for v in tc.lookup(PX.ravel(), PY.ravel(), "k")]).reshape(PX.shape)
+                    d = np.where(k == 3, d, np.inf)
+                dep = np.minimum(dep, d)
+        else:
+            bt = TileCache(rel, "buffers", maxn=64)
+            dep = np.array([np.inf if v is None else v for v in bt.lookup(PX.ravel(), PY.ravel(), "depth")]).reshape(PX.shape)
         okd = np.isfinite(dep)
         e, n, z = unproject(PX[okd], PY[okd], dep[okd])
         src = ("terrain", "trees", "structures") if "nobuildings" in name else ("terrain", "buildings", "trees", "structures")

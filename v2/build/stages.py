@@ -153,12 +153,12 @@ def phase1(g0_checks) -> list:
               doc="brief 4: every layer re-rendered without each other layer's inputs is identical"),
         Stage("check_shadows", gc.check_shadows, deps=("release",) + base, **chk,
               doc="brief 5: no baked shadows in the colour layers; cast shadows follow the sun"),
-        Stage("check_seams", gc.check_seams, deps=("release",), **chk, doc="no edge or tone step at tile borders"),
+        Stage("check_seams", gc.check_seams, deps=("release",) + base, **chk, doc="no edge or tone step at tile borders"),
         Stage("check_vehicles", gc.check_vehicles, deps=("release",) + base, **{**chk, "raw": lambda area: chk["raw"](area) + web(area)},
               doc="briefs 7 and 8: vehicles on drawn road; hidden in tunnels, under decks and trees; smooth heights"),
         Stage("check_no_cars", gc.check_no_cars, deps=("release",), **chk,
               doc="brief 9: the vehicle detector finds no car in any colour layer"),
-        Stage("check_viewer", gc.check_viewer, deps=("release",), **{**chk, "raw": lambda area: chk["raw"](area) + web(area)},
+        Stage("check_viewer", gc.check_viewer, deps=("release",) + base, **{**chk, "raw": lambda area: chk["raw"](area) + web(area)},
               doc="the viewer: layers off leave no trace, shadows move with ?hour, speed"),
     ]
     g1c = tuple(s.name for s in S if s.kind == "check")

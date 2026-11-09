@@ -147,14 +147,14 @@ def check_layers(ctx):
         nrm_bad += int(((np.abs(np.linalg.norm(nn, axis=1) - 1) > P["normal_unit_tol"]) | (facing < -0.02)).sum())
         ids = b["ids"][okb]
         cls, obj = ids & 255, ids >> 8
-        bad_ids = ((np.isin(cls, [CLASS["building"], CLASS["window"], CLASS["door"], CLASS["shopfront"]]) & (obj >= nb)) |
+        bad_ids = ((np.isin(cls, [CLASS["building"], CLASS["window"], CLASS["door"], CLASS["shopfront"], CLASS["part"], CLASS["roof"]]) & (obj >= nb)) |
                    (np.isin(cls, [CLASS["road"], CLASS["rail"], CLASS["tram"], CLASS["path"], CLASS["steps"], CLASS["deck"],
                                   CLASS["portal"]]) & ((obj < 1) | (obj > ne))) |
                    ((cls == CLASS["tree"]) & (obj >= nt)))
         id_bad += int(bad_ids.sum())
         if bad_ids.any() and len(id_ex) < 8:
             id_ex.append({"tile": name, "ids": [int(x) for x in ids[bad_ids][:3]]})
-        seen_b.update(obj[np.isin(cls, [CLASS["building"], CLASS["window"], CLASS["door"], CLASS["shopfront"]])].tolist())
+        seen_b.update(obj[np.isin(cls, [CLASS["building"], CLASS["window"], CLASS["door"], CLASS["shopfront"], CLASS["part"], CLASS["roof"]])].tolist())
     rep.at_most("L1.1", "ground pixels of the area without a class (of %d)" % area_px, missing_cls, 0, miss_ex)
     worst, wex = 0.0, []
     for k, (sn, nn_, ss, ns) in sorted(slope_lum.items()):
