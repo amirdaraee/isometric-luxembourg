@@ -143,6 +143,17 @@ Tiny Toronto found a code-only night looked flat and a painted night worked. So 
 night and golden hour with an AI-painted version of the same views. If code falls short, AI makes only a thin
 lights layer (window glow and halos) over the code-lit map, not repainted buildings.
 
+### 9.1 Tunnel view and landmark cutaways (owner, 9 Nov 2026; Phase 3)
+
+- **Tunnel view (x-ray), $0, code only.** A toggle or a held key fades the city layers so the tunnels show
+  underground, each at its real path and depth from the transport graph, with vehicles moving inside it by depth.
+  The Bock casemates may be shown the same way. Spec and checks X1–X8: `v2/docs/specs/tunnel-view.md`.
+- **Landmark cutaways ("slice of cake").** Famous buildings shown cut open in place on the map, not in a modal. The
+  cut comes from the 3D model; the interior is an AI-painted cutaway cut exactly to the slice. First four: the Bock
+  casemates, Notre-Dame Cathedral, the Grand Ducal Palace and Neumünster Abbey (all inside the test area). Paid from
+  the Phase 3 line, quoted before any spend (estimate in `v2/docs/PHASE2_QUOTE.md`). Spec and checks K1–K7:
+  `v2/docs/specs/landmark-cutaways.md`.
+
 ## 10. Phases and gates
 
 Each phase ends at a gate: the owner reviews and approves before the next phase starts.
@@ -152,7 +163,7 @@ Each phase ends at a gate: the owner reviews and approves before the next phase 
 | **0. Foundation** | v2 folder structure and build graph; data for the whole commune; the scene (section 6) including the transport graph with height profiles and modelled viaducts; camera; checks framework; spend ledger; specs for every layer with their checks | $0 | **G0:** owner approves the specs and checks; scene and transport graph pass their data checks on the test area |
 | **1. Code layers on the test area** | Layers 1–4, 8–12, 14–15 in code; viewer compositor (WebGL, several tiled layers); v1 simulation on the new graph | $0 | **G1:** brief checks 4, 5, 7, 8, 9 pass; owner sees the test area with plain code buildings |
 | **2. Bake-off** | A, B and C on the test area | ≤ $17 (quote first) | **G2:** owner picks the method |
-| **3. Lock the look** | Palette, grade and ink pass tuned; code vs AI night/golden comparison; seasons; events as objects; landmark portraits if B/C | ≤ $8 | **G3:** owner signs off the test area as "v2 quality"; all checks pass |
+| **3. Lock the look** | Palette, grade and ink pass tuned; code vs AI night/golden comparison; seasons; events as objects; landmark portraits if B/C; tunnel view (code, $0) and the first four landmark cutaways (section 9.1) | ≤ $8 | **G3:** owner signs off the test area as "v2 quality"; all checks pass |
 | **4. The city, 10% first** | Production for the whole commune in batches; 10% pilot, then the rest; checks gate every batch | ≤ $60 (by winner; quoted) | **G4:** owner reviews the pilot batch, then the whole city |
 | **5. Launch** | Tiles on R2, performance pass, feature switches, landing on isometric.lu, v1 kept at a `/v1` link | ≈ $0 (R2 storage ≈ $1–3/month) | **G5:** owner approves the switch |
 

@@ -19,4 +19,6 @@ Status of each check: **built** (implemented and run in Phase 0), **phase N** (w
 | [tiles-hosting.md](tiles-hosting.md) | Tile sets, versions and R2 hosting |
 | [compositor.md](compositor.md) | The viewer's WebGL layer compositor |
 | [ledger.md](ledger.md) | The spend ledger |
+| [tunnel-view.md](tunnel-view.md) | Phase 3: the tunnel view (x-ray), code only |
+| [landmark-cutaways.md](landmark-cutaways.md) | Phase 3: landmarks cut open in place ("slice of cake") |
 | [layer-01-ground.md](layer-01-ground.md) … [layer-15-labels.md](layer-15-labels.md) | The 15 layers of PLAN_V2 section 5 |
