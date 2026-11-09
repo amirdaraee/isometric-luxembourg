@@ -457,7 +457,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 78.5
+      "audit_s": 84.6
      },
      "threshold": null,
      "severity": "report",
@@ -643,7 +643,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 202.2,
+     "value": 229.5,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -921,24 +921,24 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.1562000000178814,
-      "first_view_warm_s": 0.09,
+      "first_view_cold_s": 0.149,
+      "first_view_warm_s": 0.09630000001192093,
       "pan_whole_area": {
-       "fps": 119.88011988011989,
-       "frame_ms_median": 0.5,
+       "fps": 120.04292595255296,
+       "frame_ms_median": 0.4000000059604645,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 94.7452627371455,
-       "frame_ms_median": 0.29999998211860657,
+       "fps": 94.74763130935845,
+       "frame_ms_median": 0.19999998807907104,
        "tiles_missing": 0
       },
-      "pan_fps": 94.7452627371455,
+      "pan_fps": 94.74763130935845,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 118.90190592814082,
-        "frame_ms_median": 0.800000011920929,
+        "fps": 120.07888758465506,
+        "frame_ms_median": 0.7999999821186066,
         "tiles_missing": 0
        }
       },
@@ -952,7 +952,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.09,
+     "value": 0.096,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -973,8 +973,8 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 118.90190592814082,
-       "frame_ms_median": 0.800000011920929,
+       "fps": 120.07888758465506,
+       "frame_ms_median": 0.7999999821186066,
        "tiles_missing": 0
       }
      },
@@ -1967,24 +1967,24 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.1562000000178814,
-  "first_view_warm_s": 0.09,
+  "first_view_cold_s": 0.149,
+  "first_view_warm_s": 0.09630000001192093,
   "pan_whole_area": {
-   "fps": 119.88011988011989,
-   "frame_ms_median": 0.5,
+   "fps": 120.04292595255296,
+   "frame_ms_median": 0.4000000059604645,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 94.7452627371455,
-   "frame_ms_median": 0.29999998211860657,
+   "fps": 94.74763130935845,
+   "frame_ms_median": 0.19999998807907104,
    "tiles_missing": 0
   },
-  "pan_fps": 94.7452627371455,
+  "pan_fps": 94.74763130935845,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 118.90190592814082,
-    "frame_ms_median": 0.800000011920929,
+    "fps": 120.07888758465506,
+    "frame_ms_median": 0.7999999821186066,
     "tiles_missing": 0
    }
   },
@@ -2014,9 +2014,9 @@
   "test_golden_hour": {
    "q": "hour=21.317&date=2026-06-24",
    "sun": {
-    "az": 303.7873308983723,
-    "el": 3.036635516140799,
-    "hour": 21.316666666666666
+    "az": 303.79105045016206,
+    "el": 3.034075962437933,
+    "hour": 21.317
    }
   },
   "test_night": {
@@ -2054,18 +2054,18 @@
   "test_portal_vehicles": {
    "q": "date=2026-06-24&hour=8.1069&nosim&simtime=900&x=60845&y=35602&z=1.4",
    "sun": {
-    "az": 79.30918723229172,
-    "el": 22.084318718423727,
-    "hour": 8.1
+    "az": 79.3829839104003,
+    "el": 22.150085150431778,
+    "hour": 8.1069
    },
    "train_second": 29185
   },
   "test_viaduct_vehicles": {
    "q": "date=2026-06-24&hour=8.1042&nosim&simtime=900&x=62111&y=35444&z=1.4",
    "sun": {
-    "az": 79.30918723229172,
-    "el": 22.084318718423727,
-    "hour": 8.1
+    "az": 79.35410482533791,
+    "el": 22.12434847761615,
+    "hour": 8.1042
    },
    "train_second": 29175
   },
