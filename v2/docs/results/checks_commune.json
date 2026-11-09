@@ -1,0 +1,203 @@
+{
+ "area": "commune",
+ "checks": {
+  "check_scope": {
+   "status": "ok",
+   "lines": [
+    "PASS S1 buildings whose footprint lies outside the area: 0 (<= 0)",
+    "PASS S2 trees outside the area: 0 (<= 0)",
+    "PASS S3 places outside the area: 0 (<= 0)",
+    "PASS S4 transport edges not touching the area + 300 m: 0 (<= 0)",
+    "PASS S5 terrain grid covers the area and its margin: (72550.5, 69291.0, 82868.5, 80332.0)",
+    "PASS S6 the area (z 180-450 m) lies inside the v2 pixel frame: [16238, 8305]",
+    "info S7 area km2: 51.737"
+   ]
+  },
+  "check_terrain": {
+   "status": "failed",
+   "lines": [
+    "PASS TR1 share of terrain cells that had no data (filled): 0.0 (<= 0.001)",
+    "PASS TR2 non-finite terrain cells after filling: 0 (<= 0)",
+    "FAIL TR3 share of cells where the surface is > 0.5 m below the ground: 0.0057 (<= 0.001)",
+    "PASS TR4 median |building ground - LiDAR terrain| (m): 0.7 (<= 1.5)",
+    "info TR5 90th percentile |building ground - terrain| (m): 2.18",
+    "info TR6 steep / cliff area (m2): [1914216.0, 219425.0]",
+    "info TR7 OSM walls and cliffs measured: [2733, 157.79]"
+   ]
+  },
+  "check_buildings": {
+   "status": "failed",
+   "lines": [
+    "PASS B1 every footprint ring is closed: None",
+    "FAIL B2 invalid or empty footprints: 1 (<= 0)",
+    "       e.g. [\"ACT_38d27a01-20e7-459a-a471-cf56a68d920f\"]",
+    "PASS B3 share of buildings without a roof or with fewer than 3 walls: 0.0 (<= 0.01)",
+    "PASS B4 pairs of buildings overlapping (> 1 m2 and > 2% of the smaller): 0 (<= 0)",
+    "PASS B5 buildings with impossible heights (0 < h <= 150, ground <= eave <= ridge): 0 (<= 0)",
+    "PASS B6 building ids unique: 23373",
+    "info B7 roof shapes: {'flat': 4741, 'shed': 476, 'mixed:hip': 1463, 'hip': 4876, 'mixed:gable': 2349, 'gable': 7886, 'mansard': 976, 'mixed:mansard': 250, 'complex': 40, 'mixed:shed': 275, 'mixed:complex': 41}"
+   ]
+  },
+  "check_facades": {
+   "status": "ok",
+   "lines": [
+    "PASS F1 walls with a window outside the wall outline: 0 (<= 0)",
+    "PASS F2 walls with windows closer than the minimum gap: 0 (<= 0)",
+    "PASS F3 walls whose window rows are not on their floor lines (straight rows): 0 (<= 0)",
+    "PASS F4 party walls with windows: 0 (<= 0)",
+    "PASS F5 walls with more floors than their eave height allows: 0 (<= 0)",
+    "PASS F6 share of buildings >= 5 m tall and >= 40 m2 with at least one window: 0.9983 (>= 0.9)",
+    "info F7 walls, with windows, party walls, windows: [406531, 130997, 69766, 758881]"
+   ]
+  },
+  "check_trees": {
+   "status": "ok",
+   "lines": [
+    "PASS TE1 trees standing inside a building: 0 (<= 0)",
+    "PASS TE2 trees standing in water: 0 (<= 0)",
+    "PASS TE3 largest share of a crown over buildings or water: 0.3 (<= 0.32)",
+    "PASS TE4 heights within 2.0-50.0 m: [2.119999885559082, 49.16999816894531]",
+    "info TE5 trees: 475977"
+   ]
+  },
+  "check_transport_profiles": {
+   "status": "failed",
+   "lines": [
+    "PASS P1 edges with a missing height: 0 (<= 0)",
+    "PASS P2 edge ends off their node height (> 0.3 m): 0 (<= 0)",
+    "PASS P3 vehicle edges with a height jump between samples (beyond the grade cap): 0 (<= 0)",
+    "PASS P4 vehicle edges whose grade cap had to be relaxed: 0 (<= 0)",
+    "FAIL P5 vehicle bridge edges with the deck below the ground: 2 (<= 0)",
+    "       e.g. [\"w478968683_22185\", \"w1537425718_42780\"]",
+    "FAIL P6 vehicle bridge edges whose deck is off the LiDAR surface (median > 0.5 m): 22 (<= 0)",
+    "       e.g. [[\"w26750796_2870\", \"\", 2.14], [\"w26750827_2876\", \"Autoroute d'Arlon\", 0.51], [\"w335831004_19184\", \"Passerelle du Neudorf\", 11.28]]",
+    "FAIL P7 vehicle tunnels (inside the area) not a clearance + cover below their cover beyond the portal zone: 18 (<= 0)",
+    "       e.g. [[\"w48989565_5276\", \"\", 2.05], [\"w48989565_5277\", \"\", 2.55], [\"w49749584_5409\", \"\", 2.49]]",
+    "FAIL P8 vehicle tunnels (inside the area, past the portal mouth) rising more than 1 m above their cover: 2 (<= 0)",
+    "       e.g. [[\"w59170954_6921\", \"\", 2.04], [\"w59170955_6923\", \"\", 2.04]]",
+    "FAIL P9 portals of vehicle tunnels (>= 80 m, ends inside the area) not found within 40 m of the tunnel end: 12 (<= 0)",
+    "       e.g. [[\"w58209209_6842\", null], [\"w82882378_7783\", null], [\"w48989565_5278\", null]]",
+    "info P10 paths/steps with a jump or relaxed grade (not gated: stairs and lifts are often mapped as paths): [86, 100]",
+    "info P11 median |deck - LiDAR surface| over bridge edges (m): 0.01",
+    "info P12 portals found / total: [345, 383]"
+   ]
+  },
+  "check_transport_graph": {
+   "status": "failed",
+   "lines": [
+    "PASS G1 edges whose end nodes are missing: 0 (<= 0)",
+    "PASS G2 vehicle dead ends within 0.5 m of another edge end (unjoined junctions): 0 (<= 0)",
+    "PASS G3 share of roads length connected (to the main network or out of the area): 0.996 (>= 0.97)",
+    "PASS G4 share of rail and tram length connected (to the main network or out of the area): 0.9843 (>= 0.97)",
+    "FAIL G5 vehicle bridges or tunnels with a dead end (driveways into garages excepted): 2 (<= 0)",
+    "       e.g. [\"w727209075_28439\", \"w1510587817_42529\"]",
+    "info G5b service roads (garage driveways) ending in a tunnel or on a bridge: ['w26388002_2647', 'w49839120_5422', 'w199674825_15575', 'w272893618_17484', 'w347088630_19876', 'w406252558_21153', 'w607650875_25846', 'w743580069_28600', 'w769104937_29371', 'w772096037_29404', 'w772096038_29405', 'w772096039_29408', 'w1082162341_35135', 'w1118740758_35673', 'w1267786179_38084']",
+    "info G6 km by mode: {'elevator': 0.06, 'funicular': 0.63, 'path': 746.45, 'rail': 106.96, 'road': 691.22, 'steps': 16.43, 'tram': 30.01}"
+   ]
+  },
+  "check_structures": {
+   "status": "ok",
+   "lines": [
+    "PASS V1 viaducts in the area not modelled: 0 (<= 0)",
+    "PASS V2 viaduct decks off the transport graph (median > 0.3 m): 0 (<= 0)",
+    "PASS V3 piers whose foot is above the ground (> 0.5 m): 0 (<= 0)",
+    "PASS V4 piers not between ground + 1 m and the deck: 0 (<= 0)",
+    "PASS V5 arches with the crown above the deck or the springing above the crown: 0 (<= 0)",
+    "PASS V6 viaducts whose modelled length is off the documented length by > 15%: 0 (<= 0)",
+    "info V7 modelled vs documented height (m): [['pulvermuhl', 34.4, 37], ['clausen', 33.2, 44], ['pfaffenthal', 30.6, 32]]"
+   ]
+  },
+  "check_transit": {
+   "status": "ok",
+   "lines": [
+    "PASS TT1 share of GTFS tram and train track in the area matched onto the rail graph: 0.9979 (>= 0.99)",
+    "PASS TT2 share of GTFS samples within 17 m of their matched rail path: 0.9943 (>= 0.9)",
+    "PASS TT3 shapes in the area with no matched run: 0 (<= 0)",
+    "info TT4 shapes by kind: {'tram': 6, 'train': 67, 'funicular': 0}"
+   ]
+  },
+  "check_places": {
+   "status": "ok",
+   "lines": [
+    "PASS PL1 95th percentile round-trip error back to v1 pixels (px): 0.028 (<= 0.75)",
+    "PASS PL2a largest round-trip error back to v1 pixels (px; cliff edges): 2.83 (<= 4.0)",
+    "info PL2 median |v2 terrain - v1 terrain| at the places (m): 0.08",
+    "info PL3 places, landmarks: [1161, 129]"
+   ]
+  },
+  "check_no_patching": {
+   "status": "ok",
+   "lines": [
+    "PASS N1 stages or stage functions named like a fix on finished art: 0 (<= 0)",
+    "PASS N2 v2 modules named like a fix on finished art: 0 (<= 0)",
+    "info N3 stages in the build graph: 28"
+   ]
+  },
+  "check_ledger": {
+   "status": "ok",
+   "lines": [
+    "PASS L1 ledger problems (bad events, spends without an approved quote, goals over cap): 0 (<= 0)",
+    "PASS L2 total spent + committed (USD): 0 (<= 100.0)",
+    "PASS L3 Phase 0 spend (USD): 0 (<= 0.0)"
+   ]
+  }
+ },
+ "scene": {
+  "area_km2": 51.737,
+  "parts": 9,
+  "bytes": 1312627969,
+  "counts": {
+   "terrain": {
+    "step_m": 1.0,
+    "steep_m2": 1914216.0,
+    "cliff_m2": 219425.0,
+    "walls": 2733,
+    "walls_km": 157.79
+   },
+   "water": {
+    "areas": 433,
+    "area_m2": 744233,
+    "lines": 506
+   },
+   "buildings": {
+    "buildings": 23373,
+    "triangles": 2511207,
+    "walls": 406531,
+    "parts": 23044,
+    "height_max_m": 121.3
+   },
+   "facades": {
+    "walls": 406531,
+    "with_windows": 130997,
+    "party_walls": 69766,
+    "windows": 758881,
+    "floors_max": 39
+   },
+   "trees": {
+    "trees": 475977,
+    "crowns_thinned": 800
+   },
+   "places": {
+    "places": 1161,
+    "landmarks": 129
+   },
+   "transport": {
+    "nodes": 24227,
+    "edges": 33051,
+    "portals": 383,
+    "unsolved": 100
+   },
+   "structures": {
+    "bridge_outlines": 88
+   },
+   "transit": {
+    "shapes": 73,
+    "samples_in_area": 18208,
+    "covered": 18169,
+    "share": 0.9979,
+    "rail_edges": 1506
+   }
+  }
+ },
+ "passed": false
+}

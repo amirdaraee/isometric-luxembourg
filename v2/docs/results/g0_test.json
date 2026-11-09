@@ -47,7 +47,7 @@
     "PASS F4 party walls with windows: 0 (<= 0)",
     "PASS F5 walls with more floors than their eave height allows: 0 (<= 0)",
     "PASS F6 share of buildings >= 5 m tall and >= 40 m2 with at least one window: 0.997 (>= 0.9)",
-    "info F7 walls, with windows, party walls, windows: [22544, 6473, 4421, 41178]"
+    "info F7 walls, with windows, party walls, windows: [22544, 6329, 4421, 40473]"
    ]
   },
   "check_trees": {
@@ -139,7 +139,7 @@
  "scene": {
   "area_km2": 1.566,
   "parts": 9,
-  "bytes": 87479240,
+  "bytes": 87462256,
   "counts": {
    "terrain": {
     "step_m": 0.5,
@@ -162,14 +162,14 @@
    },
    "facades": {
     "walls": 22544,
-    "with_windows": 6473,
+    "with_windows": 6329,
     "party_walls": 4421,
-    "windows": 41178,
+    "windows": 40473,
     "floors_max": 11
    },
    "trees": {
     "trees": 12414,
-    "crowns_thinned": 75
+    "crowns_thinned": 125
    },
    "places": {
     "places": 338,
@@ -194,30 +194,30 @@
   }
  },
  "on_disk_bytes_all_versions": {
-  "check_buildings": 14505,
-  "check_facades": 15031,
+  "check_buildings": 18102,
+  "check_facades": 18625,
   "check_ledger": 1886,
-  "check_no_patching": 21947,
-  "check_places": 16181,
-  "check_scope": 28881,
-  "check_structures": 36032,
-  "check_terrain": 14245,
-  "check_transit": 23373,
-  "check_transport_graph": 37062,
-  "check_transport_profiles": 58059,
-  "check_trees": 12313,
+  "check_no_patching": 36747,
+  "check_places": 18921,
+  "check_scope": 32077,
+  "check_structures": 40012,
+  "check_terrain": 17777,
+  "check_transit": 25957,
+  "check_transport_graph": 41221,
+  "check_transport_profiles": 63364,
+  "check_trees": 15362,
   "fetch_lidar": 45677301,
-  "g0": 12210,
-  "previews": 27532380,
-  "scene": 80289,
+  "g0": 36406,
+  "previews": 30268277,
+  "scene": 89199,
   "scene_buildings": 9905996,
-  "scene_facades": 9600512,
+  "scene_facades": 19183916,
   "scene_places": 237616,
-  "scene_structures": 416840,
+  "scene_structures": 458478,
   "scene_terrain": 63677660,
-  "scene_transit": 243169,
-  "scene_transport": 37898480,
-  "scene_trees": 1303609,
+  "scene_transit": 267454,
+  "scene_transport": 41355050,
+  "scene_trees": 1955318,
   "scene_water": 57530
  }
 }
