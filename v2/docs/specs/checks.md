@@ -30,6 +30,7 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | B5 | yes | Heights possible: 0 < h ≤ 150 m, ground ≤ eave ≤ ridge |
 | B6 | yes | Ids unique |
 | B7 | report | Roof shapes |
+| B8 | report | ACT footprints repaired (self-touching rings after storing at 1 mm), with their reason |
 | **Facades** | | |
 | F1 | yes | Every window inside its wall outline |
 | F2 | yes | Windows in a row ≥ 0.3 m apart |
@@ -38,6 +39,14 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | F5 | yes | Floor count fits the eave height |
 | F6 | yes | ≥ 90% of buildings ≥ 5 m tall and ≥ 40 m² have a window |
 | F7 | report | Walls, with windows, party walls, windows |
+| F8 | yes | Every building with a street-facing wall has a door on one |
+| F9 | yes | No door or shop front on a party (shared) wall |
+| F10 | yes | Shop fronts only on the ground floor |
+| F11 | yes | Doors and shop fronts inside their wall outline |
+| F12 | yes | Doors and shop fronts stand on the bottom of their wall (the ground) |
+| F13 | yes | No window overlaps a door or a shop front (rows stay straight: F3) |
+| F14 | yes | ≥ 90% of OSM entrances at a building placed as doors |
+| F15 | report | Doors and shop fronts by source (OSM or rule) |
 | **Trees** | | |
 | TE1 | yes | No tree standing inside a building |
 | TE2 | yes | No tree standing in water |
@@ -54,12 +63,14 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | P8 | yes | Vehicle tunnels (in the area, past the 6 m portal mouth) never > 1 m above their cover |
 | P9 | yes | Each portal of a vehicle tunnel ≥ 80 m long (ends in the area) found within 40 m of the tunnel end |
 | P10–12 | report | Paths/steps with jumps or relaxed grade (stairs mapped as paths); median deck error; portals found |
+| P13–15 | report | Bridges excepted (exceptions.json); approaches found on a structure past the OSM bridge tag; share of deck samples not observed |
 | **Transport graph** | | |
 | G1 | yes | Every edge's nodes exist |
 | G2 | yes | No vehicle dead end within 0.5 m of another edge end (an unjoined junction) |
 | G3 | yes | ≥ 97% of road length connected (to the main network or out of the area) |
 | G4 | yes | ≥ 97% of rail and tram length connected |
 | G5 | yes | No vehicle bridge or tunnel with a dead end (garage driveways, class service, excepted: G5b report) |
+| G5c | report | Dead ends excepted (exceptions.json) |
 | G6 | report | Length by mode |
 | **Structures** | | V1–V7, see structures.md |
 | **Transit** | | |
@@ -72,6 +83,13 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | **Build** | | |
 | N1, N2 | yes | No stage, stage function or module named like a fix on finished art (warp, repaint, fit_to_art, despeckle, …): brief 1 |
 | L1–L3 | yes | Ledger valid; total within the owner's cap; Phase 0 spend = 0 |
+
+## Exceptions
+
+`v2/data/exceptions.json` lists per-feature exceptions to a check, each with its place and reason (owner's rule, G0
+review: fix causes, never loosen a threshold; the list stays short). A check skips only the listed OSM ways and
+reports them (P13, G5c). Today: one structure at Howald that the LiDAR 2024 surface model does not contain (P5, P6),
+and two yard sidings that end at buffer stops inside tunnels (G5).
 
 ## Brief checks (PLAN_V2 section 8), and where they live
 | Brief | Check | Spec |

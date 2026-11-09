@@ -34,7 +34,8 @@
     "PASS B4 pairs of buildings overlapping (> 1 m2 and > 2% of the smaller): 0 (<= 0)",
     "PASS B5 buildings with impossible heights (0 < h <= 150, ground <= eave <= ridge): 0 (<= 0)",
     "PASS B6 building ids unique: 1135",
-    "info B7 roof shapes: {'mixed:gable': 100, 'mixed:mansard': 37, 'hip': 271, 'gable': 342, 'mixed:hip': 66, 'mansard': 121, 'flat': 120, 'mixed:shed': 13, 'complex': 9, 'mixed:complex': 5, 'shed': 51}"
+    "info B7 roof shapes: {'mixed:gable': 100, 'mixed:mansard': 37, 'hip': 271, 'gable': 342, 'mixed:hip': 66, 'mansard': 121, 'flat': 120, 'mixed:shed': 13, 'complex': 9, 'mixed:complex': 5, 'shed': 51}",
+    "info B8 ACT footprints repaired (recorded with their reason in buildings.json): []"
    ]
   },
   "check_facades": {
@@ -45,8 +46,16 @@
     "PASS F3 walls whose window rows are not on their floor lines (straight rows): 0 (<= 0)",
     "PASS F4 party walls with windows: 0 (<= 0)",
     "PASS F5 walls with more floors than their eave height allows: 0 (<= 0)",
-    "PASS F6 share of buildings >= 5 m tall and >= 40 m2 with at least one window: 0.997 (>= 0.9)",
-    "info F7 walls, with windows, party walls, windows: [22544, 6329, 4421, 40473]"
+    "PASS F6 share of buildings >= 5 m tall and >= 40 m2 with at least one window: 0.996 (>= 0.9)",
+    "PASS F8 buildings with a street-facing wall but no door on one: 0 (<= 0)",
+    "PASS F9 doors or shop fronts on a party (shared) wall: 0 (<= 0)",
+    "PASS F10 shop fronts reaching above the ground floor: 0 (<= 0)",
+    "PASS F11 doors or shop fronts outside their wall outline: 0 (<= 0)",
+    "PASS F12 doors or shop fronts not standing on the bottom of their wall (the ground): 0 (<= 0)",
+    "PASS F13 windows overlapping a door or a shop front: 0 (<= 0)",
+    "PASS F14 share of OSM entrances at a building placed as doors: 0.9359 (>= 0.9)",
+    "info F15 doors and shop fronts by source: {'door rule': 1062, 'shopfront rule': 535, 'shopfront osm': 288, 'door osm': 73}",
+    "info F7 walls, with windows, party walls, windows: [22544, 6216, 4421, 37786]"
    ]
   },
   "check_trees": {
@@ -71,9 +80,12 @@
     "PASS P7 vehicle tunnels (inside the area) not a clearance + cover below their cover beyond the portal zone: 0 (<= 0)",
     "PASS P8 vehicle tunnels (inside the area, past the portal mouth) rising more than 1 m above their cover: 0 (<= 0)",
     "PASS P9 portals of vehicle tunnels (>= 80 m, ends inside the area) not found within 40 m of the tunnel end: 0 (<= 0)",
-    "info P10 paths/steps with a jump or relaxed grade (not gated: stairs and lifts are often mapped as paths): [40, 46]",
+    "info P10 paths/steps with a jump or relaxed grade (not gated: stairs and lifts are often mapped as paths): [50, 56]",
     "info P11 median |deck - LiDAR surface| over bridge edges (m): 0.01",
-    "info P12 portals found / total: [96, 103]"
+    "info P12 portals found / total: [99, 103]",
+    "info P13 bridge edges excepted from P5/P6 (v2/data/exceptions.json): []",
+    "info P14 approach edges found on a structure past the OSM bridge tag (edges, m): [11, 82.8]",
+    "info P15 share of deck samples not observed (under buildings, crowns or higher bridges): 0.118"
    ]
   },
   "check_transport_graph": {
@@ -81,11 +93,12 @@
    "lines": [
     "PASS G1 edges whose end nodes are missing: 0 (<= 0)",
     "PASS G2 vehicle dead ends within 0.5 m of another edge end (unjoined junctions): 0 (<= 0)",
-    "PASS G3 share of roads length connected (to the main network or out of the area): 0.9912 (>= 0.97)",
+    "PASS G3 share of roads length connected (to the main network or out of the area): 0.9922 (>= 0.97)",
     "PASS G4 share of rail and tram length connected (to the main network or out of the area): 1.0 (>= 0.97)",
+    "info G5c dead ends excepted (v2/data/exceptions.json): []",
     "PASS G5 vehicle bridges or tunnels with a dead end (driveways into garages excepted): 0 (<= 0)",
-    "info G5b service roads (garage driveways) ending in a tunnel or on a bridge: ['w49839120_415', 'w347088630_2307', 'w406252558_2382']",
-    "info G6 km by mode: {'elevator': 0.03, 'funicular': 0.63, 'path': 51.26, 'rail': 6.46, 'road': 37.59, 'steps': 4.4, 'tram': 2.08}"
+    "info G5b service roads (garage driveways) ending in a tunnel or on a bridge: ['w49839120_414', 'w347088630_2305', 'w406252558_2380']",
+    "info G6 km by mode: {'elevator': 0.03, 'funicular': 0.63, 'path': 51.26, 'rail': 6.46, 'road': 37.56, 'steps': 4.4, 'tram': 2.08}"
    ]
   },
   "check_structures": {
@@ -123,7 +136,7 @@
    "lines": [
     "PASS N1 stages or stage functions named like a fix on finished art: 0 (<= 0)",
     "PASS N2 v2 modules named like a fix on finished art: 0 (<= 0)",
-    "info N3 stages in the build graph: 28"
+    "info N3 stages in the build graph: 29"
    ]
   },
   "check_ledger": {
@@ -138,7 +151,7 @@
  "scene": {
   "area_km2": 1.566,
   "parts": 9,
-  "bytes": 87462256,
+  "bytes": 88556162,
   "counts": {
    "terrain": {
     "step_m": 0.5,
@@ -155,16 +168,29 @@
    "buildings": {
     "buildings": 1135,
     "triangles": 164592,
+    "repaired_footprints": 0,
     "walls": 22544,
     "parts": 3483,
     "height_max_m": 70.65
    },
    "facades": {
     "walls": 22544,
-    "with_windows": 6329,
+    "with_windows": 6216,
     "party_walls": 4421,
-    "windows": 40473,
-    "floors_max": 11
+    "windows": 37786,
+    "windows_before_doors": 40473,
+    "floors_max": 11,
+    "street_facing_walls": 3170,
+    "commercial_streets": 43,
+    "osm_entrances_near_buildings": 78,
+    "osm_doors_placed": 73,
+    "osm_doors_unplaced": 5,
+    "shopfronts_from_osm": 288,
+    "shopfronts": 823,
+    "rule_doors": 1062,
+    "doors": 1135,
+    "windows_removed": 2687,
+    "doors_without_street_wall": 71
    },
    "trees": {
     "trees": 12414,
@@ -175,10 +201,11 @@
     "landmarks": 62
    },
    "transport": {
-    "nodes": 2581,
-    "edges": 3158,
+    "nodes": 2580,
+    "edges": 3157,
     "portals": 103,
-    "unsolved": 46
+    "grade_relaxed": 56,
+    "approach_on_structure_m": 82.8
    },
    "structures": {
     "bridge_outlines": 24

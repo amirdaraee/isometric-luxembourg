@@ -81,12 +81,12 @@
     "PASS P7 vehicle tunnels (inside the area) not a clearance + cover below their cover beyond the portal zone: 0 (<= 0)",
     "PASS P8 vehicle tunnels (inside the area, past the portal mouth) rising more than 1 m above their cover: 0 (<= 0)",
     "PASS P9 portals of vehicle tunnels (>= 80 m, ends inside the area) not found within 40 m of the tunnel end: 0 (<= 0)",
-    "info P10 paths/steps with a jump or relaxed grade (not gated: stairs and lifts are often mapped as paths): [53, 59]",
+    "info P10 paths/steps with a jump or relaxed grade (not gated: stairs and lifts are often mapped as paths): [50, 56]",
     "info P11 median |deck - LiDAR surface| over bridge edges (m): 0.01",
     "info P12 portals found / total: [99, 103]",
     "info P13 bridge edges excepted from P5/P6 (v2/data/exceptions.json): []",
     "info P14 approach edges found on a structure past the OSM bridge tag (edges, m): [11, 82.8]",
-    "info P15 share of deck samples not observed (under buildings, crowns or higher bridges): 0.094"
+    "info P15 share of deck samples not observed (under buildings, crowns or higher bridges): 0.118"
    ]
   },
   "check_transport_graph": {
@@ -152,7 +152,7 @@
  "scene": {
   "area_km2": 1.566,
   "parts": 9,
-  "bytes": 88556238,
+  "bytes": 88556162,
   "counts": {
    "terrain": {
     "step_m": 0.5,
@@ -205,7 +205,7 @@
     "nodes": 2580,
     "edges": 3157,
     "portals": 103,
-    "grade_relaxed": 59,
+    "grade_relaxed": 56,
     "approach_on_structure_m": 82.8
    },
    "structures": {
@@ -221,29 +221,29 @@
   }
  },
  "on_disk_bytes_all_versions": {
-  "check_buildings": 26150,
-  "check_facades": 35481,
+  "check_buildings": 30293,
+  "check_facades": 48619,
   "check_ledger": 1886,
-  "check_no_patching": 100791,
-  "check_places": 24639,
-  "check_scope": 42141,
-  "check_structures": 52428,
-  "check_terrain": 25079,
-  "check_transit": 34185,
-  "check_transport_graph": 54558,
-  "check_transport_profiles": 81830,
-  "check_trees": 21698,
+  "check_no_patching": 113648,
+  "check_places": 27617,
+  "check_scope": 49009,
+  "check_structures": 60864,
+  "check_terrain": 28849,
+  "check_transit": 39829,
+  "check_transport_graph": 63780,
+  "check_transport_profiles": 94836,
+  "check_trees": 24985,
   "fetch_lidar": 91354541,
-  "g0": 88040,
-  "previews": 44472711,
-  "scene": 117773,
+  "g0": 115315,
+  "previews": 47471398,
+  "scene": 127532,
   "scene_buildings": 19811901,
-  "scene_facades": 49966643,
+  "scene_facades": 60563001,
   "scene_places": 316783,
-  "scene_structures": 583387,
+  "scene_structures": 625023,
   "scene_terrain": 127355202,
-  "scene_transit": 340309,
-  "scene_transport": 51972976,
+  "scene_transit": 364594,
+  "scene_transport": 55512157,
   "scene_trees": 2607027,
   "scene_water": 114943
  }

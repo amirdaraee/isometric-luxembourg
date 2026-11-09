@@ -215,12 +215,12 @@ def node_heights(edges, mnt: Grid, mns: Grid, p):
             kind[nid] = "abutment"
             v = ends(("ground", "passage", "indoor"))
             approach = float(np.median(v)) if v else float(np.nanmedian(mnt.sample(x + off[:, 0], y + off[:, 1])))
-            d = ends(("bridge",))
-            deck = float(np.median(d)) if d else math.nan
-            # at a bridge end the deck's own surface is the road level; the ground model there is cut out. Keep the
-            # approach's level only when the deck reading is far off (a tree over the deck end)
-            # (an approach too short to say anything leaves only the raw ground model, which the deck beats)
-            z[nid] = deck if np.isfinite(deck) and (not v or abs(deck - approach) <= p["abutment_agree_m"]) else approach
+            # at a bridge end the deck's own surface is the road level (the ground model there is cut out): it wins
+            # wherever the surface model sees the deck's end (nothing over it); else the open approach's level
+            d = [ed["free"][0 if ed["a"] == nid else 1] for ed in eds if ed["structure"] == "bridge"
+                 and ed.get("free") is not None and ed.get("end_seen", (False, False))[0 if ed["a"] == nid else 1]]
+            d = [x for x in d if np.isfinite(x)]
+            z[nid] = float(np.median(d)) if d else approach
         elif "bridge" in st and "tunnel" not in st:
             kind[nid] = "deck"
             v = ends(("bridge",))
@@ -490,8 +490,17 @@ def prepare(ed, mnt, mns, p, special, blockers=None, abutments=frozenset(), deck
             warnings.simplefilter("ignore", RuntimeWarning)
             ed["deck_raw"] = np.nanmedian(np.stack(raw), axis=0)
             deck = np.nanmedian(np.stack(kept), axis=0)
+        # a covered bridge (bridge=covered: a car park deck, a gallery) shows its roof, not its deck
+        if tg.get("bridge") == "covered" or tg.get("covered") == "yes":
+            deck = np.full(len(s), np.nan)
+        # a reading a vehicle's clearance above the rest of the deck is something over it (a roof, a sign gantry,
+        # a structure not in the 3D model), not the deck
+        if np.isfinite(deck).any():
+            deck = np.where(deck > np.nanmedian(deck) + clearance(mode, p), np.nan, deck)
         blocked = ~np.isfinite(deck)
         ed["deck_blocked"] = blocked
+        near_end = p["abutment_ignore_m"]
+        ed["end_seen"] = (bool(np.isfinite(deck[s <= near_end]).any()), bool(np.isfinite(deck[s >= s[-1] - near_end]).any()))
         ed["deck"] = deck
         okd = np.isfinite(deck)
         ed["deck_hold"] = np.interp(s, s[okd], deck[okd]) if okd.any() else None

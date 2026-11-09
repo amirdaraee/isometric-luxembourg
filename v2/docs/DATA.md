@@ -26,7 +26,8 @@ v1's painted art and warp outputs (reference only; PLAN_V2 section 11).
 | Commune boundary (relation 407489) and its 24 quarters (admin_level 9) | `python -m v2.data.fetch.boundary` → `v2/config/areas/*.geojson` (in git) | OpenStreetMap, **ODbL** | OSM of 9 Nov 2026 07:26 UTC | < 1 MB | 0.4 MB in git |
 | OSM transport: highways, railways, aerialways, bridges and bridge outlines, tunnels, with node ids | `fetch_osm_transport` (shared) | Overpass API, **ODbL** | OSM of 9 Nov 2026 07:34 UTC | 12.7 MB | 12.7 MB |
 | OSM ground: land use, leisure, natural, water, walls, cliffs, squares, pedestrian areas, street lamps | `fetch_osm_ground` (shared) | Overpass API, **ODbL** | same | 13.8 MB | 13.8 MB |
-| LiDAR 2024 terrain (MNT) and surface (MNS) | `fetch_lidar` (per area) | ACT "Lidar 2024 – Relevé 3D", COGs `MNT_Lidar2024.tif`, `MNS_Lidar2024.tif`, data.public.lu, **CC0** | survey 2024, published 23 Dec 2024 | test: 96 MB (0.5 m, full resolution); commune: 900 MB (1 m, the COG's first overview) | test 46 MB, commune 704 MB (compressed float32) |
+| LiDAR 2024 terrain (MNT) and surface (MNS) | `fetch_lidar` (per area) | ACT "Lidar 2024 – Relevé 3D", COGs `MNT_Lidar2024.tif`, `MNS_Lidar2024.tif`, data.public.lu, **CC0** | survey 2024, published 23 Dec 2024 | test: 96 MB (0.5 m, full resolution); commune: 2.3 GB (the 0.5 m tiles, reduced to 1 m as they arrive: terrain by mean, surface by max) | test 46 MB, commune 541 MB (compressed float32) |
+| OSM entrances, shops, crafts and amenities (for doors and shop fronts) | `fetch_osm_pois` (shared) | Overpass API, **ODbL** | OSM of 9 Nov 2026 | ~ 3 MB | ~ 3 MB |
 | LiDAR 2024 tree survey (crown centroids, height, crown widths, type) | `fetch_trees` (shared) | ACT "LiDAR 2024 – Arbres", GeoPackage points, data.public.lu, **CC0** | resource of 1 Oct 2026 | 3.9 GB streamed (not stored): the SQLite pages are decoded on the fly and only the commune's 1,119,104 trees kept | 61 MB |
 
 Downloads ran one at a time (the whole set in about 7 minutes at ~40 MB/s); the LiDAR COGs are read by HTTP ranges
@@ -41,7 +42,8 @@ commune's scene outputs.
 - **Tree survey.** Automated detection: positions are crown centroids, not trunks; a few spikes (cranes, masts)
   are dropped by the 50 m cap. Only `crown_*`, `tree_height`, `tree_type`, `terrain`, `luref_x/y`, `tree_uuid` are
   kept.
-- **Commune terrain at 1 m.** The commune uses the COG's 1 m overview (900 MB); the full 0.5 m for the whole commune
-  would be ~3.6 GB, to fetch per batch in phase 4 if the relief layer needs it.
+- **Commune terrain at 1 m** (kept at 1 m, owner G0). It is built from the 0.5 m tiles, not from ACT's 1 m
+  overviews: those of the terrain and the surface model are not made the same way (at 1 m the surface lay below the
+  terrain on 0.6% of the commune, never at 0.5 m; check TR3). Terrain = mean of each 2 × 2 block, surface = max.
 - **Bridges.** ACT removes bridges from the terrain model (MNT) and keeps them in the surface model (MNS): decks come
   from the MNS (transport-graph.md).
