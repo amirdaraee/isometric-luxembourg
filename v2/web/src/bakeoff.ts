@@ -14,6 +14,9 @@ export const VIEWS: View[] = [
   { id: "facade", label: "Facades 2:1 (straight windows)", x: 62281, y: 34323, z: 2, hour: 11 },
   { id: "red-bridge", label: "Red bridge, east end", x: 66670, y: 30911, z: 0.75, hour: 16 },
   { id: "pfaffenthal", label: "Pfaffenthal and the viaduct", x: 64459, y: 31607, z: 0.4, hour: 10 },
+  // the eight windows of C's pilot (job C1p): the only part of the area C painted before it was stopped
+  { id: "c-pilot", label: "C's pilot windows, 1:1", x: 65600, y: 30750, z: 1, hour: 13 },
+  { id: "c-pilot-wide", label: "C's pilot windows, wide", x: 66400, y: 30600, z: 0.4, hour: 13 },
   { id: "area", label: "The whole test area", x: 64345, y: 33744, z: 0.12, hour: 15 },
 ];
 
@@ -53,6 +56,12 @@ async function main() {
       h.textContent = m.label;
       col.append(h);
       const info = index[m.id];
+      if (info?.release && info.note) {            // what the method's checks found (python -m v2.bakeoff register --note)
+        const st = document.createElement("p");
+        st.className = "status";
+        st.textContent = info.note;
+        col.append(st);
+      }
       if (info?.release) {
         const f = document.createElement("iframe");
         f.src = viewerUrl(m.id, v);

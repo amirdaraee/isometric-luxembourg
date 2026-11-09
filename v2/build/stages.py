@@ -123,8 +123,16 @@ def _art(area):
 
 
 def _layer_raw(area):
-    from v2.config import CONFIG
-    return [CONFIG / "palette.json", CONFIG / "light.json", CONFIG / "camera.json"]
+    """Files outside the scene that the layers read. For bake-off methods B and C that includes the paintings (and
+    the composer that reads them), so a new painting or pick makes a new build of that method only."""
+    from v2.config import CONFIG, v2_data
+    from v2.config.art import art_method
+    out = [CONFIG / "palette.json", CONFIG / "light.json", CONFIG / "camera.json"]
+    art = art_method()
+    if art in ("b", "c"):
+        d = v2_data() / area / "bakeoff" / art
+        out += [REPO / "v2/bakeoff/compose.py"] + [p for p in (d / "painted.json", d / "picked.json", d / "painted") if p.exists()]
+    return out
 
 
 def phase1(g0_checks) -> list:

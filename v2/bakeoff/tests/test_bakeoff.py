@@ -59,12 +59,36 @@ def test_a_price_rise_needs_a_new_quote(L):
         runner.authorise(J.BY_ID["B1"], L, price_now=J.BY_ID["B1"].price_h + 0.5)
 
 
-def test_pod_spec_arms_its_watchdog_and_never_names_the_other_pod():
+def test_pod_spec_arms_its_watchdog_and_never_names_the_other_pod(monkeypatch, tmp_path):
+    import base64
+    (tmp_path / ".ssh").mkdir()
+    (tmp_path / ".ssh" / "id_ed25519.pub").write_text("ssh-ed25519 AAAA test")
+    monkeypatch.setattr(runner.Path, "home", classmethod(lambda cls: tmp_path))
     for j in J.JOBS:
-        spec = runner.pod_spec(j, "bash pod/run.sh " + j.id)
-        assert f"sleep {int(j.cap_h * 3600)}" in spec["dockerArgs"].split("&&")[0]
+        spec = runner.pod_spec(j)
+        # the start command is the watchdog, and nothing runs before it
+        b64 = spec["dockerArgs"].split("echo ")[1].split(" |")[0]
+        wd = base64.b64decode(b64).decode()
+        assert "podTerminate" in wd and wd.index("podTerminate") < wd.index("/start.sh")
+        env = {e["key"]: e["value"] for e in spec["env"]}
+        cap = int(env["ISOLUX_CAP_S"])
+        # the time cap can never cost more than the quote's worst case, the disk included
+        assert 0 < cap <= j.cap_h * 3600
+        assert cap / 3600 * (j.price_h + runner.DISK_GB * runner.DISK_USD_GB_H) <= j.worst_usd
         assert spec["name"] not in runner.FOREIGN_PODS and spec["cloudType"] == "COMMUNITY"
-    assert runner.launch("B1", "true", dry_run=True)["dry_run"] is True
+    assert runner.run("B1", go=False)["dry_run"] is True
+
+
+def test_a_failed_check_stops_the_jobs_after_it(L, monkeypatch, tmp_path):
+    runner.record_quotes(L)
+    for j in J.JOBS:
+        L.approve(runner.quote_of(j, L), by="owner")
+    L.record_spend(runner.quote_of(J.BY_ID["C1p"], L), 0.5)
+    monkeypatch.setattr(runner, "stop_file", lambda job_id: tmp_path / f"{job_id}.json")
+    assert runner.authorise(J.BY_ID["C1"], L, price_now=1.0)["id"] == runner.quote_of(J.BY_ID["C1"], L)
+    (tmp_path / "C1p.json").write_text("{}")
+    with pytest.raises(LedgerRefusal, match="did not pass its checks"):
+        runner.authorise(J.BY_ID["C1"], L, price_now=1.0)
 
 
 def test_material_prompts_forbid_light_and_follow_the_palette():
@@ -96,3 +120,56 @@ def test_flat_light_finds_a_painted_shadow():
     rgb[:, 32:] *= 0.8                                       # one side darker: a baked shadow
     worst, bad = flat_light(rgb, ids, nrm)
     assert worst > 0.05 and bad[0][0] == 5
+
+
+def test_a_material_with_a_light_gradient_fails_and_an_even_one_passes():
+    from v2.bakeoff.results import material_check, object_crop
+    rng = np.random.default_rng(1)
+    even = np.clip(180 + rng.normal(0, 6, (128, 128, 3)), 0, 255)
+    assert material_check(even, (180, 180, 180), False)["flat_ok"]
+    lit = even * np.linspace(1.0, 0.8, 128)[None, :, None]              # darker to the right: a light direction
+    assert not material_check(lit, (180, 180, 180), False)["flat_ok"]
+    top = even * np.linspace(1.0, 0.8, 128)[:, None, None]              # darker downwards
+    assert not material_check(top, (180, 180, 180), False)["flat_ok"]
+    assert material_check(top, (180, 180, 180), True)["flat_ok"]        # an opening (a door) may differ top to bottom
+    img = np.full((400, 400, 3), 220, np.uint8)
+    img[100:300, 120:280] = 40                                          # a window drawn on a wall
+    assert object_crop(img) == (120, 100, 280, 300)
+
+
+def test_a_painting_is_used_only_where_its_window_saw_the_layer(tmp_path):
+    from v2.bakeoff.compose import painted_rgb, seen_as
+    which = np.zeros((1024, 1024), np.uint8)
+    which[:, :512] = 5                                                  # buildings seen on the left half
+    which[:, 512:] = 6                                                  # a structure in front on the right half
+    np.savez_compressed(tmp_path / "0_0.geom.npz", which=which)
+    s = seen_as(tmp_path, 5, 256, 0, 512, 512)
+    assert s[:, :256].all() and not s[:, 256:].any()
+    (tmp_path / "painted").mkdir()
+    from PIL import Image
+    Image.fromarray(np.full((1024, 1024, 3), 77, np.uint8)).save(tmp_path / "painted" / "0_0.png")
+    rgb, has = painted_rgb(tmp_path / "painted", 512, 512, 1024, 1024)
+    assert has[:512, :512].all() and not has[512:, :].any() and np.allclose(rgb[:512, :512], 77)
+
+
+def test_the_window_cache_gives_the_line_score_its_tiles():
+    from v2.bakeoff.paintcheck import B_LAYER, WindowCache
+    g = {"which": np.full((1024, 1024), B_LAYER, np.uint8), "depth": np.full((1024, 1024), 5.0),
+         "ids": np.full((1024, 1024), (3 << 8) | 11, np.uint32)}
+    g["which"][:, :100] = 1                                             # ground there: not layer 5
+    c = WindowCache(768, 256, np.full((1024, 1024, 3), 9, np.uint8), g)
+    t = c.get(1, 0)                                                     # tile x 512..1023, y 0..511: the window's corner
+    assert t is not None and np.isinf(t["depth"][:256]).all() and np.isinf(t["depth"][:, :256]).all()
+    assert np.isinf(t["depth"][256:, 256:356]).all() and (t["depth"][256:, 356:] == 5.0).all()
+    assert c.get(5, 5) is None
+
+
+def test_the_c4_drawing_frame_is_seen_from_outside():
+    from v2.bakeoff.facade_trial import uv_to_xy, wall_frame
+    w = {"base": [[0, 0, 100], [10, 0, 100]], "normal": [0, -1], "length": 10.0, "height": 8.0}
+    f = wall_frame(w)                                                   # facing south: east is to the viewer's right
+    x0, _ = uv_to_xy(f, 0.0, 0.0)
+    x1, y1 = uv_to_xy(f, 10.0, 8.0)
+    assert x1 > x0 and not f["flip"] and f["s"] <= 64
+    f2 = wall_frame({**w, "normal": [0, 1]})                            # the same wall seen from the north: mirrored
+    assert f2["flip"]

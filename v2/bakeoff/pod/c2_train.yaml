@@ -1,5 +1,8 @@
 # The unshadowed style LoRA of bake-off method C (job C2): v1 style v2 config (pipeline/gpu_train/v2/v2.yaml) with
 # new targets (unshadowed, checked: v2/bakeoff/dataset.py), 2,000 steps, checkpoints every 200 (the pilot stops at 200).
+# pod/run.sh sets the steps (200 for the pilot C2p, 2,000 for C2, which resumes from the pilot's checkpoint) and how
+# often the three held-out test windows are sampled (every 200 in the pilot, every 600 after it): each round of
+# samples costs about 1.5 minutes of the job's time cap.
 job: extension
 config:
   name: luxembourg-ink-unshadowed
@@ -50,7 +53,8 @@ config:
         match_target_res: false
     sample:
       sampler: flowmatch
-      sample_every: 250
+      sample_every: 600
+      skip_first_sample: false
       width: 1024
       height: 1024
       neg: ''
@@ -59,27 +63,15 @@ config:
       guidance_scale: 3
       sample_steps: 25
       samples:
-      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
-        ctrl_img_1: /workspace/tests/place_in.png
-        ctrl_img_2: /workspace/tests/place_lay.png
-      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
-        ctrl_img_1: /workspace/tests/station_in.png
-        ctrl_img_2: /workspace/tests/station_lay.png
-      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
-        ctrl_img_1: /workspace/tests/grund_in.png
-        ctrl_img_2: /workspace/tests/grund_lay.png
-      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
-        ctrl_img_1: /workspace/tests/red_in.png
-        ctrl_img_2: /workspace/tests/red_lay.png
-      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
-        ctrl_img_1: /workspace/tests/glacis_in.png
-        ctrl_img_2: /workspace/tests/glacis_lay.png
-      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
-        ctrl_img_1: /workspace/tests/kirchberg_in.png
-        ctrl_img_2: /workspace/tests/kirchberg_lay.png
-      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present)."
-        ctrl_img_1: /workspace/tests/hotel_in.png
-        ctrl_img_2: /workspace/tests/hotel_lay.png
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink unshadowed> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present). Evenly lit with flat light: no shadows, no shading from one side, nothing that moves."
+        ctrl_img_1: /workspace/tests/t0_in.png
+        ctrl_img_2: /workspace/tests/t0_lay.png
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink unshadowed> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present). Evenly lit with flat light: no shadows, no shading from one side, nothing that moves."
+        ctrl_img_1: /workspace/tests/t1_in.png
+        ctrl_img_2: /workspace/tests/t1_lay.png
+      - prompt: "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink unshadowed> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present). Evenly lit with flat light: no shadows, no shading from one side, nothing that moves."
+        ctrl_img_1: /workspace/tests/t2_in.png
+        ctrl_img_2: /workspace/tests/t2_lay.png
 meta:
   name: luxembourg-ink-unshadowed
   version: '1.0'

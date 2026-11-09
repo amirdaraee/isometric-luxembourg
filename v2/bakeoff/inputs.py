@@ -6,6 +6,10 @@ colours, ink outlines, the facade layout's windows, doors and shop fronts), over
 transport, no light pass at all (no sun, no shadow, no night) and nothing that moves. Layout: black outlines and dark
 windows on white (v1's second control image). Mask: where layers 5 and 6 cover (what a painting may replace).
 
+Trees are left out of the inputs (PAINT_LAYERS): a building is painted whole, not through the crowns in front of
+it, and layer 7 is drawn over it by its own depth as in every method. Each window also keeps the depth, ids and
+normals of what is seen at every pixel (geom.npz), so a painting is used only where its own layer is what was seen.
+
 Windows are 1024 x 1024 map pixels (0.125 m/px: one model pixel per map pixel, so a 1.1 m window is ~9 model px, at
 least 2 latent cells, layer-05 rule 4), on a grid with stride 768 over every tile that has a building.
 """
@@ -21,6 +25,7 @@ from v2.layers.common import COLOUR_LAYERS, TILE, Tile, project
 
 WIN = 1024
 STRIDE = 768
+PAINT_LAYERS = COLOUR_LAYERS[:6]          # ground, relief, water, transport, buildings, structures: no trees
 
 
 def windows(scene, building_tiles):
@@ -61,7 +66,7 @@ class _Built:
         self.ids = t.get("ids") if t else None
 
 
-def render_window(R_plain, x0, y0, size=WIN, layers=COLOUR_LAYERS, rel=None):
+def render_window(R_plain, x0, y0, size=WIN, layers=PAINT_LAYERS, rel=None):
     """Unlit render, layout and mask of one window, composited by depth (ties to the later layer), relief
     multiplied onto the ground under it. With `rel` (a built release), layers 1-4 are read from its tiles (they are
     the same for every art method) and only layers 5-7 are drawn here, plain."""
@@ -106,7 +111,8 @@ def render_window(R_plain, x0, y0, size=WIN, layers=COLOUR_LAYERS, rel=None):
     layout = np.full((size, size), 255, np.uint8)
     layout[win] = 90
     layout[edge] = 0
-    return np.clip(np.round(rgb), 0, 255).astype(np.uint8), layout, mask, {"ids": ids, "which": which, "normal": nrm}
+    return np.clip(np.round(rgb), 0, 255).astype(np.uint8), layout, mask, {"ids": ids, "which": which, "normal": nrm,
+                                                                              "depth": depth}
 
 
 def landmarks(scene, max_dist=5.0):
@@ -142,7 +148,8 @@ def write_window(folder: Path, name, rgb, layout, mask, meta, extra=None):
     folder.mkdir(parents=True, exist_ok=True)
     if extra is not None:
         np.savez_compressed(folder / f"{name}.geom.npz", ids=extra["ids"], which=extra["which"],
-                            normal=extra["normal"].astype(np.float16))
+                            normal=extra["normal"].astype(np.float16),
+                            depth=np.where(np.isfinite(extra["depth"]), extra["depth"], 1e9).astype(np.float32))
     Image.fromarray(rgb).save(folder / f"{name}.unlit.png")
     Image.fromarray(layout).save(folder / f"{name}.layout.png")
     Image.fromarray((mask * 255).astype(np.uint8)).save(folder / f"{name}.mask.png")

@@ -78,7 +78,7 @@ JOBS = [
         work="25 materials x 3 candidates = 75 images, 1024 x 1024, 30 steps (~20 s each)",
         model=QWEN_T2I,
         inputs="v2/bakeoff/prompts.py MATERIALS (front-on, tileable, evenly lit, no shadows, palette reference)",
-        outputs="<data>/v2/_shared/bakeoff/b/materials/<name>_<k>.png; the owner picks one per material",
+        outputs="<data>/v2/test/bakeoff/b/materials/<name>_<k>.png; one picked per material (python -m v2.bakeoff pick b; picked.json is the owner's to change)",
         notes=["text to image, no style LoRA needed: the ink comes from A's code outlines over the materials",
                "every image through the no-shadow (flat-light) and no-car checks before it is used"]),
     Job("B2", "b", "test-area landmark portraits, cut to their 3D outline", "runpod", "H100 SXM",

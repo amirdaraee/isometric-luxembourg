@@ -69,3 +69,61 @@ def pick_crops(wins, n=80, seed=7):
     order = sorted(wins, key=lambda p: (p[1] // 3072, p[0] if (p[1] // 3072) % 2 == 0 else -p[0]))
     idx = np.linspace(0, len(order) - 1, n).round().astype(int)
     return [order[i] for i in idx]
+
+
+# ------------------------------------------------------------------------------------------------ the dataset
+def build_dataset(c_dir, tar_path, blank_share=0.25, seed=1867, tests=3):
+    """The training folder of the unshadowed LoRA as ai-toolkit reads it (v1's layout: pipeline/style/
+    build_dataset_v2.py), tarred for the pod:
+        data/<name>.png + .txt   the kept painting (target) and its caption (prompts.C_PAINT_PROMPT)
+        control/<name>.png       the window's unlit render outlined in red all round (control image 1)
+        layout/<name>.png        its layout map, blank white in a quarter of the examples (control image 2)
+        tests/t<k>_in.png, _lay  three windows outside the training crops, sampled while training
+    The control folders are outside data/ (ai-toolkit walks the dataset folder: V1 notes, "root cause")."""
+    import json
+    import random
+    import shutil
+    import tarfile
+    from pathlib import Path
+
+    from PIL import Image, ImageDraw
+
+    from v2.bakeoff.prompts import C_PAINT_PROMPT
+    c_dir = Path(c_dir)
+    kept = json.loads((c_dir / "dataset" / "kept.json").read_text())["kept"]
+    if len(kept) < 60:
+        raise SystemExit(f"C2: {len(kept)} kept pairs, 60 are needed: the training does not start")
+    wj = json.loads((c_dir / "windows.json").read_text())
+    train = {f"{x}_{y}" for x, y in wj["train_crops"]}
+    held = [f"{x}_{y}" for x, y in wj["windows"] if f"{x}_{y}" not in train]
+    held = [held[i] for i in np.linspace(0, len(held) - 1, tests).round().astype(int)]
+    root = Path(tar_path).parent / "dataset"
+    if root.exists():
+        shutil.rmtree(root)
+    for d in ("data", "control", "layout", "tests"):
+        (root / d).mkdir(parents=True)
+    rng = random.Random(seed)
+    blank = Image.new("RGB", (1024, 1024), (255, 255, 255))
+
+    def outlined(name):
+        im = Image.open(c_dir / "inputs" / f"{name}.unlit.png").convert("RGB")
+        d = ImageDraw.Draw(im)
+        for k in range(2):
+            d.rectangle((k, k, 1023 - k, 1023 - k), outline=(255, 0, 0))
+        return im
+    for item in kept:
+        name, fn = item["window"], item["file"]
+        stem = Path(fn).stem
+        Image.open(c_dir / "targets" / fn).convert("RGB").save(root / "data" / f"{stem}.png")
+        (root / "data" / f"{stem}.txt").write_text(C_PAINT_PROMPT)
+        outlined(name).save(root / "control" / f"{stem}.png")
+        (blank if rng.random() < blank_share else Image.open(c_dir / "inputs" / f"{name}.layout.png").convert("RGB")).save(root / "layout" / f"{stem}.png")
+    for k, name in enumerate(held):
+        outlined(name).save(root / "tests" / f"t{k}_in.png")
+        Image.open(c_dir / "inputs" / f"{name}.layout.png").convert("RGB").save(root / "tests" / f"t{k}_lay.png")
+    (c_dir / "dataset" / "tests.json").write_text(json.dumps({"tests": held}))
+    with tarfile.open(tar_path, "w") as t:
+        for d in ("data", "control", "layout", "tests"):
+            t.add(root / d, arcname=d)
+    shutil.rmtree(root)
+    return {"pairs": len(kept), "tests": held}
