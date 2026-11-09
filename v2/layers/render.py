@@ -391,7 +391,7 @@ class Renderer:
             raster_tris(P, dd - 0.15, W3["T"][sel], W, H, zb, tb)   # 15 cm towards the camera: on the terrain step
             got = tb >= 0
             tsel = sel[tb[got]]
-            near = zb[got] < depth[got] + 0.4
+            near = zb[got] < depth[got] + 1.0          # a wall stands on a step the 0.5 m terrain rounds off
             gi = np.flatnonzero(got.ravel())[near]
             tt = tsel[near]
             nrm, _ = G.tri_normals(W3["V"], W3["T"])

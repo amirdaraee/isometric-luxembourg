@@ -10,6 +10,9 @@ jobs.json: {"jobs": [{"layer", "path", "tile"}], "queries": [...], "queries_wate
 "box_m": [3, 14], "mpp": 0.125, "out": "owl.json"}. As in v1, each tile (512 px = 64 m) is cut into overlapping
 256 px crops enlarged to the model's 960 px (a car is then about 130 px), and a detection counts when its box is
 3-14 m long. The water layer is also asked for boats.
+
+v1 cut 0.25 m art into 256 px crops so a painted car was about 55 px at the model's 960 px; at v2's 0.125 m a whole
+512 px tile is the same scale (a car about 66 px), so each tile is one crop.
 """
 import json
 import sys
@@ -27,7 +30,7 @@ def main(path):
     name = "google/owlv2-base-patch16-ensemble"
     proc = Owlv2Processor.from_pretrained(name, local_files_only=True)
     model = Owlv2ForObjectDetection.from_pretrained(name, local_files_only=True).to(dev).eval()
-    S, crop, overlap = 960, 256, 40
+    S, crop, overlap = 960, 512, 0
     mean = torch.tensor([0.48145466, 0.4578275, 0.40821073], device=dev).view(1, 3, 1, 1)
     std = torch.tensor([0.26862954, 0.26130258, 0.27577711], device=dev).view(1, 3, 1, 1)
     texts = {}
@@ -41,8 +44,8 @@ def main(path):
         im = np.asarray(Image.open(job["path"]).convert("RGB"))
         H, W = im.shape[:2]
         crops = []
-        for y0 in range(0, H - overlap, crop - overlap):
-            for x0 in range(0, W - overlap, crop - overlap):
+        for y0 in range(0, H, crop - overlap):
+            for x0 in range(0, W, crop - overlap):
                 c = im[y0:y0 + crop, x0:x0 + crop]
                 if c.shape[0] < crop or c.shape[1] < crop:
                     c = np.pad(c, ((0, crop - c.shape[0]), (0, crop - c.shape[1]), (0, 0)))

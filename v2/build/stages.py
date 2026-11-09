@@ -154,7 +154,7 @@ def phase1(g0_checks) -> list:
         Stage("check_shadows", gc.check_shadows, deps=("release",) + base, **chk,
               doc="brief 5: no baked shadows in the colour layers; cast shadows follow the sun"),
         Stage("check_seams", gc.check_seams, deps=("release",), **chk, doc="no edge or tone step at tile borders"),
-        Stage("check_vehicles", gc.check_vehicles, deps=("release", "scene"), **{**chk, "raw": lambda area: chk["raw"](area) + web(area)},
+        Stage("check_vehicles", gc.check_vehicles, deps=("release",) + base, **{**chk, "raw": lambda area: chk["raw"](area) + web(area)},
               doc="briefs 7 and 8: vehicles on drawn road; hidden in tunnels, under decks and trees; smooth heights"),
         Stage("check_no_cars", gc.check_no_cars, deps=("release",), **chk,
               doc="brief 9: the vehicle detector finds no car in any colour layer"),

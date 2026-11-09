@@ -1473,6 +1473,8 @@ export class Traffic {
     const one = (c: Car) => {
       let el = c.el, s = c.s - c.len / 2;
       if (s < 0 && c.prev) { el = c.prev; s += el.len; }
+      // v2: a junction move shorter than half a car (lanes that simply join): the centre is still on the lane before
+      if (s < 0 && el.kind === 1) { el = el.from; s += el.len; }
       sample(el, s, o);
       const off = c.lat + c.pull; // metres to the right of travel
       if (off) { o.x -= Math.sin(o.h) * off; o.y += Math.cos(o.h) * off; }

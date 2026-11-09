@@ -148,6 +148,18 @@ def check_shadows(ctx):
             sh[ok] = (cast > 0) | away
             near = ndimage.binary_dilation(sh, iterations=24) & ~sh & ok
             Lm = lum(t["rgb"])
+            # surface edges carry the drawing's ink lines (and the coding's ringing): only the inside of a surface is
+            # its material's colour, so pixels within 2 px of a change of object, class, surface or depth are left out
+            idk = t["ids"].astype(np.int64) if "ids" in t else t["k"].astype(np.int64)
+            dd = np.where(ok, t["depth"], 1e9)
+            nz = np.round(t["normal"] * 20)
+            edge = np.zeros(ok.shape, bool)
+            for a_, b_ in (((slice(None), slice(None, -1)), (slice(None), slice(1, None))),
+                           ((slice(None, -1), slice(None)), (slice(1, None), slice(None)))):
+                ch = (idk[a_] != idk[b_]) | (np.abs(dd[a_] - dd[b_]) > 0.5) | (nz[a_] != nz[b_]).any(-1) | (ok[a_] != ok[b_])
+                edge[a_] |= ch
+                edge[b_] |= ch
+            inner = ok & ~ndimage.binary_dilation(edge, iterations=2)
             # a material: the ground class; or one object and its class (a building's walls, roofs, windows apart)
             if L == "ground":
                 key = t["k"].astype(np.int64)
@@ -158,7 +170,7 @@ def check_shadows(ctx):
                 key = (ids >> 8) * 512 + (ids & 255) * 2
                 if L == "buildings":
                     key += (np.abs(t["normal"][..., 2]) > 0.5).astype(np.int64)
-            for which, m in (("sh", sh & ok), ("lit", near)):
+            for which, m in (("sh", sh & inner), ("lit", near & inner)):
                 kk = key[m]
                 vv = Lm[m]
                 if not len(kk):
@@ -186,7 +198,7 @@ def check_shadows(ctx):
             if len(ex) < 8:
                 ex.append({"layer": L, "material": k, "shadow_over_lit": round(r, 4), "pixels": [len(a), len(b)]})
     rep.at_most("L5.1/L9.2", f"materials darker or lighter in the 3D shadow of the photo's sun ({P['shadow_photo_sun']}) "
-                f"than lit next to it by > {P['shadow_lum_tol']:.0%} (median luminance; of {sum(v[0] for v in by_layer.values())} compared)",
+                f"than lit next to it by > {P['shadow_lum_tol']:.0%} (median luminance inside surfaces; of {sum(v[0] for v in by_layer.values())} compared)",
                 bad, 0, ex)
     rep.info("L5.1b", "worst relative difference by layer", {k: round(v[1], 4) for k, v in by_layer.items()})
     # ------------------------------------------------------------ L9.1: cast shadows point away from the sun
@@ -276,7 +288,7 @@ def _jumps(lab, valid, pos, axis, CH=64, NEAR=0, FAR=4):
     return out
 
 
-def seams_of(get, names, P):
+def seams_of(get, names, P, at=TILE):
     """v1's rule: a border chunk is a seam when its jump is clearly larger than the jumps on parallel lines inside
     the tiles (or simply large), over a run of >= 3 chunks whose colour shift points the same way. v1 compared
     56 px strips 80 and 160 px away, for painted cells blended over 24 px; code tiles have no blend, so the strips
@@ -296,8 +308,8 @@ def seams_of(get, names, P):
             rgb = np.concatenate([a[0], b[0]], axis=1 if axis == 1 else 0)
             val = np.concatenate([a[1], b[1]], axis=1 if axis == 1 else 0)
             lab = _lab(rgb)
-            line = _jumps(lab, val, TILE, axis)
-            side = [_jumps(lab, val, TILE + o, axis) for o in (-16, -8, 8, 16)]
+            line = _jumps(lab, val, at, axis)
+            side = [_jumps(lab, val, at + o, axis) for o in (-16, -8, 8, 16)]
             hit = []
             for k, (pos, d, skip, vec) in enumerate(line):
                 local = float(np.median([s[k][1] for s in side]))
@@ -334,7 +346,15 @@ def check_seams(ctx):
             t = load(rel, L, n)
             return None if t is None else (t["rgb"], np.isfinite(t["depth"]))
         bad, total, ex = seams_of(get, names, P)
-        rep.at_most(f"S-{L}", f"{L}: seam chunks across tile borders (of {total} chunks of 64 px)", bad, 0, ex)
+        # the control (v1's seam_check run on cell centres): the same rule on lines through the tiles' middles,
+        # where no seam can be: a building corner or a class edge running along a line for 192 px is content
+        c1, t1, _ = seams_of(get, names, P, at=TILE // 2)
+        c2, t2, _ = seams_of(get, names, P, at=TILE + TILE // 2)
+        ctrl = (c1 + c2) / 2
+        rep.add(f"S-{L}", f"{L}: seam chunks at tile borders vs the same rule through the tiles' middles ({bad} of "
+                f"{total} chunks of 64 px at borders, {ctrl:.1f} at the middles; a seam adds to the borders)",
+                bad <= 1.5 * ctrl + P["seam_run"], {"borders": bad, "middles": ctrl},
+                f"<= 1.5 x middles + {P['seam_run']}", ex)
     # depth continuity across tile borders where the same surface goes on (L8.4)
     names = release_tiles(rel, "buffers")
     jumps, n, ctrl_j, ctrl_n = 0, 0, 0, 0
@@ -439,9 +459,25 @@ def check_vehicles(ctx):
                                                             "every_s": P["sim_day_sample_s"], "audit_s": round(J["seconds"], 1)})
     # ------------------------------------------------------------ L4.2, L12.4 on drawn road / track
     tr = TileCache(rel, "transport", maxn=400)
+    from v2.layers.geometry import on_deck
+    deck = np.array([on_deck(edges[i]) for i in EDGE])
     zdraw = np.where(deck, Z, R.hf.sample(E, N))                  # ground ways are drawn on the terrain
-    px, py, _ = project(E, N, zdraw)
-    sel = inarea & ~tunnel
+    px, py, dd = project(E, N, zdraw)
+    # a way behind a hill is not in view: its vehicles are hidden there, not off the road (as L4.1)
+    seen = np.ones(len(E), bool)
+    txs, tys = (px // TILE).astype(int), (py // TILE).astype(int)
+    for key in set(zip(txs[inarea].tolist(), tys[inarea].tolist())):
+        m = inarea & (txs == key[0]) & (tys == key[1])
+        T = R.terrain(Tile(key[0], key[1], apron=0))
+        td = T["depth"][(py[m] - key[1] * TILE).astype(int), (px[m] - key[0] * TILE).astype(int)]
+        seen[m] = deck[m] | ~(td < dd[m] - 0.5)
+    rep.info("V0b", "vehicle samples in the area behind the terrain (not in view)", int((inarea & ~tunnel & ~seen).sum()))
+    sel = inarea & ~tunnel & seen
+    # under a deck (another way's surface is nearer there): hidden, as in a tunnel (C4 tests that per pixel)
+    tdep = np.array([np.inf if v is None else v for v in tr.lookup(px[sel], py[sel], "depth")])
+    under = tdep < dd[sel] - 0.5
+    rep.info("V0c", "vehicle samples under another way's deck (not in view)", int(under.sum()))
+    sel[np.flatnonzero(sel)[under]] = False
     ids = np.array([0 if v is None else int(v) for v in tr.lookup(px[sel], py[sel], "ids")], np.int64)
     cls = ids & 255
     road_cls = [CLASS["road"], CLASS["deck"], CLASS["tram"], CLASS["path"]]

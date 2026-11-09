@@ -121,3 +121,5 @@ def test_seam_check_finds_a_seam_and_nothing_else():
     tiles["1_0"] = (base + 12).clip(0, 255)
     bad, _, _ = seams_of(lambda n: (tiles[n], ok), set(tiles), P)
     assert bad >= 3
+    ctrl, _, _ = seams_of(lambda n: (tiles[n], ok), set(tiles), P, at=256)
+    assert ctrl == 0
