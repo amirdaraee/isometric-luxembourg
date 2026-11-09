@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Isometric Luxembourg v2 bake-off</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #efe8dc; font: 13px system-ui, sans-serif; color: #2e2824; }
+    header { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #d4c6b2; }
+    header h1 { font-size: 14px; margin: 0; }
+    #grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px; padding: 8px; height: calc(100% - 60px); box-sizing: border-box; }
+    section { display: flex; flex-direction: column; min-height: 320px; }
+    section h2 { font-size: 13px; margin: 0 0 4px; }
+    iframe { flex: 1; width: 100%; border: 1px solid #c8b9a4; border-radius: 4px; background: #fff; }
+    section a { font-size: 12px; margin-top: 3px; color: #7a3b2a; }
+    .wait { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px;
+      border: 1px dashed #c8b9a4; border-radius: 4px; color: #6a5e52; margin: 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>v2 bake-off &middot; test area</h1>
+    <label>View <select id="view"></select></label>
+    <label>Time <input id="hour" type="number" min="0" max="23.99" step="0.25" placeholder="view's"> <span id="hourOut"></span></label>
+    <label>Season <select id="season"><option value="auto">from date</option><option>spring</option><option>summer</option>
+      <option>autumn</option><option>winter</option></select></label>
+  </header>
+  <main id="grid"></main>
+  <script type="module" src="/src/bakeoff.ts"></script>
+</body>
+</html>

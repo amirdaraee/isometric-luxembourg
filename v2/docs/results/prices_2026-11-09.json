@@ -1,0 +1,23 @@
+{
+ "about": "GPU and image prices read on 9 Nov 2026 for the Phase 2 quote (v2/docs/PHASE2_QUOTE.md). RunPod: read-only GraphQL query gpuTypes (communityPrice, securePrice, USD per GPU-hour, on demand). Modal: modal.com/pricing (per second x 3600). OpenAI: developers.openai.com/api/docs/pricing (image tokens per 1M; no per-image prices on the page).",
+ "runpod": {
+  "H100 SXM (NVIDIA H100 80GB HBM3)": {"community": 2.69, "secure": 3.99},
+  "H100 PCIe": {"community": 1.99, "secure": 2.89},
+  "H100 NVL": {"community": 2.59, "secure": 3.19},
+  "H200 SXM": {"community": 3.59, "secure": 5.29, "stock": "Low"},
+  "A100 SXM 80GB": {"community": 1.39, "secure": 1.79, "stock": "Low"},
+  "A100 PCIe 80GB": {"community": 1.19, "secure": 1.79},
+  "L40S": {"community": 0.79, "secure": 1.09},
+  "RTX 6000 Ada": {"community": 0.74, "secure": 0.99},
+  "RTX 4090": {"community": 0.34, "secure": 0.89},
+  "B200": {"community": 5.98, "secure": 7.99}
+ },
+ "modal": {"H100": 3.95, "H200": 4.54, "A100 80GB": 2.50, "L40S": 1.95, "L4": 0.80, "B200": 6.25,
+           "note": "Starter plan includes $30 of compute per month"},
+ "openai_image_tokens_per_1M": {
+  "gpt-image-2": {"image_input": 8.0, "image_output": 30.0},
+  "gpt-image-1.5": {"image_input": 8.0, "image_output": 32.0},
+  "gpt-image-1-mini": {"image_input": 2.5, "image_output": 8.0},
+  "note": "a 1024 x 1024 image is about 4,160 output tokens at high quality and 1,056 at medium (OpenAI's image guide): gpt-image-2 high ~$0.125, medium ~$0.032 per image"
+ }
+}

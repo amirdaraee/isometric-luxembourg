@@ -16,11 +16,44 @@ function releaseDir(): string {
   return join(rel, JSON.parse(readFileSync(cur, "utf8")).folder);
 }
 
+// The bake-off's releases, one per art method (python -m v2.bakeoff register <method>):
+// <ISOLUX_DATA>/v2/<V2_AREA>/bakeoff/releases.json = {"a": {"release": "<folder>"}, "b": {...}, ...}
+function bakeIndex(): Record<string, { release: string | null; note?: string }> {
+  const root = resolve(process.env.ISOLUX_DATA ?? resolve(__dirname, "../../data"));
+  const p = join(root, "v2", process.env.V2_AREA ?? "test", "bakeoff", "releases.json");
+  return existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : {};
+}
+
+function sendFile(dir: string, url: string, res: any, next: () => void) {
+  const p = resolve(dir, "." + url);
+  if (!(p === dir || p.startsWith(dir + sep))) { res.statusCode = 403; res.end(); return; }
+  let real: string;
+  try { real = realpathSync(p); } catch { res.statusCode = 404; res.end(); return; }
+  if (!statSync(real).isFile()) return next();
+  res.setHeader("Content-Type", TYPES[extname(real)] ?? "application/octet-stream");
+  res.setHeader("Cache-Control", "max-age=60");
+  res.setHeader("Content-Length", String(statSync(real).size));
+  createReadStream(real).pipe(res);
+}
+
 function serveRelease(): Plugin {
   return {
     name: "v2-release",
     configureServer(server) {
       server.config.logger.info(`  v2 release: ${releaseDir()}`);
+      server.middlewares.use("/bake", (req, res, next) => {
+        const url = decodeURIComponent((req.url ?? "/").split("?")[0]);
+        const idx = bakeIndex();
+        if (url === "/index.json") {
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify(idx));
+          return;
+        }
+        const m = url.match(/^\/([a-z]+)(\/.*)$/);
+        const rel = m ? idx[m[1]]?.release : null;
+        if (!m || !rel) { res.statusCode = 404; res.end(); return; }
+        sendFile(resolve(rel), m[2], res, next);
+      });
       server.middlewares.use("/data", (req, res, next) => {
         const dir = releaseDir();          // per request: a rebuilt release is served without a restart
         const url = decodeURIComponent((req.url ?? "/").split("?")[0]);
