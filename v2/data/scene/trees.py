@@ -16,7 +16,6 @@ from __future__ import annotations
 import numpy as np
 import shapely
 from shapely import STRtree
-from shapely.geometry import Point
 from shapely.ops import unary_union
 
 from v2.data.geo import area_polygon
@@ -25,11 +24,19 @@ from v2.data.scene.grid import Grid
 from v2.data.scene.water import load_polygons
 
 
-def overlap_share(cx, cy, r, blockers_union):
-    if r <= 0:
-        return 0.0
-    d = Point(cx, cy).buffer(r, 16)
-    return d.intersection(blockers_union).area / d.area
+def overlap_share(e, n, r, blockers, tree=None):
+    """Share of each crown disc (centre e, n; radius r) lying over the blocker polygons (vectorised)."""
+    e, n, r = np.asarray(e, float), np.asarray(n, float), np.asarray(r, float)
+    out = np.zeros(len(e))
+    if not len(e) or not len(blockers):
+        return out
+    tree = tree or STRtree(blockers)
+    discs = shapely.buffer(shapely.points(e, n), np.maximum(r, 1e-3), quad_segs=8)
+    di, bi = tree.query(discs, predicate="intersects")
+    if len(di):
+        a = shapely.area(shapely.intersection(discs[di], np.asarray(blockers, dtype=object)[bi]))
+        out = np.bincount(di, weights=a, minlength=len(e)) / shapely.area(discs)
+    return np.where(r > 0, out, 0.0)
 
 
 def build(ctx):
@@ -58,27 +65,19 @@ def build(ctx):
     idx = idx[~in_b & ~in_w]
     r_meas = (T["cmean"][idx] / 2).astype(np.float64)
     r = r_meas * p["crown_scale"]
-    blockers = fps + water
+    blockers = list(fps) + list(water)
     tree = STRtree(blockers) if blockers else None
     thinned = 0
-    for k, i in enumerate(idx):
-        if tree is None:
-            break
-        near = tree.query(Point(e[i], n[i]).buffer(r[k]))
-        if len(near) == 0:
-            continue
-        u = unary_union([blockers[j] for j in near])
-        if overlap_share(e[i], n[i], r[k], u) <= p["max_overlap_share"]:
-            continue
-        lo, hi = 0.0, r[k]
-        for _ in range(12):  # largest radius whose overlap is within the limit
+    if tree is not None:
+        share = overlap_share(e[idx], n[idx], r, blockers, tree)
+        k = np.flatnonzero(share > p["max_overlap_share"])
+        thinned = len(k)
+        lo, hi = np.zeros(len(k)), r[k].copy()
+        for _ in range(12):  # the largest radius whose overlap is within the limit (bisection, all at once)
             mid = (lo + hi) / 2
-            if overlap_share(e[i], n[i], mid, u) <= p["max_overlap_share"]:
-                lo = mid
-            else:
-                hi = mid
+            ok = overlap_share(e[idx][k], n[idx][k], mid, blockers, tree) <= p["max_overlap_share"]
+            lo = np.where(ok, mid, lo); hi = np.where(ok, hi, mid)
         r[k] = lo
-        thinned += 1
     terrain = Grid.load(ctx.dep("scene_terrain") / "terrain.npz", "mnt")
     base = terrain.sample(e[idx], n[idx])
     base = np.where(np.isfinite(base), base, T["terrain"][idx])

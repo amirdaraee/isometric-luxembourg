@@ -256,3 +256,39 @@ def g0(ctx):
         shutil.copy(f, out_img / f"{ctx.area}_{f.name}")
     (out_res / f"g0_{ctx.area}.json").write_text(json.dumps(res, indent=1))
     return {"passed": res["passed"], "checks": {k: v["passed"] for k, v in checks.items()}}
+
+
+def publish_status(area: str) -> dict:
+    """Collects an area's current check results and previews into v2/docs whether or not the gate passed (g0 itself
+    runs only when every check passes). It copies outputs, it never changes them. Usage: python -m v2.build.report <area>"""
+    from v2.build.stages import graph
+    g = graph()
+    out = {"area": area, "checks": {}}
+    for name, s in g.stages.items():
+        if s.kind != "check":
+            continue
+        m = g.folder(name, area) / "manifest.json"
+        if m.exists():
+            d = json.loads(m.read_text())
+            out["checks"][name] = {"status": d["status"], "lines": (d["summary"] or {}).get("lines", [])}
+        else:
+            out["checks"][name] = {"status": "not run", "lines": []}
+    sc = g.folder("scene", area) / "manifest.json"
+    if sc.exists():
+        out["scene"] = json.loads(sc.read_text())["summary"]
+    out["passed"] = all(c["status"] == "ok" for c in out["checks"].values())
+    res = V2 / "docs" / "results"
+    res.mkdir(parents=True, exist_ok=True)
+    (res / f"checks_{area}.json").write_text(json.dumps(out, indent=1))
+    prev = g.folder("previews", area) / "img"
+    if prev.exists():
+        for f in sorted(prev.glob("*.jpg")):
+            shutil.copy(f, V2 / "docs" / "img" / f"{area}_{f.name}")
+    return out
+
+
+if __name__ == "__main__":
+    import sys
+    r = publish_status(sys.argv[1])
+    print(r["area"], "all checks ok" if r["passed"] else "some checks failed",
+          {k: v["status"] for k, v in r["checks"].items()})

@@ -180,13 +180,12 @@ def check_trees(ctx):
     in_w = int(shapely.contains_xy(uw, t["e"], t["n"]).sum()) if uw is not None else 0
     r.at_most("TE1", "trees standing inside a building", in_b, ctx.params["checks"]["trees_max_inside"])
     r.at_most("TE2", "trees standing in water", in_w, ctx.params["checks"]["trees_max_inside"])
-    blk = shapely.union_all([g for g in (ub, uw) if g is not None]) if (ub is not None or uw is not None) else None
+    from v2.data.scene.trees import overlap_share
     worst, ex = 0.0, []
-    if blk is not None:
-        discs = shapely.buffer(shapely.points(t["e"], t["n"]), t["crown_r"].astype(float), quad_segs=8)
-        share = shapely.area(shapely.intersection(discs, blk)) / np.maximum(shapely.area(discs), 1e-9)
-        share = np.where(t["crown_r"] > 0, share, 0)
-        worst = float(share.max()) if len(share) else 0.0
+    blockers = list(fps) + list(water)
+    if blockers and len(t["e"]):
+        share = overlap_share(t["e"], t["n"], t["crown_r"].astype(float), blockers)
+        worst = float(share.max())
         ex = [str(u) for u in t["uuid"][share > p["max_overlap_share"] + 0.02][:5]]
     r.at_most("TE3", "largest share of a crown over buildings or water", round(worst, 3), p["max_overlap_share"] + 0.02, ex)
     h = t["height"]

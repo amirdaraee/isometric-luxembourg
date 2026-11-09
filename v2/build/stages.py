@@ -93,7 +93,7 @@ def graph() -> Graph:
         Stage("check_transit", dc.check_transit, deps=("scene_transit",), **chk, doc="trams and trains matched to rails"),
         Stage("check_places", dc.check_places, deps=("scene_places",), **chk, doc="places round-trip to v1 pixels"),
         Stage("check_no_patching", rc.check_no_patching, kind="check", params=_p("checks"), code=("v2.checks.framework", "v2.build.stages"),
-              raw=lambda area: [REPO / "v2"], doc="brief 1: no stage edits finished art (grep gate)"),
+              raw=lambda area: sorted((REPO / "v2").rglob("*.py")), doc="brief 1: no stage edits finished art (grep gate)"),
         Stage("check_ledger", rc.check_ledger, kind="check", code=("v2.ledger.ledger",),
               raw=lambda area: [REPO / "v2/ledger/budget.json", REPO / "v2/ledger/spend.jsonl"], doc="spend ledger valid, within caps"),
     ]
