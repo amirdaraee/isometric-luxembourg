@@ -1,0 +1,20 @@
+{
+  "name": "isometric-luxembourg-v2-viewer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/*.test.ts src/sim/*.test.ts",
+    "audit": "node --experimental-strip-types scripts/audit.ts",
+    "checks": "node scripts/viewer_checks.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "playwright": "1.58.2",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.3"
+  }
+}
