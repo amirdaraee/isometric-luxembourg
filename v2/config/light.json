@@ -17,8 +17,8 @@
   "day_tint": [1.0, 0.995, 0.98],
   "golden_tint": [1.0, 0.82, 0.62],
   "blue_tint": [0.55, 0.62, 0.85],
-  "night_tint": [0.20, 0.25, 0.42],
-  "night_level": 0.32
+  "night_tint": [0.30, 0.36, 0.58],
+  "night_level": 0.55
  },
  "night": {"window_lit_share_evening": 0.55, "window_lit_share_late": 0.18, "lamp_height_m": 5.0, "lamp_radius_px": 26,
            "depth_eps_m": 0.35},

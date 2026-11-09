@@ -542,7 +542,9 @@ export class Compositor {
       p.f("uLook", lk.sat_max, lk.lum_min, lk.lum_max, lk.ink_depth_m);
       p.f("uInkCos", lk.ink_normal_cos);
       p.f("uInkMin", 4 * this.idx.camera.mpp / view.scale);
-      const ink = pal.ink.line.rgb.map((v) => v / 255);
+      // the ink darkens with the light (one colour per frame, so the pass stays a fixed transform)
+      const inkScale = 1 - 0.6 * nightFactor(cfg, st.el);
+      const ink = pal.ink.line.rgb.map((v) => (v / 255) * inkScale);
       p.f("uInk", ink[0], ink[1], ink[2]);
       p.f("uLookOn", st.off.has("look") ? 0 : 1);
       p.i("uDebug", st.debug);

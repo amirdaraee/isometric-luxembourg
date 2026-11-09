@@ -74,7 +74,7 @@ def g1(ctx):
     img = V2 / "docs" / "img"
     img.mkdir(parents=True, exist_ok=True)
     published = []
-    for n in ("test_day_1300", "test_golden_hour", "test_night", "test_shadows_1000", "test_shadows_1600",
+    for n in ("test_day_1300", "test_golden_hour", "test_night", "test_night_grund", "test_shadows_1000", "test_shadows_1600",
               "test_portal_vehicles", "test_viaduct_vehicles"):
         dst = img / f"{n.replace('test_', area + '_g1_')}.jpg"
         jpeg(shots / f"{n}.png", dst)

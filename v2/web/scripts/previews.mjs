@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { open, settle } from "./shot.mjs";
 
 const [base, out] = process.argv.slice(2);
-const DATE = "2026-06-23";   // a Tuesday near midsummer: a weekday timetable
+const DATE = "2026-06-24";   // a Wednesday near midsummer: a weekday timetable (the 23rd is National Day)
 const { browser, page } = await open(base, 1600, 1000);
 const meta = {};
 
@@ -54,6 +54,7 @@ const night = 23.25;
 await shot("test_day_1300", `hour=13&date=${DATE}`, { wait: 600 });
 await shot("test_golden_hour", `hour=${golden.toFixed(3)}&date=${DATE}`, { wait: 600 });
 await shot("test_night", `hour=${night}&date=${DATE}`, { wait: 600 });
+await shot("test_night_grund", `hour=${night}&date=${DATE}&x=62600&y=34400&z=0.55&nosim`, { wait: 600 });
 await shot("test_shadows_1000", `hour=10&date=${DATE}&x=62600&y=34400&z=0.7&nosim`);
 await shot("test_shadows_1600", `hour=16&date=${DATE}&x=62600&y=34400&z=0.7&nosim`);
 // close-ups with vehicles: a tunnel portal of the main line and the Pulvermuehl viaduct, at a moment with a train
