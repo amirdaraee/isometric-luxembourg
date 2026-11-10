@@ -10,7 +10,12 @@ Chosen by `params.json` art.method (or `V2_ART`); each method builds into its ow
   some buildings where they fit the wall; doors with panels and a fanlight; garage doors; shop fronts with glazing
   bars and a striped awning band. All of it computed per pixel from the pixel's place on its surface, so it is fixed
   to the 3D model; ink outlines where surfaces meet.
-- **B, C:** `v2/layers/bakeoff.py`, `v2/bakeoff/` (inputs, prompts, jobs; quote in `v2/docs/PHASE2_QUOTE.md`).
+- **A, richer (phase 3, after gate G2 chose A):** every building in its own tone of its colour; 13 facade colours
+  and 7 roof colours; coursed ashlar on stone buildings, a banded ground floor on some rendered ones, a faint mottle
+  on render; a stone surround with a lintel, keystone and sill round every window and a surround and lintel round
+  every door; windows with a cross or six panes, each window's glass its own tone; gravel on flat roofs. All of it
+  per pixel from the pixel's place on its wall, straight by construction.
+- **B, C (stopped at G2, 10 Nov 2026):** `v2/layers/bakeoff.py`, `v2/bakeoff/` (kept as the bake-off's record).
 
 **Inputs.** Scene buildings (ACT LoD2: footprint, walls, roof planes, roof shape, installations; `mesh.npz`),
 the facade layout (`facades.json`), the palette (`buildings.*`). For B and C: unlit renders of the mesh (flat

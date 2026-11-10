@@ -9,8 +9,16 @@ darker clumps, darker gaps; B has A's crowns by the owner's decision of 10 Nov 2
 **Inputs.** Scene trees (`trees.npz`: LiDAR 2024 survey position, height, crown radius after thinning, type), the
 palette (`trees.*`), terrain and buildings (depth).
 
-**Output.** RGBA tiles, depth per pixel (each crown as a 3D shape: an ellipsoid of the crown radius on a trunk to
-the measured height), a crown mask (for sway and seasons), id tiles.
+**Output.** RGBA tiles, depth per pixel (each crown as a 3D shape on a trunk to the measured height), a crown mask
+(for sway and seasons), id tiles.
+
+**Crown shape and variety (phase 3).** A broadleaf crown is a core with five to seven lobes round it and one on
+top; a conifer is three tiers narrowing upwards; a crown under 1.2 m radius stays one shape. No lobe reaches beyond
+the tree's crown radius, above its measured top or below the crown's foot, and the top lobe ends exactly at the
+measured top, so rule 1 holds (unit test `test_crown_lobes_stay_inside_the_measured_crown`). Each tree has its own
+depth of green and leans to a warmer or a cooler green (palette `summer_light_warm`, `summer_light_cool`); a
+lighter ink line marks where two lobes of one crown meet. Lobes, colours and lines are hashes of the tree's index:
+nothing follows the sun. Layer 9 casts the shadows of the same lobes.
 
 **Rules.**
 1. Position and height come from the survey and are never changed. The crown's width is the survey's

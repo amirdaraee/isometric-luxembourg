@@ -1,6 +1,7 @@
 # Isometric Luxembourg v2: plan
 
-Status: **approved by the owner on 9 November 2026.** Phase 0 started.
+Status: **approved by the owner on 9 November 2026.** Phases 0–2 are done. **Gate G2 was decided on 10 November
+2026: method A (all code), enriched in code; B and C are stopped** (section 7). Phase 3 is under way.
 
 Inputs: the owner's brief and decisions (`research/v2/DECISIONS.md`), what went wrong in v1
 (`research/v2/V1_RETRO.md`), and how the other illustrated city maps were made (`research/v2/OTHERS.md`).
@@ -109,6 +110,12 @@ On the test area, each built fully (all layers, composited, graded), then shown 
 The owner picks by looking. The rest of the plan works for any winner (only layers 5–7 change). A mix is allowed,
 for example B for the city and C for landmarks.
 
+**Decided (G2, 10 Nov 2026).** The owner's words: "A, enrich in code (Recommended)". Method A draws layers 5–7 for
+the whole city, at $0. B and C are stopped: B's AI materials failed the no-baked-shadows gate and repeated as grids,
+and C4's front-on facades came back plainer than A (`v2/docs/PHASE2_RESULTS.md`). The detail A lacked against v1 is
+added in code in Phase 3 (`v2/docs/PHASE3_REPORT.md`). AI paints only the interiors of the four landmark cutaways
+(section 9.1). Where "A/B/C" or "if B/C" appears below, read A.
+
 **Straight windows in C:** the research's best idea (untested anywhere) is to paint each facade front-on, then
 project it onto its 3D wall, which keeps lines straight by construction. It is tried on ~10 buildings in the
 bake-off; if it fails, C falls back to painting at 0.125 m/px with the facade layout as a guide and a line check.
@@ -163,7 +170,7 @@ Each phase ends at a gate: the owner reviews and approves before the next phase 
 | **0. Foundation** | v2 folder structure and build graph; data for the whole commune; the scene (section 6) including the transport graph with height profiles and modelled viaducts; camera; checks framework; spend ledger; specs for every layer with their checks | $0 | **G0:** owner approves the specs and checks; scene and transport graph pass their data checks on the test area |
 | **1. Code layers on the test area** | Layers 1–4, 8–12, 14–15 in code; viewer compositor (WebGL, several tiled layers); v1 simulation on the new graph | $0 | **G1:** brief checks 4, 5, 7, 8, 9 pass; owner sees the test area with plain code buildings |
 | **2. Bake-off** | A, B and C on the test area | ≤ $17 (quote first) | **G2:** owner picks the method |
-| **3. Lock the look** | Palette, grade and ink pass tuned; code vs AI night/golden comparison; seasons; events as objects; landmark portraits if B/C; tunnel view (code, $0) and the first four landmark cutaways (section 9.1) | ≤ $8 | **G3:** owner signs off the test area as "v2 quality"; all checks pass |
+| **3. Lock the look** | Richer code art for layers 1–7 (G2); palette, grade and ink pass tuned; code vs AI night/golden comparison; seasons; events as objects; tunnel view (code, $0) and the first four landmark cutaways (section 9.1) | ≤ $8 | **G3:** owner signs off the test area as "v2 quality"; all checks pass |
 | **4. The city, 10% first** | Production for the whole commune in batches; 10% pilot, then the rest; checks gate every batch | ≤ $60 (by winner; quoted) | **G4:** owner reviews the pilot batch, then the whole city |
 | **5. Launch** | Tiles on R2, performance pass, feature switches, landing on isometric.lu, v1 kept at a `/v1` link | ≈ $0 (R2 storage ≈ $1–3/month) | **G5:** owner approves the switch |
 

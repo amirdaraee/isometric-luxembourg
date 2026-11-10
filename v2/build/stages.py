@@ -110,7 +110,7 @@ def graph() -> Graph:
     return Graph(S)
 
 
-LAYER_CODE = GEO + CAM + ("v2.layers.common", "v2.layers.raster", "v2.layers.geometry", "v2.layers.render",
+LAYER_CODE = GEO + CAM + ("v2.layers.common", "v2.layers.raster", "v2.layers.geometry", "v2.layers.render", "v2.layers.detail",
                           "v2.layers.tiles", "v2.layers.light", "v2.layers.data", "v2.data.scene.facades",
                           "v2.layers.art_a", "v2.layers.bakeoff", "v2.config.art")
 

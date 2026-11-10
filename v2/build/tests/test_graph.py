@@ -71,6 +71,20 @@ def test_param_change_rebuilds_downstream_only_and_keeps_old_versions(data):
     assert len(list((data / "v2" / "test" / "make").glob("*/manifest.json"))) == 2
 
 
+def test_current_points_at_the_build_asked_for_also_when_up_to_date(data):
+    """Build with one input, then another, then the first again (nothing runs): current.json is the first's again."""
+    cur = lambda: json.loads((data / "v2" / "test" / "use" / "current.json").read_text())["folder"]  # noqa: E731
+    a = graph(5)
+    a.build("test", ["use"])
+    first = a.folder("use", "test").name
+    assert cur() == first
+    graph(6).build("test", ["use"])
+    assert cur() != first
+    CALLS.clear()
+    graph(5).build("test", ["use"])
+    assert CALLS == [] and cur() == first
+
+
 def test_failed_check_fails_the_build_and_blocks_downstream(data):
     assert graph(9).build("test", ["after"]) == 1        # y = "99": the gate fails
     assert ("after",) not in CALLS
