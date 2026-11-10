@@ -1,0 +1,492 @@
+{
+ "buildings": [
+  {
+   "index": 328,
+   "id": "ACT_e0b39271-1708-4b58-84ca-1b6aaa33c7b4",
+   "walls": 3
+  },
+  {
+   "index": 32,
+   "id": "ACT_67d5a97b-47f9-44df-b0ce-607109164a23",
+   "walls": 2
+  },
+  {
+   "index": 315,
+   "id": "ACT_e3c6a578-e4b2-4ddc-9cf9-4961a026114b",
+   "walls": 3
+  },
+  {
+   "index": 831,
+   "id": "ACT_4f6e084c-4ea0-4bf9-831f-fb322584d5ab",
+   "walls": 2
+  },
+  {
+   "index": 435,
+   "id": "ACT_bdfa7c8e-b763-4177-b828-e3dd163efc3f",
+   "walls": 2
+  },
+  {
+   "index": 70,
+   "id": "ACT_f4a3ac1b-e366-4e5c-afe2-6ffe3e15f790",
+   "walls": 2
+  },
+  {
+   "index": 848,
+   "id": "ACT_4c27c77a-f41c-427c-8333-7897a9a590d0",
+   "walls": 3
+  },
+  {
+   "index": 198,
+   "id": "ACT_04ced4f9-2d66-457e-956a-b72c0881e1d8",
+   "walls": 2
+  },
+  {
+   "index": 765,
+   "id": "ACT_63977f77-9fdc-43c8-89fa-31a491e926d3",
+   "walls": 3
+  },
+  {
+   "index": 924,
+   "id": "ACT_37610917-3d3e-4c65-94de-f8803304687a",
+   "walls": 3
+  }
+ ],
+ "facades": 25,
+ "painted": {
+  "C4 seed 0": 25,
+  "C4 seed 1": 25
+ },
+ "thresholds": {
+  "line_score_share": 0.95,
+  "line_score_px": 1.0,
+  "flat_light": 0.05
+ },
+ "scores": {
+  "A": {
+   "edges": {
+    "seen": 14453,
+    "share": 0.9896,
+    "by_building": {
+     "32": 0.9832,
+     "70": 0.9844,
+     "198": 0.9965,
+     "315": 0.9472,
+     "328": 0.9931,
+     "435": 0.9987,
+     "765": 1.0,
+     "831": 0.9896,
+     "848": 0.9974,
+     "924": 0.9925
+    }
+   },
+   "windows": {
+    "seen": 1662,
+    "share": 0.9982,
+    "by_building": {
+     "32": 1.0,
+     "70": 1.0,
+     "198": 1.0,
+     "315": 1.0,
+     "328": 1.0,
+     "435": 1.0,
+     "765": 1.0,
+     "831": 1.0,
+     "848": 0.976,
+     "924": 1.0
+    }
+   },
+   "lines_pass": true,
+   "flat_light": {
+    "by_building": {
+     "32": 0.0,
+     "70": 0.0106,
+     "198": 0.0,
+     "315": 0.0,
+     "328": 0.0,
+     "435": 0.0,
+     "765": 0.0,
+     "831": 0.0009,
+     "848": 0.0,
+     "924": 0.0
+    },
+    "worst": 0.0106,
+    "over_5_percent": 0
+   },
+   "flat_pass": true
+  },
+  "C4 seed 0": {
+   "edges": {
+    "seen": 14453,
+    "share": 0.9898,
+    "by_building": {
+     "32": 0.9832,
+     "70": 0.9844,
+     "198": 0.9965,
+     "315": 0.9519,
+     "328": 0.9931,
+     "435": 0.9987,
+     "765": 1.0,
+     "831": 0.9896,
+     "848": 0.9974,
+     "924": 0.9925
+    }
+   },
+   "windows": {
+    "seen": 1662,
+    "share": 1.0,
+    "by_building": {
+     "32": 1.0,
+     "70": 1.0,
+     "198": 1.0,
+     "315": 1.0,
+     "328": 1.0,
+     "435": 1.0,
+     "765": 1.0,
+     "831": 1.0,
+     "848": 1.0,
+     "924": 1.0
+    }
+   },
+   "lines_pass": true,
+   "flat_light": {
+    "by_building": {
+     "32": 0.0,
+     "70": 0.0161,
+     "198": 0.0,
+     "315": 0.0,
+     "328": 0.0041,
+     "435": 0.1984,
+     "765": 0.0041,
+     "831": 0.0009,
+     "848": 0.0,
+     "924": 0.0
+    },
+    "worst": 0.1984,
+    "over_5_percent": 1
+   },
+   "flat_pass": false,
+   "flat_light_painted_walls": {
+    "by_building": {
+     "32": 0.0032,
+     "70": 0.0,
+     "198": 0.0,
+     "315": 0.0,
+     "328": 0.0,
+     "435": 0.0,
+     "765": 0.0041,
+     "831": 0.0,
+     "848": 0.0,
+     "924": 0.0
+    },
+    "worst": 0.0041,
+    "over_5_percent": 0
+   }
+  },
+  "C4 seed 1": {
+   "edges": {
+    "seen": 14453,
+    "share": 0.9898,
+    "by_building": {
+     "32": 0.9832,
+     "70": 0.9844,
+     "198": 0.9965,
+     "315": 0.9519,
+     "328": 0.9931,
+     "435": 0.9987,
+     "765": 1.0,
+     "831": 0.9896,
+     "848": 0.9974,
+     "924": 0.9925
+    }
+   },
+   "windows": {
+    "seen": 1662,
+    "share": 1.0,
+    "by_building": {
+     "32": 1.0,
+     "70": 1.0,
+     "198": 1.0,
+     "315": 1.0,
+     "328": 1.0,
+     "435": 1.0,
+     "765": 1.0,
+     "831": 1.0,
+     "848": 1.0,
+     "924": 1.0
+    }
+   },
+   "lines_pass": true,
+   "flat_light": {
+    "by_building": {
+     "32": 0.0083,
+     "70": 0.0161,
+     "198": 0.0,
+     "315": 0.0,
+     "328": 0.0088,
+     "435": 0.1956,
+     "765": 0.0035,
+     "831": 0.0009,
+     "848": 0.0479,
+     "924": 0.0
+    },
+    "worst": 0.1956,
+    "over_5_percent": 1
+   },
+   "flat_pass": false,
+   "flat_light_painted_walls": {
+    "by_building": {
+     "32": 0.0114,
+     "70": 0.0,
+     "198": 0.0,
+     "315": 0.0,
+     "328": 0.0,
+     "435": 0.0,
+     "765": 0.0035,
+     "831": 0.0,
+     "848": 0.0479,
+     "924": 0.0
+    },
+    "worst": 0.0479,
+    "over_5_percent": 0
+   }
+  }
+ },
+ "best_seed": 0,
+ "light_within_paintings": {
+  "paintings": 50,
+  "worst_left_right": 0.1041,
+  "worst_top_bottom": 0.5182,
+  "over_5_percent": 3,
+  "by_file": {
+   "f1448_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0003
+   },
+   "f1448_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0003
+   },
+   "f1449_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f1449_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0009
+   },
+   "f15966_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f15966_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f15976_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f15976_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0006
+   },
+   "f15978_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0038
+   },
+   "f15978_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0114
+   },
+   "f17066_0.png": {
+    "left_right": 0.0003,
+    "top_bottom": 0.0032
+   },
+   "f17066_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f17067_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f17067_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0032
+   },
+   "f17574_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f17574_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f17576_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f17576_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f17577_0.png": {
+    "left_right": 0.1041,
+    "top_bottom": 0.1971
+   },
+   "f17577_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0003
+   },
+   "f18948_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f18948_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f18962_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0022
+   },
+   "f18962_1.png": {
+    "left_right": 0.0003,
+    "top_bottom": 0.0003
+   },
+   "f18963_0.png": {
+    "left_right": 0.0012,
+    "top_bottom": 0.5061
+   },
+   "f18963_1.png": {
+    "left_right": 0.001,
+    "top_bottom": 0.5182
+   },
+   "f2437_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f2437_1.png": {
+    "left_right": 0.0003,
+    "top_bottom": 0.0003
+   },
+   "f2441_0.png": {
+    "left_right": 0.0271,
+    "top_bottom": 0.0
+   },
+   "f2441_1.png": {
+    "left_right": 0.0308,
+    "top_bottom": 0.0
+   },
+   "f4416_0.png": {
+    "left_right": 0.0006,
+    "top_bottom": 0.0032
+   },
+   "f4416_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f4419_0.png": {
+    "left_right": 0.0006,
+    "top_bottom": 0.0009
+   },
+   "f4419_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0003
+   },
+   "f6666_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f6666_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f6667_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f6667_1.png": {
+    "left_right": 0.0025,
+    "top_bottom": 0.0019
+   },
+   "f6675_0.png": {
+    "left_right": 0.0032,
+    "top_bottom": 0.0032
+   },
+   "f6675_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f7012_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f7012_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0003
+   },
+   "f7013_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f7013_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f7028_0.png": {
+    "left_right": 0.0032,
+    "top_bottom": 0.0032
+   },
+   "f7028_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0019
+   },
+   "f8785_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f8785_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0003
+   },
+   "f8793_0.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0
+   },
+   "f8793_1.png": {
+    "left_right": 0.0,
+    "top_bottom": 0.0003
+   }
+  }
+ },
+ "cars": {
+  "paintings": 50,
+  "detections": 0,
+  "max_score": 0.0149
+ },
+ "answer": {
+  "straight_lines_survived": true,
+  "window_rows": {
+   "c4": 1.0,
+   "a": 0.9982
+  },
+  "building_edges": {
+   "c4": 0.9898,
+   "a": 0.9896
+  },
+  "no_baked_shadow": false,
+  "flat_light_worst": {
+   "c4": 0.1984,
+   "a": 0.0106
+  },
+  "flat_light_worst_between_painted_walls": 0.0041,
+  "paintings_with_light_across_them": 3,
+  "no_cars": true
+ },
+ "build": {
+  "folder": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/bakeoff/c4/release",
+  "tiles_drawn": 22,
+  "facades": 25
+ }
+}

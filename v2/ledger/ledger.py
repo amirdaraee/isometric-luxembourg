@@ -8,6 +8,9 @@ Files (in git, small):
                 approve    {quote, by, note}                 only the owner approves; recorded with their words
                 spend      {quote, goal, provider, job, usd, measured_by}
                 reconcile  {provider, period, billed_usd, ledger_usd, ok}
+                release    {quote, by, note}                 the owner gives up an approved quote that was never
+                                                             spent: it no longer counts as committed and can no
+                                                             longer be authorised (a later run needs a new quote)
 
 Rules enforced by `authorise()` (call it before any paid run):
   1. the run has a quote, and the quote has an approval;
@@ -56,13 +59,17 @@ class Ledger:
     def approved(self):
         return {e["quote"] for e in self.events if e["type"] == "approve"}
 
+    def released(self):
+        """Quotes the owner released unspent: no longer committed, no longer runnable."""
+        return {e["quote"] for e in self.events if e["type"] == "release"}
+
     def spent(self, goal=None):
         return round(sum(e["usd"] for e in self.events if e["type"] == "spend" and (goal is None or e["goal"] == goal)), 4)
 
     def committed(self, goal=None):
         """Worst cases of approved quotes with no spend recorded yet."""
         q, ap = self.quotes(), self.approved()
-        done = {e["quote"] for e in self.events if e["type"] == "spend"}
+        done = {e["quote"] for e in self.events if e["type"] == "spend"} | self.released()
         return round(sum(q[i]["worst_usd"] for i in ap if i in q and i not in done and (goal is None or q[i]["goal"] == goal)), 4)
 
     def status(self):
@@ -81,7 +88,9 @@ class Ledger:
             errs.append(f"goal caps add up to {caps}, over the owner's cap {self.budget['owner_cap_usd']}")
         q, ap = self.quotes(), self.approved()
         need = {"quote": {"id", "goal", "provider", "job", "worst_usd"}, "approve": {"quote", "by"},
-                "spend": {"quote", "goal", "provider", "job", "usd"}, "reconcile": {"provider", "period", "billed_usd", "ledger_usd"}}
+                "spend": {"quote", "goal", "provider", "job", "usd"}, "reconcile": {"provider", "period", "billed_usd", "ledger_usd"},
+                "release": {"quote", "by"}}
+        gone = set()
         for i, e in enumerate(self.events):
             t = e.get("type")
             if t not in need:
@@ -93,6 +102,16 @@ class Ledger:
                 errs.append(f"event {i}: approvals are the owner's only")
             if t == "spend" and e.get("quote") not in ap:
                 errs.append(f"event {i}: spend without an approved quote")
+            if t == "spend" and e.get("quote") in gone:
+                errs.append(f"event {i}: spend on a released quote")
+            if t == "release":
+                if e.get("by") != "owner":
+                    errs.append(f"event {i}: releases are the owner's only")
+                if e.get("quote") not in ap:
+                    errs.append(f"event {i}: release of a quote that was never approved")
+                if any(x["type"] == "spend" and x.get("quote") == e.get("quote") for x in self.events[:i]):
+                    errs.append(f"event {i}: release of a quote that is already spent")
+                gone.add(e.get("quote"))
             if t in ("quote", "spend") and e.get("goal") not in self.budget["goals"]:
                 errs.append(f"event {i}: unknown goal {e.get('goal')!r}")
         for name, g in self.budget["goals"].items():
@@ -123,6 +142,20 @@ class Ledger:
             raise LedgerRefusal(f"no quote {quote_id}")
         return self._append({"type": "approve", "quote": quote_id, "by": by, "note": note})
 
+    def release(self, quote_id, by, note=""):
+        """The owner gives up an approved, unspent quote: its worst case stops counting as committed."""
+        if by != "owner":
+            raise LedgerRefusal("only the owner releases a quote")
+        if quote_id not in self.quotes():
+            raise LedgerRefusal(f"no quote {quote_id}")
+        if quote_id not in self.approved():
+            raise LedgerRefusal(f"quote {quote_id} was never approved: there is nothing to release")
+        if any(e["type"] == "spend" and e["quote"] == quote_id for e in self.events):
+            raise LedgerRefusal(f"quote {quote_id} is already spent")
+        if quote_id in self.released():
+            raise LedgerRefusal(f"quote {quote_id} is already released")
+        return self._append({"type": "release", "quote": quote_id, "by": by, "note": note})
+
     def authorise(self, quote_id):
         """Raises LedgerRefusal unless the quoted run may start now."""
         q = self.quotes().get(quote_id)
@@ -132,6 +165,8 @@ class Ledger:
             raise LedgerRefusal(f"quote {quote_id} is not approved by the owner")
         if any(e["type"] == "spend" and e["quote"] == quote_id for e in self.events):
             raise LedgerRefusal(f"quote {quote_id} is already spent: quote again")
+        if quote_id in self.released():
+            raise LedgerRefusal(f"quote {quote_id} was released by the owner: quote again")
         g = self.goal(q["goal"])
         others = self.committed(q["goal"]) - q["worst_usd"]
         total = self.spent(q["goal"]) + others + q["worst_usd"]
@@ -150,6 +185,8 @@ class Ledger:
         q = self.quotes().get(quote_id)
         if q is None or quote_id not in self.approved():
             raise LedgerRefusal(f"spend needs an approved quote ({quote_id})")
+        if quote_id in self.released():
+            raise LedgerRefusal(f"quote {quote_id} was released by the owner: nothing may be spent on it")
         return self._append({"type": "spend", "quote": quote_id, "goal": q["goal"], "provider": q["provider"],
                              "job": q["job"], "usd": round(float(usd), 4), "over_quote": usd > q["worst_usd"],
                              "measured_by": measured_by})
@@ -169,6 +206,7 @@ def main(argv=None):
     sub.add_parser("validate")
     q = sub.add_parser("quote"); q.add_argument("goal"); q.add_argument("provider"); q.add_argument("job"); q.add_argument("worst_usd", type=float); q.add_argument("--note", default="")
     a = sub.add_parser("approve"); a.add_argument("quote"); a.add_argument("--by", required=True); a.add_argument("--note", default="")
+    rl = sub.add_parser("release"); rl.add_argument("quote"); rl.add_argument("--by", required=True); rl.add_argument("--note", default="")
     c = sub.add_parser("authorise"); c.add_argument("quote")
     s = sub.add_parser("spend"); s.add_argument("quote"); s.add_argument("usd", type=float); s.add_argument("--measured-by", default="provider billing")
     r = sub.add_parser("reconcile"); r.add_argument("provider"); r.add_argument("period"); r.add_argument("billed_usd", type=float)
@@ -185,6 +223,8 @@ def main(argv=None):
             print(L.quote(x.goal, x.provider, x.job, x.worst_usd, x.note))
         elif x.cmd == "approve":
             print(L.approve(x.quote, x.by, x.note))
+        elif x.cmd == "release":
+            print(L.release(x.quote, x.by, x.note))
         elif x.cmd == "authorise":
             print("authorised:", L.authorise(x.quote))
         elif x.cmd == "spend":

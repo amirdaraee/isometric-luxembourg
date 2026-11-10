@@ -481,7 +481,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 79.6
+      "audit_s": 77.0
      },
      "threshold": null,
      "severity": "report",
@@ -667,7 +667,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 210.0,
+     "value": 200.9,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -790,7 +790,7 @@
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
       "images": 981,
-      "seconds": 337.5,
+      "seconds": 345.6,
       "queries": [
        "a car",
        "a parked car",
@@ -1050,23 +1050,23 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.17759999999403953,
-      "first_view_warm_s": 0.0845,
+      "first_view_cold_s": 0.1425,
+      "first_view_warm_s": 0.0942000000178814,
       "pan_whole_area": {
-       "fps": 119.89509179467966,
-       "frame_ms_median": 0.4000000059604645,
+       "fps": 120.15387689794451,
+       "frame_ms_median": 0.5,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 96.40359640359641,
-       "frame_ms_median": 0.19999998807907104,
+       "fps": 94.16289931841109,
+       "frame_ms_median": 0.4000000059604645,
        "tiles_missing": 0
       },
-      "pan_fps": 96.40359640359641,
+      "pan_fps": 94.16289931841109,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 119.99100067548575,
+        "fps": 120.10287398009027,
         "frame_ms_median": 0.7999999821186066,
         "tiles_missing": 0
        }
@@ -1081,7 +1081,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.085,
+     "value": 0.094,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1090,7 +1090,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 96.4,
+     "value": 94.2,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1102,7 +1102,7 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 119.99100067548575,
+       "fps": 120.10287398009027,
        "frame_ms_median": 0.7999999821186066,
        "tiles_missing": 0
       }
@@ -2108,7 +2108,7 @@
      "id": "L2",
      "title": "total spent + committed (USD)",
      "passed": true,
-     "value": 13.23,
+     "value": 3.72,
      "threshold": "<= 100.0",
      "severity": "gate",
      "examples": []
@@ -2126,23 +2126,23 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.17759999999403953,
-  "first_view_warm_s": 0.0845,
+  "first_view_cold_s": 0.1425,
+  "first_view_warm_s": 0.0942000000178814,
   "pan_whole_area": {
-   "fps": 119.89509179467966,
-   "frame_ms_median": 0.4000000059604645,
+   "fps": 120.15387689794451,
+   "frame_ms_median": 0.5,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 96.40359640359641,
-   "frame_ms_median": 0.19999998807907104,
+   "fps": 94.16289931841109,
+   "frame_ms_median": 0.4000000059604645,
    "tiles_missing": 0
   },
-  "pan_fps": 96.40359640359641,
+  "pan_fps": 94.16289931841109,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 119.99100067548575,
+    "fps": 120.10287398009027,
     "frame_ms_median": 0.7999999821186066,
     "tiles_missing": 0
    }
@@ -2277,5 +2277,5 @@
    }
   }
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/c7fae38fc58f"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/2163b3d26525"
 }

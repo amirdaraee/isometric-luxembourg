@@ -908,7 +908,7 @@ class Renderer:
         return {"C": C, "r": r, "b": b, "type": typ, "trunks": M.done()}
 
     def trees(self, tile) -> LayerTile:
-        """Layer 7 (code crowns for methods A and B; "a" adds leaf clumps): every surveyed tree at its measured place and size, a flat crown colour by type
+        """Layer 7 (code crowns for methods A and B, both with A's leaf clumps: owner, 10 Nov 2026): every surveyed tree at its measured place and size, a flat crown colour by type
         (albedo; layer 9 lights and shades it), a trunk under it."""
         self._guard("trees")
         if self.art == "c":
@@ -937,8 +937,8 @@ class Renderer:
             px, py = tile.centres
             leaf = grain(px, py, 0.08, seed=7)[crown]
             col = (dark[typ] * (1 - mix[:, None]) + light[typ] * mix[:, None]) * leaf[:, None]
-            if self.art == "a":
-                # method A: leaf clumps on the crown's surface (art_a.crown_rgb), from the pixel's world point
+            if self.art in ("a", "b"):
+                # methods A and B: leaf clumps on the crown's surface (art_a.crown_rgb), from the pixel's world point
                 from v2.layers.art_a import ArtA
                 from v2.layers.common import unproject
                 rr, cc = np.nonzero(crown)

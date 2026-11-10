@@ -5,8 +5,15 @@
     pod_spec(job)    the RunPod pod the job runs on: GPU, image, disk, and a start command whose first act is a
                      watchdog (pod/watchdog.sh) that TERMINATES the pod at the job's time cap whatever happens.
     run(job)         the whole life of one job: authorise, create the pod (or take over an open session's pod),
-                     copy the job's bundle to it, start it, copy its results back while it runs, record the measured
+                     check a new pod in its first minute (pod/preflight.sh: the GPU, the image's torch, the disk,
+                     Hugging Face) and terminate it at once if that fails, copy the job's bundle to it, start it, copy its results back while it runs, record the measured
                      spend in the ledger, terminate the pod. Without go=True it only prints the pod it would start.
+
+A job that fails before it has made anything (a setup fault, a script that does not start) is not ended at once:
+its pod is held for HOLD_S seconds, its own deadline pulled in to that, so the fault can be fixed and the same job
+started again in place with `run <job> --go --on <session>`, on the same quote and within its own time cap (two
+quotes were used up on 9 and 10 Nov 2026 by setup faults that a restart in place would have cured). Unless it is
+started again the pod terminates itself when the hold ends, and `end` records the spend.
 
 Sessions. A pod can serve several jobs one after the other (a "session"), so the 40 GB model is downloaded once:
 `run(job, keep=True)` leaves the pod up after the job; `run(next, on=<session>)` first closes the job before it
@@ -41,9 +48,11 @@ FOREIGN_PODS = {"luxembourgish-asr-pilot"}
 IMAGE = "runpod/pytorch:1.0.3-cu1281-torch291-ubuntu2404"          # v1's (pipeline/gpu_train/launch.sh)
 GPU_IDS = {"H100 SXM": "NVIDIA H100 80GB HBM3", "H100 PCIe": "NVIDIA H100 PCIe", "A100 SXM": "NVIDIA A100-SXM4-80GB",
            "H200 SXM": "NVIDIA H200", "L40S": "NVIDIA L40S", "H100 NVL": "NVIDIA H100 NVL"}
-# When the quoted GPU has no free machine, the same chip in RunPod's other H100 listings is taken, and only if its
-# price is not above the quoted one (the time caps stay, so no quote's worst case can be passed).
-SAME_CHIP = {"H100 SXM": ("H100 SXM", "H100 NVL", "H100 PCIe")}
+# The same chip in RunPod's other listing may be taken in place of the quoted one, the cheaper first, and only if its
+# price is not above the quoted one (owner, 10 Nov 2026: "a cheaper same-chip listing (H100 NVL, or SXM) at or below
+# the quoted hourly price is fine"). The time caps stay, so no quote's worst case can be passed.
+SAME_CHIP = {"H100 SXM": ("H100 SXM", "H100 NVL")}
+HOLD_S = 420                              # how long a pod is held for a restart after a job failed with nothing made
 DISK_GB = 150
 DISK_USD_GB_H = 0.10 / 730                # RunPod: $0.10 per GB a month for a running pod's disk
 POD = Path(__file__).resolve().parent / "pod"
@@ -72,6 +81,18 @@ def record_quotes(ledger: Ledger | None = None) -> list:
         if quote_of(j, L) is None:
             out.append(L.quote(GOAL, j.provider, j.ledger_job(), j.worst_usd, j.ledger_note()))
     return out
+
+
+def requote(job: Job, ledger: Ledger | None = None):
+    """A new quote for a job whose last quote is used up (spent, or released by the owner): the job as it is in
+    jobs.py now. Refused while the last quote can still run. Approving it is the owner's."""
+    L = ledger or Ledger()
+    if job.cancelled:
+        raise LedgerRefusal(f"{job.id}: {job.cancelled}")
+    q = quote_of(job, L)
+    if q is not None and q not in L.released() and not any(e["type"] == "spend" and e["quote"] == q for e in L.events):
+        raise LedgerRefusal(f"{job.id}: its quote {q} is not used yet")
+    return L.quote(GOAL, job.provider, job.ledger_job(), job.worst_usd, job.ledger_note())
 
 
 def spent(job: Job, ledger: Ledger | None = None) -> bool:
@@ -112,6 +133,8 @@ def live_price(job: Job) -> float:
 
 def authorise(job: Job, ledger: Ledger | None = None, price_now: float | None = None):
     L = ledger or Ledger()
+    if job.cancelled:
+        raise LedgerRefusal(f"{job.id}: {job.cancelled}")
     qid = quote_of(job, L)
     if qid is None:
         raise LedgerRefusal(f"{job.id}: no quote recorded (python -m v2.bakeoff quote --record)")
@@ -241,8 +264,8 @@ class Session:
         cur = self.d.get("job")
         if not cur:
             return None
-        # the pod's own watchdog terminates it at the deadline: no second after that is billed
-        now = min(now or time.time(), cur["deadline"] + 20)
+        # the pod's own watchdog terminates it at the deadline (or at the end of a hold): no second after that is billed
+        now = min(now or time.time(), min(cur["deadline"], cur.get("hold_until", cur["deadline"])) + 20)
         secs = now - cur["start"]
         usd = round(secs / 3600 * self.rate, 4)
         job = BY_ID[cur["id"]]
@@ -263,6 +286,10 @@ class Session:
         terminate(self.d["pod_id"])
         self.close_job(ledger or Ledger(), note=note)
         self.d["closed"] = time.time()
+        try:                                     # RunPod's own figure after this pod, for the reconciliation
+            self.d["balance_after"] = balance_now()
+        except Exception:
+            pass
         self.save()
         for f in (self.ssh_cfg(), state_dir() / f"{self.name}.known_hosts"):
             f.unlink(missing_ok=True)
@@ -279,7 +306,7 @@ def _create(job: Job, name: str, wait_min: float = 0) -> Session:
     balance = balance_now()                      # RunPod's own figure before this pod, for the reconciliation
     while pod is None:
         prices = {g["id"]: g["communityPrice"] for g in _gql("query { gpuTypes { id communityPrice } }")["gpuTypes"]}
-        for gpu in SAME_CHIP.get(job.gpu, (job.gpu,)):
+        for gpu in sorted(SAME_CHIP.get(job.gpu, (job.gpu,)), key=lambda g: float(prices.get(GPU_IDS[g]) or 1e9)):
             pr = prices.get(GPU_IDS[gpu])
             if pr is None or float(pr) > job.price_h + 1e-9:
                 continue
@@ -348,6 +375,19 @@ def _wait_ssh(s: Session, minutes=12):
     raise RuntimeError(f"no ssh after {minutes} min")
 
 
+def preflight(s: Session, job: Job, kind: str) -> tuple:
+    """A new pod's first minute (pod/preflight.sh): (ok, what it printed). Nothing is installed or downloaded
+    before this passes, so a host that cannot run the job costs its start-up only."""
+    from v2.bakeoff import bundle as B
+    try:
+        s.ssh(f"mkdir -p /workspace/job/{job.id}")
+        s.rsync(str(POD) + "/", f"pod:/workspace/job/{job.id}/pod/")
+        out = s.ssh(f"bash /workspace/job/{job.id}/pod/preflight.sh {B.MODEL[kind]} 2>&1", timeout=120, check=False)
+    except Exception as ex:
+        out = f"PREFLIGHT FAILED: {type(ex).__name__}: {str(ex)[:200]}"
+    return "PREFLIGHT OK" in out, out.strip()
+
+
 def _alive(s: Session) -> bool:
     try:
         return s.open and _pod(s.d["pod_id"]) is not None and "ok" in s.ssh("echo ok", timeout=40)
@@ -368,11 +408,15 @@ def run(job_id: str, go: bool = False, keep: bool = False, on: str | None = None
     name = session or on or job.id.lower()
     s = Session(on) if on else Session(name)
     resumed = False
+    fresh = False
     if s.open and (s.d.get("job") or {}).get("id") == job.id:
         resumed = True                                       # the same job again within its own time (a retry)
         if not _alive(s):
             s.end(L, note="pod gone before the job finished")
             raise LedgerRefusal(f"{job.id}: its pod is gone and its spend is recorded: a rerun needs a new quote")
+        if s.d["job"].pop("hold_until", None):               # a held pod: back to the job's own deadline
+            s.save()
+            s.ssh(f"echo {int(s.d['job']['deadline'])} > /workspace/DEADLINE")
     elif on and s.open and _alive(s):
         s.close_job(L)                                       # the job before: its time ends here
         try:
@@ -389,6 +433,7 @@ def run(job_id: str, go: bool = False, keep: bool = False, on: str | None = None
             s.end(L, note="pod gone between jobs")
         authorise(job, L)
         s = _create(job, name, wait_min)
+        fresh = True
         dl = s.d["job"]["start"] + cap_seconds(job, s.d["cost_h"])
         s.d["job"]["deadline"] = dl
         s.save()
@@ -396,10 +441,18 @@ def run(job_id: str, go: bool = False, keep: bool = False, on: str | None = None
     deadline = s.d["job"]["deadline"]
     ok = False
     try:
+        kind = setup or B.SETUP[job.id]
+        if fresh:
+            good, out = preflight(s, job, kind)
+            print(out, flush=True)
+            if not good:
+                secs = time.time() - s.d["job"]["start"]
+                s.end(L, note="preflight failed: " + out.splitlines()[-1][:160] if out else "preflight failed")
+                return {"job": job.id, "ok": False, "rc": None, "pod": s.d["pod_id"], "session": s.name,
+                        "note": "preflight failed; the pod was terminated before any setup", "minutes": round(secs / 60, 1)}
         bdir = B.build(job.id)
         s.ssh(f"mkdir -p /workspace/job/{job.id} /workspace/lora /workspace/logs /workspace/state /workspace/out/{job.id}")
         s.rsync(str(POD) + "/", f"pod:/workspace/job/{job.id}/pod/")
-        kind = setup or B.SETUP[job.id]
         s.ssh(f"cd /workspace && (setsid nohup bash job/{job.id}/pod/setup.sh {kind} >> logs/setup.log 2>&1 < /dev/null &) ; true")
         for src, dst, extra in B.uploads(job.id, bdir):
             if not s.rsync(src, f"pod:{dst}", extra=extra):
@@ -435,8 +488,19 @@ def run(job_id: str, go: bool = False, keep: bool = False, on: str | None = None
         note = "finished" if ok else ("failed rc=%s" % rc if rc is not None else "stopped at its time cap")
         res = {"job": job.id, "ok": ok, "rc": rc, "pod": s.d["pod_id"], "session": s.name, "note": note,
                "minutes": round((time.time() - s.d["job"]["start"]) / 60, 1), "out": str(local)}
-        if keep and (ok or (rc is not None and time.time() < deadline - 120)):
-            res["kept"] = True                               # the pod stays for the next job (or a retry of this one)
+        if keep and ok:
+            res["kept"] = True                               # the pod stays for the next job
+            print(json.dumps(res), flush=True)
+            return res
+        made = [p for p in local.iterdir() if p.is_file() and p.suffix in (".png", ".jpg", ".safetensors")]
+        if rc not in (None, 0) and not made and time.time() < deadline - HOLD_S - 60:
+            hold = time.time() + HOLD_S                      # nothing made: held for a restart in place (module doc)
+            s.d["job"]["hold_until"] = hold
+            s.save()
+            s.ssh(f"echo {int(hold)} > /workspace/DEADLINE")
+            res.update(kept=True, held_s=HOLD_S, retry=f"python -m v2.bakeoff run {job.id} --go --on {s.name}",
+                       note=note + f"; nothing was made: the pod is held {HOLD_S // 60} min for a restart in place "
+                                   f"(then it terminates itself); or end it now: python -m v2.bakeoff end {s.name}")
             print(json.dumps(res), flush=True)
             return res
         s.end(L, note=note)

@@ -24,7 +24,9 @@ make_venv() {   # make_venv <dir>
     rm -rf "$1"
   fi
   python3 -m venv --system-site-packages "$1" && cuda_ok "$1/bin/python" || return 1
-  # the image's torch comes without torchvision (the Qwen processor needs it): the release that matches it
+  # the image's torch comes without numpy and without torchvision (the Qwen processor needs it): numpy first
+  # (torchvision imports it: the second B1 pod, 10 Nov 2026, failed here), then the torchvision that matches
+  "$1/bin/pip" install -q --no-cache-dir numpy pillow || return 1
   "$1/bin/python" -c "import torchvision" 2>/dev/null && return 0
   TV=$("$1/bin/python" -c "import torch;v=torch.__version__.split('+')[0].split('.');print(f'0.{int(v[1])+15}.{v[2]}')")
   CU=$("$1/bin/python" -c "import torch;print('cu'+torch.version.cuda.replace('.',''))")

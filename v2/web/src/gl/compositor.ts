@@ -12,6 +12,7 @@
 
 import type { LightConfig, ReleaseIndex } from "../data.ts";
 import { fetchBin, fetchImage } from "../data.ts";
+import { grade, litShare, nightFactor } from "./grade.ts";
 import { FULL_VS, GROUND_FS, LAMP_FS, LAMP_VS, LAYER_FS, LIGHT_FS, LOOK_FS, TILE_VS, VEH_FS, VEH_VS, WIN_FS, WIN_VS } from "./shaders.ts";
 
 export const LAYER_ID: Record<string, number> = { ground: 1, relief: 2, water: 3, transport: 4, buildings: 5, structures: 6, trees: 7 };
@@ -462,6 +463,14 @@ export class Compositor {
       const g = grade(cfg, st.el);
       p.f("uSunTint", ...g.sun);
       p.f("uAmbTint", ...g.amb);
+      p.f("uMoon", ...g.moonDir, g.moon);
+      {                                        // the fill comes from the sky opposite the sun
+        const h = Math.hypot(st.sun[0], st.sun[1]) || 1, fe = (cfg.grade.golden_fill_el_deg * Math.PI) / 180;
+        p.f("uFill", (-st.sun[0] / h) * Math.cos(fe), (-st.sun[1] / h) * Math.cos(fe), Math.sin(fe), g.fill);
+        p.f("uFillTint", ...(cfg.grade.golden_fill_tint as [number, number, number]));
+      }
+      p.f("uMoonTint", ...(cfg.grade.moon_tint as [number, number, number]), cfg.grade.moon_shadow);
+      p.f("uSoft", g.soft, cfg.grade.shadow_soft_m[0], cfg.grade.shadow_soft_m[1], g.desat);
       const sht = pal.light.shadow_tint.rgb.map((v) => v / 255);
       const shm = Math.max(...sht);
       p.f("uShadowTint", sht[0] / shm, sht[1] / shm, sht[2] / shm);
@@ -499,13 +508,17 @@ export class Compositor {
         const share = litShare(cfg, st.hour);
         p.f("uLit", share.homes, share.shops, 7.0, st.hour);
         p.f("uWarm", warm[0], warm[1], warm[2]);
-        p.f("uNight", night);
+        p.f("uNight", night * cfg.night.window_gain);
+        p.f("uHalo", cfg.night.window_halo);
         const a = this.bindQuad(p);
         void a;
         const aA = gl.getAttribLocation(p.p, "aA"), aB = gl.getAttribLocation(p.p, "aB");
         gl.bindBuffer(gl.ARRAY_BUFFER, this.winBuf);
         gl.enableVertexAttribArray(aA); gl.vertexAttribPointer(aA, 4, gl.FLOAT, false, 32, 0); gl.vertexAttribDivisor(aA, 1);
         gl.enableVertexAttribArray(aB); gl.vertexAttribPointer(aB, 4, gl.FLOAT, false, 32, 16); gl.vertexAttribDivisor(aB, 1);
+        p.f("uGrow", cfg.night.window_halo_grow);          // the halo round each lit window, then the window
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.winCount);
+        p.f("uGrow", 0);
         gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.winCount);
         for (const x of [aA, aB]) { gl.vertexAttribDivisor(x, 0); gl.disableVertexAttribArray(x); }
       }
@@ -516,7 +529,7 @@ export class Compositor {
         p.f("uEps", cfg.night.depth_eps_m);
         p.f("uRadius", Math.max(4, cfg.night.lamp_radius_px * Math.min(1, view.scale * 2)));
         p.f("uWarm", warm[0], warm[1] * 0.92, warm[2] * 0.75);
-        p.f("uNight", night);
+        p.f("uNight", night * cfg.night.lamp_gain);
         this.bindQuad(p);
         const aP = gl.getAttribLocation(p.p, "aP");
         gl.bindBuffer(gl.ARRAY_BUFFER, this.lampBuf);
@@ -556,34 +569,4 @@ export class Compositor {
   zTop = 1e9;
 }
 
-export function grade(cfg: LightConfig, el: number): { sun: [number, number, number]; amb: [number, number, number] } {
-  const G = cfg.grade;
-  const mix = (a: number[], b: number[], t: number) => a.map((v, i) => v + (b[i] - v) * Math.max(0, Math.min(1, t))) as [number, number, number];
-  if (el >= G.golden_deg[1]) return { sun: G.day_tint as [number, number, number], amb: [1, 1, 1] };
-  if (el >= G.golden_deg[0]) {
-    const t = (el - G.golden_deg[0]) / (G.golden_deg[1] - G.golden_deg[0]);
-    return { sun: mix(G.golden_tint, G.day_tint, t), amb: mix([1, 0.9, 0.82], [1, 1, 1], t) };
-  }
-  if (el >= G.night_deg) {
-    const t = (el - G.night_deg) / (G.blue_deg[1] - G.night_deg);
-    const night = G.night_tint.map((v) => v * G.night_level);
-    return { sun: [0, 0, 0], amb: mix(night, G.blue_tint, t) };
-  }
-  return { sun: [0, 0, 0], amb: G.night_tint.map((v) => v * G.night_level) as [number, number, number] };
-}
-
-/** How much the night lights show: none with the sun up (layer-10 rule 3), full from civil twilight's end. */
-export function nightFactor(cfg: LightConfig, el: number): number {
-  if (el > 0) return 0;
-  return Math.max(0, Math.min(1, -el / -cfg.grade.night_deg));
-}
-
-/** Share of windows lit by the hour: homes in the evening, few after midnight; shops until 20:00. */
-export function litShare(cfg: LightConfig, hour: number) {
-  const N = cfg.night;
-  const evening = hour >= 16 || hour < 0.5;
-  const late = hour >= 0.5 && hour < 6;
-  const homes = late ? N.window_lit_share_late : evening ? N.window_lit_share_evening : 0.3;
-  const shops = hour >= 7 && hour < 20 ? 0.9 : 0.08;
-  return { homes, shops };
-}
+export { grade, litShare, nightFactor };

@@ -1,5 +1,6 @@
 """Bake-off B and C up to the point of spending: the quotes fit the cap, pilots exist, and nothing runs without the
 owner's approval in the ledger (no network: the live price is passed in)."""
+import dataclasses
 import json
 import shutil
 
@@ -46,8 +47,9 @@ def test_nothing_runs_without_the_owners_approval(L):
     runner.record_quotes(L)
     with pytest.raises(LedgerRefusal, match="not approved"):
         runner.authorise(J.BY_ID["B1"], L, price_now=J.BY_ID["B1"].price_h)
+    live_c1 = dataclasses.replace(J.BY_ID["C1"], cancelled="")       # the order rule itself, were C1 not stopped
     with pytest.raises(LedgerRefusal, match="needs C1p"):
-        runner.authorise(J.BY_ID["C1"], L, price_now=1.0)
+        runner.authorise(live_c1, L, price_now=1.0)
 
 
 def test_a_price_rise_needs_a_new_quote(L):
@@ -85,10 +87,111 @@ def test_a_failed_check_stops_the_jobs_after_it(L, monkeypatch, tmp_path):
         L.approve(runner.quote_of(j, L), by="owner")
     L.record_spend(runner.quote_of(J.BY_ID["C1p"], L), 0.5)
     monkeypatch.setattr(runner, "stop_file", lambda job_id: tmp_path / f"{job_id}.json")
-    assert runner.authorise(J.BY_ID["C1"], L, price_now=1.0)["id"] == runner.quote_of(J.BY_ID["C1"], L)
+    live_c1 = dataclasses.replace(J.BY_ID["C1"], cancelled="")
+    assert runner.authorise(live_c1, L, price_now=1.0)["id"] == runner.quote_of(live_c1, L)
     (tmp_path / "C1p.json").write_text("{}")
     with pytest.raises(LedgerRefusal, match="did not pass its checks"):
-        runner.authorise(J.BY_ID["C1"], L, price_now=1.0)
+        runner.authorise(live_c1, L, price_now=1.0)
+
+
+def test_the_stopped_c_jobs_refuse_and_c4_runs_alone_with_v1s_model(L, monkeypatch, tmp_path):
+    """Owner, 10 Nov 2026: C1, C2p, C2 and C3 stay stopped (whatever the ledger says); C4 no longer waits for C2."""
+    runner.record_quotes(L)
+    for j in J.JOBS:
+        L.approve(runner.quote_of(j, L), by="owner")
+    monkeypatch.setattr(runner, "stop_file", lambda job_id: tmp_path / f"{job_id}.json")
+    for jid in ("C1", "C2p", "C2", "C3"):
+        with pytest.raises(LedgerRefusal, match="stopped by the owner"):
+            runner.authorise(J.BY_ID[jid], L, price_now=1.0)
+        with pytest.raises(LedgerRefusal, match="stopped by the owner"):
+            runner.requote(J.BY_ID[jid], L)
+    c4 = J.BY_ID["C4"]
+    assert c4.after == () and not c4.cancelled and "luxembourg-ink-v2" in c4.model
+    assert runner.authorise(c4, L, price_now=c4.price_h)["id"] == runner.quote_of(c4, L)
+    (tmp_path / "C1p.json").write_text("{}")                 # the pilot's stop does not reach C4
+    assert runner.authorise(c4, L, price_now=c4.price_h)["worst_usd"] == c4.worst_usd <= 0.94
+    with pytest.raises(LedgerRefusal, match="re-quote"):     # the other refusals stay
+        runner.authorise(c4, L, price_now=c4.price_h + 0.01)
+    # the stopped jobs' approvals are released: nothing is committed for them, and the ledger refuses them too
+    for jid in ("C1", "C2p", "C2", "C3"):
+        L.release(runner.quote_of(J.BY_ID[jid], L), by="owner")
+    left = {"B1", "B2", "C1p", "C4"}
+    assert L.committed(J.GOAL) == round(sum(J.BY_ID[j].worst_usd for j in left), 4)
+    with pytest.raises(LedgerRefusal, match="released"):
+        runner.authorise(dataclasses.replace(J.BY_ID["C3"], cancelled="", after=()), L, price_now=1.0)
+
+
+def test_c4_takes_v1s_style_model_and_its_trigger(monkeypatch, tmp_path):
+    from v2.bakeoff import bundle as B
+    from v2.bakeoff import prompts as P
+    monkeypatch.setattr(B, "base", lambda: tmp_path)
+    monkeypatch.setattr(B, "v1_work", lambda: tmp_path / "v1")
+    ups = B.uploads("C4", tmp_path / "bundle")
+    assert any(src.endswith(B.V1_LORA) for src, _, _ in ups) and not any(B.NEW_LORA in src for src, _, _ in ups)
+    assert "<isometric luxembourg ink>" in P.C_FACADE_PROMPT_V1 and "unshadowed" not in P.C_FACADE_PROMPT_V1
+    assert "front-on" in P.C_FACADE_PROMPT_V1 and "no shadows" in P.C_FACADE_PROMPT_V1
+    run_sh = (runner.POD / "run.sh").read_text()
+    assert 'C4)  if [ -f "$NEW" ]; then paint "$NEW" 1867,1868; else paint "$V1" 1867,1868; fi' in run_sh
+
+
+def test_a_used_up_quote_is_quoted_again_within_the_first_worst_case(L):
+    """B1's rerun (owner, 10 Nov 2026): a new quote, and with the first run's spend it stays within the first cap."""
+    b1 = J.BY_ID["B1"]
+    first = L.quote(J.GOAL, "runpod", b1.ledger_job(), 2.42)
+    with pytest.raises(LedgerRefusal, match="not used yet"):
+        runner.requote(b1, L)
+    L.approve(first["id"], by="owner")
+    L.record_spend(first["id"], 0.2414)
+    with pytest.raises(LedgerRefusal, match="already spent"):
+        runner.authorise(b1, L, price_now=b1.price_h)
+    q = runner.requote(b1, L)
+    assert q["id"] != first["id"] and runner.quote_of(b1, L) == q["id"]
+    assert q["worst_usd"] == b1.worst_usd and "rerun" in q["note"]
+    # the owner's limit for the rerun (10 Nov 2026) was $2.18; what the failed second run spent comes off it
+    assert q["worst_usd"] + 0.0545 <= 2.15 <= 2.18 and J.BY_ID["C4"].worst_usd + 0.0645 <= 0.94
+    with pytest.raises(LedgerRefusal, match="not approved"):
+        runner.authorise(b1, L, price_now=b1.price_h)
+    L.approve(q["id"], by="owner")
+    assert runner.authorise(b1, L, price_now=b1.price_h)["id"] == q["id"]
+
+
+class FakeSession:
+    def __init__(self, answer):
+        self.answer, self.cmds, self.ended, self.name = answer, [], None, "fake"
+        self.d = {"pod_id": "pod0", "cost_h": 2.59, "job": {"id": "B1", "start": 0.0, "deadline": 1e12}}
+        self.open = True
+
+    def ssh(self, cmd, timeout=120, check=True):
+        self.cmds.append(cmd)
+        return self.answer if "preflight.sh" in cmd else ""
+
+    def rsync(self, src, dst, timeout=1800, extra=()):
+        self.cmds.append(f"rsync {dst}")
+        return True
+
+    def save(self):
+        pass
+
+    def end(self, ledger=None, note=""):
+        self.ended, self.open = note, False
+
+
+def test_a_new_pod_that_fails_its_preflight_is_ended_before_any_setup(monkeypatch, L):
+    from v2.bakeoff import bundle as B
+    pf = (runner.POD / "preflight.sh").read_text()
+    assert "torch.cuda.is_available()" in pf and "nvidia-smi" in pf and "PREFLIGHT OK" in pf and "pip install" not in pf
+    s = FakeSession("gpu: 550.1, H100\nPREFLIGHT FAILED: the image's torch does not see the GPU")
+    monkeypatch.setattr(runner, "Ledger", lambda: L)
+    monkeypatch.setattr(runner, "authorise", lambda job, ledger=None, price_now=None: None)
+    monkeypatch.setattr(runner, "_create", lambda job, name, wait_min=0: s)
+    monkeypatch.setattr(runner, "Session", lambda name: type("Closed", (), {"open": False, "d": {}})())
+    monkeypatch.setattr(B, "build", lambda job: (_ for _ in ()).throw(AssertionError("the bundle was built")))
+    res = runner.run("B1", go=True)
+    assert res["ok"] is False and "preflight" in res["note"]
+    assert s.ended.startswith("preflight failed: PREFLIGHT FAILED") and not s.open
+    assert not any("setup.sh" in c or "run.sh" in c for c in s.cmds)
+    # the check is the first thing the pod is asked after its deadline is written
+    assert "preflight.sh Qwen/Qwen-Image" in next(c for c in s.cmds if "preflight" in c)
 
 
 def test_material_prompts_forbid_light_and_follow_the_palette():
@@ -173,3 +276,39 @@ def test_the_c4_drawing_frame_is_seen_from_outside():
     assert x1 > x0 and not f["flip"] and f["s"] <= 64
     f2 = wall_frame({**w, "normal": [0, 1]})                            # the same wall seen from the north: mirrored
     assert f2["flip"]
+
+
+def test_a_job_that_fails_with_nothing_made_holds_its_pod_for_a_restart_in_place(monkeypatch, L, tmp_path):
+    """Two quotes were used up by setup faults: the pod is now held a few minutes, its deadline pulled in, and the
+    same job starts again on it without a new authorisation."""
+    import time as _t
+    from v2.bakeoff import bundle as B
+    s = FakeSession("PREFLIGHT OK")
+    s.d["job"]["deadline"] = _t.time() + 2800
+    s.d["job"]["start"] = _t.time()
+    answers = iter(["1\nSETUP FAILED (no torch that sees the GPU)"])
+    real_ssh = s.ssh
+    s.ssh = lambda cmd, timeout=120, check=True: next(answers) if ".rc 2>/dev/null" in cmd else real_ssh(cmd, timeout, check)
+    monkeypatch.setattr(runner, "Ledger", lambda: L)
+    monkeypatch.setattr(runner, "authorise", lambda job, ledger=None, price_now=None: None)
+    monkeypatch.setattr(runner, "_create", lambda job, name, wait_min=0: s)
+    monkeypatch.setattr(runner, "Session", lambda name: type("Closed", (), {"open": False, "d": {}})())
+    monkeypatch.setattr(runner.time, "sleep", lambda x: None)
+    monkeypatch.setattr(B, "build", lambda job: tmp_path)
+    monkeypatch.setattr(B, "uploads", lambda job, bdir: [])
+    monkeypatch.setattr(B, "local_out", lambda job: tmp_path / "out")
+    res = runner.run("B1", go=True)
+    assert res["ok"] is False and res["kept"] and res["retry"] == "python -m v2.bakeoff run B1 --go --on fake"
+    assert s.ended is None and s.open                                   # not terminated: held
+    hold = s.d["job"]["hold_until"]
+    assert 0 < hold - _t.time() <= runner.HOLD_S and hold < s.d["job"]["deadline"]
+    assert any(c.startswith(f"echo {int(hold)} > /workspace/DEADLINE") for c in s.cmds)   # the watchdog's new deadline
+    # started again on the held pod: no authorisation, the job's own deadline back
+    monkeypatch.setattr(runner, "authorise", lambda *a, **k: (_ for _ in ()).throw(AssertionError("authorised again")))
+    monkeypatch.setattr(runner, "Session", lambda name: s)
+    monkeypatch.setattr(runner, "_alive", lambda ses: True)
+    answers = iter(["0\nMATERIALS FINISHED"])
+    (tmp_path / "out" / "roof_slate_0.png").write_bytes(b"x")
+    res = runner.run("B1", go=True, on="fake")
+    assert res["ok"] and "hold_until" not in s.d["job"] and s.ended == "finished"
+    assert any(c.startswith(f"echo {int(s.d['job']['deadline'])} > /workspace/DEADLINE") for c in s.cmds)

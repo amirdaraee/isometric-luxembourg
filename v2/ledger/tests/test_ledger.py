@@ -68,3 +68,39 @@ def test_spend_without_approval_is_invalid(L):
     L.path.write_text(L.path.read_text() + json.dumps({"type": "spend", "quote": q["id"], "goal": "phase2_bakeoff",
                                                        "provider": "runpod", "job": "x", "usd": 1.0}) + "\n")
     assert any("approved" in e for e in Ledger(L.folder).validate())
+
+
+def test_a_released_quote_is_no_longer_committed_and_cannot_run(L):
+    a = L.quote("phase3_lock_look", "openai", "night views", 5.0); L.approve(a["id"], by="owner")
+    b = L.quote("phase3_lock_look", "modal", "portraits", 4.0); L.approve(b["id"], by="owner")
+    assert L.committed("phase3_lock_look") == 9.0
+    with pytest.raises(LedgerRefusal):
+        L.authorise(b["id"])                              # 5 committed + 4 > 8
+    with pytest.raises(LedgerRefusal, match="owner"):
+        L.release(a["id"], by="agent")
+    L.release(a["id"], by="owner", note="not needed")
+    assert L.committed("phase3_lock_look") == 4.0 and L.status()["goals"]["phase3_lock_look"]["left_usd"] == 4.0
+    assert L.authorise(b["id"])["id"] == b["id"]          # the room is free again
+    with pytest.raises(LedgerRefusal, match="released"):
+        L.authorise(a["id"])
+    with pytest.raises(LedgerRefusal, match="released"):
+        L.record_spend(a["id"], 1.0)
+    with pytest.raises(LedgerRefusal, match="already released"):
+        L.release(a["id"], by="owner")
+    assert Ledger(L.folder).validate() == []
+
+
+def test_only_an_approved_unspent_quote_can_be_released(L):
+    q = L.quote("phase2_bakeoff", "runpod", "x", 1.0)
+    with pytest.raises(LedgerRefusal, match="never approved"):
+        L.release(q["id"], by="owner")
+    L.approve(q["id"], by="owner")
+    L.record_spend(q["id"], 0.4)
+    with pytest.raises(LedgerRefusal, match="already spent"):
+        L.release(q["id"], by="owner")
+    with pytest.raises(LedgerRefusal, match="no quote"):
+        L.release("q9999", by="owner")
+    # a release written by hand for a spent quote, or by someone else, is a file problem
+    L.path.write_text(L.path.read_text() + json.dumps({"type": "release", "quote": q["id"], "by": "agent"}) + "\n")
+    errs = Ledger(L.folder).validate()
+    assert any("owner's only" in e for e in errs) and any("already spent" in e for e in errs)

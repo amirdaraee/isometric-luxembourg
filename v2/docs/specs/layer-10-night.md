@@ -15,9 +15,20 @@ height and colour; the viewer draws them with glow.
 2. Lamps at their OSM position and the terrain/deck height + 5 m; glow is depth-tested (a lamp behind a building
    is hidden).
 3. Nothing is lit by day.
+4. The night's own light (owner, 10 Nov 2026; `light.json` "grade" and "night"), all in the viewer's light pass:
+   - the sky light is a deep blue (`night_tint` × `night_level`: about 0.20, 0.25, 0.43 of an evenly lit colour), so
+     nothing is black and every material keeps its place in the picture;
+   - a moon gives the shapes: one soft light from a fixed place in the sky (`moon_az_el_deg`: south-south-west, 40°
+     up; a drawn moon, not the real one's position), `moon_direct` 0.40, with cast shadows from the same height map
+     as the sun's that take away 78% of it. It comes in as the sun goes from 1° to 6° below the horizon;
+   - colours lose 22% of their saturation (`night_desaturate`), as they do by moonlight;
+   - lit windows glow: each has a warm halo on its wall (`window_halo`, the rectangle grown by 1.4 times its size,
+     fading out); lamps are larger and stronger (`lamp_radius_px` 44, `lamp_gain` 1.5).
 
 **Checks.**
 - L10.1 (gate) Every lit window lies on a window rectangle of the facade layout (straight rows by construction).
 - L10.2 (gate) No light drawn at sun elevation > 0°.
 - L10.3 (gate) Lamps hidden behind nearer surfaces per depth (0 lamp glow pixels over a nearer surface).
 - L10.4 (owner) Code night vs AI-painted night of the same views (G3).
+- L10.5 (unit test, `v2/web/src/grade.test.ts`) The night's sky light is blue (blue over 1.8 times red) and between
+  0.2 and 0.45 of day's in luminance; the moon is up.

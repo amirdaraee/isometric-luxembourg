@@ -49,7 +49,7 @@ function serveRelease(): Plugin {
           res.end(JSON.stringify(idx));
           return;
         }
-        const m = url.match(/^\/([a-z]+)(\/.*)$/);
+        const m = url.match(/^\/([a-z0-9]+)(\/.*)$/);
         const rel = m ? idx[m[1]]?.release : null;
         if (!m || !rel) { res.statusCode = 404; res.end(); return; }
         sendFile(resolve(rel), m[2], res, next);
