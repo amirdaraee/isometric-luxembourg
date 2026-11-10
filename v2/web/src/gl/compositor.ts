@@ -10,13 +10,17 @@
 //  4. Look (layer 14): grade and ink from the geometry, to the canvas.
 //  5. Tunnel view (?xray, tunnel-view.md), only while it is on: the look pass fades the city over a neutral ground,
 //     then the tunnels' tubes are drawn unlit with their own depth, and the vehicles inside them against that depth.
+//  Landmark cutaways (?cutaway, landmark-cutaways.md), only while one is on: layer 5 is drawn without the pixels of
+//     the buildings the cutaway replaces (by id), then the cutaway's own tiles as layer 5, at their own depth; so the
+//     light, the night, the look, the vehicles and the tunnel view treat the cut building as any building.
 // Any layer can be switched off (?off=...): it is then neither drawn nor casting shadows.
 
 import type { LightConfig, ReleaseIndex } from "../data.ts";
 import { fetchBin, fetchImage } from "../data.ts";
 import { grade, litShare, nightFactor } from "./grade.ts";
-import { FULL_VS, GROUND_FS, LAMP_FS, LAMP_VS, LAYER_FS, LIGHT_FS, LOOK_FADE_FS, LOOK_FS, TILE_VS, TUN_FS, TUN_VS, VEH_FS, VEH_VS, WIN_FS,
-  WIN_VS, XVEH_FS } from "./shaders.ts";
+import { CUT_LAYER_FS, FULL_VS, GROUND_FS, LAMP_FS, LAMP_VS, LAYER_FS, LIGHT_FS, LOOK_FADE_FS, LOOK_FS, TILE_VS, TUN_FS, TUN_VS, VEH_FS,
+  VEH_VS, WIN_CUT_VS, WIN_FS, WIN_VS, XVEH_FS } from "./shaders.ts";
+import { sliceHalfPlanes, tileMeets, type CutLandmark } from "../cutaways.ts";
 import { tubeMesh, VERTEX_FLOATS, type TunnelsData } from "../tunnels.ts";
 
 export const LAYER_ID: Record<string, number> = { ground: 1, relief: 2, water: 3, transport: 4, buildings: 5, structures: 6, trees: 7 };
@@ -27,6 +31,7 @@ export interface LightState {
   sun: [number, number, number]; el: number; az: number;
   season: string; snow: boolean; hour: number; debug: number; off: Set<string>;
   xray?: boolean;          // tunnel view on
+  cut?: string[];          // the landmarks whose cutaway is on
 }
 /** deep: per vehicle, 1 when it is in a tunnel past its portal (tunnel view draws those in their tube). */
 export interface VehicleInstances { count: number; inst: Float32Array; size: Float32Array; deep?: Uint8Array }
@@ -35,6 +40,8 @@ const VEH_COLOURS = new Float32Array([[0.78, 0.22, 0.2], [0.2, 0.36, 0.62], [0.9
   [0.82, 0.16, 0.18], [0.86, 0.86, 0.84], [0.35, 0.55, 0.3]].flat());
 
 interface TileTex { c?: WebGLTexture; g?: WebGLTexture; k?: WebGLTexture; dmin: number; ready: boolean; failed?: boolean; used: number }
+const CUT_MAX = 8, CUT_IDS = 16;      // landmarks and replaced buildings at once (the shaders' array sizes)
+interface Cut { key: string; lm: CutLandmark }
 
 function compile(gl: WebGL2RenderingContext, vs: string, fs: string): WebGLProgram {
   const mk = (type: number, src: string) => {
@@ -91,6 +98,9 @@ export class Compositor {
   private xbuf: { fb: WebGLFramebuffer; color: WebGLTexture; depth: WebGLTexture } | null = null;
   private tun: { buf: WebGLBuffer; vertices: number; graphVertices: number; range: [number, number] } | null = null;
   private xInst = new Float32Array(4 * 4096); private xSize = new Float32Array(4 * 4096);
+  // cutaways: their programs exist once enableCutaways() has run; layer 5's id tiles are loaded only under a cutaway
+  private cutProg: { layer: Prog; win: Prog } | null = null;
+  private idTiles = new Map<string, { tex?: WebGLTexture; ready: boolean; used: number }>();
   pending = 0;
   onTile: () => void = () => {};
   stats = { tilesDrawn: 0, tilesMissing: 0, tunnelVehicles: 0 };
@@ -309,6 +319,42 @@ export class Compositor {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
+  // -------------------------------------------------------------------------------------------- cutaways
+  /** Make the cutaways ready (their two programs), so that turning one on costs no more than its tiles. */
+  enableCutaways() {
+    if (this.cutProg || !this.idx.cutaways) return;
+    const gl = this.gl;
+    this.cutProg = { layer: new Prog(gl, compile(gl, TILE_VS, CUT_LAYER_FS)), win: new Prog(gl, compile(gl, WIN_CUT_VS, WIN_FS)) };
+  }
+
+  /** The cutaways drawn in a state: those asked for that the release has, none while layer 5 is off. */
+  cutsOn(st: { off: Set<string>; cut?: string[] }): Cut[] {
+    const all = this.idx.cutaways?.landmarks;
+    if (!all || !this.cutProg || !st.cut?.length || st.off.has("buildings")) return [];
+    const out = Object.keys(all).filter((n) => st.cut!.includes(n)).map((key) => ({ key, lm: all[key] })).slice(0, CUT_MAX);
+    let ids = 0;
+    return out.filter((c) => (ids += c.lm.replaces_index.length) <= CUT_IDS);
+  }
+
+  /** Layer 5's id tile (zoom z, name): loaded on first request; undefined until ready, null if there is none. */
+  private idTile(z: number, name: string): WebGLTexture | null | undefined {
+    if (this.idx.layers.buildings?.tiles[String(z)]?.[name] === undefined) return null;
+    const key = `${z}/${name}`;
+    let t = this.idTiles.get(key);
+    if (!t) {
+      t = { ready: false, used: this.frameNo };
+      this.idTiles.set(key, t);
+      this.pending++;
+      const tt = t;
+      fetchBin(`buildings/${key}.i.bin`, 512, 4)
+        .then((d) => { if (d) tt.tex = this.texFrom(d, "rgba", false); tt.ready = true; })
+        .catch(() => { tt.ready = true; })
+        .finally(() => { this.pending--; this.onTile(); });
+    }
+    t.used = this.frameNo;
+    return t.ready ? (t.tex ?? null) : undefined;
+  }
+
   // -------------------------------------------------------------------------------------------- data
   setHeightMap(A: Uint8Array, B: Uint8Array) {
     const gl = this.gl, L = this.idx.light;
@@ -357,7 +403,8 @@ export class Compositor {
 
   /** A layer's tile: loaded on first request; undefined until ready, null if the layer has no such tile. */
   tile(layer: string, z: number, name: string): TileTex | null | undefined {
-    const li = this.idx.layers[layer];
+    const cut = layer.startsWith("cutaways/") ? this.idx.cutaways?.landmarks[layer.slice(9)] : undefined;
+    const li = cut ? { tiles: cut.tiles, files: this.idx.cutaways!.files } : this.idx.layers[layer];
     const dmin = li?.tiles[String(z)]?.[name];
     if (dmin === undefined) return null;
     const key = `${layer}/${z}/${name}`;
@@ -393,6 +440,11 @@ export class Compositor {
       for (const x of [t.c, t.g, t.k]) if (x) gl.deleteTexture(x);
       this.tiles.delete(k);
     }
+    for (const [k, t] of this.idTiles) {
+      if (!t.ready || this.frameNo - t.used <= 120) continue;
+      if (t.tex) gl.deleteTexture(t.tex);
+      this.idTiles.delete(k);
+    }
   }
 
   level(view: View): number {
@@ -410,18 +462,27 @@ export class Compositor {
     return out;
   }
 
-  useFar(z: number, off: Set<string>): boolean {
+  /** The merged far-zoom set is used while every colour layer is on and no cutaway is (it has no ids to cut by). */
+  useFar(z: number, off: Set<string>, cuts = 0): boolean {
     const f = this.idx.layers.far;
-    return !!f && z >= (f as { from_zoom?: number }).from_zoom! && !Object.keys(LAYER_ID).some((L) => off.has(L));
+    return !!f && !cuts && z >= (f as { from_zoom?: number }).from_zoom! && !Object.keys(LAYER_ID).some((L) => off.has(L));
   }
 
   /** Tiles of the view not yet loaded (for "first view drawn" timing). */
-  missing(view: View, off: Set<string>): number {
+  missing(view: View, off: Set<string>, cut?: string[]): number {
     const z = this.level(view);
+    const cuts = this.cutsOn({ off, cut });
     let n = 0;
-    for (const [tx, ty] of this.visibleTiles(view, z)) for (const L of this.useFar(z, off) ? ["far"] : Object.keys(LAYER_ID)) {
-      if (off.has(L)) continue;
-      if (this.tile(L, z, `${tx}_${ty}`) === undefined) n++;
+    for (const [tx, ty] of this.visibleTiles(view, z)) {
+      for (const L of this.useFar(z, off, cuts.length) ? ["far"] : Object.keys(LAYER_ID)) {
+        if (off.has(L)) continue;
+        if (this.tile(L, z, `${tx}_${ty}`) === undefined) n++;
+      }
+      for (const c of cuts) {
+        if (!tileMeets(c.lm.bbox_px, z, tx, ty)) continue;
+        if (this.tile(`cutaways/${c.key}`, z, `${tx}_${ty}`) === undefined) n++;
+        if (this.idTile(z, `${tx}_${ty}`) === undefined) n++;
+      }
     }
     return n;
   }
@@ -490,7 +551,8 @@ export class Compositor {
     const pal = this.idx.palette;
     const paper = pal.ink.paper.rgb.map((v) => v / 255);
     // far zoom: one merged set while every colour layer is on (tiles-hosting.md "Far zoom")
-    const far = this.useFar(z, st.off);
+    const cuts = this.cutsOn(st);
+    const far = this.useFar(z, st.off, cuts.length);
     // layers 1 + 2
     const gOn = !st.off.has("ground"), rOn = !st.off.has("relief");
     if ((gOn || rOn) && !far) {
@@ -533,24 +595,57 @@ export class Compositor {
       p.f("uDepthRangeT", this.idx.depth_cm[0], this.idx.depth_cm[1]);
       this.bindQuad(p);
       p.i("uC", 0); p.i("uG", 1); p.i("uK", 2);
+      const drawTile = (q: Prog, tx: number, ty: number, f: [TileTex, number, number, number]) => {
+        const [t, sx, sy, k] = f;
+        if (k < 1) this.stats.tilesMissing++;
+        q.f("uSub", sx, sy, k, k);
+        { const d = Math.round(Math.log2(1 / k)); q.f("uSyRef", ...this.syRef(z + d, ty >> d)); }
+        q.f("uTile", tx * size, ty * size, size);
+        q.f("uDmin", t.dmin);
+        q.f("uHasK", t.k ? 1 : 0);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, t.c ?? null);
+        gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, t.g ?? null);
+        gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, t.k ?? null);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        this.stats.tilesDrawn++;
+      };
       for (const L of far ? ["far"] : DRAW_ORDER) {
         if (st.off.has(L)) continue;
         p.f("uLayer", LAYER_ID[L] ?? 0);
+        const under: [number, number][] = [];          // layer 5's tiles that a cutaway meets
         for (const [tx, ty] of tiles) {
+          if (L === "buildings" && cuts.some((c) => tileMeets(c.lm.bbox_px, z, tx, ty))) { under.push([tx, ty]); continue; }
+          const f = this.find(L, z, tx, ty);
+          if (f) drawTile(p, tx, ty, f);
+        }
+        if (!under.length) continue;
+        // layer 5 there without the replaced buildings' pixels (while an id tile loads, the tile is drawn whole)
+        const q = this.cutProg!.layer;
+        gl.useProgram(q.p);
+        this.setView(q, view);
+        q.f("uDepthRangeT", this.idx.depth_cm[0], this.idx.depth_cm[1]);
+        this.bindQuad(q);
+        q.i("uC", 0); q.i("uG", 1); q.i("uK", 2); q.i("uI", 3);
+        q.f("uLayer", LAYER_ID.buildings);
+        const ids = new Float32Array(CUT_IDS).fill(-1);
+        ids.set(cuts.flatMap((c) => c.lm.replaces_index));
+        gl.uniform1fv(q.u("uCutIdx"), ids);
+        for (const [tx, ty] of under) {
           const f = this.find(L, z, tx, ty);
           if (!f) continue;
-          const [t, sx, sy, k] = f;
-          if (k < 1) this.stats.tilesMissing++;
-          p.f("uSub", sx, sy, k, k);
-          { const d = Math.round(Math.log2(1 / k)); p.f("uSyRef", ...this.syRef(z + d, ty >> d)); }
-          p.f("uTile", tx * size, ty * size, size);
-          p.f("uDmin", t.dmin);
-          p.f("uHasK", t.k ? 1 : 0);
-          gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, t.c ?? null);
-          gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, t.g ?? null);
-          gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, t.k ?? null);
-          gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-          this.stats.tilesDrawn++;
+          const d = Math.round(Math.log2(1 / f[3]));
+          const it = this.idTile(z + d, `${tx >> d}_${ty >> d}`);
+          q.i("uCutN", it ? cuts.reduce((a, c) => a + c.lm.replaces_index.length, 0) : 0);
+          gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, it ?? null);
+          drawTile(q, tx, ty, f);
+        }
+        // the cutaways' own tiles, as layer 5
+        gl.useProgram(p.p);
+        this.bindQuad(p);
+        for (const c of cuts) for (const [tx, ty] of under) {
+          if (!tileMeets(c.lm.bbox_px, z, tx, ty)) continue;
+          const f = this.find(`cutaways/${c.key}`, z, tx, ty);
+          if (f) drawTile(p, tx, ty, f);
         }
       }
     }
@@ -644,8 +739,23 @@ export class Compositor {
       gl.blendFunc(gl.ONE, gl.ONE);
       const warm = pal.buildings.window_lit.rgb.map((v) => v / 255);
       if (this.winBuf && !st.off.has("buildings")) {
-        const p = this.progWin;
+        const p = cuts.length ? this.cutProg!.win : this.progWin;
         gl.useProgram(p.p);
+        if (cuts.length) {
+          const o = this.idx.camera.origin_en;
+          const slice = new Float32Array(CUT_MAX * 4), half = new Float32Array(CUT_MAX * 18);
+          let n = 0;
+          for (const { lm } of cuts) for (const b of lm.replaces_index) {
+            if (n >= CUT_MAX) break;
+            slice.set([b, lm.floor_z, 0, 0], n * 4);
+            const h = sliceHalfPlanes(lm, o).slice(0, 6);
+            for (let j = 0; j < 6; j++) half.set(h[j] ?? [0, 0, -1], n * 18 + j * 3);       // 0 > -1: no bound
+            n++;
+          }
+          p.i("uCutN", n);
+          gl.uniform4fv(p.u("uCutSlice"), slice);
+          gl.uniform3fv(p.u("uCutHalf"), half);
+        }
         this.setView(p, view); this.setCam(p);
         p.f("uEps", cfg.night.depth_eps_m);
         const share = litShare(cfg, st.hour);

@@ -1,10 +1,10 @@
 # Landmark cutaways ("slice of cake")
 
-**Status:** the free part is built for three landmarks on the test area (Phase 3): the cuts as data, the slice
-geometry from the 3D model, a small layer of tiles with a **code placeholder interior**, the inputs of the later
-painting, and checks K0-K6 as far as they run without paintings (stages `layer_cutaways`, `check_cutaways`). Not
-built yet: the painted interiors (paid from the Phase 3 line, $8 cap, quoted in the ledger and approved by the owner
-before any spend), the viewer's toggle, and the Bock casemates (they wait for the gallery data of tunnel-view.md).
+**Status:** built for three landmarks on the test area, without paintings (Phase 3, $0): the cuts as data, the
+slice geometry from the 3D model, a small layer of tiles with a **code placeholder interior**, the inputs of the
+later painting, the viewer's toggle, and checks K0-K6 (stages `layer_cutaways`, `check_cutaways`,
+`check_cutaways_view`). Not built: the painted interiors (paid from the Phase 3 line, $8 cap, quoted in the ledger
+and approved by the owner before any spend); the opening's own cast shadow (see "In the viewer"); the Bock casemates.
 
 **Purpose.** Famous buildings shown cut open in place on the map, not in a modal: the visitor sees a slice taken out
 of the building, with its interior visible through the cut, at its real place and scale. First four: the Bock
@@ -110,9 +110,65 @@ and a JSON with the frame.
 | K6b | Cutaway pixels where layer 5 shows neither a replaced building nor another building in front: 0 | 0, 0, 0 |
 | K-ground (report) | Opening pixels the ground layer covers | 0, 0, 0 |
 
-**Left for the viewer step:** the toggle; K3's shadow of the opening moving with `?hour`; K5's vehicles and labels
-depth-tested against the cutaway; K6 in the browser (off: the picture equals layer 5's). **Left for the painted
-step:** K2a, K2b, K3 and K4 on the paintings and their reference photos (the same functions); K7.
+**Left for the painted step:** K2a, K2b, K3 and K4 on the paintings and their reference photos (the same
+functions); K7.
 
-**Known limits.** The inside is a hollow shell with nominal walls: no rooms, vaults or columns until it is painted.
+## In the viewer (Phase 3, $0)
+
+Code: `v2/web/src/cutaways.ts`, `src/gl/compositor.ts`, `src/gl/shaders.ts`, `src/main.ts`. Checks:
+`v2/checks/cutaway_view_checks.py` with `v2/web/scripts/cutaway_checks.mjs`; thresholds `params.json` "g3",
+keys `cutview_*`.
+
+**The toggle.** `?cutaway` turns every cutaway on, `?cutaway=cathedral,palace` those named; the panel's button
+"Cutaways" turns all of them on or off and writes the choice to the address. Off, the viewer runs the same passes
+with the same programs as before the feature.
+
+**How it is drawn.** While a landmark's cutaway is on:
+- layer 5's tiles that meet the landmark are drawn without the pixels of the buildings it replaces. They are told
+  by their id (layer 5's id tiles, loaded only for those tiles);
+- the cutaway's tiles are drawn right after, as layer 5, at their own depth with their own normals. So the light,
+  the night, the seasons, the look pass and the ink treat the cut building as any building; vehicles are tested
+  against its depth per pixel; structures and trees in front stay in front;
+- the cutaway's tiles also hold the other buildings where they are nearer or seen through the slice. Where layer 5
+  shows the same building, both have the same depth and colour, and the later one is kept: nothing changes. Where
+  layer 5 showed the landmark, its pixel is gone and the cutaway's is the only one. K2v checks the whole view;
+- night windows of a replaced building that stood in its slice are not lit (the slice's planes go to the window
+  pass); the others are, as before;
+- labels and the pointer meet the cutaway's depth where layer 8 shows a replaced building.
+
+**With other switches.** `?off=buildings` switches the cutaways off too (they are layer 5). In tunnel view
+(`?xray`) the cut building is part of the faded city: it shows through the fade as the whole building did.
+From zoom 2 out, the merged far tiles give way to the separate layers while a cutaway is on (the far tiles have no
+ids to cut by), and come back when it is off.
+
+**Not done: the opening's own shadow (K3's `?hour` part).** The shadow height map still holds the whole building,
+so the opening is lit as if roofed: its floor and inside faces are in the building's own shade at every hour. A
+correct shadow needs the hollow shell in the height map, and the map cannot hold it: it is one height per 0.5 m
+cell, and the light's march takes steps that grow with distance, so it would step over 0.8 m walls. Lowering only
+the slice's cells would light the floor rightly and leave every inside face in shade whatever the sun does. It is
+left out rather than half done.
+
+**Checks in the browser** (`python -m v2.build test check_cutaways_view`; all gates). What the viewer must show is
+worked out from the release's tiles: per map pixel the nearest surface, ties to the later layer, with the replaced
+buildings' pixels of layer 5 left out and the cutaway's tiles in place. Frames are read at one screen pixel per map
+pixel (1600 x 1200), so they compare pixel for pixel.
+
+| Id | What is measured | Test area |
+|---|---|---|
+| K6v-off | A view that never had the cutaway on against the same view after on and off: pixels that differ, at 13:00 and 23:00, per landmark and at the far zoom | 0 in all 7 |
+| K6v-on | Pixels the cutaway changes when on (it must show) | 31,570; 37,012; 59,224 |
+| K6v-layer5 | Layer 5 pixels drawn with layer 5 off and the cutaway on | 0 |
+| K6v-xray | In tunnel view the cutaway shows through the fade; after off, and after the tunnel view is off too, pixels that differ from the plain frame | shows; 0 |
+| K2v | Interior pixels drawn outside the tiles' opening mask | 0 of 31,208; 32,416; 43,691 |
+| K2v-frame | Pixels of the view whose layer, or class in layer 5, is not the tiles' nearest surface | 0 of 1,920,000 each |
+| K2v-colour | Layer 5 pixels whose colour is not the tiles' | 0 |
+| K5v-vehicles | Probe cars on a 4 m grid at the floor's level, through and round the landmark: pixels where the viewer's depth test disagrees with the tiles (silhouettes apart, at most 1%, as C4) | 0 of 174,232; 173,820; 384,210 (4, 4 and 24 on silhouettes) |
+| K5v-labels | Label points on and 3 m behind the cutaway's surfaces that the viewer hides or shows against the tiles | 0 of 4,248; 3,116; 5,038 |
+
+Checked once by hand (`v2/web/scripts/compare_viewers.mjs`): the viewer with the feature, toggle off, against the
+viewer before it, on the same release, at the three landmarks at 13:00 and 23:00, and the whole area in tunnel view: 0 pixels differ in all 7 frames.
+
+**Previews:** `v2/docs/img/test_cutaway_<name>_viewer.jpg`.
+
+**Known limits.** The opening is in shade at every hour (above). The inside is a hollow shell with nominal walls: no rooms, vaults or columns until it is painted.
 Walls on lower roofs have no thickness. Windows are not openings in the inside faces.

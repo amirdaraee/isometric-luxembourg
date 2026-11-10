@@ -1,6 +1,8 @@
 // Loading the release: index.json, tiles and data files. Data tiles (g.bin, k.bin, i.bin, h.bin) are rows of bytes
 // delta-coded per byte and zlib-compressed (v2/layers/common.py pack_bin): decoded exactly with DecompressionStream.
 
+import type { CutawaysIndex } from "./cutaways.ts";
+
 export interface LayerIndex { levels: number; tiles: Record<string, Record<string, number>>; files: string[]; from_zoom?: number }
 export interface ReleaseIndex {
   area: string;
@@ -19,6 +21,8 @@ export interface ReleaseIndex {
   polygon_en: [number, number][];
   /** Tunnel view: the tubes' file and their depth range (releases built before it have none). */
   tunnels?: { file: string; tubes: number; casemates: number; depth_cm: [number, number] };
+  /** Landmark cutaways: their tiles under cutaways/<name>/ (releases built before them have none). */
+  cutaways?: CutawaysIndex;
 }
 export interface LightConfig {
   march: { t0_m: number; growth: number; steps: number; bias_m: number };

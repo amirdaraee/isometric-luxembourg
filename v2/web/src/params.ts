@@ -14,6 +14,8 @@
 //   ?nosim                 no vehicles moving (still frames)
 //   ?xray                  tunnel view on (tunnel-view.md): the city faded, the tunnels and what moves in them shown;
 //                          ?off=casemates leaves the Bock casemates out; ?debug=xid|xdepth for its checks
+//   ?cutaway               the landmark cutaways on (landmark-cutaways.md): each landmark cut open in place;
+//                          ?cutaway=cathedral,palace only those
 
 export type Season = "spring" | "summer" | "autumn" | "winter";
 export const LAYERS = ["ground", "relief", "water", "transport", "buildings", "structures", "trees"] as const;
@@ -46,6 +48,7 @@ export const params = {
   simtime: num("simtime") ?? 600,
   nosim: q.has("nosim"),
   xray: q.has("xray"),
+  cutaway: q.get("cutaway"),          // null: off; "": every landmark; "a,b": those
   ui: !q.has("noui"),
 };
 

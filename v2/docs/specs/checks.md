@@ -140,4 +140,9 @@ Thresholds in `params.json` "g3".
 `python -m v2.build test check_cutaways` (`v2/checks/cutaway_checks.py`; thresholds in `params.json` "g3",
 `cutaway_*`). K0-K6 of landmark-cutaways.md: the cut against the 3D model's section (K1), the interior inside its
 mask and the mask against the model (K2), flat light (K3), no cars or people (K4), depth (K5), a layer of its own
-(K6). The table with what each measures is in that spec. The viewer parts and the painted parts come later.
+(K6). The table with what each measures is in that spec. The painted parts come later.
+
+`python -m v2.build test check_cutaways_view` (`v2/checks/cutaway_view_checks.py`, `v2/web/scripts/cutaway_checks.mjs`;
+thresholds `cutview_*`): the cutaways in the viewer. Off means off (0 pixels differ, day and night, with the tunnel
+view, at the far zoom); the frame is the tiles' with the cutaway in place (layer, class and colour, every pixel);
+probe vehicles and label points against the cut building's depth.

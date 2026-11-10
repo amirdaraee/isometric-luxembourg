@@ -22,8 +22,8 @@
     #panel .row { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
     #toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 8px; margin-top: 6px; }
     #toggles label { white-space: nowrap; }
-    #xray { font: inherit; padding: 2px 9px; border: 1px solid #b9a88f; border-radius: 5px; background: #fff8ee; color: inherit; cursor: pointer; }
-    #xray[aria-pressed="true"] { background: #e89a48; border-color: #a5622a; }
+    #xray, #cutaway { font: inherit; padding: 2px 9px; border: 1px solid #b9a88f; border-radius: 5px; background: #fff8ee; color: inherit; cursor: pointer; }
+    #xray[aria-pressed="true"], #cutaway[aria-pressed="true"] { background: #e89a48; border-color: #a5622a; }
     #xrayRow span { color: #6b5f52; }
     .err { position: absolute; bottom: 0; left: 0; right: 0; max-height: 40%; overflow: auto; background: #fee; color: #900; margin: 0; padding: 8px; }
     @media (max-width: 520px) { #panel { max-width: 180px; font-size: 12px; } }
@@ -39,6 +39,7 @@
     <div class="row">Season <select id="season"><option value="auto">from date</option><option>spring</option><option>summer</option>
       <option>autumn</option><option>winter</option></select> <label><input id="snow" type="checkbox"> snow</label></div>
     <div class="row" id="xrayRow"><button id="xray" type="button" aria-pressed="false">Tunnel view</button> <span>or hold X</span></div>
+    <div class="row" id="cutawayRow"><button id="cutaway" type="button" aria-pressed="false">Cutaways</button></div>
     <div id="toggles"></div>
   </div>
   <script type="module" src="/src/main.ts"></script>

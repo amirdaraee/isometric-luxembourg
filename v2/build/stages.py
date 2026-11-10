@@ -204,7 +204,7 @@ def phase3_cutaways() -> list:
     layer of its own above layer 5, with a code placeholder interior and the inputs of the later painting, and their
     checks K0-K6. Nothing here is painted or paid for."""
     from v2.layers import cutaways as cw
-    from v2.checks import cutaway_checks as cc
+    from v2.checks import cutaway_checks as cc, cutaway_view_checks as cv
 
     def check_params(area):
         g1 = params()["g1"]
@@ -218,6 +218,12 @@ def phase3_cutaways() -> list:
               kind="check", params=check_params, raw=raw,
               code=LAYER_CODE + ("v2.layers.cutaways", "v2.checks.framework", "v2.checks.line_checks"),
               doc="K0-K6: the cut matches the model, the interior stays in its mask, flat light, depth, off means off"),
+        Stage("check_cutaways_view", cv.check_cutaways_view, deps=("release", "scene"), kind="check",
+              params=lambda area: {**_art(area), "g3": {k: v for k, v in params()["g3"].items() if k.startswith("cutview_")}},
+              raw=lambda area: (sorted((REPO / "v2/web/src").rglob("*.ts")) + [REPO / "v2/web/index.html", REPO / "v2/web/scripts/shot.mjs",
+                                                                              REPO / "v2/web/scripts/cutaway_checks.mjs"]),
+              code=("v2.layers.common", "v2.checks.framework", "v2.checks.g1_checks"),
+              doc="the cutaways in the viewer: off means off, the frame is the tiles', vehicles and labels against the cut building"),
     ]
 
 

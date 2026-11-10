@@ -102,6 +102,17 @@ void main() {
   oNormal = vec4(g.b, g.a, k, 0.0);
 }`;
 
+/** Layer 5 while a cutaway is on (landmark-cutaways.md rule 5): as LAYER_FS, without the pixels of the buildings the
+ * cutaways replace (by their id: the layer's id tile holds id << 8 | class, little-endian). */
+export const CUT_LAYER_FS = LAYER_FS
+  .replace("uniform float uHasK;", "uniform float uHasK;\nuniform sampler2D uI;\nuniform int uCutN;\nuniform float uCutIdx[16];")
+  .replace("  if (dcm < 0.0) discard;", `  if (dcm < 0.0) discard;
+  {
+    vec4 iv = texelFetch(uI, p, 0);
+    float obj = floor(iv.g * 255.0 + 0.5) + floor(iv.b * 255.0 + 0.5) * 256.0 + floor(iv.a * 255.0 + 0.5) * 65536.0;
+    for (int i = 0; i < 16; i++) if (i < uCutN && obj == uCutIdx[i]) discard;
+  }`);
+
 /** Layers 1 and 2 together: the ground's colour times the relief's (a multiply layer), or the relief's walls. */
 export const GROUND_FS = TILE_FS_HEAD + `
 uniform sampler2D uGC; uniform sampler2D uGG; uniform sampler2D uGK; uniform float uGDmin; uniform float uGOn;
@@ -349,6 +360,22 @@ void main() {
   vUV = q;
   vKind = kind + shop * 4.0;
 }`;
+
+/** The windows while a cutaway is on: as WIN_VS, without those of a replaced building that stood in its slice
+ * (uCutSlice: the building's index and the slice's floor; uCutHalf: six half-planes of local E, N per slice). */
+export const WIN_CUT_VS = WIN_VS
+  .replace("uniform float uGrow;", "uniform float uGrow;\nuniform int uCutN;\nuniform vec4 uCutSlice[8];\nuniform vec3 uCutHalf[48];\n")
+  .replace("  vec2 q = aCorner + ", `  {
+    vec3 mid = vec3(aA.x + aA.w * 0.5, aA.y + aB.x * 0.5, aA.z + aB.y * 0.5);
+    for (int i = 0; i < 8; i++) {
+      if (i >= uCutN) break;
+      if (aB.z != uCutSlice[i].x || mid.z <= uCutSlice[i].y) continue;
+      bool inside = true;
+      for (int j = 0; j < 6; j++) { vec3 h = uCutHalf[i * 6 + j]; if (!(h.x * mid.x + h.y * mid.y > h.z)) inside = false; }
+      if (inside) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+    }
+  }
+  vec2 q = aCorner + `);
 
 export const WIN_FS = `#version 300 es
 precision highp float;
