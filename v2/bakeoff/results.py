@@ -265,3 +265,45 @@ def mark_painted(method: str) -> int:
     (c / "painted.json").write_text(json.dumps({"method": "c", "windows": len(wj["windows"]), "ts": time.strftime("%Y-%m-%dT%H:%M:%S")}))
     print(f"C: {len(wj['windows'])} windows painted")
     return 0
+
+
+def pilot_gates() -> int:
+    """C was stopped at its pilot, so only the pilot's windows are painted. This measures the built layers there,
+    like for like: the gate's own line score (L5.2, line_checks.score on the release's layer-5 tiles) of every
+    registered method inside the painted windows only, and each used painting's flat-light and detector results.
+    Written to c/checks/pilot_gates.json and v2/docs/results/bakeoff_c_pilot.json."""
+    from v2.checks import line_checks as lc
+    from v2.checks.layer_checks import TileCache
+    from v2.config import V2, params
+    P = params()["g1"]
+    c = B.base() / "c"
+    rels = json.loads((B.base() / "releases.json").read_text())
+    wins = sorted(p.stem for p in (c / "painted").glob("*.png"))
+    lines = PC.model_lines(str(_scene()))
+    out = {"windows": wins, "line_score": {}}
+    for m, info in sorted(rels.items()):
+        cache = TileCache(Path(info["release"]), "buildings", maxn=64)
+        row = {}
+        for k, (Ps, Ds, Os, px, py) in lines.items():
+            inside = np.zeros(len(px), bool)
+            for w in wins:
+                x0, y0 = (int(v) for v in w.split("_"))
+                inside |= (px >= x0 + 4) & (px < x0 + 1020) & (py >= y0 + 4) & (py < y0 + 1020)
+            seen, on = lc.score(cache, Ps[inside], Ds[inside], P["line_score_px"], P["line_min_step"], obj=Os[inside])
+            row[k] = {"seen": int(seen.sum()), "share": round(float(on.sum() / max(seen.sum(), 1)), 4)}
+        row["pass"] = bool(row["edges"]["share"] >= P["line_score_share"] and row["windows"]["share"] >= P["line_score_share"])
+        out["line_score"][m] = row
+        print(m, row)
+    pil = json.loads((c / "checks" / "C1p.json").read_text())
+    used = {w: None for w in wins}
+    for r in pil["results"]:
+        src = c / "targets" / r["file"]
+        dst = c / "painted" / f"{r['window']}.png"
+        if dst.exists() and src.read_bytes() == dst.read_bytes():
+            used[r["window"]] = {k: r[k] for k in ("file", "flat_worst", "flat_failing_buildings", "flat_ok", "line_edges",
+                                                    "line_windows", "vehicles", "keep")}
+    out["paintings_used"] = used
+    out["pilot_summary"] = pil["summary"]
+    (c / "checks" / "pilot_gates.json").write_text(json.dumps(out, indent=1))
+    (V2 / "docs" / "results" / "bakeoff_c_pilot.json").write_text(json.dumps(out, indent=1))
+    return 0

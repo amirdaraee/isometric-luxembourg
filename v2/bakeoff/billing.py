@@ -45,19 +45,24 @@ def reconcile(record=False) -> int:
     ledger_usd = round(sum(e["usd"] for e in L.events if e["type"] == "spend" and e["provider"] == "runpod" and e["goal"] == GOAL), 4)
     print(f"RunPod billed ${total:.4f} for these pods; the ledger has ${ledger_usd:.4f} for {GOAL}")
     how = "billing lines per pod"
-    listed = sum(1 for s in sessions if b[s["pod_id"]] > 0)
-    if listed < len(sessions):
-        # RunPod publishes a pod's billing lines some hours after it ends. Until then its own balance is the figure:
-        # what the account had before the first pod created here, less what it has now (no pod of ours running).
-        before = [s.get("balance_before") for s in sessions if s.get("balance_before") is not None]
-        if not before or runner.my_pods():
-            print("the billing lines are not published yet and no balance was kept: reconcile again later")
-            return 1
+    # RunPod publishes a pod's billing lines over some hours after it ends (9 Nov 2026: 1,685 of a pod's 2,145
+    # seconds were listed an hour after it was terminated, while the balance already held the whole charge). Its
+    # balance is complete at once: what the account had before the first pod created here, less what it has now.
+    # While the lines add up to less than that drop (and no pod of ours is running), the balance is the figure.
+    before = [s.get("balance_before") for s in sessions if s.get("balance_before") is not None]
+    if before and not runner.my_pods():
         now = runner.balance_now()
-        total = max(before) - now
-        how = (f"account balance: ${max(before):.4f} before the first pod, ${now:.4f} now (billing lines of "
-               f"{len(sessions) - listed} of {len(sessions)} pods not published yet; any other charge on the account in between is in this figure)")
-        print(f"by the {how}: ${total:.4f}")
+        drop = max(before) - now
+        print(f"account balance: ${max(before):.4f} before the first pod, ${now:.4f} now: ${drop:.4f}")
+        if total < drop - 0.01:
+            how = (f"account balance, ${max(before):.4f} before the first pod and ${now:.4f} now; the billing lines "
+                   f"list ${total:.4f} so far and are still being published; any other charge on the account in "
+                   f"between is in this figure")
+            total = drop
+            print(f"the billing lines are not complete yet: reconciling by the balance, ${total:.4f}")
+    elif any(b[s["pod_id"]] == 0 for s in sessions):
+        print("the billing lines are not published yet and no balance was kept: reconcile again later")
+        return 1
     if record:
         ev = L.reconcile("runpod", f"{start}..{datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%MZ')} "
                          f"(pods {', '.join(s['pod_id'] for s in sessions)}; by {how})", total)

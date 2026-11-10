@@ -8,6 +8,8 @@
     python -m v2.bakeoff inputs b               B's landmark list and each landmark's unlit crop; the material list
     python -m v2.bakeoff inputs facades         C4: ten buildings' camera-facing walls drawn front-on
     python -m v2.bakeoff trial                  C4's result: line score of A, C3 and the projected facades
+    python -m v2.bakeoff pilot-gates            C (stopped at its pilot): the line score of every method inside the
+                                                pilot's painted windows, and the used paintings' checks
     python -m v2.bakeoff previews [--url U]     the fixed views of every registered method from the running bake-off
                                                 viewer, and the comparison sheet (v2/docs/img)
     python -m v2.bakeoff smoke c                local $0 smoke test: an identity "painting" through compose and the
@@ -271,13 +273,15 @@ def main(argv=None):
     pk = sub.add_parser("pick"); pk.add_argument("method", choices=["b"])
     pt = sub.add_parser("painted"); pt.add_argument("method", choices=["b", "c"])
     sub.add_parser("trial")
+    sub.add_parser("pilot-gates")
     pv = sub.add_parser("previews"); pv.add_argument("--url", default="http://localhost:5175/")
     g = sub.add_parser("register"); g.add_argument("method", choices=["a", "b", "c"]); g.add_argument("--folder")
     g.add_argument("--note", help="shown over the method's column in the bake-off viewer (what its checks found)")
     a = ap.parse_args(argv)
     return {"status": cmd_status, "quote": cmd_quote, "inputs": cmd_inputs, "smoke": cmd_smoke, "run": cmd_run,
             "register": cmd_register, "end": cmd_end, "pods": cmd_pods, "reconcile": cmd_reconcile, "check": cmd_check,
-            "pick": cmd_pick, "painted": cmd_painted, "trial": cmd_trial, "previews": cmd_previews}[a.cmd](a) or 0
+            "pick": cmd_pick, "painted": cmd_painted, "trial": cmd_trial, "previews": cmd_previews,
+            "pilot-gates": lambda a: __import__("v2.bakeoff.results", fromlist=["x"]).pilot_gates()}[a.cmd](a) or 0
 
 
 if __name__ == "__main__":
