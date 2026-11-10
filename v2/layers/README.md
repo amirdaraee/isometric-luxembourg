@@ -23,3 +23,9 @@ failing check is fixed here, in the layer that made it.
 
 Layers 5-7 are the bake-off's (PLAN_V2 section 7); phase 1 draws plain, evenly lit placeholders from the same
 geometry so the compositor, the light and the vehicle checks have something real to work on.
+
+## Phase 3
+
+| Module | What |
+|---|---|
+| `cutaways.py` | landmark cutaways: a landmark's model with a slice taken out (cut faces, inside faces), as a small tile set above layer 5 with a code placeholder interior; the paint inputs; stage `layer_cutaways` (spec: `landmark-cutaways.md`) |

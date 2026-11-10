@@ -86,6 +86,14 @@
   "red_light":     {"rgb": [150, 88, 78],  "src": "v2_canopy.py red"},
   "trunk":         {"rgb": [84, 66, 50],   "src": "v2_canopy.py trunk"}
  },
+ "cutaway": {
+  "note": "landmark cutaways (specs/landmark-cutaways.md): the code placeholder interior, one flat colour per kind of face; a painted interior replaces them",
+  "section":       {"rgb": [176, 84, 70],   "src": "v2 (the cut through walls, roofs and slabs)"},
+  "inside_wall":   {"rgb": [234, 224, 204], "src": "v2 (inner side of a wall)"},
+  "inside_roof":   {"rgb": [198, 178, 150], "src": "v2 (inner side of a roof)"},
+  "floor":         {"rgb": [212, 200, 176], "src": "v2 (floor at ground level)"},
+  "slab":          {"rgb": [222, 206, 170], "src": "v2 (upper floors)"}
+ },
  "light": {
   "shadow_tint":   {"rgb": [70, 72, 110],  "src": "v2 (cast shadows are tinted, never black: OTHERS 7.1)"},
   "golden":        {"rgb": [255, 196, 120], "src": "v2"},
