@@ -13,12 +13,13 @@ export async function open(base = process.env.V2_URL ?? "http://localhost:5174/"
   return { browser, page, errors, base };
 }
 
-export async function settle(page, { vehicles = true, shadows = true } = {}) {
+export async function settle(page, { vehicles = true, shadows = true, tunnels = false } = {}) {
   await page.waitForFunction(() => window.__v2 && (window.__v2.firstViewMs || window.__v2.error), null, { timeout: 120000 });
   const err = await page.evaluate(() => window.__v2.error);
   if (err) throw new Error(err);
   if (shadows) await page.waitForFunction(() => window.__v2.shadowsReady, null, { timeout: 120000 });
   if (vehicles) await page.waitForFunction(() => window.__v2.vehicles, null, { timeout: 120000 });
+  if (tunnels) await page.waitForFunction(() => window.__v2.tunnelsReady, null, { timeout: 120000 });   // tunnel view's tubes
   await page.waitForFunction(() => window.__v2.missing() === 0, null, { timeout: 120000 });
   await page.waitForTimeout(400);
 }
@@ -27,7 +28,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const [q, out, w, h] = process.argv.slice(2);
   const { browser, page, errors, base } = await open(undefined, +(w ?? 1600), +(h ?? 1000));
   await page.goto(base + (q.startsWith("?") ? q : "?" + q));
-  await settle(page, { vehicles: !q.includes("nosim") || true });
+  await settle(page, { vehicles: !q.includes("nosim") || true, tunnels: /(^|[?&])xray(&|=|$)/.test(q) });
   await page.locator("#map").screenshot({ path: out });
   const info = await page.evaluate(() => ({ first: window.__v2.firstViewMs, frame: window.__v2.lastFrameMs,
     gpu: (() => { const gl = document.createElement("canvas").getContext("webgl2"); const e = gl.getExtension("WEBGL_debug_renderer_info");

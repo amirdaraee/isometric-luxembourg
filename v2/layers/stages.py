@@ -8,6 +8,7 @@ layer_night                   layer 10: windows, doors, shop fronts and street l
 layer_vehicles                layer 12: roads and profiles for the simulation, trams and trains on the graph
 layer_labels                  layer 15: labels and pins
 release                       the viewer's folder: every layer's tiles and data behind one index.json
+(layer_tunnels, the tubes of the tunnel view, is in v2/layers/tunnels.py.)
 """
 from __future__ import annotations
 
@@ -250,9 +251,11 @@ def release(ctx):
     for name, files in (("layer_light", ["light.json", "shadow_a.bin", "shadow_b.bin"]),
                         ("layer_night", ["night.json", "windows.bin", "lamps.bin"]),
                         ("layer_vehicles", ["vehicles.json", "transit.json"]),
-                        ("layer_labels", ["labels.json"])):
+                        ("layer_labels", ["labels.json"]),
+                        ("layer_tunnels", ["tunnels.json"])):
         for f in files:
             os.symlink(ctx.dep(name) / f, ctx.out / f)
+    idx["tunnels"] = json.loads((ctx.dep("layer_tunnels") / "meta.json").read_text())
     idx["light"] = json.loads((ctx.dep("layer_light") / "light.json").read_text())
     idx["night"] = json.loads((ctx.dep("layer_night") / "night.json").read_text())
     from v2.config import CONFIG

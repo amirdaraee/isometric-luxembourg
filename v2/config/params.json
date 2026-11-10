@@ -186,6 +186,28 @@
   "speed_pan_fps_desktop": 60,
   "speed_pan_fps_phone": 30
  },
+ "tunnels": {
+  "about": "The tunnel tubes of the tunnel view (v2/layers/tunnels.py). sample_m: spacing of the casemate galleries' samples (the graph's edges keep their own). An indoor or passage edge is underground, and drawn, when at least underground_share of its samples lie a clearance or more under the ground. portal_face_m: how far out of a tunnel's end layer 4 draws its portal (geometry.portal_mesh); a tube ends there. junction: where tubes join at a node, a wall is left out as far as it runs inside another of them (looked for every step_m, up to max_m along the wall, against the other tube's first `segments` segments, slack_m inside its edge).",
+  "sample_m": 2.0,
+  "underground_share": 0.5,
+  "portal_face_m": 0.3,
+  "junction": {"step_m": 0.25, "max_m": 40.0, "segments": 24, "slack_m": 0.05}
+ },
+ "g3": {
+  "about": "Gate G3 thresholds. Tunnel view, checks X1-X8 (v2/docs/specs/tunnel-view.md): each is the spec's number.",
+  "xray_line_px": 1.0,
+  "xray_line_share": 0.99,
+  "xray_line_step_m": 0.5,
+  "xray_depth_cm": 1.0,
+  "xray_cover_m": 0.5,
+  "xray_fade_tol": 1,
+  "xray_portal_px": 1.0,
+  "casemate_min_rock_m": 1.0,
+  "xray_toggle_frames": 1,
+  "xray_pan_fps_desktop": 60,
+  "xray_sim_day_sample_s": 20,
+  "xray_seam_de_max": 3.0
+ },
  "art": {
   "about": "Art method of layers 5-7 (PLAN_V2 section 7, the bake-off): a = all code (built, $0); b = code + AI materials and landmark portraits; c = code + AI-painted buildings; plain = Phase 1's placeholder. V2_ART overrides it to build another option. B and C need their painted inputs (v2/layers/bakeoff.py), made only after the owner approves their quote in the ledger.",
   "method": "a"

@@ -8,12 +8,16 @@
 //     for the sun's real position, the sky grade, seasons and snow.
 //  3. Night (layer 10): lit windows and street lamps, depth-tested against the G-buffer, added on.
 //  4. Look (layer 14): grade and ink from the geometry, to the canvas.
+//  5. Tunnel view (?xray, tunnel-view.md), only while it is on: the look pass fades the city over a neutral ground,
+//     then the tunnels' tubes are drawn unlit with their own depth, and the vehicles inside them against that depth.
 // Any layer can be switched off (?off=...): it is then neither drawn nor casting shadows.
 
 import type { LightConfig, ReleaseIndex } from "../data.ts";
 import { fetchBin, fetchImage } from "../data.ts";
 import { grade, litShare, nightFactor } from "./grade.ts";
-import { FULL_VS, GROUND_FS, LAMP_FS, LAMP_VS, LAYER_FS, LIGHT_FS, LOOK_FS, TILE_VS, VEH_FS, VEH_VS, WIN_FS, WIN_VS } from "./shaders.ts";
+import { FULL_VS, GROUND_FS, LAMP_FS, LAMP_VS, LAYER_FS, LIGHT_FS, LOOK_FADE_FS, LOOK_FS, TILE_VS, TUN_FS, TUN_VS, VEH_FS, VEH_VS, WIN_FS,
+  WIN_VS, XVEH_FS } from "./shaders.ts";
+import { tubeMesh, VERTEX_FLOATS, type TunnelsData } from "../tunnels.ts";
 
 export const LAYER_ID: Record<string, number> = { ground: 1, relief: 2, water: 3, transport: 4, buildings: 5, structures: 6, trees: 7 };
 const DRAW_ORDER = ["water", "transport", "buildings", "structures", "trees"];
@@ -22,8 +26,13 @@ export interface View { cx: number; cy: number; scale: number }
 export interface LightState {
   sun: [number, number, number]; el: number; az: number;
   season: string; snow: boolean; hour: number; debug: number; off: Set<string>;
+  xray?: boolean;          // tunnel view on
 }
-export interface VehicleInstances { count: number; inst: Float32Array; size: Float32Array }
+/** deep: per vehicle, 1 when it is in a tunnel past its portal (tunnel view draws those in their tube). */
+export interface VehicleInstances { count: number; inst: Float32Array; size: Float32Array; deep?: Uint8Array }
+export const DEBUG_XID = 6, DEBUG_XDEPTH = 7;
+const VEH_COLOURS = new Float32Array([[0.78, 0.22, 0.2], [0.2, 0.36, 0.62], [0.92, 0.9, 0.86], [0.22, 0.24, 0.26], [0.85, 0.72, 0.25],
+  [0.82, 0.16, 0.18], [0.86, 0.86, 0.84], [0.35, 0.55, 0.3]].flat());
 
 interface TileTex { c?: WebGLTexture; g?: WebGLTexture; k?: WebGLTexture; dmin: number; ready: boolean; failed?: boolean; used: number }
 
@@ -77,9 +86,14 @@ export class Compositor {
   private cube: { buf: WebGLBuffer; n: number }; private vehBuf: WebGLBuffer; private vehSize: WebGLBuffer;
   private winBuf: WebGLBuffer | null = null; private winCount = 0;
   private lampBuf: WebGLBuffer | null = null; private lampCount = 0;
+  // tunnel view: its programs and target exist once enableXray() has run, its mesh once setTunnels() has
+  private xr: { look: Prog; tun: Prog; veh: Prog; inst: WebGLBuffer; size: WebGLBuffer } | null = null;
+  private xbuf: { fb: WebGLFramebuffer; color: WebGLTexture; depth: WebGLTexture } | null = null;
+  private tun: { buf: WebGLBuffer; vertices: number; graphVertices: number; range: [number, number] } | null = null;
+  private xInst = new Float32Array(4 * 4096); private xSize = new Float32Array(4 * 4096);
   pending = 0;
   onTile: () => void = () => {};
-  stats = { tilesDrawn: 0, tilesMissing: 0 };
+  stats = { tilesDrawn: 0, tilesMissing: 0, tunnelVehicles: 0 };
 
   constructor(public canvas: HTMLCanvasElement, public idx: ReleaseIndex) {
     const gl = canvas.getContext("webgl2", { antialias: false, depth: false, alpha: false, preserveDrawingBuffer: true,
@@ -161,6 +175,137 @@ export class Compositor {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, color, 0);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depth, 0);
     this.litbuf = { fb: lfb, fbDepth: dfb, color };
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    if (this.xr) this.makeXbuf();
+  }
+
+  // -------------------------------------------------------------------------------------------- tunnel view
+  /** Make the tunnel view ready (its programs and its target), so that turning it on costs no more than a frame. */
+  enableXray() {
+    if (this.xr || !this.cfg.xray || !this.idx.palette.tunnel) return;
+    const gl = this.gl;
+    this.xr = { look: new Prog(gl, compile(gl, FULL_VS, LOOK_FADE_FS)), tun: new Prog(gl, compile(gl, TUN_VS, TUN_FS)),
+      veh: new Prog(gl, compile(gl, VEH_VS, XVEH_FS)), inst: gl.createBuffer()!, size: gl.createBuffer()! };
+    this.makeXbuf();
+  }
+
+  get xrayReady(): boolean { return this.xr !== null; }
+
+  private makeXbuf() {
+    const gl = this.gl;
+    if (this.xbuf) { gl.deleteTexture(this.xbuf.color); gl.deleteTexture(this.xbuf.depth); gl.deleteFramebuffer(this.xbuf.fb); }
+    const tex = (internal: number, format: number, type: number) => {
+      const t = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, internal, this.W, this.H, 0, format, type, null);
+      for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, p, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return t;
+    };
+    const color = tex(gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
+    const depth = tex(gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT);
+    const fb = gl.createFramebuffer()!;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, color, 0);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depth, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    this.xbuf = { fb, color, depth };
+  }
+
+  /** The tubes of tunnels.json (the graph's tunnels, then the casemates), as one mesh. */
+  setTunnels(data: TunnelsData) {
+    const gl = this.gl;
+    const m = tubeMesh(data);
+    const buf = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, m.data, gl.STATIC_DRAW);
+    this.tun = { buf, vertices: m.vertices, graphVertices: m.graphVertices, range: data.depth_cm };
+  }
+
+  /** Step 5: the tubes and the vehicles in them over the faded city (or alone, for the checks' debug frames), then
+   * the frame to the canvas. */
+  private tunnelPass(view: View, st: LightState, veh: VehicleInstances | null) {
+    const gl = this.gl, xr = this.xr!, X = this.cfg.xray!, xbuf = this.xbuf!;
+    const dbg = st.debug === DEBUG_XID || st.debug === DEBUG_XDEPTH;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, xbuf.fb);
+    gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+    gl.viewport(0, 0, this.W, this.H);
+    gl.depthMask(true);
+    gl.clearDepth(1);
+    if (dbg) {
+      const v = st.debug === DEBUG_XDEPTH ? 1 : 0;
+      gl.clearColor(v, v, v, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    } else gl.clear(gl.DEPTH_BUFFER_BIT);
+    if (st.xray && this.tun) {
+      const tun = this.tun, pal = this.idx.palette.tunnel;
+      const rgb = (k: string) => pal[k].rgb.map((v) => v / 255);
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LESS);
+      {
+        const p = xr.tun;
+        gl.useProgram(p.p);
+        this.setView(p, view); this.setCam(p);
+        p.f("uDepthRange", tun.range[0], tun.range[1]);
+        gl.uniform3fv(p.u("uFloor"), new Float32Array([...rgb("floor"), ...rgb("casemate_floor")]));
+        gl.uniform3fv(p.u("uWall"), new Float32Array([...rgb("wall"), ...rgb("casemate_wall")]));
+        p.f("uDeep", ...rgb("deep")); p.f("uAxis", ...rgb("axis")); p.f("uInk", ...rgb("ink"));
+        p.f("uTone", X.depth_step_m, X.depth_steps, X.deep_share);
+        p.f("uLine", X.ink_px, X.axis_px, X.axis_min_px);
+        p.i("uDebug", st.debug);
+        const at = ([["aPos", 3, 0], ["aAttr", 4, 12], ["aIdx", 1, 28], ["aSegA", 3, 32], ["aSegB", 3, 44]] as [string, number, number][])
+          .map(([name, n, o]) => [gl.getAttribLocation(p.p, name), n, o]).filter(([a]) => a >= 0);
+        const stride = VERTEX_FLOATS * 4;
+        gl.bindBuffer(gl.ARRAY_BUFFER, tun.buf);
+        for (const [a, n, o] of at) {
+          gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, n, gl.FLOAT, false, stride, o); gl.vertexAttribDivisor(a, 0);
+        }
+        gl.drawArrays(gl.TRIANGLES, 0, st.off.has("casemates") ? tun.graphVertices : tun.vertices);
+        for (const [a] of at) gl.disableVertexAttribArray(a);
+      }
+      // the vehicles in a tunnel past its portal, against the tubes' depth only (rule 4)
+      let n = 0;
+      if (veh && veh.deep && !st.off.has("vehicles")) {
+        for (let i = 0; i < veh.count; i++) {
+          if (!veh.deep[i]) continue;
+          this.xInst.set(veh.inst.subarray(i * 4, i * 4 + 4), n * 4);
+          this.xSize.set(veh.size.subarray(i * 4, i * 4 + 4), n * 4);
+          n++;
+        }
+      }
+      if (n) {
+        const p = xr.veh;
+        gl.useProgram(p.p);
+        gl.depthFunc(gl.LEQUAL);
+        this.setView(p, view); this.setCam(p);
+        p.f("uDepthRange", tun.range[0], tun.range[1]);
+        p.f("uEps", (this.cfg.vehicles.depth_eps_m as number));
+        p.f("uSide", X.vehicle_side);
+        p.i("uDebug", st.debug);
+        gl.uniform3fv(p.u("uColours"), VEH_COLOURS);
+        const aPos = gl.getAttribLocation(p.p, "aPos"), aNrm = gl.getAttribLocation(p.p, "aNrm");
+        const aInst = gl.getAttribLocation(p.p, "aInst"), aSize = gl.getAttribLocation(p.p, "aSize");
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.cube.buf);
+        gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 24, 0); gl.vertexAttribDivisor(aPos, 0);
+        gl.enableVertexAttribArray(aNrm); gl.vertexAttribPointer(aNrm, 3, gl.FLOAT, false, 24, 12); gl.vertexAttribDivisor(aNrm, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, xr.inst);
+        gl.bufferData(gl.ARRAY_BUFFER, this.xInst.subarray(0, n * 4), gl.DYNAMIC_DRAW);
+        gl.enableVertexAttribArray(aInst); gl.vertexAttribPointer(aInst, 4, gl.FLOAT, false, 0, 0); gl.vertexAttribDivisor(aInst, 1);
+        gl.bindBuffer(gl.ARRAY_BUFFER, xr.size);
+        gl.bufferData(gl.ARRAY_BUFFER, this.xSize.subarray(0, n * 4), gl.DYNAMIC_DRAW);
+        gl.enableVertexAttribArray(aSize); gl.vertexAttribPointer(aSize, 4, gl.FLOAT, false, 0, 0); gl.vertexAttribDivisor(aSize, 1);
+        gl.drawArraysInstanced(gl.TRIANGLES, 0, this.cube.n, n);
+        for (const a of [aInst, aSize]) { gl.vertexAttribDivisor(a, 0); gl.disableVertexAttribArray(a); }
+        gl.disableVertexAttribArray(aNrm);
+      }
+      this.stats.tunnelVehicles = n;
+      gl.disable(gl.DEPTH_TEST);
+    }
+    gl.depthMask(false);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, xbuf.fb);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+    gl.blitFramebuffer(0, 0, this.W, this.H, 0, 0, this.W, this.H, gl.COLOR_BUFFER_BIT, gl.NEAREST);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
@@ -415,9 +560,7 @@ export class Compositor {
       gl.useProgram(p.p);
       this.setView(p, view); this.setCam(p);
       p.f("uEps", (cfg.vehicles.depth_eps_m as number));
-      const cols = [[0.78, 0.22, 0.2], [0.2, 0.36, 0.62], [0.92, 0.9, 0.86], [0.22, 0.24, 0.26], [0.85, 0.72, 0.25],
-        [0.82, 0.16, 0.18], [0.86, 0.86, 0.84], [0.35, 0.55, 0.3]];
-      gl.uniform3fv(p.u("uColours"), new Float32Array(cols.flat()));
+      gl.uniform3fv(p.u("uColours"), VEH_COLOURS);
       const aPos = gl.getAttribLocation(p.p, "aPos"), aNrm = gl.getAttribLocation(p.p, "aNrm");
       const aInst = gl.getAttribLocation(p.p, "aInst"), aSize = gl.getAttribLocation(p.p, "aSize");
       gl.bindBuffer(gl.ARRAY_BUFFER, this.cube.buf);
@@ -541,10 +684,14 @@ export class Compositor {
       gl.disable(gl.DEPTH_TEST);
     }
     // ------------------------------------------------------------ 4. look, to the canvas
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // (tunnel view on: faded, into the tunnel pass's target; a city debug frame is shown as it is)
+    const xray = !!st.xray && this.xr !== null && st.debug === 0;
+    const xdebug = this.xr !== null && (st.debug === DEBUG_XID || st.debug === DEBUG_XDEPTH);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, xray ? this.xbuf!.fb : null);
     {
-      const p = this.progLook;
+      const p = xray ? this.xr!.look : this.progLook;
       gl.useProgram(p.p);
+      if (xray) p.f("uFade", ...(pal.tunnel.ground.rgb.map((v) => v / 255) as [number, number, number]), cfg.xray!.opacity);
       this.setCam(p);
       this.bindQuad(p);
       const tex = [this.litbuf.color, this.gbuf.normal, this.gbuf.depth, this.gbuf.albedo];
@@ -563,6 +710,8 @@ export class Compositor {
       p.i("uDebug", st.debug);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
+    // ------------------------------------------------------------ 5. tunnel view
+    if (xray || xdebug) this.tunnelPass(view, st, veh);
     this.evict();
   }
 
