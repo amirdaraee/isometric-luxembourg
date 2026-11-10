@@ -1,8 +1,10 @@
 """The bake-off (PLAN_V2 section 7): methods B and C up to the point of spending, and the viewer's registry.
 
     python -m v2.bakeoff status                 every paid job, its quote in the ledger and whether it may run
-    python -m v2.bakeoff quote [--record]       the quote table; --record writes each job's quote to the ledger once
-                                                (quote events only: approving is the owner's)
+    python -m v2.bakeoff quote [--record] [--again JOB]
+                                                the quote table; --record writes each job's quote to the ledger once
+                                                (quote events only: approving is the owner's); --again writes a new
+                                                quote for a job whose last one is spent or released
     python -m v2.bakeoff inputs c [--limit N]   C's unlit inputs: every 1024 px window with buildings (unlit render,
                                                 layout, mask, ids and normals), and the 80 training crops' list
     python -m v2.bakeoff inputs b               B's landmark list and each landmark's unlit crop; the material list
@@ -64,9 +66,16 @@ def cmd_status(a):
         q = quote_of(j, L)
         sp = [e["usd"] for e in L.events if e["type"] == "spend" and e["quote"] == q]
         from v2.bakeoff.runner import stopped
-        print(f"{j.id:4} {j.title[:60]:60} quote {q or '-':6} {'APPROVED' if q in ap else 'not approved':12} "
-              f"est ${j.est_usd:5.2f} cap ${j.worst_usd:5.2f}  " + (f"spent ${sp[0]:.2f}" if sp else "not run")
-              + ("  CHECKS FAILED: branch stopped" if stopped(j.id) else ""))
+        qw = L.quotes()[q]["worst_usd"] if q else j.worst_usd
+        state = "RELEASED" if q in L.released() else "APPROVED" if q in ap else "not approved"
+        print(f"{j.id:4} {j.title[:60]:60} quote {q or '-':6} {state:12} "
+              f"est ${j.est_usd:5.2f} cap ${qw:5.2f}  " + (f"spent ${sp[0]:.2f}" if sp else "not run")
+              + ("  CHECKS FAILED: branch stopped" if stopped(j.id) else "")
+              + ("  STOPPED BY THE OWNER" if j.cancelled else ""))
+    used = [e for e in L.events if e["type"] == "spend" and e["goal"] == "phase2_bakeoff"
+            and e["quote"] not in {quote_of(j, L) for j in JOBS}]
+    for e in used:
+        print(f"     earlier run: {e['job'][:50]:50} quote {e['quote']} spent ${e['usd']:.2f}")
     est, worst = totals()
     print(f"total: est ${est}, worst case ${worst}; goal phase2_bakeoff: {L.status()['goals']['phase2_bakeoff']}")
 
@@ -80,6 +89,20 @@ def cmd_quote(a):
     if a.record:
         for e in record_quotes():
             print("recorded", e["id"], e["job"], e["worst_usd"])
+    if a.again:
+        from v2.bakeoff.jobs import BY_ID
+        from v2.bakeoff.runner import live_price, requote
+        from v2.ledger.ledger import LedgerRefusal
+        j = BY_ID[a.again]
+        try:
+            p = live_price(j)
+            if p > j.price_h + 1e-9:
+                raise LedgerRefusal(f"{j.id}: {j.gpu} costs ${p}/h now, jobs.py has ${j.price_h}/h: update the price first")
+            e = requote(j)
+        except LedgerRefusal as ex:
+            print("REFUSED:", ex, file=sys.stderr)
+            return 2
+        print("recorded", e["id"], e["job"], e["worst_usd"], f"(live price ${p}/h)")
 
 
 def cmd_inputs(a):
@@ -254,7 +277,7 @@ def main(argv=None):
     ap.add_argument("--area", default="test")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status")
-    q = sub.add_parser("quote"); q.add_argument("--record", action="store_true")
+    q = sub.add_parser("quote"); q.add_argument("--record", action="store_true"); q.add_argument("--again", metavar="JOB")
     i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c", "facades"]); i.add_argument("--limit", type=int, default=0)
     i.add_argument("--crops", action="store_true", help="b: also each landmark's unlit crop")
     i.add_argument("--release", help="c: the built release whose layers 1-4 are used (default: this checkout's)")

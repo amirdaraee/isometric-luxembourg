@@ -11,6 +11,7 @@
   C2   (the same dataset and the pilot's checkpoint, already on the pod)  -> c/train/ (the LoRA, samples)
   C3   all windows with buildings                                         -> c/painted/<window>.png
   C4   the trial buildings' facades, front-on                             -> c/facades/<facade>_<k>.png
+       (painted with v1's style model unless C's unshadowed one exists)
 """
 from __future__ import annotations
 
@@ -29,6 +30,8 @@ OUT = {"B1": "b/materials", "B2": "b/landmarks", "C1p": "c/targets", "C1": "c/ta
 # optimizer state come back
 PULL_FILTER = {"C2p": ("--include=*_000000200.safetensors", "--exclude=*_0000*.safetensors"),
                "C2": ("--include=*_000001000.safetensors", "--include=*_000001600.safetensors", "--exclude=*_0000*.safetensors")}
+# the model each job's setup needs from Hugging Face (preflight.sh asks for it before anything is installed)
+MODEL = {"t2i": "Qwen/Qwen-Image", "paint": "Qwen/Qwen-Image-Edit-2511", "train": "Qwen/Qwen-Image-Edit-2511"}
 V1_LORA = "style/lora_v2/luxembourg-ink-v2_000002000.safetensors"
 NEW_LORA = "luxembourg-ink-unshadowed.safetensors"
 
@@ -102,7 +105,7 @@ def build(job: str) -> Path:
         if not names:
             raise SystemExit("C4: no facade inputs (python -m v2.bakeoff inputs facades)")
         _windows(d, names, src)
-        (d / "prompt.txt").write_text(P.C_FACADE_PROMPT)
+        (d / "prompt.txt").write_text(P.C_FACADE_PROMPT if new_lora().exists() else P.C_FACADE_PROMPT_V1)
     (d / "job.json").write_text(json.dumps({"job": job}))
     return d
 
@@ -112,9 +115,9 @@ def uploads(job: str, bdir: Path) -> list:
     has them (the session's earlier jobs) nothing is sent."""
     ups = [(str(bdir) + "/", f"/workspace/job/{job}/", ("-c",))]
     big = ("--size-only",)
-    if job in ("C1p", "C1") or (job == "B2" and not new_lora().exists()):
+    if job in ("C1p", "C1") or (job in ("B2", "C4") and not new_lora().exists()):
         ups.append((str(v1_work() / V1_LORA), "/workspace/lora/", big))
-    if job in ("C3", "C4") or (job == "B2" and new_lora().exists()):
+    if job == "C3" or (job in ("B2", "C4") and new_lora().exists()):
         ups.append((str(new_lora()), "/workspace/lora/", big))
     if job == "C2":
         ups.append((str(base() / "_bundles" / "C2p" / "dataset.tar"), "/workspace/job/C2p/", big))

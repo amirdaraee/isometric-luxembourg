@@ -47,5 +47,9 @@ C_TARGET_PROMPT = V1_CAPTION + EVEN
 C_PAINT_PROMPT = V1_CAPTION.replace("<isometric luxembourg ink>", NEW_TRIGGER) + EVEN
 LANDMARK_BRIEF = C_TARGET_PROMPT
 # C4: one facade seen front-on
-C_FACADE_PROMPT = C_PAINT_PROMPT + (" The image is one building facade seen exactly front-on: straight horizontal and "
-                                    "vertical lines, each window where the layout shows it.")
+FACADE = (" The image is one building facade seen exactly front-on: straight horizontal and vertical lines, each "
+          "window where the layout shows it.")
+C_FACADE_PROMPT = C_PAINT_PROMPT + FACADE
+# C4 on its own (owner, 10 Nov 2026): the unshadowed LoRA was never trained, so v1's paints the facades, asked for
+# even light with the trigger it was trained with
+C_FACADE_PROMPT_V1 = C_TARGET_PROMPT + FACADE

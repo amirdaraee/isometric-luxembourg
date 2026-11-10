@@ -198,6 +198,12 @@ uniform vec4 uLightK;          // wrap, ambient, direct, shadow keep
 uniform vec3 uSunTint;
 uniform vec3 uAmbTint;
 uniform vec3 uShadowTint;
+uniform vec4 uMoon;            // the night's moon: vector (E, N, up), strength (0 with the sun up)
+uniform vec4 uMoonTint;        // colour, and how much of the moon's light its cast shadows take away
+uniform vec4 uFill;            // the low sun's light coming back from the sky opposite it: vector, strength (0 by day)
+uniform vec3 uFillTint;
+uniform vec4 uSoft;            // long shadows fade with the distance to what casts them: strength (0 by day), from m,
+                               // to m; w: how much the night takes out of the colours
 uniform float uLightOn;
 uniform vec3 uSeasonTree;
 uniform vec3 uSeasonGreen;
@@ -210,10 +216,11 @@ uniform vec3 uTrunk;
 uniform int uDebug;            // 0 normal, 1 albedo, 2 layer, 3 shadow, 4 depth, 5 normal
 out vec4 oColor;
 
-float shadowAt(vec3 P) {
-  if (uSun.w <= 0.0) return 1.0;
-  vec2 h = normalize(uSun.xy);
-  float tz = uSun.z / length(uSun.xy);
+// The march of v2/layers/light.py shadow_ref towards a light at direction L (above the horizon): the distance along
+// the ground to the first thing in the way, or -1 where the light arrives.
+float marchTo(vec3 P, vec3 L) {
+  vec2 h = normalize(L.xy);
+  float tz = L.z / length(L.xy);
   float t = uMarch.x;
   int steps = int(uMarch.z);
   for (int k = 0; k < 256; k++) {
@@ -226,17 +233,17 @@ float shadowAt(vec3 P) {
       vec4 A = texelFetch(uHmA, c, 0);
       vec4 B = texelFetch(uHmB, c, 0);
       float T = uHm.w + (floor(A.r * 255.0 + 0.5) + floor(A.g * 255.0 + 0.5) * 256.0) / 100.0;
-      if (uSources.x > 0.5 && T > zr) return 1.0;
+      if (uSources.x > 0.5 && T > zr) return t;
       float bt = floor(A.b * 255.0 + 0.5) * uHmUnits.x;
-      if (uSources.y > 0.5 && bt > 0.0 && T + bt > zr) return 1.0;
+      if (uSources.y > 0.5 && bt > 0.0 && T + bt > zr) return t;
       float tt = floor(A.a * 255.0 + 0.5) * uHmUnits.y, tb = floor(B.r * 255.0 + 0.5) * uHmUnits.y;
-      if (uSources.z > 0.5 && tt > 0.0 && T + tb < zr && T + tt > zr) return 1.0;
+      if (uSources.z > 0.5 && tt > 0.0 && T + tb < zr && T + tt > zr) return t;
       float st = floor(B.g * 255.0 + 0.5) * uHmUnits.z, sb = floor(B.b * 255.0 + 0.5) * uHmUnits.z;
-      if (uSources.w > 0.5 && st > 0.0 && T + sb < zr && T + st > zr) return 1.0;
+      if (uSources.w > 0.5 && st > 0.0 && T + sb < zr && T + st > zr) return t;
     }
     t *= uMarch.y;
   }
-  return 0.0;
+  return -1.0;
 }
 
 bool covered(vec3 P) {          // something above this point (a crown, a deck, a roof): no snow under it
@@ -284,17 +291,32 @@ void main() {
   }
   c = clamp(c, 0.0, 1.0);
   if (uSnow > 0.5 && n.z > uSnowCos && layer != 8 && !covered(P)) c = mix(c, vec3(0.96, 0.97, 1.0), 0.85);
-  float sh = 0.0;
-  if (uLightOn > 0.5 || uDebug == 3) sh = shadowAt(P);
+  float sh = 0.0;        // in the sun's cast shadow (1) or not (0): the mask the checks compare (debug 3)
+  float far = -1.0;      // how far away the thing casting it is (m along the ground)
+  if (uLightOn > 0.5 || uDebug == 3) {
+    if (uSun.w <= 0.0) sh = 1.0;
+    else { far = marchTo(P, uSun.xyz); sh = far >= 0.0 ? 1.0 : 0.0; }
+  }
   if (uDebug == 3) { oColor = vec4(vec3(1.0 - sh), 1.0); return; }
   if (uLightOn < 0.5) { oColor = vec4(c, 1.0); return; }
+  // a low sun's long shadows are soft: the further the thing that casts one, the more light it lets round (none of
+  // this by day: uSoft.x is 0 above the golden hour)
+  if (far >= 0.0) sh = 1.0 - uSoft.x * smoothstep(uSoft.y, uSoft.z, far);
   vec3 sv = uSun.xyz;
   float L = clamp((dot(n, sv) + uLightK.x) / (1.0 + uLightK.x), 0.0, 1.0);
-  float up = clamp((uSun.w + 1.0) / 3.0, 0.0, 1.0);
+  float up = clamp(uSun.w / 2.0, 0.0, 1.0);          // the sun's own light is gone at the horizon
   float direct = uLightK.z * L * (1.0 - sh) * up;
   vec3 amb = uLightK.y * uAmbTint * mix(vec3(1.0), uShadowTint, 0.45 * (1.0 - L * (1.0 - sh)) * up);
-  vec3 lit = c * (amb + uSunTint * direct);
-  oColor = vec4(lit, 1.0);
+  vec3 light = amb + uSunTint * direct;
+  if (uFill.w > 0.0)                         // golden hour: the faces turned away from the sun are not left flat
+    light += uFillTint * (uFill.w * clamp((dot(n, uFill.xyz) + uLightK.x) / (1.0 + uLightK.x), 0.0, 1.0));
+  if (uMoon.w > 0.0) {                       // night: moonlight from one side, so roofs, walls and ground differ
+    float Lm = clamp((dot(n, uMoon.xyz) + uLightK.x) / (1.0 + uLightK.x), 0.0, 1.0);
+    float shm = marchTo(P, uMoon.xyz) >= 0.0 ? uMoonTint.a : 0.0;
+    light += uMoonTint.rgb * (uMoon.w * Lm * (1.0 - shm));
+    c = mix(c, vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), uSoft.w);
+  }
+  oColor = vec4(c * light, 1.0);
 }`;
 
 // ------------------------------------------------------------------------------------------------ night (layer 10)
@@ -306,6 +328,7 @@ ${CAM_GLSL}
 ${VIEW_GLSL}
 uniform float uEps;
 uniform vec4 uLit;       // homes share, shops share, seed, hour
+uniform float uGrow;     // 0: the window itself; > 0: its halo, the rectangle grown by this share of its size each way
 out vec2 vUV;
 flat out float vKind;
 float hash(float n) { return fract(sin(n * 12.9898 + uLit.z * 78.233) * 43758.5453); }
@@ -319,10 +342,11 @@ void main() {
   float floorKey = floor(aA.z / 3.0);
   float r = hash(id) * 0.6 + hash(aB.z * 31.0 + floorKey) * 0.4;
   if (r > share) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
-  vec3 w = vec3(aA.x + aA.w * aCorner.x, aA.y + aB.x * aCorner.x, aA.z + aB.y * aCorner.y);
+  vec2 q = aCorner + (aCorner * 2.0 - 1.0) * uGrow;          // the halo lies in the wall's own plane
+  vec3 w = vec3(aA.x + aA.w * q.x, aA.y + aB.x * q.x, aA.z + aB.y * q.y);
   vec3 m = projectLocal(w);
   gl_Position = vec4(mapToClip(m.xy), depth01(m.z - uEps) * 2.0 - 1.0, 1.0);
-  vUV = aCorner;
+  vUV = q;
   vKind = kind + shop * 4.0;
 }`;
 
@@ -332,8 +356,18 @@ in vec2 vUV;
 flat in float vKind;
 uniform vec3 uWarm;
 uniform float uNight;
+uniform float uGrow;
+uniform float uHalo;
 out vec4 oColor;
 void main() {
+  if (uGrow > 0.0) {                         // the halo: warm light on the wall round the window, fading out
+    vec2 d = max(max(-vUV, vUV - 1.0), 0.0) / uGrow;
+    float r = length(d);
+    if (r >= 1.0) discard;
+    float a = (1.0 - r) * (1.0 - r);
+    oColor = vec4(uWarm * vec3(1.0, 0.78, 0.5) * (uHalo * a * uNight), 1.0);
+    return;
+  }
   vec2 e = min(vUV, 1.0 - vUV);
   float frame = smoothstep(0.0, 0.12, min(e.x, e.y));
   vec3 c = uWarm * (0.75 + 0.25 * frame);
@@ -366,7 +400,7 @@ out vec4 oColor;
 void main() {
   float r = length(vUV);
   if (r > 1.0) discard;
-  float a = exp(-r * r * 5.0) * 0.55 + smoothstep(0.12, 0.0, r) * 0.6;
+  float a = exp(-r * r * 4.0) * 0.55 * (1.0 - r) + smoothstep(0.1, 0.0, r) * 0.6;
   oColor = vec4(uWarm * a * uNight, 1.0);
 }`;
 

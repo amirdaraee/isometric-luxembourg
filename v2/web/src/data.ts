@@ -21,10 +21,13 @@ export interface ReleaseIndex {
 export interface LightConfig {
   march: { t0_m: number; growth: number; steps: number; bias_m: number };
   sun: { wrap: number; ambient: number; direct: number; shadow_keep: number };
-  grade: { golden_deg: [number, number]; blue_deg: [number, number]; night_deg: number; day_tint: number[];
-    golden_tint: number[]; blue_tint: number[]; night_tint: number[]; night_level: number };
+  grade: { golden_deg: [number, number]; golden_full_deg: number; blue_deg: [number, number]; night_deg: number;
+    day_tint: number[]; golden_tint: number[]; golden_sun_gain: number; golden_amb_tint: number[]; golden_amb_gain: number;
+    golden_shadow_soft: number; golden_fill: number; golden_fill_tint: number[]; golden_fill_el_deg: number; shadow_soft_m: [number, number]; blue_tint: number[]; blue_level: number;
+    night_tint: number[]; night_level: number; night_desaturate: number; moon_az_el_deg: [number, number];
+    moon_tint: number[]; moon_direct: number; moon_shadow: number };
   night: { window_lit_share_evening: number; window_lit_share_late: number; lamp_height_m: number; lamp_radius_px: number;
-    depth_eps_m: number };
+    depth_eps_m: number; window_gain: number; window_halo: number; window_halo_grow: number; lamp_gain: number };
   seasons: Record<string, { tree: number[]; green: number[]; sat: number }> & { snow_cos: number };
   look: { sat_max: number; lum_min: number; lum_max: number; ink_depth_m: number; ink_normal_cos: number };
   vehicles: Record<string, number | number[]> & { depth_eps_m: number };

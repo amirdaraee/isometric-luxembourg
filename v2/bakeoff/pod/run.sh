@@ -48,7 +48,7 @@ case "$JOB" in
   C2p) train 200 200 ;;
   C2)  train 2000 600 ;;
   C3)  paint "$NEW" 1867 ;;
-  C4)  paint "$NEW" 1867,1868 ;;
+  C4)  if [ -f "$NEW" ]; then paint "$NEW" 1867,1868; else paint "$V1" 1867,1868; fi ;;
   *) echo "unknown job $JOB"; false ;;
 esac
 RC=$?
