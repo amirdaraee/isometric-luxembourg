@@ -109,6 +109,9 @@ def graph() -> Graph:
     S += phase1(checks)
     S += phase3_cutaways()
     S += phase3()
+    from v2.build import report3
+    S.append(Stage("g3", report3.g3, deps=("g1", "check_tunnel_view", "check_cutaways"), code=("v2.build.report3",),
+                   params=_art, kind="report", doc="gate G3 so far: gate G1's suite again, the tunnel view and the cutaways"))
     return Graph(S)
 
 
@@ -166,7 +169,7 @@ def phase1(g0_checks) -> list:
               doc="far zoom: the colour layers merged by depth, from zoom 2 out"),
     ]
     layers = tuple(s.name for s in S)
-    S.append(Stage("release", L.release, deps=("scene",) + layers + ("layer_tunnels",), code=LAYER_CODE, raw=_layer_raw,
+    S.append(Stage("release", L.release, deps=("scene",) + layers + ("layer_tunnels", "layer_cutaways"), code=LAYER_CODE, raw=_layer_raw,
                    doc="the viewer's folder: every layer behind one index.json"))
     web = lambda area: sorted(p for p in (REPO / "v2/web/src").rglob("*.ts")) + [REPO / "v2/web/index.html"]  # noqa: E731
     chk = dict(kind="check", params=_with(_art, "checks", "g1"), code=LAYER_CODE + ("v2.checks.framework", "v2.checks.layer_checks",

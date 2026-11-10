@@ -260,6 +260,10 @@ def release(ctx):
         for f in files:
             os.symlink(ctx.dep(name) / f, ctx.out / f)
     idx["tunnels"] = json.loads((ctx.dep("layer_tunnels") / "meta.json").read_text())
+    # the landmark cutaways: a small layer of its own above layer 5 (its tiles under cutaways/<landmark>/), shown
+    # only while the viewer's cutaway toggle is on
+    os.symlink(ctx.dep("layer_cutaways") / "tiles", ctx.out / "cutaways")
+    idx["cutaways"] = json.loads((ctx.dep("layer_cutaways") / "tiles" / "index.json").read_text())
     idx["light"] = json.loads((ctx.dep("layer_light") / "light.json").read_text())
     idx["night"] = json.loads((ctx.dep("layer_night") / "night.json").read_text())
     from v2.config import CONFIG
