@@ -17,6 +17,8 @@ export interface ReleaseIndex {
   config: LightConfig;
   palette: Record<string, Record<string, { rgb: [number, number, number] }>>;
   polygon_en: [number, number][];
+  /** Tunnel view: the tubes' file and their depth range (releases built before it have none). */
+  tunnels?: { file: string; tubes: number; casemates: number; depth_cm: [number, number] };
 }
 export interface LightConfig {
   march: { t0_m: number; growth: number; steps: number; bias_m: number };
@@ -31,6 +33,8 @@ export interface LightConfig {
   seasons: Record<string, { tree: number[]; green: number[]; sat: number }> & { snow_cos: number };
   look: { sat_max: number; lum_min: number; lum_max: number; ink_depth_m: number; ink_normal_cos: number };
   vehicles: Record<string, number | number[]> & { depth_eps_m: number };
+  xray?: { opacity: number; depth_step_m: number; depth_steps: number; deep_share: number; ink_px: number; axis_px: number;
+    axis_min_px: number; vehicle_side: number };
 }
 
 export const BASE = (typeof location !== "undefined" && new URLSearchParams(location.search).get("data")) || "/data/";

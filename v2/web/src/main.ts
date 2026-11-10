@@ -2,19 +2,20 @@
 // Test hooks for the headless checks live on window.__v2 (scripts/viewer_checks.mjs).
 
 import { BASE, fetchBin, fetchBytes, fetchJSON, inflate, undelta, type ReleaseIndex } from "./data.ts";
-import { Compositor, LAYER_ID, type LightState, type View } from "./gl/compositor.ts";
+import { Compositor, DEBUG_XDEPTH, DEBUG_XID, LAYER_ID, type LightState, type View } from "./gl/compositor.ts";
 import { declutter, type Label } from "./labels.ts";
 import { luxDate, params, seasonOf, today, type Season } from "./params.ts";
 import { sunPosition, sunVector } from "./sun.ts";
 import type { TransitData } from "./sim/transit.ts";
 import { luxDayMask, luxSeconds } from "./sim/transit.ts";
+import { TunnelIndex, type TunnelsData } from "./tunnels.ts";
 import { Vehicles, type VehiclesData } from "./vehicles.ts";
 
 const t0 = performance.now();
 const canvas = document.getElementById("map") as HTMLCanvasElement;
 const labelsEl = document.getElementById("labels") as HTMLDivElement;
 const tipEl = document.getElementById("tip") as HTMLDivElement;
-const DEBUG: Record<string, number> = { albedo: 1, layer: 2, shadow: 3, depth: 4, normal: 5 };
+const DEBUG: Record<string, number> = { albedo: 1, layer: 2, shadow: 3, depth: 4, normal: 5, xid: DEBUG_XID, xdepth: DEBUG_XDEPTH };
 
 declare global { interface Window { __v2: Record<string, unknown> } }
 const hooks: Record<string, unknown> = {};
@@ -43,7 +44,11 @@ async function main() {
   let hourOverride: number | null = params.hour;
   let season: Season | null = params.season;
   const st: LightState = { sun: [0, 0, 1], el: 45, az: 180, season: "summer", snow: params.snow, hour: 12,
-    debug: DEBUG[params.debug] ?? 0, off };
+    debug: DEBUG[params.debug] ?? 0, off, xray: false };
+  // tunnel view (tunnel-view.md): the button or ?xray turns it on; holding X shows the other state while held
+  const xrayCan = !!idx.tunnels && !!idx.config.xray && !!idx.palette.tunnel;
+  let xrayOn = xrayCan && params.xray, xrayHeld = false;
+  const setXray = () => { st.xray = xrayCan && xrayOn !== xrayHeld; dirty = true; };
   const now = () => {
     if (hourOverride === null) return params.date ? today() : new Date();
     const d = params.date ?? (() => { const t = new Date(); return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() }; })();
@@ -62,6 +67,7 @@ async function main() {
   comp.zTop = 1e9;
   let dirty = true;
   comp.onTile = () => { dirty = true; };
+  setXray();
   // ------------------------------------------------------------------ first view
   let first = 0;
   hooks.view = view; hooks.state = st; hooks.comp = comp; hooks.idx = idx;
@@ -71,6 +77,7 @@ async function main() {
   hooks.setDebug = (d: string) => { st.debug = DEBUG[d] ?? 0; dirty = true; };
   hooks.missing = () => comp.missing(view, off) + comp.pending;
   hooks.renderNow = () => { draw(); };
+  hooks.setXray = (on: boolean) => { xrayOn = on; setXray(); };
   // ------------------------------------------------------------------ shadows (loaded after the first view)
   const loadShadows = async () => {
     const L = idx.light;
@@ -97,11 +104,25 @@ async function main() {
     const [vd, td] = await Promise.all([fetchJSON<VehiclesData>("vehicles.json"), fetchJSON<TransitData>("transit.json")]);
     veh = new Vehicles(vd, td, params.seed ?? 20240607);
     veh.ring = idx.polygon_en.map(([e, n]) => [e - idx.camera.origin_en[0], n - idx.camera.origin_en[1]] as [number, number]);
+    veh.tunnels = tunnels;
     // fill the streets: run the simulation for a while first
     const warm = params.nosim ? Math.min(params.simtime, 600) : params.simtime;
     for (let t = 0; t < warm; t += 0.1) veh.step(0.1, st.hour);
     veh.update(luxSeconds(now()), luxDayMask(now()));
     hooks.vehicles = veh;
+    dirty = true;
+  };
+  // ------------------------------------------------------------------ tunnel view: the tubes
+  let tunnels: TunnelIndex | null = null;
+  const loadTunnels = async () => {
+    if (!xrayCan) { hooks.tunnelsReady = true; return; }       // a release built before the tunnel view: none to wait for
+    comp.enableXray();
+    const td = await fetchJSON<TunnelsData>(idx.tunnels!.file);
+    comp.setTunnels(td);
+    tunnels = new TunnelIndex(td);
+    if (veh) { veh.tunnels = tunnels; veh.update(luxSeconds(now()), luxDayMask(now())); }
+    hooks.tunnels = td;
+    hooks.tunnelsReady = true;
     dirty = true;
   };
   // ------------------------------------------------------------------ labels and hover (layer 8 on the CPU)
@@ -159,8 +180,9 @@ async function main() {
   // ------------------------------------------------------------------ drawing
   const draw = () => {
     const t = performance.now();
-    comp.render(view, st, veh && !off.has("vehicles") ? { count: veh.count, inst: veh.inst, size: veh.size } : null);
+    comp.render(view, st, veh && !off.has("vehicles") ? { count: veh.count, inst: veh.inst, size: veh.size, deep: veh.deep } : null);
     hooks.lastFrameMs = performance.now() - t;
+    hooks.xrayDrawn = !!st.xray;
     placeLabels();
   };
   let lastT = performance.now();
@@ -187,6 +209,7 @@ async function main() {
         loadNight();
         loadLabels();
         loadVehicles();
+        loadTunnels();
       }
     }
     hooks.frames = frames;
@@ -270,6 +293,7 @@ async function main() {
   snowIn.addEventListener("change", () => { st.snow = snowIn.checked; dirty = true; });
   const toggles = document.getElementById("toggles") as HTMLDivElement;
   const names = [...Object.keys(LAYER_ID), "light", "night", "seasons", "vehicles", "look", "labels"];
+  if (xrayCan && idx.tunnels!.casemates) names.push("casemates");
   for (const n of names) {
     const lab = document.createElement("label");
     const box = lab.appendChild(document.createElement("input"));
@@ -277,6 +301,29 @@ async function main() {
     lab.append(` ${n}`);
     toggles.appendChild(lab);
   }
+  // tunnel view: the button, and X held
+  const xrayBtn = document.getElementById("xray") as HTMLButtonElement;
+  const showXray = () => { xrayBtn.setAttribute("aria-pressed", String(xrayOn)); };
+  if (!xrayCan) (document.getElementById("xrayRow") as HTMLDivElement).style.display = "none";
+  showXray();
+  xrayBtn.addEventListener("click", () => {
+    xrayOn = !xrayOn;
+    setXray(); showXray();
+    const u = new URL(location.href);                 // the state is in the address, so the view can be repeated
+    if (xrayOn) u.searchParams.set("xray", ""); else u.searchParams.delete("xray");
+    history.replaceState(null, "", u.pathname + u.search.replace(/=(?=&|$)/g, "") + u.hash);
+  });
+  const typing = (e: KeyboardEvent) => {
+    const t = e.target;
+    return t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable)
+      || (t instanceof HTMLInputElement && !["range", "checkbox", "radio", "button"].includes(t.type));
+  };
+  window.addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() !== "x" || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
+    xrayHeld = true; setXray();
+  });
+  window.addEventListener("keyup", (e) => { if (e.key.toLowerCase() === "x" && xrayHeld) { xrayHeld = false; setXray(); } });
+  window.addEventListener("blur", () => { if (xrayHeld) { xrayHeld = false; setXray(); } });
   toggles.addEventListener("change", (e) => {
     const t = e.target as HTMLInputElement;
     if (t.checked) off.delete(t.dataset.l!); else off.add(t.dataset.l!);

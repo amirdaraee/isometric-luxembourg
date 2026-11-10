@@ -108,6 +108,7 @@ def graph() -> Graph:
     ]
     S += phase1(checks)
     S += phase3_cutaways()
+    S += phase3()
     return Graph(S)
 
 
@@ -165,7 +166,7 @@ def phase1(g0_checks) -> list:
               doc="far zoom: the colour layers merged by depth, from zoom 2 out"),
     ]
     layers = tuple(s.name for s in S)
-    S.append(Stage("release", L.release, deps=("scene",) + layers, code=LAYER_CODE, raw=_layer_raw,
+    S.append(Stage("release", L.release, deps=("scene",) + layers + ("layer_tunnels",), code=LAYER_CODE, raw=_layer_raw,
                    doc="the viewer's folder: every layer behind one index.json"))
     web = lambda area: sorted(p for p in (REPO / "v2/web/src").rglob("*.ts")) + [REPO / "v2/web/index.html"]  # noqa: E731
     chk = dict(kind="check", params=_with(_art, "checks", "g1"), code=LAYER_CODE + ("v2.checks.framework", "v2.checks.layer_checks",
@@ -214,4 +215,23 @@ def phase3_cutaways() -> list:
               kind="check", params=check_params, raw=raw,
               code=LAYER_CODE + ("v2.layers.cutaways", "v2.checks.framework", "v2.checks.line_checks"),
               doc="K0-K6: the cut matches the model, the interior stays in its mask, flat light, depth, off means off"),
+    ]
+
+
+def phase3() -> list:
+    """Phase 3 (PLAN_V2 sections 9.1 and 10): the tunnel view's tubes and its gate, checks X1-X8."""
+    from v2.layers import tunnels as T
+    from v2.checks import tunnel_checks as tc
+    web = lambda area: (sorted(p for p in (REPO / "v2/web/src").rglob("*.ts")) + [REPO / "v2/web/index.html"]  # noqa: E731
+                        + sorted((REPO / "v2/web/scripts").glob("xray_*")) + [REPO / "v2/web/scripts/shot.mjs"])
+    return [
+        Stage("layer_tunnels", T.layer_tunnels, deps=("scene",), code=GEO + CAM + ("v2.layers.common", "v2.layers.raster"),
+              params=lambda area: {"tunnels": params()["tunnels"], "portal_max_from_end_m": params()["checks"]["portal_max_from_end_m"]},
+              raw=lambda area: [T.CASEMATES], doc="tunnel view: the tunnels of the graph and the casemates as tubes"),
+        Stage("check_tunnel_view", tc.check_tunnel_view, deps=("release", "scene"), kind="check",
+              params=lambda area: {**_art(area), "g3": params()["g3"], "tunnels": params()["tunnels"],
+                                   "portal_max_from_end_m": params()["checks"]["portal_max_from_end_m"]},
+              code=LAYER_CODE + ("v2.layers.tunnels", "v2.checks.framework", "v2.checks.layer_checks", "v2.checks.g1_checks"),
+              raw=lambda area: _layer_raw(area) + [T.CASEMATES] + web(area),
+              doc="tunnel view (x-ray): tubes in place and at depth, vehicles in tunnels only, the fade, toggles, portals, speed"),
     ]

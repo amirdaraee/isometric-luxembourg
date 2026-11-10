@@ -114,5 +114,16 @@
   "shadow_tint":   {"rgb": [70, 72, 110],  "src": "v2 (cast shadows are tinted, never black: OTHERS 7.1)"},
   "golden":        {"rgb": [255, 196, 120], "src": "v2"},
   "night_sky":     {"rgb": [16, 24, 40],   "src": "pipeline/layers/layers_common.py BG"}
+ },
+ "tunnel": {
+  "note": "Tunnel view (x-ray, v2/docs/specs/tunnel-view.md): the viewer draws the tunnels unlit in these colours over the faded city. One style: a fill, a darker far wall, ink edges, a light centre line; the fill goes towards `deep` by one step per 10 m under the surface.",
+  "ground":         {"rgb": [226, 223, 216], "src": "v2 (the neutral ground the city is faded over)"},
+  "floor":          {"rgb": [238, 156, 70],  "src": "v2 (tunnel floor)"},
+  "wall":           {"rgb": [206, 118, 52],  "src": "v2 (tunnel far wall)"},
+  "casemate_floor": {"rgb": [124, 176, 190], "src": "v2 (casemate gallery floor)"},
+  "casemate_wall":  {"rgb": [86, 136, 158],  "src": "v2 (casemate gallery far wall)"},
+  "deep":           {"rgb": [58, 36, 62],    "src": "v2 (the tone of the deepest step)"},
+  "axis":           {"rgb": [255, 240, 204], "src": "v2 (centre line of a tunnel)"},
+  "ink":            {"rgb": [52, 44, 40],    "src": "ink.line"}
  }
 }

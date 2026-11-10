@@ -46,6 +46,17 @@
   "snow_cos": 0.766
  },
  "look": {"sat_max": 0.68, "lum_min": 0.035, "lum_max": 0.97, "ink_depth_m": 1.2, "ink_normal_cos": 0.86},
+ "xray": {
+  "about": "Tunnel view (v2/docs/specs/tunnel-view.md). opacity: layers 1-7 over the neutral ground (rule 3). The fill of a tunnel goes one step towards palette tunnel.deep per depth_step_m under the surface, depth_steps steps at most, reaching deep_share of the way. ink_px: the width of the edge lines (screen px). The centre line of a tunnel is its profile, axis_px wide (a little over 1, so that it has no gap), on a tunnel at least axis_min_px wide on screen. vehicle_side: the tone of a vehicle's sides in a tunnel (its roof is 1; no light there).",
+  "opacity": 0.35,
+  "depth_step_m": 10.0,
+  "depth_steps": 6,
+  "deep_share": 0.72,
+  "ink_px": 1.25,
+  "axis_px": 1.1,
+  "axis_min_px": 10.0,
+  "vehicle_side": 0.8
+ },
  "vehicles": {"depth_eps_m": 0.25, "car": [4.4, 1.8, 1.45], "van": [5.4, 2.0, 2.2], "bus": [12.0, 2.55, 3.1],
               "tram_end": [9.5, 2.65, 3.6], "tram_mid": [8.7, 2.65, 3.6], "train_cab": [26.8, 2.9, 4.6],
               "train_coach": [26.8, 2.9, 4.6], "train_loco": [19.0, 2.9, 4.6], "funicular": [14.0, 2.6, 3.4]}

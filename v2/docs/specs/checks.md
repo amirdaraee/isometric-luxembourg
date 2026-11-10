@@ -127,6 +127,14 @@ Stages of the build graph (`python -m v2.build test g1`), each a gate; threshold
 
 Exceptions: none were needed for G1 (`v2/data/exceptions.json` is unchanged).
 
+## G3 checks (phase 3, run on the test area)
+
+Thresholds in `params.json` "g3".
+
+| Stage | Checks |
+|---|---|
+| `check_tunnel_view` (`v2/checks/tunnel_checks.py`, `v2/web/scripts/xray_checks.mjs`, `xray_audit.ts`) | X1-X8 of [tunnel-view.md](tunnel-view.md): tubes in place and at depth against the graph, vehicles in tunnels only, the fade, the layer toggles, portals, casemates, speed |
+
 ## Phase 3 checks: landmark cutaways (built, run on the test area)
 
 `python -m v2.build test check_cutaways` (`v2/checks/cutaway_checks.py`; thresholds in `params.json` "g3",

@@ -455,3 +455,123 @@ void main() {
   }
   oColor = vec4(ink ? grade(uInk) : grade(c), 1.0);
 }`;
+
+// ------------------------------------------------------------------------------------------------ tunnel view
+function swap(src: string, from: string, to: string): string {
+  if (!src.includes(from)) throw new Error("shader text not found: " + from);
+  return src.replace(from, to);
+}
+
+/** The look pass of the tunnel view (rule 3): the same pass, then the city at a fixed opacity over a neutral ground
+ * colour (uFade: colour, opacity). The view off uses LOOK_FS itself, untouched. */
+export const LOOK_FADE_FS = swap(swap(swap(LOOK_FS,
+  "out vec4 oColor;", "uniform vec4 uFade;\nout vec4 oColor;"),
+  "if (uDebug != 0 || uLookOn < 0.5) { oColor = vec4(c, 1.0); return; }",
+  "if (uDebug != 0) { oColor = vec4(c, 1.0); return; }\n  if (uLookOn < 0.5) { oColor = vec4(mix(uFade.rgb, c, uFade.a), 1.0); return; }"),
+  "oColor = vec4(ink ? grade(uInk) : grade(c), 1.0);", "oColor = vec4(mix(uFade.rgb, ink ? grade(uInk) : grade(c), uFade.a), 1.0);");
+
+// (v2/docs/specs/tunnel-view.md) The tubes of tunnels.json, drawn after the look pass over the faded city: unlit,
+// one fill per family, darker by one step per 10 m under the surface, ink on the edges of the floor and the top of
+// the far wall, the centre line on the floor. Their own depth buffer (uDepthRange is the tubes' range here).
+export const TUN_VS = `#version 300 es
+in vec3 aPos;            // local E, N, z
+in vec4 aAttr;           // a, b (across a face: its inked edges are at |a| = 1; src/tunnels.ts), cover (m), face + 4 * family
+in float aIdx;           // tube index
+in vec3 aSegA;           // a floor's segment of the centre line: its two ends (local E, N, z)
+in vec3 aSegB;
+${CAM_GLSL}
+${VIEW_GLSL}
+out vec2 vAB;
+out float vCover;
+flat out float vCode;
+flat out float vIdx;
+flat out vec4 vSeg;      // that segment on screen (device px from the top left)
+void main() {
+  vec3 m = projectLocal(aPos);
+  gl_Position = vec4(mapToClip(m.xy), depth01(m.z) * 2.0 - 1.0, 1.0);
+  vSeg = vec4((projectLocal(aSegA).xy - uView.xy) * uView.z + uSize * 0.5, (projectLocal(aSegB).xy - uView.xy) * uView.z + uSize * 0.5);
+  vAB = aAttr.xy;
+  vCover = aAttr.z;
+  vCode = aAttr.w;
+  vIdx = aIdx;
+}`;
+
+/** uDebug 6 (?debug=xid): red = class (1 floor, 2 wall, 3 end, 4 centre line; 5 vehicle: XVEH_FS) + 16 * depth
+ * step, green and blue = the tube index; 7 (?debug=xdepth): the depth buffer's 24 bits. The checks read these
+ * (scripts/xray_checks.mjs). */
+export const TUN_FS = `#version 300 es
+precision highp float;
+precision highp int;
+in vec2 vAB;
+in float vCover;
+flat in float vCode;
+flat in float vIdx;
+flat in vec4 vSeg;
+uniform vec2 uSize;
+uniform vec3 uFloor[2];    // per family: the graph's tunnels, the casemates
+uniform vec3 uWall[2];
+uniform vec3 uDeep;
+uniform vec3 uAxis;
+uniform vec3 uInk;
+uniform vec3 uTone;        // metres per depth step, steps at most, how far towards uDeep the last step goes
+uniform vec3 uLine;        // widths (screen px): ink, the centre line, the narrowest tunnel that gets a centre line
+uniform int uDebug;
+out vec4 oColor;
+vec3 code24(float v) {
+  float r = mod(v, 256.0), g = mod(floor(v / 256.0), 256.0), b = floor(v / 65536.0);
+  return vec3(r, g, b) / 255.0;
+}
+void main() {
+  int code = int(vCode + 0.5);
+  int face = code - 4 * (code / 4);
+  int fam = code / 4;
+  float steps = min(floor(max(vCover, 0.0) / uTone.x), uTone.y);
+  float wa = fwidth(vAB.x), wb = fwidth(vAB.y);
+  // the ink never takes more than a third of a face, so a tube a few pixels wide keeps its colour
+  float ia = min(uLine.x * wa, 0.33), ib = min(uLine.x * wb, 0.33);
+  bool ink = false, axis = false;
+  if (face == 0) {
+    ink = 1.0 - abs(vAB.x) < ia && vAB.y > 0.0;       // the floor's edge, where its wall stands
+    // the centre line: this pixel's distance to the profile's segment on screen
+    vec2 f = vec2(gl_FragCoord.x, uSize.y - gl_FragCoord.y), d = vSeg.zw - vSeg.xy;
+    float t = clamp(dot(f - vSeg.xy, d) / max(dot(d, d), 1e-9), 0.0, 1.0);
+    axis = distance(f, vSeg.xy + d * t) <= 0.5 * uLine.y;
+  } else if (face == 1) {
+    ink = 1.0 - vAB.x < ia;
+  } else {
+    ink = 1.0 - abs(vAB.x) < ia || 1.0 - vAB.y < ib;
+  }
+  if (uDebug == 6) {
+    float cls = axis ? 4.0 : float(face) + 1.0;
+    float idx = floor(vIdx + 0.5);
+    oColor = vec4((cls + 16.0 * steps) / 255.0, mod(idx, 256.0) / 255.0, floor(idx / 256.0) / 255.0, 1.0);
+    return;
+  }
+  if (uDebug == 7) { oColor = vec4(code24(floor(gl_FragCoord.z * 16777215.0 + 0.5)), 1.0); return; }
+  vec3 c = face == 0 ? uFloor[fam] : uWall[fam];
+  c = mix(c, uDeep, uTone.z * steps / max(uTone.y, 1.0));
+  if (axis && fam == 0 && 2.0 / max(wa, 1e-6) >= uLine.z) c = uAxis;     // on a tunnel wide enough on screen
+  if (ink) c = uInk;
+  oColor = vec4(c, 1.0);
+}`;
+
+/** A vehicle in a tunnel (rule 4): its own colour, no light; with VEH_VS, against the tubes' depth. */
+export const XVEH_FS = `#version 300 es
+precision highp float;
+precision highp int;
+in vec3 vN;
+flat in float vCol;
+uniform vec3 uColours[8];
+uniform float uSide;       // the tone of its sides (its roof is 1)
+uniform int uDebug;
+out vec4 oColor;
+void main() {
+  if (uDebug == 6) { oColor = vec4(5.0 / 255.0, 0.0, 0.0, 1.0); return; }
+  if (uDebug == 7) {
+    float v = floor(gl_FragCoord.z * 16777215.0 + 0.5);
+    oColor = vec4(mod(v, 256.0) / 255.0, mod(floor(v / 256.0), 256.0) / 255.0, floor(v / 65536.0) / 255.0, 1.0);
+    return;
+  }
+  vec3 c = uColours[int(vCol + 0.5)];
+  oColor = vec4(vN.z > 0.5 ? c * 0.92 + 0.08 : c * uSide, 1.0);
+}`;
