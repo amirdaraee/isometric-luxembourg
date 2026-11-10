@@ -102,6 +102,17 @@ void main() {
   oNormal = vec4(g.b, g.a, k, 0.0);
 }`;
 
+/** Layer 5 while a cutaway is on (landmark-cutaways.md rule 5): as LAYER_FS, without the pixels of the buildings the
+ * cutaways replace (by their id: the layer's id tile holds id << 8 | class, little-endian). */
+export const CUT_LAYER_FS = LAYER_FS
+  .replace("uniform float uHasK;", "uniform float uHasK;\nuniform sampler2D uI;\nuniform int uCutN;\nuniform float uCutIdx[16];")
+  .replace("  if (dcm < 0.0) discard;", `  if (dcm < 0.0) discard;
+  {
+    vec4 iv = texelFetch(uI, p, 0);
+    float obj = floor(iv.g * 255.0 + 0.5) + floor(iv.b * 255.0 + 0.5) * 256.0 + floor(iv.a * 255.0 + 0.5) * 65536.0;
+    for (int i = 0; i < 16; i++) if (i < uCutN && obj == uCutIdx[i]) discard;
+  }`);
+
 /** Layers 1 and 2 together: the ground's colour times the relief's (a multiply layer), or the relief's walls. */
 export const GROUND_FS = TILE_FS_HEAD + `
 uniform sampler2D uGC; uniform sampler2D uGG; uniform sampler2D uGK; uniform float uGDmin; uniform float uGOn;
@@ -350,6 +361,22 @@ void main() {
   vKind = kind + shop * 4.0;
 }`;
 
+/** The windows while a cutaway is on: as WIN_VS, without those of a replaced building that stood in its slice
+ * (uCutSlice: the building's index and the slice's floor; uCutHalf: six half-planes of local E, N per slice). */
+export const WIN_CUT_VS = WIN_VS
+  .replace("uniform float uGrow;", "uniform float uGrow;\nuniform int uCutN;\nuniform vec4 uCutSlice[8];\nuniform vec3 uCutHalf[48];\n")
+  .replace("  vec2 q = aCorner + ", `  {
+    vec3 mid = vec3(aA.x + aA.w * 0.5, aA.y + aB.x * 0.5, aA.z + aB.y * 0.5);
+    for (int i = 0; i < 8; i++) {
+      if (i >= uCutN) break;
+      if (aB.z != uCutSlice[i].x || mid.z <= uCutSlice[i].y) continue;
+      bool inside = true;
+      for (int j = 0; j < 6; j++) { vec3 h = uCutHalf[i * 6 + j]; if (!(h.x * mid.x + h.y * mid.y > h.z)) inside = false; }
+      if (inside) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+    }
+  }
+  vec2 q = aCorner + `);
+
 export const WIN_FS = `#version 300 es
 precision highp float;
 in vec2 vUV;
@@ -454,4 +481,124 @@ void main() {
     }
   }
   oColor = vec4(ink ? grade(uInk) : grade(c), 1.0);
+}`;
+
+// ------------------------------------------------------------------------------------------------ tunnel view
+function swap(src: string, from: string, to: string): string {
+  if (!src.includes(from)) throw new Error("shader text not found: " + from);
+  return src.replace(from, to);
+}
+
+/** The look pass of the tunnel view (rule 3): the same pass, then the city at a fixed opacity over a neutral ground
+ * colour (uFade: colour, opacity). The view off uses LOOK_FS itself, untouched. */
+export const LOOK_FADE_FS = swap(swap(swap(LOOK_FS,
+  "out vec4 oColor;", "uniform vec4 uFade;\nout vec4 oColor;"),
+  "if (uDebug != 0 || uLookOn < 0.5) { oColor = vec4(c, 1.0); return; }",
+  "if (uDebug != 0) { oColor = vec4(c, 1.0); return; }\n  if (uLookOn < 0.5) { oColor = vec4(mix(uFade.rgb, c, uFade.a), 1.0); return; }"),
+  "oColor = vec4(ink ? grade(uInk) : grade(c), 1.0);", "oColor = vec4(mix(uFade.rgb, ink ? grade(uInk) : grade(c), uFade.a), 1.0);");
+
+// (v2/docs/specs/tunnel-view.md) The tubes of tunnels.json, drawn after the look pass over the faded city: unlit,
+// one fill per family, darker by one step per 10 m under the surface, ink on the edges of the floor and the top of
+// the far wall, the centre line on the floor. Their own depth buffer (uDepthRange is the tubes' range here).
+export const TUN_VS = `#version 300 es
+in vec3 aPos;            // local E, N, z
+in vec4 aAttr;           // a, b (across a face: its inked edges are at |a| = 1; src/tunnels.ts), cover (m), face + 4 * family
+in float aIdx;           // tube index
+in vec3 aSegA;           // a floor's segment of the centre line: its two ends (local E, N, z)
+in vec3 aSegB;
+${CAM_GLSL}
+${VIEW_GLSL}
+out vec2 vAB;
+out float vCover;
+flat out float vCode;
+flat out float vIdx;
+flat out vec4 vSeg;      // that segment on screen (device px from the top left)
+void main() {
+  vec3 m = projectLocal(aPos);
+  gl_Position = vec4(mapToClip(m.xy), depth01(m.z) * 2.0 - 1.0, 1.0);
+  vSeg = vec4((projectLocal(aSegA).xy - uView.xy) * uView.z + uSize * 0.5, (projectLocal(aSegB).xy - uView.xy) * uView.z + uSize * 0.5);
+  vAB = aAttr.xy;
+  vCover = aAttr.z;
+  vCode = aAttr.w;
+  vIdx = aIdx;
+}`;
+
+/** uDebug 6 (?debug=xid): red = class (1 floor, 2 wall, 3 end, 4 centre line; 5 vehicle: XVEH_FS) + 16 * depth
+ * step, green and blue = the tube index; 7 (?debug=xdepth): the depth buffer's 24 bits. The checks read these
+ * (scripts/xray_checks.mjs). */
+export const TUN_FS = `#version 300 es
+precision highp float;
+precision highp int;
+in vec2 vAB;
+in float vCover;
+flat in float vCode;
+flat in float vIdx;
+flat in vec4 vSeg;
+uniform vec2 uSize;
+uniform vec3 uFloor[2];    // per family: the graph's tunnels, the casemates
+uniform vec3 uWall[2];
+uniform vec3 uDeep;
+uniform vec3 uAxis;
+uniform vec3 uInk;
+uniform vec3 uTone;        // metres per depth step, steps at most, how far towards uDeep the last step goes
+uniform vec3 uLine;        // widths (screen px): ink, the centre line, the narrowest tunnel that gets a centre line
+uniform int uDebug;
+out vec4 oColor;
+vec3 code24(float v) {
+  float r = mod(v, 256.0), g = mod(floor(v / 256.0), 256.0), b = floor(v / 65536.0);
+  return vec3(r, g, b) / 255.0;
+}
+void main() {
+  int code = int(vCode + 0.5);
+  int face = code - 4 * (code / 4);
+  int fam = code / 4;
+  float steps = min(floor(max(vCover, 0.0) / uTone.x), uTone.y);
+  float wa = fwidth(vAB.x), wb = fwidth(vAB.y);
+  // the ink never takes more than a third of a face, so a tube a few pixels wide keeps its colour
+  float ia = min(uLine.x * wa, 0.33), ib = min(uLine.x * wb, 0.33);
+  bool ink = false, axis = false;
+  if (face == 0) {
+    ink = 1.0 - abs(vAB.x) < ia && vAB.y > 0.0;       // the floor's edge, where its wall stands
+    // the centre line: this pixel's distance to the profile's segment on screen
+    vec2 f = vec2(gl_FragCoord.x, uSize.y - gl_FragCoord.y), d = vSeg.zw - vSeg.xy;
+    float t = clamp(dot(f - vSeg.xy, d) / max(dot(d, d), 1e-9), 0.0, 1.0);
+    axis = distance(f, vSeg.xy + d * t) <= 0.5 * uLine.y;
+  } else if (face == 1) {
+    ink = 1.0 - vAB.x < ia;
+  } else {
+    ink = 1.0 - abs(vAB.x) < ia || 1.0 - vAB.y < ib;
+  }
+  if (uDebug == 6) {
+    float cls = axis ? 4.0 : float(face) + 1.0;
+    float idx = floor(vIdx + 0.5);
+    oColor = vec4((cls + 16.0 * steps) / 255.0, mod(idx, 256.0) / 255.0, floor(idx / 256.0) / 255.0, 1.0);
+    return;
+  }
+  if (uDebug == 7) { oColor = vec4(code24(floor(gl_FragCoord.z * 16777215.0 + 0.5)), 1.0); return; }
+  vec3 c = face == 0 ? uFloor[fam] : uWall[fam];
+  c = mix(c, uDeep, uTone.z * steps / max(uTone.y, 1.0));
+  if (axis && fam == 0 && 2.0 / max(wa, 1e-6) >= uLine.z) c = uAxis;     // on a tunnel wide enough on screen
+  if (ink) c = uInk;
+  oColor = vec4(c, 1.0);
+}`;
+
+/** A vehicle in a tunnel (rule 4): its own colour, no light; with VEH_VS, against the tubes' depth. */
+export const XVEH_FS = `#version 300 es
+precision highp float;
+precision highp int;
+in vec3 vN;
+flat in float vCol;
+uniform vec3 uColours[8];
+uniform float uSide;       // the tone of its sides (its roof is 1)
+uniform int uDebug;
+out vec4 oColor;
+void main() {
+  if (uDebug == 6) { oColor = vec4(5.0 / 255.0, 0.0, 0.0, 1.0); return; }
+  if (uDebug == 7) {
+    float v = floor(gl_FragCoord.z * 16777215.0 + 0.5);
+    oColor = vec4(mod(v, 256.0) / 255.0, mod(floor(v / 256.0), 256.0) / 255.0, floor(v / 65536.0) / 255.0, 1.0);
+    return;
+  }
+  vec3 c = uColours[int(vCol + 0.5)];
+  oColor = vec4(vN.z > 0.5 ? c * 0.92 + 0.08 : c * uSide, 1.0);
 }`;

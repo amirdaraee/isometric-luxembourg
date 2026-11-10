@@ -101,7 +101,7 @@ def check_independence(ctx):
             if ok.any():
                 cmax = max(cmax, float(np.abs(built["rgb"][ok].astype(float) - crop(r.rgb)[ok]).mean()))
     rep.at_most("C1b", "built tiles whose geometry differs from the renderer's", gbad, 0, ex2)
-    rep.at_most("C1c", "mean colour difference of a built tile from the renderer (WebP: lossy q90; lossless for relief, water, layers 5-7)", round(cmax, 2), 3.0)
+    rep.at_most("C1c", "mean colour difference of a built tile from the renderer (WebP: lossy for ground and transport; lossless for relief, water, layers 5-7)", round(cmax, 2), 3.0)
     rep.info("C1d", "layer off in the viewer: no pixel of it, no shadow of it (check_viewer V1, V2)", "see check_viewer")
     return rep.result()
 

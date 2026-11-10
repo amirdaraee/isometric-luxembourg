@@ -2,19 +2,21 @@
 // Test hooks for the headless checks live on window.__v2 (scripts/viewer_checks.mjs).
 
 import { BASE, fetchBin, fetchBytes, fetchJSON, inflate, undelta, type ReleaseIndex } from "./data.ts";
-import { Compositor, LAYER_ID, type LightState, type View } from "./gl/compositor.ts";
+import { Compositor, DEBUG_XDEPTH, DEBUG_XID, LAYER_ID, type LightState, type View } from "./gl/compositor.ts";
+import { BUILDING_CLASSES, cutawayParam, depthWithCutaways, parseCutaway, tileMeets } from "./cutaways.ts";
 import { declutter, type Label } from "./labels.ts";
 import { luxDate, params, seasonOf, today, type Season } from "./params.ts";
 import { sunPosition, sunVector } from "./sun.ts";
 import type { TransitData } from "./sim/transit.ts";
 import { luxDayMask, luxSeconds } from "./sim/transit.ts";
+import { TunnelIndex, type TunnelsData } from "./tunnels.ts";
 import { Vehicles, type VehiclesData } from "./vehicles.ts";
 
 const t0 = performance.now();
 const canvas = document.getElementById("map") as HTMLCanvasElement;
 const labelsEl = document.getElementById("labels") as HTMLDivElement;
 const tipEl = document.getElementById("tip") as HTMLDivElement;
-const DEBUG: Record<string, number> = { albedo: 1, layer: 2, shadow: 3, depth: 4, normal: 5 };
+const DEBUG: Record<string, number> = { albedo: 1, layer: 2, shadow: 3, depth: 4, normal: 5, xid: DEBUG_XID, xdepth: DEBUG_XDEPTH };
 
 declare global { interface Window { __v2: Record<string, unknown> } }
 const hooks: Record<string, unknown> = {};
@@ -43,7 +45,22 @@ async function main() {
   let hourOverride: number | null = params.hour;
   let season: Season | null = params.season;
   const st: LightState = { sun: [0, 0, 1], el: 45, az: 180, season: "summer", snow: params.snow, hour: 12,
-    debug: DEBUG[params.debug] ?? 0, off };
+    debug: DEBUG[params.debug] ?? 0, off, xray: false };
+  // tunnel view (tunnel-view.md): the button or ?xray turns it on; holding X shows the other state while held
+  const xrayCan = !!idx.tunnels && !!idx.config.xray && !!idx.palette.tunnel;
+  let xrayOn = xrayCan && params.xray, xrayHeld = false;
+  const setXray = () => { st.xray = xrayCan && xrayOn !== xrayHeld; dirty = true; };
+  // landmark cutaways (landmark-cutaways.md): the button or ?cutaway turns them on; off, the buildings are whole
+  const cutNames = Object.keys(idx.cutaways?.landmarks ?? {});
+  let cutOn = parseCutaway(params.cutaway, cutNames);
+  let cutReplaced = new Set<number>();
+  const setCutaway = (names: string[]) => {
+    cutOn = cutNames.filter((n) => names.includes(n));
+    if (cutOn.length) comp.enableCutaways();
+    st.cut = cutOn;
+    cutReplaced = new Set(cutOn.flatMap((n) => idx.cutaways!.landmarks[n].replaces_index));
+    dirty = true;
+  };
   const now = () => {
     if (hourOverride === null) return params.date ? today() : new Date();
     const d = params.date ?? (() => { const t = new Date(); return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() }; })();
@@ -61,7 +78,10 @@ async function main() {
   // the highest anything stands (terrain + 80 m), as the reference march
   comp.zTop = 1e9;
   let dirty = true;
+  let showCutaway = () => {};
   comp.onTile = () => { dirty = true; };
+  setXray();
+  setCutaway(cutOn);
   // ------------------------------------------------------------------ first view
   let first = 0;
   hooks.view = view; hooks.state = st; hooks.comp = comp; hooks.idx = idx;
@@ -69,8 +89,16 @@ async function main() {
   hooks.setHour = (h: number) => { hourOverride = h; updateSun(); dirty = true; };
   hooks.setOff = (names: string[]) => { off.clear(); names.forEach((n) => off.add(n)); dirty = true; };
   hooks.setDebug = (d: string) => { st.debug = DEBUG[d] ?? 0; dirty = true; };
-  hooks.missing = () => comp.missing(view, off) + comp.pending;
+  hooks.missing = () => comp.missing(view, off, cutOn) + comp.pending;
   hooks.renderNow = () => { draw(); };
+  // the checks' probe vehicles (boxes at given places), drawn in place of the simulation's while set
+  let probes: { count: number; inst: Float32Array; size: Float32Array } | null = null;
+  hooks.setProbes = (inst: number[] | null, size: number[] = []) => {
+    probes = inst ? { count: inst.length / 4, inst: new Float32Array(inst), size: new Float32Array(size) } : null;
+    dirty = true;
+  };
+  hooks.setXray = (on: boolean) => { xrayOn = on; setXray(); };
+  hooks.setCutaway = (names: string[] | boolean) => { setCutaway(names === true ? cutNames : names === false ? [] : names); showCutaway(); };
   // ------------------------------------------------------------------ shadows (loaded after the first view)
   const loadShadows = async () => {
     const L = idx.light;
@@ -97,11 +125,25 @@ async function main() {
     const [vd, td] = await Promise.all([fetchJSON<VehiclesData>("vehicles.json"), fetchJSON<TransitData>("transit.json")]);
     veh = new Vehicles(vd, td, params.seed ?? 20240607);
     veh.ring = idx.polygon_en.map(([e, n]) => [e - idx.camera.origin_en[0], n - idx.camera.origin_en[1]] as [number, number]);
+    veh.tunnels = tunnels;
     // fill the streets: run the simulation for a while first
     const warm = params.nosim ? Math.min(params.simtime, 600) : params.simtime;
     for (let t = 0; t < warm; t += 0.1) veh.step(0.1, st.hour);
     veh.update(luxSeconds(now()), luxDayMask(now()));
     hooks.vehicles = veh;
+    dirty = true;
+  };
+  // ------------------------------------------------------------------ tunnel view: the tubes
+  let tunnels: TunnelIndex | null = null;
+  const loadTunnels = async () => {
+    if (!xrayCan) { hooks.tunnelsReady = true; return; }       // a release built before the tunnel view: none to wait for
+    comp.enableXray();
+    const td = await fetchJSON<TunnelsData>(idx.tunnels!.file);
+    comp.setTunnels(td);
+    tunnels = new TunnelIndex(td);
+    if (veh) { veh.tunnels = tunnels; veh.update(luxSeconds(now()), luxDayMask(now())); }
+    hooks.tunnels = td;
+    hooks.tunnelsReady = true;
     dirty = true;
   };
   // ------------------------------------------------------------------ labels and hover (layer 8 on the CPU)
@@ -132,6 +174,44 @@ async function main() {
     return { depth: code === 65535 ? Infinity : (code + dmin) / 100 + Math.sqrt(3) * sy, id: id >>> 0 };
   };
   hooks.bufferAt = bufferAt;
+  // a cutaway's depth tiles on the CPU, for the labels' and the pointer's depth test while it is on
+  const cutDecoded = new Map<string, Uint8Array | null>();
+  const cutDepthAt = (mx: number, my: number, z: number) => {
+    let depth = Infinity;
+    const size = 512 * 2 ** z, tx = Math.floor(mx / size), ty = Math.floor(my / size), name = `${tx}_${ty}`;
+    for (const n of cutOn) {
+      const lm = idx.cutaways!.landmarks[n];
+      const dmin = lm.tiles[String(z)]?.[name];
+      if (dmin === undefined || !tileMeets(lm.bbox_px, z, tx, ty)) continue;
+      const key = `${n}/${z}/${name}`;
+      if (!cutDecoded.has(key)) {
+        cutDecoded.set(key, null);
+        fetchBin(`cutaways/${key}.g.bin`, 512, 4).then((g) => { cutDecoded.set(key, g); dirty = true; });
+      }
+      const g = cutDecoded.get(key);
+      if (!g) return NaN;                               // still loading: not known yet
+      const px = Math.floor((mx - tx * size) / 2 ** z), py = Math.floor((my - ty * size) / 2 ** z);
+      const o = (py * 512 + px) * 4, code = g[o] + g[o + 1] * 256;
+      if (code === 65535) continue;
+      const sy = idx.camera.frame.sy1 - (ty * 512 + py + 0.5) * 2 ** z * idx.camera.mpp;
+      depth = Math.min(depth, (code + dmin) / 100 + Math.sqrt(3) * sy);
+    }
+    return depth;
+  };
+  /** The nearest surface's depth at a map pixel, as the frame shows it: layer 8, or the cutaway where it replaces. */
+  const depthAt = (mx: number, my: number, z: number): number | null => {
+    const b = bufferAt(mx, my, z);
+    if (!b) return null;
+    if (!cutOn.length || off.has("buildings")) return b.depth;
+    const d = depthWithCutaways(b, cutReplaced, cutDepthAt(mx, my, z));
+    return Number.isNaN(d) ? null : d;
+  };
+  const labelHidden = (px: number, py: number, depth: number, z: number) => {
+    const d = depthAt(px, py, z);
+    return d !== null && Number.isFinite(d) && d < depth - 1.5 * 2 ** z;
+  };
+  hooks.depthAt = depthAt;
+  hooks.labelHidden = labelHidden;
   const loadLabels = async () => { labels = await fetchJSON<Label[]>("labels.json"); dirty = true; };
   const measureCtx = document.createElement("canvas").getContext("2d")!;
   const placeLabels = () => {
@@ -141,10 +221,7 @@ async function main() {
       (l.py - view.cy) * view.scale / dpr + comp.H / dpr / 2], (l) => {
       measureCtx.font = l.prio <= 2 ? "600 13px system-ui" : "12px system-ui";
       return measureCtx.measureText(l.name).width;
-    }, (l) => {
-      const b = bufferAt(l.px, l.py, z);
-      return !!b && Number.isFinite(b.depth) && b.depth < l.depth - 1.5 * 2 ** z;
-    }, { w: comp.W / dpr, h: comp.H / dpr });
+    }, (l) => labelHidden(l.px, l.py, l.depth, z), { w: comp.W / dpr, h: comp.H / dpr });
     hooks.labelsShown = shown.map((s) => ({ name: s.l.name, box: s.box }));
     labelsEl.replaceChildren(...shown.map((s) => {
       const d = document.createElement("div");
@@ -159,8 +236,10 @@ async function main() {
   // ------------------------------------------------------------------ drawing
   const draw = () => {
     const t = performance.now();
-    comp.render(view, st, veh && !off.has("vehicles") ? { count: veh.count, inst: veh.inst, size: veh.size } : null);
+    comp.render(view, st, probes ?? (veh && !off.has("vehicles") ? { count: veh.count, inst: veh.inst, size: veh.size, deep: veh.deep } : null));
     hooks.lastFrameMs = performance.now() - t;
+    hooks.xrayDrawn = !!st.xray;
+    hooks.cutawayDrawn = (st.cut ?? []).join(",");
     placeLabels();
   };
   let lastT = performance.now();
@@ -180,13 +259,14 @@ async function main() {
       dirty = false;
       draw();
       frames++;
-      if (!first && comp.missing(view, off) === 0 && comp.pending === 0) {
+      if (!first && comp.missing(view, off, cutOn) === 0 && comp.pending === 0) {
         first = performance.now() - t0;
         hooks.firstViewMs = first;
         loadShadows().then(() => { hooks.shadowsMs = performance.now() - t0; });
         loadNight();
         loadLabels();
         loadVehicles();
+        loadTunnels();
       }
     }
     hooks.frames = frames;
@@ -239,6 +319,13 @@ async function main() {
     const b = bufferAt(mx, my, comp.level(view));
     if (!b || !b.id) { tipEl.style.display = "none"; return; }
     const cls = b.id & 255, obj = b.id >>> 8;
+    const cutHere = cutOn.find((n) => idx.cutaways!.landmarks[n].replaces_index.includes(obj));
+    if (cutHere && BUILDING_CLASSES.has(cls) && !off.has("buildings")) {            // a building that is cut open: its name
+      tipEl.textContent = `${idx.cutaways!.landmarks[cutHere].name}, cut open`;
+      tipEl.style.display = "block";
+      tipEl.style.left = `${x + 12}px`; tipEl.style.top = `${y + 12}px`;
+      return;
+    }
     const names: Record<number, string> = { 1: "ground", 2: "wall", 3: "water", 4: "road", 5: "railway", 6: "tram line", 7: "path",
       8: "steps", 9: "bridge", 10: "tunnel portal", 11: "building", 12: "window", 13: "door", 14: "shop front", 15: "bridge",
       16: "viaduct pier", 17: "viaduct arch", 18: "tree", 19: "tree", 20: "parapet", 21: "lift", 22: "building", 23: "roof" };
@@ -270,6 +357,7 @@ async function main() {
   snowIn.addEventListener("change", () => { st.snow = snowIn.checked; dirty = true; });
   const toggles = document.getElementById("toggles") as HTMLDivElement;
   const names = [...Object.keys(LAYER_ID), "light", "night", "seasons", "vehicles", "look", "labels"];
+  if (xrayCan && idx.tunnels!.casemates) names.push("casemates");
   for (const n of names) {
     const lab = document.createElement("label");
     const box = lab.appendChild(document.createElement("input"));
@@ -277,6 +365,42 @@ async function main() {
     lab.append(` ${n}`);
     toggles.appendChild(lab);
   }
+  // tunnel view: the button, and X held
+  const xrayBtn = document.getElementById("xray") as HTMLButtonElement;
+  const showXray = () => { xrayBtn.setAttribute("aria-pressed", String(xrayOn)); };
+  if (!xrayCan) (document.getElementById("xrayRow") as HTMLDivElement).style.display = "none";
+  showXray();
+  xrayBtn.addEventListener("click", () => {
+    xrayOn = !xrayOn;
+    setXray(); showXray();
+    const u = new URL(location.href);                 // the state is in the address, so the view can be repeated
+    if (xrayOn) u.searchParams.set("xray", ""); else u.searchParams.delete("xray");
+    history.replaceState(null, "", u.pathname + u.search.replace(/=(?=&|$)/g, "") + u.hash);
+  });
+  // cutaways: the button turns all of them on or off; the address keeps the choice (?cutaway, ?cutaway=a,b)
+  const cutBtn = document.getElementById("cutaway") as HTMLButtonElement;
+  if (!cutNames.length) (document.getElementById("cutawayRow") as HTMLDivElement).style.display = "none";
+  showCutaway = () => { cutBtn.setAttribute("aria-pressed", String(cutOn.length > 0)); };
+  showCutaway();
+  cutBtn.addEventListener("click", () => {
+    setCutaway(cutOn.length ? [] : cutNames);
+    showCutaway();
+    const u = new URL(location.href);
+    const v = cutawayParam(cutOn, cutNames);
+    if (v === null) u.searchParams.delete("cutaway"); else u.searchParams.set("cutaway", v);
+    history.replaceState(null, "", u.pathname + u.search.replace(/=(?=&|$)/g, "") + u.hash);
+  });
+  const typing = (e: KeyboardEvent) => {
+    const t = e.target;
+    return t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable)
+      || (t instanceof HTMLInputElement && !["range", "checkbox", "radio", "button"].includes(t.type));
+  };
+  window.addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() !== "x" || e.repeat || e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
+    xrayHeld = true; setXray();
+  });
+  window.addEventListener("keyup", (e) => { if (e.key.toLowerCase() === "x" && xrayHeld) { xrayHeld = false; setXray(); } });
+  window.addEventListener("blur", () => { if (xrayHeld) { xrayHeld = false; setXray(); } });
   toggles.addEventListener("change", (e) => {
     const t = e.target as HTMLInputElement;
     if (t.checked) off.delete(t.dataset.l!); else off.add(t.dataset.l!);

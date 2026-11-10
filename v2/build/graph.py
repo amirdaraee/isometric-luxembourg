@@ -9,7 +9,8 @@ keys of the stages it depends on, and the fingerprints of the raw files it reads
         ...                                     the stage's files
 
 so every output is versioned and never overwritten: a changed input makes a new key and a new folder, and an old
-version stays until it is cleaned. A stage whose folder already holds a manifest with status "ok" is skipped, so
+version stays until it is cleaned. `<stage>/current.json` names the folder of the build last asked for, whether the
+stage ran or was already up to date. A stage whose folder already holds a manifest with status "ok" is skipped, so
 an interrupted build resumes where it stopped. Work happens in a temporary folder that is renamed when complete.
 
 Check stages return {"passed": bool, ...}. A failed check is recorded (status "failed") and makes the build exit
@@ -194,6 +195,9 @@ class Graph:
         if man.exists() and not force:
             m = json.loads(man.read_text())
             if m.get("status") == "ok":
+                # current.json names the output of the build just asked for, also when nothing had to run: after a
+                # build with other inputs (another art method), building this one again points back to it
+                self._point(dest, m["key"], "ok")
                 print(f"  = {name:<28} up to date  {dest.relative_to(v2_data())}")
                 return m
         k, spec = self.key(name, area)
@@ -224,7 +228,7 @@ class Graph:
         if dest.exists():
             shutil.rmtree(dest)
         tmp.rename(dest)
-        (dest.parent / "current.json").write_text(json.dumps({"key": k, "folder": dest.name, "status": status}))
+        self._point(dest, k, status)
         mark = {"ok": "ok", "failed": "FAILED", "error": "ERROR"}[status]
         print(f"    {mark} in {manifest['seconds']}s, {manifest['bytes'] / 1e6:.2f} MB  {dest.relative_to(v2_data())}",
               flush=True)
@@ -234,6 +238,14 @@ class Graph:
             for line in summary.get("lines", []):
                 print("     ", line)
         return manifest
+
+    @staticmethod
+    def _point(dest: Path, key: str, status: str):
+        """<stage>/current.json: the output folder of the stage's latest build (written only when it changes)."""
+        cur = dest.parent / "current.json"
+        text = json.dumps({"key": key, "folder": dest.name, "status": status})
+        if not cur.exists() or cur.read_text() != text:
+            cur.write_text(text)
 
     def build(self, area: str, targets, workers: int = 2, force=()) -> int:
         order = self.order(targets)

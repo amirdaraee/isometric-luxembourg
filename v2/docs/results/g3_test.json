@@ -1,0 +1,3945 @@
+{
+ "area": "test",
+ "art": "a",
+ "gate": "G3 (checks so far)",
+ "passed": true,
+ "checks": {
+  "check_layers": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "L1.1",
+     "title": "ground pixels of the area without a class (of 50443085)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L1.2",
+     "title": "no shading: worst relative luminance difference of a ground class, north vs south slopes",
+     "passed": true,
+     "value": 0.008,
+     "threshold": "<= 0.02",
+     "severity": "gate",
+     "examples": [
+      {
+       "class": "scrub",
+       "north": 119.8,
+       "south": 118.86,
+       "diff": 0.008
+      },
+      {
+       "class": "pitch",
+       "north": 141.36,
+       "south": 141.59,
+       "diff": 0.0017
+      },
+      {
+       "class": "rock",
+       "north": 179.73,
+       "south": 179.43,
+       "diff": 0.0017
+      },
+      {
+       "class": "railground",
+       "north": 137.69,
+       "south": 137.81,
+       "diff": 0.0009
+      },
+      {
+       "class": "wood",
+       "north": 93.82,
+       "south": 93.9,
+       "diff": 0.0008
+      },
+      {
+       "class": "meadow",
+       "north": 163.88,
+       "south": 163.76,
+       "diff": 0.0007
+      },
+      {
+       "class": "square",
+       "north": 196.28,
+       "south": 196.19,
+       "diff": 0.0005
+      },
+      {
+       "class": "water",
+       "north": 100.15,
+       "south": 100.11,
+       "diff": 0.0004
+      }
+     ]
+    },
+    {
+     "id": "L2.1",
+     "title": "flat ground changed by the relief (of 13027164 flat pixels)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L8.1",
+     "title": "pixels where a layer's depth differs from layer 8's by > 1.0 cm (of 51449006)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L8.2",
+     "title": "normals not unit or facing away from the camera (of 51449006)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L8.3",
+     "title": "ids not in the scene",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L8.3b",
+     "title": "buildings with at least one pixel in layer 8",
+     "passed": true,
+     "value": "1033 of 1135",
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "L2.2",
+     "title": "walls (drop >= 1.5 m, in the area, in view) drawn along < 90% of their visible length (of 331)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L3.1",
+     "title": "OSM water pixels not drawn as water, and water pixels outside OSM water (+- 1 px; 1467950 water pixels)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": [
+      {
+       "missing": 0,
+       "outside": 0
+      }
+     ]
+    },
+    {
+     "id": "L4.1",
+     "title": "road, rail and tram centre-line samples (every 0.5 m) inside the drawn surface (of 63133; 4182 behind the terrain; 181 within 1 px of the surface's edge)",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 1.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L4.3",
+     "title": "drawn pixels of tunnel ways (portals are drawn, tunnels are not)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L4.6",
+     "title": "samples within 6.0 m of the 120 bridge ends in the area where the drawn way has a gap, or a step over 2.0 px (of 5679; 200 under another deck, 30 seen edge-on; largest step 1.19 px)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L4.6b",
+     "title": "samples of ways excepted from L4.6 (v2/data/exceptions.json)",
+     "passed": true,
+     "value": {
+      "samples": 62,
+      "ways": [
+       "way/25731554"
+      ]
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "P-1",
+     "title": "colour literals in the layer code (every colour comes from palette.json)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    }
+   ]
+  },
+  "check_independence": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "C1a",
+     "title": "layer tiles that change when another layer's inputs are removed (504 renders, 12 tiles x 7 layers x 6 others)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C1b",
+     "title": "built tiles whose geometry differs from the renderer's",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C1c",
+     "title": "mean colour difference of a built tile from the renderer (WebP: lossy for ground and transport; lossless for relief, water, layers 5-7)",
+     "passed": true,
+     "value": 2.21,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C1d",
+     "title": "layer off in the viewer: no pixel of it, no shadow of it (check_viewer V1, V2)",
+     "passed": true,
+     "value": "see check_viewer",
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_shadows": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "L9.0",
+     "title": "the released shadow height map is the scene's",
+     "passed": true,
+     "value": null,
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L5.1/L9.2",
+     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 226 compared)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L5.1b",
+     "title": "worst relative difference by layer",
+     "passed": true,
+     "value": {
+      "ground": 0.0143,
+      "buildings": 0.04,
+      "water": 0.0,
+      "transport": 0.009,
+      "structures": 0.0272
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "L9.1-08",
+     "title": "shadow direction vs the sun at 08:00 on 2026-06-21 (az 78.3, el 21.3): median angle error over 863 buildings (deg; 90th pct 23.1)",
+     "passed": true,
+     "value": 7.71,
+     "threshold": "<= 10.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L9.1-13",
+     "title": "shadow direction vs the sun at 13:00 on 2026-06-21 (az 161.0, el 62.8): median angle error over 435 buildings (deg; 90th pct 43.4)",
+     "passed": true,
+     "value": 9.82,
+     "threshold": "<= 10.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L9.1-19",
+     "title": "shadow direction vs the sun at 19:00 on 2026-06-21 (az 279.1, el 23.6): median angle error over 836 buildings (deg; 90th pct 25.2)",
+     "passed": true,
+     "value": 7.63,
+     "threshold": "<= 10.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L2.3",
+     "title": "the relief layer is identical for a morning and an evening sun",
+     "passed": true,
+     "value": null,
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    }
+   ]
+  },
+  "check_seams": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "S-ground",
+     "title": "ground: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 375 chunks)",
+     "passed": true,
+     "value": 2.645,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-ground-v1",
+     "title": "ground: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 3073",
+     "passed": true,
+     "value": {
+      "borders": 12,
+      "middles": 9.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-relief",
+     "title": "relief: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 350 chunks)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-relief-v1",
+     "title": "relief: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 3077",
+     "passed": true,
+     "value": {
+      "borders": 13,
+      "middles": 8.5
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-water",
+     "title": "water: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 66 chunks)",
+     "passed": true,
+     "value": 1.502,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-water-v1",
+     "title": "water: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 38",
+     "passed": true,
+     "value": {
+      "borders": 0,
+      "middles": 0.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-transport",
+     "title": "transport: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 54 chunks)",
+     "passed": true,
+     "value": 1.395,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-transport-v1",
+     "title": "transport: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 101",
+     "passed": true,
+     "value": {
+      "borders": 0,
+      "middles": 0.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-buildings",
+     "title": "buildings: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 187 chunks)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-buildings-v1",
+     "title": "buildings: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 741",
+     "passed": true,
+     "value": {
+      "borders": 6,
+      "middles": 3.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-structures",
+     "title": "structures: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 33 chunks)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-structures-v1",
+     "title": "structures: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 55",
+     "passed": true,
+     "value": {
+      "borders": 3,
+      "middles": 0.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "S-trees",
+     "title": "trees: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 162 chunks)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S-trees-v1",
+     "title": "trees: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 813",
+     "passed": true,
+     "value": {
+      "borders": 0,
+      "middles": 0.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "L8.4",
+     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1334 of 192934 vs 1324 of 188602; a seam would make it larger)",
+     "passed": true,
+     "value": 0.985,
+     "threshold": "<= 1.5",
+     "severity": "gate",
+     "examples": []
+    }
+   ]
+  },
+  "check_vehicles": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "V0",
+     "title": "audit: samples over a simulated day",
+     "passed": true,
+     "value": {
+      "car_samples": 901179,
+      "transit_samples": 30106,
+      "every_s": 20,
+      "audit_s": 75.8
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "V0b",
+     "title": "vehicle samples in the area behind the terrain (not in view)",
+     "passed": true,
+     "value": 21861,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "V0c",
+     "title": "vehicle samples under another way's deck (not in view)",
+     "passed": true,
+     "value": 2395,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "L4.2",
+     "title": "car samples on drawn road (of 559671 in the area, out of tunnels)",
+     "passed": true,
+     "value": 0.99974,
+     "threshold": ">= 0.995",
+     "severity": "gate",
+     "examples": [
+      {
+       "e": 77301.8,
+       "n": 75795.2,
+       "edge": "w159842128_1286"
+      },
+      {
+       "e": 77919.1,
+       "n": 75461.5,
+       "edge": "w274961870_1946"
+      },
+      {
+       "e": 77301.8,
+       "n": 75795.2,
+       "edge": "w159842128_1286"
+      },
+      {
+       "e": 77476.4,
+       "n": 75033.4,
+       "edge": "w50786532_545"
+      },
+      {
+       "e": 77791.1,
+       "n": 75450.7,
+       "edge": "w26621044_203"
+      },
+      {
+       "e": 77301.8,
+       "n": 75795.2,
+       "edge": "w159842128_1286"
+      },
+      {
+       "e": 77551.2,
+       "n": 75023.0,
+       "edge": "w1470921337_4348"
+      },
+      {
+       "e": 77430.9,
+       "n": 74843.8,
+       "edge": "w1423519225_4286"
+      }
+     ]
+    },
+    {
+     "id": "L12.4",
+     "title": "tram and train samples on drawn track (of 18950)",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 0.995",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L12.3",
+     "title": "share of car samples the v1 fade guard would act on (off the drawn road)",
+     "passed": true,
+     "value": 0.00026,
+     "threshold": "<= 0.001",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L12.1a",
+     "title": "vehicle pixels drawn inside tunnels past their portals (5628 samples in tunnels)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C4a",
+     "title": "probed: tunnel portals, bridge edges, ways under a deck; probe vehicles",
+     "passed": true,
+     "value": {
+      "portals": 39,
+      "bridges": 30,
+      "under_crossings": 40,
+      "probes": 3262
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "C4",
+     "title": "probe pixels where the viewer's depth test disagrees with the exact geometry (of 12516108; 1782 more on silhouettes, within 1 px of an edge)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C4b",
+     "title": "share of probe pixels on silhouettes (edge rounding)",
+     "passed": true,
+     "value": 0.00014,
+     "threshold": "<= 0.01",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C4c",
+     "title": "probe pixels hidden (under decks or past portals)",
+     "passed": true,
+     "value": {
+      "deck_and_under": 1762332,
+      "portals": 2130226
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "L12.2a",
+     "title": "largest height change of a car between two frames (m; 34309718 car-frames)",
+     "passed": true,
+     "value": 0.332,
+     "threshold": "<= 0.5",
+     "severity": "gate",
+     "examples": [
+      {
+       "id": 128,
+       "rid": 2058,
+       "x": 8259.644983998001,
+       "y": 10783.996428217377,
+       "z": 264.92942330135367,
+       "prev": 265.26135876549387
+      }
+     ]
+    },
+    {
+     "id": "L12.2b",
+     "title": "largest height change of a tram or train section between frames (m; 29546655)",
+     "passed": true,
+     "value": 0.046,
+     "threshold": "<= 0.5",
+     "severity": "gate",
+     "examples": [
+      {
+       "trip": "RB",
+       "shape": 30,
+       "edge": 1844,
+       "s": 6.411382076246272,
+       "z": 277.06750949913794,
+       "prev": 277.11329656962505,
+       "sec": 67398.26666668261
+      }
+     ]
+    },
+    {
+     "id": "V9",
+     "title": "seconds",
+     "passed": true,
+     "value": 211.5,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_lines": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "L5.2-edges",
+     "title": "line score, building edges (creases and outlines of the 3D model): share of 723358 seen samples (every 0.25 m, of 1647926) whose drawn line is within 1.0 px of the model's",
+     "passed": true,
+     "value": 0.9633,
+     "threshold": ">= 0.95",
+     "severity": "gate",
+     "examples": [
+      {
+       "e": 77326.83,
+       "n": 75231.73,
+       "z": 321.99
+      },
+      {
+       "e": 78192.44,
+       "n": 75265.05,
+       "z": 253.0
+      },
+      {
+       "e": 77657.06,
+       "n": 74838.01,
+       "z": 261.34
+      },
+      {
+       "e": 77556.63,
+       "n": 75061.38,
+       "z": 289.84
+      },
+      {
+       "e": 78219.77,
+       "n": 74877.4,
+       "z": 280.9
+      },
+      {
+       "e": 77513.07,
+       "n": 75027.45,
+       "z": 311.22
+      },
+      {
+       "e": 77520.05,
+       "n": 75126.63,
+       "z": 316.3
+      },
+      {
+       "e": 77701.12,
+       "n": 75109.66,
+       "z": 257.85
+      }
+     ]
+    },
+    {
+     "id": "L5.2-windows",
+     "title": "line score, window rows (top and bottom of every window): share of 76718 seen samples (every 0.25 m, of 226716) whose drawn line is within 1.0 px of the model's",
+     "passed": true,
+     "value": 0.9984,
+     "threshold": ">= 0.95",
+     "severity": "gate",
+     "examples": [
+      {
+       "e": 77256.93,
+       "n": 75175.85,
+       "z": 314.54
+      },
+      {
+       "e": 78288.07,
+       "n": 75377.89,
+       "z": 246.5
+      },
+      {
+       "e": 78200.97,
+       "n": 75425.99,
+       "z": 253.11
+      },
+      {
+       "e": 77662.36,
+       "n": 75473.07,
+       "z": 251.85
+      },
+      {
+       "e": 77679.07,
+       "n": 75463.26,
+       "z": 258.45
+      },
+      {
+       "e": 77407.51,
+       "n": 75337.59,
+       "z": 311.48
+      },
+      {
+       "e": 77806.04,
+       "n": 74533.55,
+       "z": 295.32
+      },
+      {
+       "e": 77423.21,
+       "n": 74824.12,
+       "z": 300.23
+      }
+     ]
+    }
+   ]
+  },
+  "check_no_cars": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "D0",
+     "title": "detector",
+     "passed": true,
+     "value": {
+      "model": "google/owlv2-base-patch16-ensemble",
+      "device": "mps",
+      "images": 966,
+      "seconds": 317.5,
+      "queries": [
+       "a car",
+       "a parked car",
+       "a van",
+       "a bus",
+       "a truck"
+      ]
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "D-ground",
+     "title": "ground: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-relief",
+     "title": "relief: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-water",
+     "title": "water: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-transport",
+     "title": "transport: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-buildings",
+     "title": "buildings: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-structures",
+     "title": "structures: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D-trees",
+     "title": "trees: detections >= 0.1 of a vehicle 3.0-14.0 m long",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "D9",
+     "title": "highest score of any query on any tile (below the threshold)",
+     "passed": true,
+     "value": 0.1428,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_viewer": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "V0",
+     "title": "browser and GPU",
+     "passed": true,
+     "value": {
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Pro, Unspecified Version)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "V0b",
+     "title": "page errors",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-ground",
+     "title": "?off=ground: pixels still showing layer ground",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-relief",
+     "title": "?off=relief: pixels still showing layer relief",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-water",
+     "title": "?off=water: pixels still showing layer water",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-transport",
+     "title": "?off=transport: pixels still showing layer transport",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-buildings",
+     "title": "?off=buildings: pixels still showing layer buildings",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-structures",
+     "title": "?off=structures: pixels still showing layer structures",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V1-trees",
+     "title": "?off=trees: pixels still showing layer trees",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V3-10",
+     "title": "shadows at 10:00 on 2026-06-21 match the Python reference (share of pixels; 17.1% in shadow)",
+     "passed": true,
+     "value": 0.986,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V3-16",
+     "title": "shadows at 16:00 on 2026-06-21 match the Python reference (share of pixels; 40.3% in shadow)",
+     "passed": true,
+     "value": 0.9718,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V3-13",
+     "title": "shadows at 13:00 on 2026-06-21 match the Python reference (share of pixels; 10.6% in shadow)",
+     "passed": true,
+     "value": 0.9963,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V2",
+     "title": "?off=buildings: the viewer's shadows equal the reference without buildings (share of pixels)",
+     "passed": true,
+     "value": 0.9831,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V3b",
+     "title": "share of pixels whose shadow changes between 10:00 and 16:00 (shadows move with ?hour)",
+     "passed": true,
+     "value": 0.4255,
+     "threshold": ">= 0.02",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V4",
+     "title": "pixels changed by the night layer at 13:00 (no light by day, L10.2)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V5",
+     "title": "pixels changed by the season outside the tree and green-ground masks (L11.1)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V6",
+     "title": "overlapping labels at the reference views (L15.2)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V7",
+     "title": "the look pass applied again to the viewer's output: largest channel change (L14.1, in 1/255)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 1",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C2",
+     "title": "speed (desktop, this machine's GPU)",
+     "passed": true,
+     "value": {
+      "first_view_cold_s": 0.14509999999403952,
+      "first_view_warm_s": 0.08630000001192092,
+      "pan_whole_area": {
+       "fps": 120.04592193235722,
+       "frame_ms_median": 0.5999999940395355,
+       "tiles_missing": 0
+      },
+      "pan_zoom1": {
+       "fps": 94.97388218254132,
+       "frame_ms_median": 0.4000000059604645,
+       "tiles_missing": 0
+      },
+      "pan_fps": 94.97388218254132,
+      "throttled": {
+       "cpu_slowdown": 4,
+       "pan_zoom1": {
+        "fps": 120.13887154417968,
+        "frame_ms_median": 0.7999999821186066,
+        "tiles_missing": 0
+       }
+      },
+      "viewport": "1600x1000 CSS px, device pixel ratio 1"
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "C2a",
+     "title": "first view, warm (s)",
+     "passed": true,
+     "value": 0.086,
+     "threshold": "<= 0.5",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C2b",
+     "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
+     "passed": true,
+     "value": 95.0,
+     "threshold": ">= 60",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C2c",
+     "title": "mid phone: not measured on a device (see the report); 4x CPU throttle",
+     "passed": true,
+     "value": {
+      "cpu_slowdown": 4,
+      "pan_zoom1": {
+       "fps": 120.13887154417968,
+       "frame_ms_median": 0.7999999821186066,
+       "tiles_missing": 0
+      }
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_scope": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "S1",
+     "title": "buildings whose footprint lies outside the area",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S2",
+     "title": "trees outside the area",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S3",
+     "title": "places outside the area",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S4",
+     "title": "transport edges not touching the area + 150 m",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S5",
+     "title": "terrain grid covers the area and its margin",
+     "passed": true,
+     "value": [
+      76993.5,
+      74357.5,
+      78580.5,
+      76271.0
+     ],
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S6",
+     "title": "the area (z 180-450 m) lies inside the v2 pixel frame",
+     "passed": true,
+     "value": [
+      57761,
+      28151
+     ],
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "S7",
+     "title": "area km2",
+     "passed": true,
+     "value": 1.566,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_terrain": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "TR1",
+     "title": "share of terrain cells that had no data (filled)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 0.001",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TR2",
+     "title": "non-finite terrain cells after filling",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TR3",
+     "title": "share of cells where the surface is > 0.5 m below the ground",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 0.001",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TR4",
+     "title": "median |building ground - LiDAR terrain| (m)",
+     "passed": true,
+     "value": 1.04,
+     "threshold": "<= 1.5",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TR5",
+     "title": "90th percentile |building ground - terrain| (m)",
+     "passed": true,
+     "value": 3.84,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "TR6",
+     "title": "steep / cliff area (m2)",
+     "passed": true,
+     "value": [
+      245139.25,
+      73925.25
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "TR7",
+     "title": "OSM walls and cliffs measured",
+     "passed": true,
+     "value": [
+      761,
+      46.05
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_buildings": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "B1",
+     "title": "every footprint ring is closed",
+     "passed": true,
+     "value": null,
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B2",
+     "title": "invalid or empty footprints",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B3",
+     "title": "share of buildings without a roof or with fewer than 3 walls",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 0.01",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B4",
+     "title": "pairs of buildings overlapping (> 1 m2 and > 2% of the smaller)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B5",
+     "title": "buildings with impossible heights (0 < h <= 150, ground <= eave <= ridge)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B6",
+     "title": "building ids unique",
+     "passed": true,
+     "value": 1135,
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "B7",
+     "title": "roof shapes",
+     "passed": true,
+     "value": {
+      "mixed:gable": 100,
+      "mixed:mansard": 37,
+      "hip": 271,
+      "gable": 342,
+      "mixed:hip": 66,
+      "mansard": 121,
+      "flat": 120,
+      "mixed:shed": 13,
+      "complex": 9,
+      "mixed:complex": 5,
+      "shed": 51
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "B8",
+     "title": "ACT footprints repaired (recorded with their reason in buildings.json)",
+     "passed": true,
+     "value": [],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_facades": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "F1",
+     "title": "walls with a window outside the wall outline",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F2",
+     "title": "walls with windows closer than the minimum gap",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F3",
+     "title": "walls whose window rows are not on their floor lines (straight rows)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F4",
+     "title": "party walls with windows",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F5",
+     "title": "walls with more floors than their eave height allows",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F6",
+     "title": "share of buildings >= 5 m tall and >= 40 m2 with at least one window",
+     "passed": true,
+     "value": 0.996,
+     "threshold": ">= 0.9",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F8",
+     "title": "buildings with a street-facing wall but no door on one",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F9",
+     "title": "doors or shop fronts on a party (shared) wall",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F10",
+     "title": "shop fronts reaching above the ground floor",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F11",
+     "title": "doors or shop fronts outside their wall outline",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F12",
+     "title": "doors or shop fronts not standing on the bottom of their wall (the ground)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F13",
+     "title": "windows overlapping a door or a shop front",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F14",
+     "title": "share of OSM entrances at a building placed as doors",
+     "passed": true,
+     "value": 0.9359,
+     "threshold": ">= 0.9",
+     "severity": "gate",
+     "examples": [
+      [
+       "node/634300483",
+       "no wall within reach"
+      ],
+      [
+       "node/667030391",
+       "does not fit the wall outline"
+      ],
+      [
+       "node/1234191779",
+       "nearest walls are party walls"
+      ],
+      [
+       "node/1268121440",
+       "nearest walls are party walls"
+      ],
+      [
+       "node/9200934657",
+       "no wall within reach"
+      ]
+     ]
+    },
+    {
+     "id": "F15",
+     "title": "doors and shop fronts by source",
+     "passed": true,
+     "value": {
+      "door rule": 1062,
+      "shopfront rule": 535,
+      "shopfront osm": 288,
+      "door osm": 73
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "F7",
+     "title": "walls, with windows, party walls, windows",
+     "passed": true,
+     "value": [
+      22544,
+      6216,
+      4421,
+      37786
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_trees": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "TE1",
+     "title": "trees standing inside a building",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE2",
+     "title": "trees standing in water",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE3",
+     "title": "largest share of a crown over buildings or water",
+     "passed": true,
+     "value": 0.3,
+     "threshold": "<= 0.32",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE4",
+     "title": "heights within 2.0-50.0 m",
+     "passed": true,
+     "value": [
+      2.3399999141693115,
+      44.52000045776367
+     ],
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE5",
+     "title": "trees",
+     "passed": true,
+     "value": 12414,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "TE6",
+     "title": "crowns wider than their species' and age's shape (or the survey's width, if that is wider), m",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 0.01",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE7",
+     "title": "no crown wider than before thinning (thinning only narrows)",
+     "passed": true,
+     "value": null,
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE8",
+     "title": "height over crown width, median (all trees; trees of 8 m or more)",
+     "passed": true,
+     "value": [
+      2.19,
+      2.14
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_transport_profiles": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "P1",
+     "title": "edges with a missing height",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P2",
+     "title": "edge ends off their node height (> 0.3 m)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P3",
+     "title": "vehicle edges with a height jump between samples (beyond the grade cap)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P4",
+     "title": "vehicle edges whose grade cap had to be relaxed",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P5",
+     "title": "vehicle bridge edges with the deck below the ground",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P6",
+     "title": "vehicle bridge edges whose deck is off the LiDAR surface (median > 0.5 m)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P7",
+     "title": "vehicle tunnels (inside the area) not a clearance + cover below their cover beyond the portal zone",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P8",
+     "title": "vehicle tunnels (inside the area, past the portal mouth) rising more than 1 m above their cover",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P9",
+     "title": "portals of vehicle tunnels (>= 80 m, ends inside the area) not found within 40 m of the tunnel end",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "P10",
+     "title": "paths/steps with a jump or relaxed grade (not gated: stairs and lifts are often mapped as paths)",
+     "passed": true,
+     "value": [
+      50,
+      56
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "P11",
+     "title": "median |deck - LiDAR surface| over bridge edges (m)",
+     "passed": true,
+     "value": 0.01,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "P12",
+     "title": "portals found / total",
+     "passed": true,
+     "value": [
+      99,
+      103
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "P13",
+     "title": "bridge edges excepted from P5/P6 (v2/data/exceptions.json)",
+     "passed": true,
+     "value": [],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "P14",
+     "title": "approach edges found on a structure past the OSM bridge tag (edges, m)",
+     "passed": true,
+     "value": [
+      11,
+      82.8
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "P15",
+     "title": "share of deck samples not observed (under buildings, crowns or higher bridges)",
+     "passed": true,
+     "value": 0.118,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_transport_graph": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "G1",
+     "title": "edges whose end nodes are missing",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "G2",
+     "title": "vehicle dead ends within 0.5 m of another edge end (unjoined junctions)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "G3",
+     "title": "share of roads length connected (to the main network or out of the area)",
+     "passed": true,
+     "value": 0.9922,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": [
+      [
+       660645169,
+       48.8
+      ],
+      [
+       9504685692,
+       29.6
+      ],
+      [
+       667558428,
+       77.1
+      ],
+      [
+       3895789434,
+       110.7
+      ],
+      [
+       8600267316,
+       18.7
+      ],
+      [
+       9368112088,
+       7.5
+      ]
+     ]
+    },
+    {
+     "id": "G4",
+     "title": "share of rail and tram length connected (to the main network or out of the area)",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 0.97",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "G5c",
+     "title": "dead ends excepted (v2/data/exceptions.json)",
+     "passed": true,
+     "value": [],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "G5",
+     "title": "vehicle bridges or tunnels with a dead end (driveways into garages excepted)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "G5b",
+     "title": "service roads (garage driveways) ending in a tunnel or on a bridge",
+     "passed": true,
+     "value": [
+      "w49839120_414",
+      "w347088630_2305",
+      "w406252558_2380"
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "G6",
+     "title": "km by mode",
+     "passed": true,
+     "value": {
+      "elevator": 0.03,
+      "funicular": 0.63,
+      "path": 51.26,
+      "rail": 6.46,
+      "road": 37.56,
+      "steps": 4.4,
+      "tram": 2.08
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_structures": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "V1",
+     "title": "viaducts in the area not modelled",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V2",
+     "title": "viaduct decks off the transport graph (median > 0.3 m)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V3",
+     "title": "piers whose foot is above the ground (> 0.5 m)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V4",
+     "title": "piers not between ground + 1 m and the deck",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V5",
+     "title": "arches with the crown above the deck or the springing above the crown",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V6",
+     "title": "viaducts whose modelled length is off the documented length by > 15%",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V7",
+     "title": "modelled vs documented height (m)",
+     "passed": true,
+     "value": [
+      [
+       "pulvermuhl",
+       34.4,
+       37
+      ],
+      [
+       "clausen",
+       33.2,
+       44
+      ],
+      [
+       "pfaffenthal",
+       30.6,
+       32
+      ]
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_transit": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "TT1",
+     "title": "share of GTFS tram and train track in the area matched onto the rail graph",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 0.99",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TT2",
+     "title": "share of GTFS samples within 17 m of their matched rail path",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 0.9",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TT3",
+     "title": "shapes in the area with no matched run",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TT4",
+     "title": "shapes by kind",
+     "passed": true,
+     "value": {
+      "tram": 6,
+      "train": 29,
+      "funicular": 0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_places": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "PL1",
+     "title": "95th percentile round-trip error back to v1 pixels (px)",
+     "passed": true,
+     "value": 0.03,
+     "threshold": "<= 0.75",
+     "severity": "gate",
+     "examples": [
+      [
+       "\u00c0 nos morts 1940-1945",
+       1.49
+      ],
+      [
+       "Rue Wiltheim",
+       2.03
+      ]
+     ]
+    },
+    {
+     "id": "PL2a",
+     "title": "largest round-trip error back to v1 pixels (px; cliff edges)",
+     "passed": true,
+     "value": 2.029,
+     "threshold": "<= 4.0",
+     "severity": "gate",
+     "examples": [
+      [
+       "\u00c0 nos morts 1940-1945",
+       1.49
+      ],
+      [
+       "Rue Wiltheim",
+       2.03
+      ]
+     ]
+    },
+    {
+     "id": "PL2",
+     "title": "median |v2 terrain - v1 terrain| at the places (m)",
+     "passed": true,
+     "value": 0.11,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "PL3",
+     "title": "places, landmarks",
+     "passed": true,
+     "value": [
+      338,
+      62
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_no_patching": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "N1",
+     "title": "stages or stage functions named like a fix on finished art",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "N2",
+     "title": "v2 modules named like a fix on finished art",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "N3",
+     "title": "stages in the build graph",
+     "passed": true,
+     "value": 58,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_ledger": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "L1",
+     "title": "ledger problems (bad events, spends without an approved quote, goals over cap)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L2",
+     "title": "total spent + committed (USD)",
+     "passed": true,
+     "value": 3.72,
+     "threshold": "<= 100.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L3",
+     "title": "Phase 0 spend (USD)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0.0",
+     "severity": "gate",
+     "examples": []
+    }
+   ]
+  },
+  "check_tunnel_view": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "X0",
+     "title": "tubes in the release (by kind), their length (m), the deepest floor under the surface (m)",
+     "passed": true,
+     "value": {
+      "by_kind": {
+       "tunnel": 166,
+       "passage": 1,
+       "casemate": 26
+      },
+      "length_m": 5184.5,
+      "deepest_m": 92.9
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "X0a",
+     "title": "tunnel edges of the graph without their tube, or tubes without their edge's width and clearance (of 167 edges)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X0b",
+     "title": "browser and GPU; views at 1 px per map px",
+     "passed": true,
+     "value": {
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Pro, Unspecified Version)",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+      "views": 27,
+      "size": [
+       1600,
+       1200
+      ]
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "X0c",
+     "title": "page errors",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X1",
+     "title": "tunnel edges whose drawn centre line is within 1.0 px of its profile's projection over less than 99% of its seen length (167 of them; 7516 of 9540 samples every 0.5 m seen, the rest behind a nearer tube; 26 never seen)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X1-share",
+     "title": "tunnel edges: share of seen samples on their line; the worst one's",
+     "passed": true,
+     "value": {
+      "all": 0.99987,
+      "worst": 0.9932
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "X2",
+     "title": "tunnel edges: largest difference between the drawn floor's depth (the depth buffer) and the depth, at the same pixel, of the floor on the source's profile (cm; 7516 samples)",
+     "passed": true,
+     "value": 0.508,
+     "threshold": "<= 1.0",
+     "severity": "gate",
+     "examples": [
+      {
+       "tube": "w216534875_1787",
+       "e": 77561.3,
+       "n": 74816.0,
+       "cm": 0.508
+      },
+      {
+       "tube": "w462443158_2495",
+       "e": 78136.7,
+       "n": 75816.9,
+       "cm": 0.444
+      },
+      {
+       "tube": "w462443158_2495",
+       "e": 78136.8,
+       "n": 75816.4,
+       "cm": 0.386
+      }
+     ]
+    },
+    {
+     "id": "X2b",
+     "title": "largest difference between a tube's depth under the surface and the graph's cover minus its profile (m; 2665 samples)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 0.5",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X2c",
+     "title": "seen samples whose drawn tone is not the step of the graph's cover there (one step per 10.0 m; samples within 5 cm of a step's edge left out)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X2d",
+     "title": "the graph's cover against the scene's terrain at the centre line (within 0.5 m of the terrain; of what is built over the tunnel; of neither: the graph takes the median across the way, on a cliff that differs)",
+     "passed": true,
+     "value": {
+      "terrain": 1872,
+      "built_over": 788,
+      "neither": 5
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "X3a",
+     "title": "still frames (2 hours, 6 vehicles in tunnels, 6 of them showing, 7820 vehicle pixels at full opacity): pixels on no vehicle that is in a tunnel past its portal",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X0d",
+     "title": "the viewer's tube mesh against the reference mesh of these checks (v2/layers/tunnels.py): largest distance between two matching triangles' centres (m; 16764 and 16764 triangles)",
+     "passed": true,
+     "value": 0.0005,
+     "threshold": "<= 0.01",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X3-day",
+     "title": "simulated day: vehicle samples, in a tunnel past its portal by the graph, by the viewer, on the portal line",
+     "passed": true,
+     "value": {
+      "samples": 608635,
+      "every_s": 20,
+      "graph": 5645,
+      "viewer": 5645,
+      "on_the_line": 0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "X3b",
+     "title": "vehicles the viewer draws in a tunnel that are not on a tunnel edge past its portal (simulated day)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X3c",
+     "title": "vehicles in a tunnel past its portal that the viewer does not draw there (lost; simulated day)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X3d",
+     "title": "pixels of vehicles in tunnels outside the tubes' footprint on screen (5645 samples, 4394338 pixels; 0 samples stick out, by kind code {})",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X3e",
+     "title": "vehicles in tunnels against the tubes' depth (rule 4), of the pixels above: behind the floor of their own tube (a vehicle is a level box: on a steep floor its uphill end is under it, as on the surface); behind a face of another tube; samples with no pixel left",
+     "passed": true,
+     "value": {
+      "own_floor_px": 15004,
+      "own_floor_samples": 555,
+      "other_tube_px": 355,
+      "wholly_hidden_samples": 0,
+      "e.g.": [
+       {
+        "edge": "w52065179_588",
+        "kind": 0,
+        "sec": 340,
+        "e": 77424.7,
+        "n": 75391.2,
+        "pixels": 1,
+        "of": 505
+       },
+       {
+        "edge": "w52065179_588",
+        "kind": 0,
+        "sec": 640,
+        "e": 77409.4,
+        "n": 75418.1,
+        "pixels": 1,
+        "of": 463
+       }
+      ]
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "X4a",
+     "title": "view off after it was on: pixels that differ from the frame before it was ever on (4 views: tunnel_13, tunnel_23, bock_13, bock_23)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X4b",
+     "title": "view on: largest difference of a city pixel from the plain frame at opacity 0.35 over the neutral colour, computed offline (in 1/255 per channel; 7221194 pixels, day and night)",
+     "passed": true,
+     "value": 0.65,
+     "threshold": "<= 1",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X4c",
+     "title": "view on: largest colour step the fade adds at a tile border (LAB, the 4 px either side per 64 px, against the offline faded frame; 448 border chunks)",
+     "passed": true,
+     "value": 0.081,
+     "threshold": "<= 3.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X5-ground",
+     "title": "tunnel view with ?off=ground: pixels still showing layer ground; tunnel and vehicle pixels (class, index, depth) changed by it",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X5-relief",
+     "title": "tunnel view with ?off=relief: pixels still showing layer relief; tunnel and vehicle pixels (class, index, depth) changed by it",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X5-water",
+     "title": "tunnel view with ?off=water: pixels still showing layer water; tunnel and vehicle pixels (class, index, depth) changed by it",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X5-transport",
+     "title": "tunnel view with ?off=transport: pixels still showing layer transport; tunnel and vehicle pixels (class, index, depth) changed by it",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X5-buildings",
+     "title": "tunnel view with ?off=buildings: pixels still showing layer buildings; tunnel and vehicle pixels (class, index, depth) changed by it",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X5-structures",
+     "title": "tunnel view with ?off=structures: pixels still showing layer structures; tunnel and vehicle pixels (class, index, depth) changed by it",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X5-trees",
+     "title": "tunnel view with ?off=trees: pixels still showing layer trees; tunnel and vehicle pixels (class, index, depth) changed by it",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X5b",
+     "title": "tunnel view with a layer off: largest difference of a city pixel from the plain frame without that layer, faded offline (in 1/255; the seven layers)",
+     "passed": true,
+     "value": 0.6,
+     "threshold": "<= 1",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X6",
+     "title": "portals: how far the drawn tube ends from the face of the portal layer 4 draws (px along the way), or how far layer 4's portal pixels reach outside that face, whichever is larger; the worst of 36 portals (98 portal ends; layer 4 draws 43: those facing the camera, in its tiles; of those 5 are side ways out of a tunnel that goes on, 2 lie behind a nearer tube)",
+     "passed": true,
+     "value": 0.491,
+     "threshold": "<= 1.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X6b",
+     "title": "every portal end, drawn by layer 4 or not: the tube's end against the portal face's place (px): the worst, ends seen",
+     "passed": true,
+     "value": {
+      "worst": 0.491,
+      "seen": 75,
+      "of": 98
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "X7a",
+     "title": "casemate galleries whose drawn centre line is within 1.0 px of its profile's projection over less than 99% of its seen length (26 of them; 360 of 711 samples every 0.5 m seen, the rest behind a nearer tube; 9 never seen)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X7a-share",
+     "title": "casemate galleries: share of seen samples on their line; the worst one's",
+     "passed": true,
+     "value": {
+      "all": 1.0,
+      "worst": 1.0
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "X7b",
+     "title": "casemate galleries: largest difference between the drawn floor's depth (the depth buffer) and the depth, at the same pixel, of the floor on the source's profile (cm; 360 samples)",
+     "passed": true,
+     "value": 0.056,
+     "threshold": "<= 1.0",
+     "severity": "gate",
+     "examples": [
+      {
+       "tube": "casemate/s13",
+       "e": 77785.9,
+       "n": 75248.5,
+       "cm": 0.056
+      },
+      {
+       "tube": "casemate/s08",
+       "e": 77747.8,
+       "n": 75228.7,
+       "cm": 0.054
+      },
+      {
+       "tube": "casemate/main",
+       "e": 77706.4,
+       "n": 75228.1,
+       "cm": 0.054
+      }
+     ]
+    },
+    {
+     "id": "X7c",
+     "title": "casemate galleries of the data that are not in the release (of 26)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X7d",
+     "title": "least rock over a casemate gallery's top (m; over its whole width, every 0.25 m; the least is at s04)",
+     "passed": true,
+     "value": 1.018,
+     "threshold": ">= 1.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X7e",
+     "title": "casemate pixels drawn with the view off, or with ?off=casemates (46085 with the view on)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X8",
+     "title": "speed (desktop, this machine's GPU, in tunnel view with vehicles moving)",
+     "passed": true,
+     "value": {
+      "toggle": [
+       {
+        "on": true,
+        "frames": 1,
+        "ms": 8.799999982118607
+       },
+       {
+        "on": false,
+        "frames": 1,
+        "ms": 8.400000005960464
+       },
+       {
+        "on": true,
+        "frames": 1,
+        "ms": 8.300000011920929
+       },
+       {
+        "on": false,
+        "frames": 1,
+        "ms": 8.199999988079071
+       },
+       {
+        "on": true,
+        "frames": 1,
+        "ms": 8.299999982118607
+       },
+       {
+        "on": false,
+        "frames": 1,
+        "ms": 7.5999999940395355
+       },
+       {
+        "on": true,
+        "frames": 1,
+        "ms": 8.699999988079071
+       },
+       {
+        "on": false,
+        "frames": 1,
+        "ms": 8.099999994039536
+       },
+       {
+        "on": true,
+        "frames": 1,
+        "ms": 8.700000017881393
+       },
+       {
+        "on": false,
+        "frames": 1,
+        "ms": 8.299999982118607
+       }
+      ],
+      "pan_whole_area": {
+       "fps": 120.12987012987014,
+       "frame_ms_median": 0.5,
+       "tiles_missing": 0,
+       "xray": true,
+       "tunnel_vehicles": 0
+      },
+      "pan_zoom1": {
+       "fps": 94.466936572059,
+       "frame_ms_median": 0.29999998211860657,
+       "tiles_missing": 0,
+       "xray": true,
+       "tunnel_vehicles": 0
+      },
+      "pan_fps": 94.466936572059,
+      "viewport": "1600x1000 CSS px, device pixel ratio 1"
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "X8a",
+     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 8.8 ms at most)",
+     "passed": true,
+     "value": 1,
+     "threshold": "<= 1",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X8b",
+     "title": "panning in tunnel view, desktop (frames per second, the whole area and 1:1)",
+     "passed": true,
+     "value": 94.5,
+     "threshold": ">= 60",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "X9",
+     "title": "seconds",
+     "passed": true,
+     "value": 108.3,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  },
+  "check_cutaways": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "K0-cathedral",
+     "title": "Notre-Dame Cathedral: the listed buildings are the scene's at the landmark's place (within 0.0 m)",
+     "passed": true,
+     "value": {
+      "listed": [
+       "ACT_e92ec91a-b2d2-445e-9305-4dd27f787994"
+      ],
+      "at_place": [
+       [
+        "ACT_e92ec91a-b2d2-445e-9305-4dd27f787994",
+        0.0
+       ]
+      ]
+     },
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K1a-cathedral",
+     "title": "Notre-Dame Cathedral: the cut's outline on the model's section: share of 214 seen samples (every 0.25 m of 89 m of section, 320 samples) with a drawn line within 1.0 px",
+     "passed": true,
+     "value": 0.9907,
+     "threshold": ">= 0.95",
+     "severity": "gate",
+     "examples": [
+      {
+       "e": 77367.43,
+       "n": 75032.19,
+       "z": 315.73
+      },
+      {
+       "e": 77366.24,
+       "n": 75032.17,
+       "z": 316.64
+      }
+     ]
+    },
+    {
+     "id": "K1a-n-cathedral",
+     "title": "Notre-Dame Cathedral: section samples seen (the score needs some)",
+     "passed": true,
+     "value": 214,
+     "threshold": ">= 20",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K1b-cathedral",
+     "title": "Notre-Dame Cathedral: cut and inside pixels outside the whole model's outline (its raw roofs and walls, 0 px growth; of 33325)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2a-cathedral",
+     "title": "Notre-Dame Cathedral: placeholder interior pixels outside the opening mask (the k tile: 33325 px)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2b-cathedral",
+     "title": "Notre-Dame Cathedral: share of the opening mask covered by the interior",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 0.995",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2c-cathedral",
+     "title": "Notre-Dame Cathedral: opening mask pixels that the model does not allow (not an inside face or a section of the model within 1 cm)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2d-cathedral",
+     "title": "Notre-Dame Cathedral: share of the model's own opening in the mask (33306 px that are surely of it; 156 more within 1 cm of the outside)",
+     "passed": true,
+     "value": 0.99997,
+     "threshold": ">= 0.995",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2e-cathedral",
+     "title": "Notre-Dame Cathedral: opening pixels of the tiles that are not in the paint input's mask at the same depth (the paint input: the cut model alone, 1024 x 1024 px, 35545 px of opening)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K3-cathedral",
+     "title": "Notre-Dame Cathedral: placeholder interior, largest difference in median luminance between faces of one kind turned different ways, or to and away from the photo's sun (2024-06-15T11:00:00+02:00)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 0.05",
+     "severity": "gate",
+     "examples": [
+      {
+       "cut": {
+        "sides": 0,
+        "worst": 0.0,
+        "sun": null
+       }
+      },
+      {
+       "inside_wall": {
+        "sides": 3,
+        "worst": 0.0,
+        "sun": null
+       }
+      },
+      {
+       "inside_roof": {
+        "sides": 1,
+        "worst": 0.0,
+        "sun": null
+       }
+      },
+      {
+       "floor": {
+        "sides": 1,
+        "worst": 0.0,
+        "sun": null
+       }
+      }
+     ]
+    },
+    {
+     "id": "K5a-cathedral",
+     "title": "Notre-Dame Cathedral: cut pixels, largest distance of the depth from the slice's faces (cm, 1230 px)",
+     "passed": true,
+     "value": 0.5,
+     "threshold": "<= 1.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5b-cathedral",
+     "title": "Notre-Dame Cathedral: cut and inside pixels not on the model's surface within 1 cm (kept material and free space both within 1 cm of the drawn point; of 33325)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5b-thin-cathedral",
+     "title": "Notre-Dame Cathedral: of those on it, inside-wall pixels on a wall with no thickness (a wall standing on a lower roof)",
+     "passed": true,
+     "value": 0,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5c-cathedral",
+     "title": "Notre-Dame Cathedral: kept outside pixels whose depth differs from layer 5's by more than 1.0 cm where layer 5 shows the same surface (of 140617 compared)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5c-max-cathedral",
+     "title": "Notre-Dame Cathedral: largest such difference (cm)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5d-cathedral",
+     "title": "Notre-Dame Cathedral: kept walls and roofs layer 5 does not show there (hidden before the cut): pixels, and those not on the building's surface within 1 cm",
+     "passed": true,
+     "value": [
+      29,
+      0
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5e-cathedral",
+     "title": "Notre-Dame Cathedral: other buildings' pixels in the cutaway: all, those layer 5 also shows (largest depth difference, cm), those the slice brought to view",
+     "passed": true,
+     "value": [
+      21116,
+      21116,
+      0.0,
+      0
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K6b-cathedral",
+     "title": "Notre-Dame Cathedral: cutaway pixels where layer 5 shows neither a replaced building nor another building at or in front of them (of 195129)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K-ground-cathedral",
+     "title": "Notre-Dame Cathedral: opening pixels the ground layer is in front of (the terrain stands above floor_z 301.1 there), of 33325",
+     "passed": true,
+     "value": 0,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K-px-cathedral",
+     "title": "Notre-Dame Cathedral: pixels by kind",
+     "passed": true,
+     "value": {
+      "none": 1115591,
+      "outside": 140688,
+      "cut": 1230,
+      "inside_wall": 16824,
+      "inside_roof": 2938,
+      "floor": 12333,
+      "slab": 0,
+      "other": 21116
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K0-palace",
+     "title": "Grand Ducal Palace: the listed buildings are the scene's at the landmark's place (within 0.0 m)",
+     "passed": true,
+     "value": {
+      "listed": [
+       "ACT_78c0048b-4b0b-443f-aae0-71be9cf153ed"
+      ],
+      "at_place": [
+       [
+        "ACT_78c0048b-4b0b-443f-aae0-71be9cf153ed",
+        0.0
+       ]
+      ]
+     },
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K1a-palace",
+     "title": "Grand Ducal Palace: the cut's outline on the model's section: share of 387 seen samples (every 0.25 m of 120 m of section, 406 samples) with a drawn line within 1.0 px",
+     "passed": true,
+     "value": 0.9716,
+     "threshold": ">= 0.95",
+     "severity": "gate",
+     "examples": [
+      {
+       "e": 77460.52,
+       "n": 75150.0,
+       "z": 316.27
+      },
+      {
+       "e": 77460.52,
+       "n": 75150.0,
+       "z": 315.52
+      },
+      {
+       "e": 77460.52,
+       "n": 75150.0,
+       "z": 315.27
+      },
+      {
+       "e": 77460.52,
+       "n": 75150.0,
+       "z": 315.02
+      },
+      {
+       "e": 77460.52,
+       "n": 75150.0,
+       "z": 314.77
+      },
+      {
+       "e": 77460.52,
+       "n": 75150.0,
+       "z": 314.52
+      },
+      {
+       "e": 77460.92,
+       "n": 75150.0,
+       "z": 314.71
+      },
+      {
+       "e": 77460.92,
+       "n": 75150.0,
+       "z": 314.96
+      }
+     ]
+    },
+    {
+     "id": "K1a-n-palace",
+     "title": "Grand Ducal Palace: section samples seen (the score needs some)",
+     "passed": true,
+     "value": 387,
+     "threshold": ">= 20",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K1b-palace",
+     "title": "Grand Ducal Palace: cut and inside pixels outside the whole model's outline (its raw roofs and walls, 0 px growth; of 32416)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2a-palace",
+     "title": "Grand Ducal Palace: placeholder interior pixels outside the opening mask (the k tile: 32416 px)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2b-palace",
+     "title": "Grand Ducal Palace: share of the opening mask covered by the interior",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 0.995",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2c-palace",
+     "title": "Grand Ducal Palace: opening mask pixels that the model does not allow (not an inside face or a section of the model within 1 cm)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2d-palace",
+     "title": "Grand Ducal Palace: share of the model's own opening in the mask (32418 px that are surely of it; 250 more within 1 cm of the outside)",
+     "passed": true,
+     "value": 0.99985,
+     "threshold": ">= 0.995",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2e-palace",
+     "title": "Grand Ducal Palace: opening pixels of the tiles that are not in the paint input's mask at the same depth (the paint input: the cut model alone, 1024 x 1024 px, 50669 px of opening)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K3-palace",
+     "title": "Grand Ducal Palace: placeholder interior, largest difference in median luminance between faces of one kind turned different ways, or to and away from the photo's sun (2024-06-15T11:00:00+02:00)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 0.05",
+     "severity": "gate",
+     "examples": [
+      {
+       "cut": {
+        "sides": 0,
+        "worst": 0.0,
+        "sun": null
+       }
+      },
+      {
+       "inside_wall": {
+        "sides": 2,
+        "worst": 0.0,
+        "sun": null
+       }
+      },
+      {
+       "inside_roof": {
+        "sides": 0,
+        "worst": 0.0,
+        "sun": null
+       }
+      },
+      {
+       "floor": {
+        "sides": 1,
+        "worst": 0.0,
+        "sun": null
+       }
+      },
+      {
+       "slab": {
+        "sides": 1,
+        "worst": 0.0,
+        "sun": null
+       }
+      }
+     ]
+    },
+    {
+     "id": "K5a-palace",
+     "title": "Grand Ducal Palace: cut pixels, largest distance of the depth from the slice's faces (cm, 4407 px)",
+     "passed": true,
+     "value": 0.5,
+     "threshold": "<= 1.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5b-palace",
+     "title": "Grand Ducal Palace: cut and inside pixels not on the model's surface within 1 cm (kept material and free space both within 1 cm of the drawn point; of 32416)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5b-thin-palace",
+     "title": "Grand Ducal Palace: of those on it, inside-wall pixels on a wall with no thickness (a wall standing on a lower roof)",
+     "passed": true,
+     "value": 405,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5c-palace",
+     "title": "Grand Ducal Palace: kept outside pixels whose depth differs from layer 5's by more than 1.0 cm where layer 5 shows the same surface (of 78532 compared)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5c-max-palace",
+     "title": "Grand Ducal Palace: largest such difference (cm)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5d-palace",
+     "title": "Grand Ducal Palace: kept walls and roofs layer 5 does not show there (hidden before the cut): pixels, and those not on the building's surface within 1 cm",
+     "passed": true,
+     "value": [
+      2753,
+      10
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5e-palace",
+     "title": "Grand Ducal Palace: other buildings' pixels in the cutaway: all, those layer 5 also shows (largest depth difference, cm), those the slice brought to view",
+     "passed": true,
+     "value": [
+      23450,
+      23446,
+      0.0,
+      4
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K6b-palace",
+     "title": "Grand Ducal Palace: cutaway pixels where layer 5 shows neither a replaced building nor another building at or in front of them (of 139326)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K-ground-palace",
+     "title": "Grand Ducal Palace: opening pixels the ground layer is in front of (the terrain stands above floor_z 304.3 there), of 32416",
+     "passed": true,
+     "value": 0,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K-px-palace",
+     "title": "Grand Ducal Palace: pixels by kind",
+     "passed": true,
+     "value": {
+      "none": 647106,
+      "outside": 83460,
+      "cut": 4407,
+      "inside_wall": 3454,
+      "inside_roof": 117,
+      "floor": 9514,
+      "slab": 14924,
+      "other": 23450
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K0-abbey",
+     "title": "Neum\u00fcnster Abbey: the listed buildings are the scene's at the landmark's place (within 15.0 m)",
+     "passed": true,
+     "value": {
+      "listed": [
+       "ACT_221c9194-94ad-47d9-807a-60553478a3d2"
+      ],
+      "at_place": [
+       [
+        "ACT_221c9194-94ad-47d9-807a-60553478a3d2",
+        10.8
+       ]
+      ]
+     },
+     "threshold": null,
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K1a-abbey",
+     "title": "Neum\u00fcnster Abbey: the cut's outline on the model's section: share of 452 seen samples (every 0.25 m of 240 m of section, 813 samples) with a drawn line within 1.0 px",
+     "passed": true,
+     "value": 0.9978,
+     "threshold": ">= 0.95",
+     "severity": "gate",
+     "examples": [
+      {
+       "e": 77712.76,
+       "n": 75068.5,
+       "z": 257.0
+      }
+     ]
+    },
+    {
+     "id": "K1a-n-abbey",
+     "title": "Neum\u00fcnster Abbey: section samples seen (the score needs some)",
+     "passed": true,
+     "value": 452,
+     "threshold": ">= 20",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K1b-abbey",
+     "title": "Neum\u00fcnster Abbey: cut and inside pixels outside the whole model's outline (its raw roofs and walls, 0 px growth; of 46411)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2a-abbey",
+     "title": "Neum\u00fcnster Abbey: placeholder interior pixels outside the opening mask (the k tile: 46411 px)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2b-abbey",
+     "title": "Neum\u00fcnster Abbey: share of the opening mask covered by the interior",
+     "passed": true,
+     "value": 1.0,
+     "threshold": ">= 0.995",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2c-abbey",
+     "title": "Neum\u00fcnster Abbey: opening mask pixels that the model does not allow (not an inside face or a section of the model within 1 cm)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2d-abbey",
+     "title": "Neum\u00fcnster Abbey: share of the model's own opening in the mask (46431 px that are surely of it; 139 more within 1 cm of the outside)",
+     "passed": true,
+     "value": 0.99927,
+     "threshold": ">= 0.995",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2e-abbey",
+     "title": "Neum\u00fcnster Abbey: opening pixels of the tiles that are not in the paint input's mask at the same depth (the paint input: the cut model alone, 1024 x 1024 px, 65180 px of opening)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K3-abbey",
+     "title": "Neum\u00fcnster Abbey: placeholder interior, largest difference in median luminance between faces of one kind turned different ways, or to and away from the photo's sun (2024-06-15T11:00:00+02:00)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": "<= 0.05",
+     "severity": "gate",
+     "examples": [
+      {
+       "cut": {
+        "sides": 0,
+        "worst": 0.0,
+        "sun": null
+       }
+      },
+      {
+       "inside_wall": {
+        "sides": 1,
+        "worst": 0.0,
+        "sun": null
+       }
+      },
+      {
+       "inside_roof": {
+        "sides": 1,
+        "worst": 0.0,
+        "sun": null
+       }
+      },
+      {
+       "floor": {
+        "sides": 1,
+        "worst": 0.0,
+        "sun": null
+       }
+      },
+      {
+       "slab": {
+        "sides": 0,
+        "worst": 0.0,
+        "sun": null
+       }
+      }
+     ]
+    },
+    {
+     "id": "K5a-abbey",
+     "title": "Neum\u00fcnster Abbey: cut pixels, largest distance of the depth from the slice's faces (cm, 2299 px)",
+     "passed": true,
+     "value": 0.499,
+     "threshold": "<= 1.0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5b-abbey",
+     "title": "Neum\u00fcnster Abbey: cut and inside pixels not on the model's surface within 1 cm (kept material and free space both within 1 cm of the drawn point; of 46411)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5b-thin-abbey",
+     "title": "Neum\u00fcnster Abbey: of those on it, inside-wall pixels on a wall with no thickness (a wall standing on a lower roof)",
+     "passed": true,
+     "value": 1419,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5c-abbey",
+     "title": "Neum\u00fcnster Abbey: kept outside pixels whose depth differs from layer 5's by more than 1.0 cm where layer 5 shows the same surface (of 144053 compared)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5c-max-abbey",
+     "title": "Neum\u00fcnster Abbey: largest such difference (cm)",
+     "passed": true,
+     "value": 0.0,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5d-abbey",
+     "title": "Neum\u00fcnster Abbey: kept walls and roofs layer 5 does not show there (hidden before the cut): pixels, and those not on the building's surface within 1 cm",
+     "passed": true,
+     "value": [
+      1455,
+      23
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5e-abbey",
+     "title": "Neum\u00fcnster Abbey: other buildings' pixels in the cutaway: all, those layer 5 also shows (largest depth difference, cm), those the slice brought to view",
+     "passed": true,
+     "value": [
+      53520,
+      53520,
+      0.0,
+      0
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K6b-abbey",
+     "title": "Neum\u00fcnster Abbey: cutaway pixels where layer 5 shows neither a replaced building nor another building at or in front of them (of 247182)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K-ground-abbey",
+     "title": "Neum\u00fcnster Abbey: opening pixels the ground layer is in front of (the terrain stands above floor_z 245.6 there), of 46411",
+     "passed": true,
+     "value": 0,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K-px-abbey",
+     "title": "Neum\u00fcnster Abbey: pixels by kind",
+     "passed": true,
+     "value": {
+      "none": 1325682,
+      "outside": 147251,
+      "cut": 2299,
+      "inside_wall": 15433,
+      "inside_roof": 8043,
+      "floor": 17789,
+      "slab": 2847,
+      "other": 53520
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K4-vehicles",
+     "title": "detections >= 0.1 of ['a car', 'a parked car', 'a van', 'a bus', 'a truck'] (3.0-14.0 m) on 6 paint inputs and cutaway tiles (highest score of any query 0.0137)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K4-people",
+     "title": "detections >= 0.1 of ['a person', 'people'] (0.3-3.0 m) on 6 paint inputs and cutaway tiles (highest score of any query 0.0079)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6a",
+     "title": "files of the cutaway layer inside layer 5's folder, or files named 'cutaway' in layer 5 (the cutaway is a layer of its own: with it off, layer 5's tiles are what is drawn)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    }
+   ]
+  },
+  "check_cutaways_view": {
+   "passed": true,
+   "entries": [
+    {
+     "id": "KV0a",
+     "title": "browser GPU; views at 1 px per map px",
+     "passed": true,
+     "value": {
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Pro, Unspecified Version)",
+      "size": [
+       1600,
+       1200
+      ],
+      "hours": [
+       13,
+       23
+      ]
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "KV0",
+     "title": "page errors",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-off-cathedral-13",
+     "title": "Notre-Dame Cathedral, 13:00: pixels that differ between a view that never had the cutaway on and the same view after on and off again",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-on-cathedral-13",
+     "title": "Notre-Dame Cathedral, 13:00: pixels the cutaway changes when on",
+     "passed": true,
+     "value": 31570,
+     "threshold": ">= 1000",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-off-cathedral-23",
+     "title": "Notre-Dame Cathedral, 23:00: pixels that differ between a view that never had the cutaway on and the same view after on and off again",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-on-cathedral-23",
+     "title": "Notre-Dame Cathedral, 23:00: pixels the cutaway changes when on",
+     "passed": true,
+     "value": 31570,
+     "threshold": ">= 1000",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-layer5-cathedral",
+     "title": "Notre-Dame Cathedral: layer 5 pixels drawn with layer 5 off and the cutaway on",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-xray-on-cathedral",
+     "title": "Notre-Dame Cathedral: in tunnel view, pixels the cutaway changes when on (it shows through the fade)",
+     "passed": true,
+     "value": 31570,
+     "threshold": ">= 1",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-xray-off-cathedral",
+     "title": "Notre-Dame Cathedral: in tunnel view, pixels that differ after the cutaway is on and off again; and after the tunnel view is off too, from the plain frame",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2v-cathedral",
+     "title": "Notre-Dame Cathedral: interior pixels drawn by the viewer outside the tiles' opening mask (of 31208 drawn; the mask holds 33325 px in the view)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2v-frame-cathedral",
+     "title": "Notre-Dame Cathedral: pixels of the view whose layer, or class in layer 5, is not the tiles' nearest surface with the cutaway in place (of 1920000; 31208 of the opening seen)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2v-colour-cathedral",
+     "title": "Notre-Dame Cathedral: layer 5 pixels (the cutaway's and the other buildings', 788607) whose colour is not the tiles'",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5v-vehicles-cathedral",
+     "title": "Notre-Dame Cathedral: probe vehicle pixels where the viewer's depth test against the cut building disagrees with the tiles (of 174232 px of 360 cars; 4 more on silhouettes)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5v-silhouette-cathedral",
+     "title": "Notre-Dame Cathedral: share of probe pixels on silhouettes (edge rounding)",
+     "passed": true,
+     "value": 2e-05,
+     "threshold": "<= 0.01",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5v-probes-cathedral",
+     "title": "Notre-Dame Cathedral: probe pixels drawn; hidden behind the cutaway's own surfaces",
+     "passed": true,
+     "value": [
+      22417,
+      140156
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5v-labels-cathedral",
+     "title": "Notre-Dame Cathedral: label points (on and 3 m behind the cutaway's surfaces, 4248) that the viewer hides or shows against what the tiles say (2124 hidden)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-off-palace-13",
+     "title": "Grand Ducal Palace, 13:00: pixels that differ between a view that never had the cutaway on and the same view after on and off again",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-on-palace-13",
+     "title": "Grand Ducal Palace, 13:00: pixels the cutaway changes when on",
+     "passed": true,
+     "value": 37012,
+     "threshold": ">= 1000",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-off-palace-23",
+     "title": "Grand Ducal Palace, 23:00: pixels that differ between a view that never had the cutaway on and the same view after on and off again",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-on-palace-23",
+     "title": "Grand Ducal Palace, 23:00: pixels the cutaway changes when on",
+     "passed": true,
+     "value": 37121,
+     "threshold": ">= 1000",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-layer5-palace",
+     "title": "Grand Ducal Palace: layer 5 pixels drawn with layer 5 off and the cutaway on",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-xray-on-palace",
+     "title": "Grand Ducal Palace: in tunnel view, pixels the cutaway changes when on (it shows through the fade)",
+     "passed": true,
+     "value": 30875,
+     "threshold": ">= 1",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-xray-off-palace",
+     "title": "Grand Ducal Palace: in tunnel view, pixels that differ after the cutaway is on and off again; and after the tunnel view is off too, from the plain frame",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2v-palace",
+     "title": "Grand Ducal Palace: interior pixels drawn by the viewer outside the tiles' opening mask (of 32416 drawn; the mask holds 32416 px in the view)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2v-frame-palace",
+     "title": "Grand Ducal Palace: pixels of the view whose layer, or class in layer 5, is not the tiles' nearest surface with the cutaway in place (of 1920000; 32416 of the opening seen)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2v-colour-palace",
+     "title": "Grand Ducal Palace: layer 5 pixels (the cutaway's and the other buildings', 1685225) whose colour is not the tiles'",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5v-vehicles-palace",
+     "title": "Grand Ducal Palace: probe vehicle pixels where the viewer's depth test against the cut building disagrees with the tiles (of 173820 px of 360 cars; 4 more on silhouettes)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5v-silhouette-palace",
+     "title": "Grand Ducal Palace: share of probe pixels on silhouettes (edge rounding)",
+     "passed": true,
+     "value": 2e-05,
+     "threshold": "<= 0.01",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5v-probes-palace",
+     "title": "Grand Ducal Palace: probe pixels drawn; hidden behind the cutaway's own surfaces",
+     "passed": true,
+     "value": [
+      42643,
+      114365
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5v-labels-palace",
+     "title": "Grand Ducal Palace: label points (on and 3 m behind the cutaway's surfaces, 3116) that the viewer hides or shows against what the tiles say (1558 hidden)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-off-abbey-13",
+     "title": "Neum\u00fcnster Abbey, 13:00: pixels that differ between a view that never had the cutaway on and the same view after on and off again",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-on-abbey-13",
+     "title": "Neum\u00fcnster Abbey, 13:00: pixels the cutaway changes when on",
+     "passed": true,
+     "value": 59224,
+     "threshold": ">= 1000",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-off-abbey-23",
+     "title": "Neum\u00fcnster Abbey, 23:00: pixels that differ between a view that never had the cutaway on and the same view after on and off again",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-on-abbey-23",
+     "title": "Neum\u00fcnster Abbey, 23:00: pixels the cutaway changes when on",
+     "passed": true,
+     "value": 59217,
+     "threshold": ">= 1000",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-layer5-abbey",
+     "title": "Neum\u00fcnster Abbey: layer 5 pixels drawn with layer 5 off and the cutaway on",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-xray-on-abbey",
+     "title": "Neum\u00fcnster Abbey: in tunnel view, pixels the cutaway changes when on (it shows through the fade)",
+     "passed": true,
+     "value": 59208,
+     "threshold": ">= 1",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-xray-off-abbey",
+     "title": "Neum\u00fcnster Abbey: in tunnel view, pixels that differ after the cutaway is on and off again; and after the tunnel view is off too, from the plain frame",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2v-abbey",
+     "title": "Neum\u00fcnster Abbey: interior pixels drawn by the viewer outside the tiles' opening mask (of 43691 drawn; the mask holds 46411 px in the view)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2v-frame-abbey",
+     "title": "Neum\u00fcnster Abbey: pixels of the view whose layer, or class in layer 5, is not the tiles' nearest surface with the cutaway in place (of 1920000; 43691 of the opening seen)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K2v-colour-abbey",
+     "title": "Neum\u00fcnster Abbey: layer 5 pixels (the cutaway's and the other buildings', 563614) whose colour is not the tiles'",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5v-vehicles-abbey",
+     "title": "Neum\u00fcnster Abbey: probe vehicle pixels where the viewer's depth test against the cut building disagrees with the tiles (of 384210 px of 800 cars; 24 more on silhouettes)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5v-silhouette-abbey",
+     "title": "Neum\u00fcnster Abbey: share of probe pixels on silhouettes (edge rounding)",
+     "passed": true,
+     "value": 6e-05,
+     "threshold": "<= 0.01",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K5v-probes-abbey",
+     "title": "Neum\u00fcnster Abbey: probe pixels drawn; hidden behind the cutaway's own surfaces",
+     "passed": true,
+     "value": [
+      81658,
+      203361
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "K5v-labels-abbey",
+     "title": "Neum\u00fcnster Abbey: label points (on and 3 m behind the cutaway's surfaces, 5038) that the viewer hides or shows against what the tiles say (2519 hidden)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-far-off",
+     "title": "far zoom (the whole area): pixels that differ after the cutaways are on and off again",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K6v-far-on",
+     "title": "far zoom: pixels the cutaways change when on",
+     "passed": true,
+     "value": 832601,
+     "threshold": ">= 1",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "K3v",
+     "title": "the opening's own cast shadow moving with ?hour: not built (the shadow height map holds the whole building, so the opening is lit as if roofed)",
+     "passed": true,
+     "value": "not done",
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    }
+   ]
+  }
+ },
+ "speed": {
+  "first_view_cold_s": 0.14509999999403952,
+  "first_view_warm_s": 0.08630000001192092,
+  "pan_whole_area": {
+   "fps": 120.04592193235722,
+   "frame_ms_median": 0.5999999940395355,
+   "tiles_missing": 0
+  },
+  "pan_zoom1": {
+   "fps": 94.97388218254132,
+   "frame_ms_median": 0.4000000059604645,
+   "tiles_missing": 0
+  },
+  "pan_fps": 94.97388218254132,
+  "throttled": {
+   "cpu_slowdown": 4,
+   "pan_zoom1": {
+    "fps": 120.13887154417968,
+    "frame_ms_median": 0.7999999821186066,
+    "tiles_missing": 0
+   }
+  },
+  "viewport": "1600x1000 CSS px, device pixel ratio 1"
+ },
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/619f7c040341"
+}

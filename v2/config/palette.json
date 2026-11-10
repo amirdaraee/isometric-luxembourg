@@ -17,7 +17,12 @@
   "cemetery":    {"rgb": [122, 140, 80],  "src": "FALLBACK[CEMETERY]"},
   "parking":     {"rgb": [170, 168, 162], "src": "FALLBACK[PARKING]"},
   "railground":  {"rgb": [150, 136, 118], "src": "FALLBACK[RAILGROUND]"},
-  "buildsite":   {"rgb": [196, 170, 130], "src": "FALLBACK[BUILDSITE]"}
+  "buildsite":   {"rgb": [196, 170, 130], "src": "FALLBACK[BUILDSITE]"},
+  "rock":        {"rgb": [216, 188, 138], "src": "v2 phase 3 (bare Luxembourg sandstone: the Bock and the valley cliffs)"},
+  "flower_red":    {"rgb": [200, 72, 64],   "src": "v2 phase 3 (garden flowers)"},
+  "flower_yellow": {"rgb": [236, 200, 80],  "src": "v2 phase 3 (garden flowers)"},
+  "flower_white":  {"rgb": [244, 240, 228], "src": "v2 phase 3 (garden flowers)"},
+  "flower_violet": {"rgb": [150, 110, 170], "src": "v2 phase 3 (garden flowers)"}
  },
  "relief": {
   "rock":        {"rgb": [176, 160, 132], "src": "v2 (Luxembourg sandstone, to tune on the Bock)"},
@@ -25,6 +30,7 @@
  },
  "water": {
   "river":       {"rgb": [52, 112, 120],  "src": "FALLBACK[WATER]"},
+  "shallow":     {"rgb": [86, 146, 148],  "src": "v2 phase 3 (the shallows along the banks)"},
   "river_ink":   {"rgb": [34, 98, 122],   "src": "v2_ink.py water"},
   "bank":        {"rgb": [36, 52, 64],    "src": "v2_ink.py bank"}
  },
@@ -62,6 +68,14 @@
   "facade_sage":   {"rgb": [204, 210, 176], "src": "v2 A (Grund facades)"},
   "facade_white":  {"rgb": [244, 240, 230], "src": "v2 A (Grund facades)"},
   "facade_apricot": {"rgb": [236, 196, 150], "src": "v2 A (Grund facades)"},
+  "facade_rose":   {"rgb": [224, 168, 156], "src": "v2 phase 3 (more facade colours)"},
+  "facade_green":  {"rgb": [186, 206, 168], "src": "v2 phase 3 (more facade colours)"},
+  "facade_terracotta": {"rgb": [218, 152, 112], "src": "v2 phase 3 (more facade colours)"},
+  "facade_grey":   {"rgb": [216, 212, 202], "src": "v2 phase 3 (more facade colours)"},
+  "facade_butter": {"rgb": [246, 230, 168], "src": "v2 phase 3 (more facade colours)"},
+  "roof_slate_blue": {"rgb": [82, 96, 118], "src": "v2 phase 3 (blue slate)"},
+  "roof_slate_warm": {"rgb": [106, 98, 102], "src": "v2 phase 3 (old, warm slate)"},
+  "roof_tile_brown": {"rgb": [140, 86, 64], "src": "v2 phase 3 (brown tile)"},
   "trim":        {"rgb": [248, 244, 234], "src": "v2 A (window frames, cornices, quoins)"},
   "plinth":      {"rgb": [170, 156, 128], "src": "v2 A (sandstone base course)"},
   "shutter_green": {"rgb": [84, 124, 92], "src": "v2 A"},
@@ -80,15 +94,36 @@
  "trees": {
   "summer_dark":   {"rgb": [28, 44, 24],   "src": "pipeline/layers/v2_canopy.py dark"},
   "summer_light":  {"rgb": [150, 178, 84], "src": "v2_canopy.py light"},
+  "summer_light_warm": {"rgb": [176, 186, 76], "src": "v2 phase 3 (tree to tree variety: a yellower green)"},
+  "summer_light_cool": {"rgb": [112, 166, 96], "src": "v2 phase 3 (tree to tree variety: a bluer green)"},
   "conifer_dark":  {"rgb": [20, 40, 30],   "src": "v2_canopy.py conifer"},
   "conifer_light": {"rgb": [96, 132, 84],  "src": "v2_canopy.py conifer"},
   "red_dark":      {"rgb": [48, 26, 30],   "src": "v2_canopy.py red"},
   "red_light":     {"rgb": [150, 88, 78],  "src": "v2_canopy.py red"},
   "trunk":         {"rgb": [84, 66, 50],   "src": "v2_canopy.py trunk"}
  },
+ "cutaway": {
+  "note": "landmark cutaways (specs/landmark-cutaways.md): the code placeholder interior, one flat colour per kind of face; a painted interior replaces them",
+  "section":       {"rgb": [176, 84, 70],   "src": "v2 (the cut through walls, roofs and slabs)"},
+  "inside_wall":   {"rgb": [234, 224, 204], "src": "v2 (inner side of a wall)"},
+  "inside_roof":   {"rgb": [198, 178, 150], "src": "v2 (inner side of a roof)"},
+  "floor":         {"rgb": [212, 200, 176], "src": "v2 (floor at ground level)"},
+  "slab":          {"rgb": [222, 206, 170], "src": "v2 (upper floors)"}
+ },
  "light": {
   "shadow_tint":   {"rgb": [70, 72, 110],  "src": "v2 (cast shadows are tinted, never black: OTHERS 7.1)"},
   "golden":        {"rgb": [255, 196, 120], "src": "v2"},
   "night_sky":     {"rgb": [16, 24, 40],   "src": "pipeline/layers/layers_common.py BG"}
+ },
+ "tunnel": {
+  "note": "Tunnel view (x-ray, v2/docs/specs/tunnel-view.md): the viewer draws the tunnels unlit in these colours over the faded city. One style: a fill, a darker far wall, ink edges, a light centre line; the fill goes towards `deep` by one step per 10 m under the surface.",
+  "ground":         {"rgb": [226, 223, 216], "src": "v2 (the neutral ground the city is faded over)"},
+  "floor":          {"rgb": [238, 156, 70],  "src": "v2 (tunnel floor)"},
+  "wall":           {"rgb": [206, 118, 52],  "src": "v2 (tunnel far wall)"},
+  "casemate_floor": {"rgb": [124, 176, 190], "src": "v2 (casemate gallery floor)"},
+  "casemate_wall":  {"rgb": [86, 136, 158],  "src": "v2 (casemate gallery far wall)"},
+  "deep":           {"rgb": [58, 36, 62],    "src": "v2 (the tone of the deepest step)"},
+  "axis":           {"rgb": [255, 240, 204], "src": "v2 (centre line of a tunnel)"},
+  "ink":            {"rgb": [52, 44, 40],    "src": "ink.line"}
  }
 }

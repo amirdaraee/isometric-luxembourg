@@ -23,13 +23,15 @@ from scipy import ndimage
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.strtree import STRtree
 
+from v2.layers import detail
 from v2.layers import geometry as G
 from v2.layers.common import (C30, CLASS, R2, S30, VIEW, cam, grain, pal, project)
 from v2.layers.raster import HeightField, bary, raster_ellipsoids, raster_tris, terrain_scan
 
 # ground classes, lowest priority first (layer-01-ground.md rule 1); k byte = index
+# "rock" is not an OSM class: it is the scene's cliff cells (terrain class 2), whatever the land use says of them
 GROUND_CLASSES = ["none", "paved", "buildsite", "railground", "parking", "square", "grass", "cemetery", "garden",
-                  "meadow", "scrub", "wood", "pitch", "water"]
+                  "meadow", "scrub", "wood", "pitch", "water", "rock"]
 GREEN = {"grass", "cemetery", "garden", "meadow", "scrub", "wood", "pitch"}
 URBAN = {"residential", "commercial", "retail", "industrial", "construction", "railway", "education", "religious",
          "civic", "institutional", "garages", "military"}
@@ -178,6 +180,12 @@ class Renderer:
         return out
 
     @cached_property
+    def water_inner(self):
+        """The water areas drawn in by 0.8 m: outside them and inside the water lie the shallows along the banks."""
+        out = [p.buffer(-0.8) for p in self.water_polys]
+        return [p for p in out if not p.is_empty]
+
+    @cached_property
     def hf(self) -> HeightField:
         """The LiDAR terrain, with every water area held at a flat level: the lowest terrain round it locally
         (a 25 m minimum filter of the bank heights, so a reach is flat between weirs), never above the bank."""
@@ -240,6 +248,14 @@ class Renderer:
             r["normal"] = nrm
             self._tcache[key] = r
         return self._tcache[key]
+
+    def terrain_class(self, t):
+        """The scene's terrain class (0 ground, 1 steep, 2 cliff) at each pixel of a terrain scan; 0 off the area."""
+        T = self.scene.terrain
+        gi, gj = self.hf.ij(t["e"], t["n"])
+        ci = np.clip(np.round(np.nan_to_num(gi)).astype(int), 0, T["cls"].shape[0] - 1)
+        cj = np.clip(np.round(np.nan_to_num(gj)).astype(int), 0, T["cls"].shape[1] - 1)
+        return np.where(t["inarea"], T["cls"][ci, cj], 0)
 
     def _canvas(self, tile, t, extra_f=()):
         ff = np.r_[t["f"][t["inarea"]], np.asarray(extra_f, float)]
@@ -310,11 +326,16 @@ class Renderer:
         cls = np.asarray(cls)
         k = np.zeros(m.shape, np.uint8)
         k[m] = cv.sample(cls, t["u"][m], t["f"][m])
+        # bare rock: the scene's cliff cells (slope >= 60 degrees with a drop), except under water
+        k[m & (self.terrain_class(t) == 2) & (k != GROUND_CLASSES.index("water"))] = GROUND_CLASSES.index("rock")
         lut = np.zeros((len(GROUND_CLASSES), 3))
         for i, c in enumerate(GROUND_CLASSES[1:], 1):
             lut[i] = pal("water", "river") if c == "water" else pal("ground", c)
         px, py = tile.centres
         rgb = lut[k] * grain(px, py, 0.03, seed=1)[..., None]
+        # the classes' drawn detail (paving, lawns, rock), from each pixel's place on the terrain: never from light
+        PX, PY = np.meshgrid(px, py)
+        rgb[m] = detail.ground_detail(rgb[m], k[m], GROUND_CLASSES, t["e"][m], t["n"][m], t["z"][m], PX[m], PY[m])
         # class borders: 1 px soft ink (40%) where the class changes to the right or below
         edge = np.zeros(m.shape, bool)
         edge[:, :-1] |= (k[:, :-1] != k[:, 1:]) & m[:, :-1] & m[:, 1:]
@@ -356,26 +377,23 @@ class Renderer:
             ramp = np.clip((slope - 3.5) / 9.0, 0, 1)        # flat (< 3 deg, with room for the normal's coding): 1
             f1 = np.clip(1 + 0.9 * (shade - light[2]) * ramp, 0.62, 1.0)
             fac *= f1[..., None]
-            T = self.scene.terrain
             # steep and cliff classes of the scene (scene_terrain: slope >= 35 deg; cliff >= 60 deg with a drop)
-            gi, gj = self.hf.ij(t["e"], t["n"])
-            ci = np.clip(np.round(gi).astype(int), 0, T["cls"].shape[0] - 1)
-            cj = np.clip(np.round(gj).astype(int), 0, T["cls"].shape[1] - 1)
-            tcls = np.where(m, T["cls"][ci, cj], 0)
+            tcls = self.terrain_class(t)
             k[m] = 1
             steep = m & (tcls >= 1) & (raw >= 3.5)
             if steep.any():
                 gx, gy = -n[..., 0], -n[..., 1]
                 gl = np.maximum(np.hypot(gx, gy), 1e-9)
                 tx, ty = -gy / gl, gx / gl                              # along the contour
-                spacing = np.where(tcls == 2, 0.55, 1.1)
-                phase = (t["e"] * tx + t["n"] * ty) / spacing
+                # steep ground: fall-line hatching and a rock tint. Cliffs are layer 1's bare rock (its beds and
+                # joints are drawn there), so here they get the form shading only
+                phase = (t["e"] * tx + t["n"] * ty) / 1.1
                 line = np.abs(phase - np.round(phase)) < 0.13
                 hatch = pal("relief", "hatch") / 255
                 rock = pal("relief", "rock") / 255
-                tint = np.where((tcls == 2)[..., None], 0.45 * rock + 0.55, 0.15 * rock + 0.85)
-                fac = np.where(steep[..., None], fac * tint, fac)
-                h = steep & line
+                slope1 = steep & (tcls == 1)
+                fac = np.where(slope1[..., None], fac * (0.15 * rock + 0.85), fac)
+                h = slope1 & line
                 fac[h] = fac[h] * (0.45 + 0.55 * hatch)
                 k[steep] = 2
         depth = np.where(m, t["depth"], np.inf)
@@ -398,9 +416,22 @@ class Renderer:
             tt = tsel[near]
             nrm, _ = G.tri_normals(W3["V"], W3["T"])
             cols = np.array([colour_of(c) for c in W3["col_keys"]])
-            rgb.reshape(-1, 3)[gi] = cols[W3["col"][tt]]
-            depth.reshape(-1)[gi] = zb.reshape(-1)[gi]
             nn = nrm[tt] * np.sign(-(nrm[tt] @ VIEW))[:, None]
+            # the faces' stone: coursed masonry on built walls, bedded rock on cliffs and embankments (from each
+            # pixel's place on the face); the top band stays ink
+            from v2.layers.common import unproject
+            pxc, pyc = tile.centres
+            rr_, cc_ = np.unravel_index(gi, (H, W))
+            wx, wy, wz = unproject(pxc[cc_], pyc[rr_], zb.reshape(-1)[gi] + 0.15)
+            natural = np.array([w["kind"] in ("natural=cliff", "man_made=embankment") for w in self.scene.walls], bool)
+            face = np.abs(nn[:, 2]) < 0.3
+            nat = natural[W3["obj"][tt]] & face
+            wcol = cols[W3["col"][tt]].astype(float)
+            wcol[nat] = pal("ground", "rock") * detail.rock(wx[nat], wy[nat], wz[nat])[:, None]
+            built = face & ~nat
+            wcol[built] *= detail.ashlar(np.column_stack([wx, wy, wz])[built], nn[built], seed=5)[:, None]
+            rgb.reshape(-1, 3)[gi] = np.clip(np.round(wcol), 0, 255)
+            depth.reshape(-1)[gi] = zb.reshape(-1)[gi]
             normal.reshape(-1, 3)[gi] = nn
             k.reshape(-1)[gi] = 3
             ids.reshape(-1)[gi] = (W3["obj"][tt].astype(np.uint32) << 8) | CLASS["wall"]
@@ -428,6 +459,15 @@ class Renderer:
             return out
         rgb = np.zeros(m.shape + (3,))
         rgb[wm] = pal("water", "river")
+        # the shallows: a paler band along the bank, 0.8 m wide (the water areas drawn in by that much: whole
+        # polygons, so the band is the same in every tile)
+        deep = Image.new("L", (cv.W, cv.H), 0)
+        for p in self.water_inner:
+            if p.intersects(fp):
+                fill_geom(deep, cv.geom(p), 1)
+        sh = wm.copy()
+        sh[m] &= cv.sample(np.asarray(deep), t["u"][m], t["f"][m]) == 0
+        rgb[sh] = pal("water", "shallow")
         edge = np.zeros(m.shape, bool)
         nb = np.zeros(m.shape, bool)
         nb[:, :-1] |= ~wm[:, 1:]; nb[:, 1:] |= ~wm[:, :-1]; nb[:-1, :] |= ~wm[1:, :]; nb[1:, :] |= ~wm[:-1, :]
@@ -601,6 +641,16 @@ class Renderer:
             depth[on] = t["depth"][on]
             normal[on] = t["normal"][on]
             k[on] = 1
+            # the surfaces' drawn detail: setts on pedestrian streets, paths and steps, a fine grain on asphalt
+            cl = ids[on] & 255
+            fct = np.ones(int(on.sum()))
+            sett = np.isin(cl, [CLASS["path"], CLASS["steps"]])
+            tn, j = detail.slabs(t["e"][on][sett], t["n"][on][sett], 0.75, 0.75, 0.2, joint=0.07, tone=0.04, seed=4)
+            fct[sett] = tn * (1 - 0.12 * j)
+            PXg, PYg = np.meshgrid(*tile.centres)
+            road = cl == CLASS["road"]
+            fct[road] = 1 + (detail.ihash(PXg[on][road], PYg[on][road], 6) - 0.5) * 0.06
+            rgb[on] = np.clip(np.round(rgb[on] * fct[:, None]), 0, 255).astype(np.uint8)
         # bridge decks, with their own depth; their surface from the deck canvas at the deck point's (u, f)
         D = self.decks
         if len(D["T"]):
@@ -899,13 +949,16 @@ class Renderer:
         b = np.minimum(b, np.maximum(h / 2 - 0.2, 0.5))
         cz = base + h - b
         C = np.column_stack([e, n, cz])
+        owner = np.arange(len(e))
+        if self.art != "plain":
+            C, r, b, owner = crown_lobes(C, r, b, typ)
         # trunks: thin boxes from the ground to the crown's centre
         M = G.Mesh()
         for i in range(len(e)):
             if cz[i] - base[i] < 0.5:
                 continue
             G.box(M, np.array([e[i], n[i]]), np.array([1.0, 0.0]), 0.35, 0.35, base[i], cz[i], CLASS["trunk"], i, "trees.trunk")
-        return {"C": C, "r": r, "b": b, "type": typ, "trunks": M.done()}
+        return {"C": C, "r": r, "b": b, "type": typ, "tree": owner, "trunks": M.done()}
 
     def trees(self, tile) -> LayerTile:
         """Layer 7 (code crowns for methods A and B, both with A's leaf clumps: owner, 10 Nov 2026): every surveyed tree at its measured place and size, a flat crown colour by type
@@ -925,6 +978,8 @@ class Renderer:
         nb = tr.normal.copy()
         raster_ellipsoids(g["C"], g["r"], g["b"], tile, zb, ib, nb)
         crown = ib >= 0
+        lobe = ib.copy()                               # the crown shape (a lobe of a tree) seen at each pixel
+        ib = np.where(crown, g["tree"][np.maximum(ib, 0)], -1)      # ... and its tree
         rgb = tr.rgb.astype(float)
         if crown.any():
             typ = g["type"][ib[crown]]
@@ -934,6 +989,17 @@ class Renderer:
                              pal("trees", "summer_dark")])
             # albedo: a per-tree mix of the type's light and dark ends, and a leaf texture (no light in it)
             mix = 0.5 + 0.12 * (np.sin(ib[crown] * 12.9898) * 0.5)
+            if self.art != "plain":
+                # tree to tree variety: each tree's own depth of green, and a lean to a warm or a cool green
+                # (one colour per tree: nothing of it follows the sun)
+                mix = 0.36 + 0.3 * detail.ihash(ib[crown], 31)
+                lean = detail.ihash(ib[crown], 32)[:, None]
+                broad = np.isin(typ, (0, 3))[:, None]
+                warm, cool = pal("trees", "summer_light_warm"), pal("trees", "summer_light_cool")
+                light = np.where(broad, np.where(lean < 0.5, light[typ] + (warm - light[typ]) * (1 - 2 * lean),
+                                                 light[typ] + (cool - light[typ]) * (2 * lean - 1)), light[typ])
+                dark = dark[typ]
+                typ = np.arange(len(typ))              # light and dark are per pixel from here on
             px, py = tile.centres
             leaf = grain(px, py, 0.08, seed=7)[crown]
             col = (dark[typ] * (1 - mix[:, None]) + light[typ] * mix[:, None]) * leaf[:, None]
@@ -947,16 +1013,19 @@ class Renderer:
                 base = dark[typ] * (1 - mix[:, None]) + light[typ] * mix[:, None]
                 col = ArtA.crown_rgb(base, np.column_stack([wx, wy, wz]), ib[crown], X, Y)
             rgb[crown] = col
-            # crown outline: 1 px of soft ink where a crown meets anything else
-            idg = np.where(crown, ib, -1)
-            e = np.zeros((H, W), bool)
-            e[:, :-1] |= idg[:, :-1] != idg[:, 1:]
-            e[:, 1:] |= idg[:, :-1] != idg[:, 1:]
-            e[:-1, :] |= idg[:-1, :] != idg[1:, :]
-            e[1:, :] |= idg[:-1, :] != idg[1:, :]
-            e &= crown
+            # crown outline: 1 px of soft ink where a crown meets anything else, and a lighter line where two
+            # lobes of one crown meet (the nearer lobe's edge), so a crown reads as a mass of foliage
             ink = pal("trees", "summer_dark")
-            rgb[e] = rgb[e] * 0.5 + ink * 0.5
+            for idg, wgt, two_sided in ((np.where(crown, lobe, -1), 0.32, False), (np.where(crown, ib, -1), 0.5, True)):
+                dh, dv = idg[:, :-1] != idg[:, 1:], idg[:-1, :] != idg[1:, :]
+                e = np.zeros((H, W), bool)
+                if two_sided:
+                    e[:, :-1] |= dh; e[:, 1:] |= dh; e[:-1, :] |= dv; e[1:, :] |= dv
+                else:
+                    e[:, :-1] |= dh & (zb[:, :-1] <= zb[:, 1:]); e[:, 1:] |= dh & (zb[:, 1:] < zb[:, :-1])
+                    e[:-1, :] |= dv & (zb[:-1, :] <= zb[1:, :]); e[1:, :] |= dv & (zb[1:, :] < zb[:-1, :])
+                e &= crown
+                rgb[e] = rgb[e] * (1 - wgt) + ink * wgt
         got = np.isfinite(zb)
         k = np.where(crown, 1 + g["type"][np.maximum(ib, 0)], np.where(got, 8, 0)).astype(np.uint8)
         ids = tr.ids.copy()
@@ -968,6 +1037,44 @@ class Renderer:
     # ---------------------------------------------------------------- dispatch
     def layer(self, name, tile) -> LayerTile:
         return getattr(self, name)(tile)
+
+
+# ------------------------------------------------------------------------------------------------ crowns
+def crown_lobes(C, r, b, typ):
+    """A tree's crown as a few rounded shapes inside its measured size (centres C, radius r, half-height b, type):
+    a broadleaf is a core with lobes round it and one on top, a conifer three tiers narrowing upwards. No shape
+    reaches beyond the tree's crown radius, above its top or below its crown's foot, so the survey's size holds.
+    Each lobe's place and size is a hash of its tree's index. Returns (C, r, b, the tree of each shape)."""
+    n = len(r)
+    idx = np.arange(n)
+    conifer = typ == 2
+    small = (r < 1.2) & ~conifer
+    oC, orr, ob, own = [], [], [], []
+
+    def add(m, c, rr, bb):
+        oC.append(c[m]); orr.append(rr[m]); ob.append(bb[m]); own.append(idx[m])
+    add(small, C, r, b)
+    # conifers: three tiers from the crown's foot to the top
+    foot = C[:, 2] - b
+    for frac_r, zc, hb in ((1.0, 0.28, 0.28), (0.72, 0.55, 0.25), (0.45, 0.8, 0.2)):
+        add(conifer, np.column_stack([C[:, 0], C[:, 1], foot + 2 * b * zc]), r * frac_r, 2 * b * hb)
+    # broadleaves: the core, the top lobe, and five to seven lobes round the core reaching the measured width
+    lob = ~small & ~conifer
+    add(lob, C, r * 0.84, b * 0.9)
+    tb = b * 0.48
+    add(lob, np.column_stack([C[:, 0] + r * 0.12 * (detail.ihash(idx, 41) - 0.5), C[:, 1] + r * 0.12 * (detail.ihash(idx, 42) - 0.5),
+                              C[:, 2] + b - tb]), r * 0.6, tb)
+    count = np.where(r > 3.0, 7, 5)
+    a0 = detail.ihash(idx, 43) * 2 * np.pi
+    for j in range(7):
+        m = lob & (j < count)
+        lr = r * (0.42 + 0.16 * detail.ihash(idx, 50 + j))
+        ang = a0 + 2 * np.pi * (j + 0.6 * (detail.ihash(idx, 60 + j) - 0.5)) / count
+        d = r - lr
+        lb = np.minimum(lr * np.clip(b / np.maximum(r, 1e-6), 0.8, 1.6) * 0.9, b * 0.7)
+        dz = np.clip(b * (-0.3 + 0.6 * detail.ihash(idx, 70 + j)), -(b - lb), b - lb)
+        add(m, np.column_stack([C[:, 0] + d * np.cos(ang), C[:, 1] + d * np.sin(ang), C[:, 2] + dz]), lr, lb)
+    return np.concatenate(oC), np.concatenate(orr), np.concatenate(ob), np.concatenate(own)
 
 
 # ------------------------------------------------------------------------------------------------ transport style

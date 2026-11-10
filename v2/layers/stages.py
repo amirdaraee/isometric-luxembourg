@@ -8,6 +8,7 @@ layer_night                   layer 10: windows, doors, shop fronts and street l
 layer_vehicles                layer 12: roads and profiles for the simulation, trams and trains on the graph
 layer_labels                  layer 15: labels and pins
 release                       the viewer's folder: every layer's tiles and data behind one index.json
+(layer_tunnels, the tubes of the tunnel view, is in v2/layers/tunnels.py.)
 """
 from __future__ import annotations
 
@@ -25,6 +26,10 @@ from v2.layers.tiles import layer_writer, levels_for, pyramid, run_tiles, write_
 # lossless colour: relief and water (masks-like), and layers 5-7: their drawn detail (windows, tiles, leaves) loses
 # more than C1c's 3/255 in lossy WebP q90 (measured 2.3-3.7 per tile, up to 6.5); about 2x the bytes
 LOSSLESS = {"relief", "water", "buildings", "structures", "trees"}
+# the lossy layers' WebP quality: 96 since phase 3, when the ground and the streets got drawn detail (slabs, setts,
+# lawns, rock). Measured on three tiles: q90 leaves a mean error of 1.9-2.9 of 255 against C1c's limit of 3, q96
+# 1.3-2.1, at 1.5 times the bytes (lossless would be 3.4 times)
+QUALITY = 96
 OUT_OF_SCOPE_NOTE = {
     "buildings": "placeholder for layer 5 (bake-off): plain evenly lit code buildings",
     "structures": "placeholder for layer 6 (bake-off): plain code bridges, viaducts and the lift",
@@ -43,10 +48,10 @@ def colour_layer(name):
         g, t = _osm(ctx)
         tiles = sc.tiles
         folder = ctx.out / "tiles"
-        idx0 = run_tiles(sc_folder, g, t, tiles, layer_writer(name, name in LOSSLESS), folder / "0",
+        idx0 = run_tiles(sc_folder, g, t, tiles, layer_writer(name, name in LOSSLESS), folder / "0", q=QUALITY,
                          workers=ctx.workers)
         lv = levels_for(tiles)
-        idx = pyramid(folder, idx0, lv, lossless=name in LOSSLESS, has_ids=name in ("transport", "buildings", "structures", "trees"))
+        idx = pyramid(folder, idx0, lv, lossless=name in LOSSLESS, q=QUALITY, has_ids=name in ("transport", "buildings", "structures", "trees"))
         write_index(folder, name, idx, ["k.bin"] + (["i.bin"] if name in ("transport", "buildings", "structures", "trees") else []))
         return {"layer": name, "tiles_z0": len(idx0), "levels": lv, "note": OUT_OF_SCOPE_NOTE.get(name, ""),
                 "bytes_z0": sum(p.stat().st_size for p in (folder / "0").iterdir())}
@@ -250,9 +255,15 @@ def release(ctx):
     for name, files in (("layer_light", ["light.json", "shadow_a.bin", "shadow_b.bin"]),
                         ("layer_night", ["night.json", "windows.bin", "lamps.bin"]),
                         ("layer_vehicles", ["vehicles.json", "transit.json"]),
-                        ("layer_labels", ["labels.json"])):
+                        ("layer_labels", ["labels.json"]),
+                        ("layer_tunnels", ["tunnels.json"])):
         for f in files:
             os.symlink(ctx.dep(name) / f, ctx.out / f)
+    idx["tunnels"] = json.loads((ctx.dep("layer_tunnels") / "meta.json").read_text())
+    # the landmark cutaways: a small layer of its own above layer 5 (its tiles under cutaways/<landmark>/), shown
+    # only while the viewer's cutaway toggle is on
+    os.symlink(ctx.dep("layer_cutaways") / "tiles", ctx.out / "cutaways")
+    idx["cutaways"] = json.loads((ctx.dep("layer_cutaways") / "tiles" / "index.json").read_text())
     idx["light"] = json.loads((ctx.dep("layer_light") / "light.json").read_text())
     idx["night"] = json.loads((ctx.dep("layer_night") / "night.json").read_text())
     from v2.config import CONFIG

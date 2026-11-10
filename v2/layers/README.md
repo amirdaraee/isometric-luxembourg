@@ -20,6 +20,13 @@ failing check is fixed here, in the layer that made it.
 | `light.py` | layer 9's shadow height map and the Python reference of the viewer's shadow march |
 | `data.py` | layer 10 (windows, lamps), 12 (roads, profiles, trams and trains on the graph), 15 (labels) |
 | `stages.py` | the build stages (`layer_*`, `release`) |
+| `tunnels.py` | phase 3, the tunnel view: the tunnels of the graph and the casemate galleries as tubes (`layer_tunnels`) |
 
 Layers 5-7 are the bake-off's (PLAN_V2 section 7); phase 1 draws plain, evenly lit placeholders from the same
 geometry so the compositor, the light and the vehicle checks have something real to work on.
+
+## Phase 3
+
+| Module | What |
+|---|---|
+| `cutaways.py` | landmark cutaways: a landmark's model with a slice taken out (cut faces, inside faces), as a small tile set above layer 5 with a code placeholder interior; the paint inputs; stage `layer_cutaways` (spec: `landmark-cutaways.md`) |

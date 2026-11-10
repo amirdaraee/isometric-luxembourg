@@ -2,11 +2,16 @@
 
 Everything here is albedo (layer-05 rule 1): flat material colours, generated detail and ink, never light. Detail is
 computed per pixel from the pixel's world position on its surface (from the depth), so it is fixed to the 3D model:
-  walls       one facade colour per building (palette buildings.facade_*), a sandstone plinth, a cornice line at every
-              floor line of the facade layout, an eave cornice, quoins on some buildings
-  roofs       slate or tile courses parallel to the eave with staggered joints, tile-to-tile tone (a hash per tile)
-  openings    windows with a white frame, glazing bars and a sill line; shutters on some buildings; doors with a frame,
-              panels and a fanlight; garage doors with panels; shop fronts with glazing bars and a striped awning band
+  walls       one facade colour per building (palette buildings.facade_*) in the building's own tone, a sandstone
+              plinth, a cornice line at every floor line of the facade layout, an eave cornice, quoins on some
+              buildings; coursed ashlar on stone buildings, a banded (rusticated) ground floor on some rendered ones,
+              a faint mottle on render; a stone surround, lintel with a keystone and sill round every window, a
+              surround and a lintel round every door (phase 3)
+  roofs       slate or tile courses parallel to the eave with staggered joints, tile-to-tile tone (a hash per tile),
+              seven roof colours in the building's own tone; gravel on flat roofs
+  openings    windows with a white frame, glazing bars (a cross, or six panes) and a sill line, each window's glass
+              its own tone; shutters on some buildings; doors with a frame, panels and a fanlight; garage doors with
+              panels; shop fronts with glazing bars and a striped awning band
   structures  ashlar courses and joints on stone (viaducts, piers, arches, bridge sides), railings as bars
   trees       crowns of leaf clumps (a cell pattern on the crown's surface) with darker gaps between them
 Windows, doors and shop fronts are the facade layout's rectangles (straight by construction, brief 6); shutters stand
@@ -18,11 +23,17 @@ import math
 
 import numpy as np
 
-from v2.layers.common import CLASS, grain, pal
+from v2.layers.common import CLASS, RIGHT, UP, VIEW, pal
+from v2.layers.detail import band, gp, ihash, slabs, soft_band, vnoise
 from v2.layers.geometry import Mesh, h01, tri_normals
 
 FACADES = ["facade_cream", "facade_ochre", "facade_pink", "facade_yellow", "facade_blue", "facade_sage",
-           "facade_white", "facade_apricot"]
+           "facade_white", "facade_apricot", "facade_rose", "facade_green", "facade_terracotta", "facade_grey",
+           "facade_butter"]
+# pitched roofs: (palette colour, courses, share of the buildings); slate is the city's roof
+ROOFS = [("roof_tile_old", "tile", 0.1), ("roof_tile", "tile", 0.08), ("roof_tile_brown", "tile", 0.05),
+         ("roof_slate_dark", "slate", 0.27), ("roof_slate_blue", "slate", 0.17), ("roof_slate_warm", "slate", 0.08),
+         ("roof_slate", "slate", 0.25)]
 SHUTTERS = ["shutter_green", "shutter_blue", "shutter_red", "shutter_grey"]
 DOORS = ["door_green", "door_red", "door_blue", "door_wood"]
 AWNINGS = ["awning_red", "awning_green", "awning_blue", "awning_yellow"]
@@ -37,43 +48,38 @@ def mix(a, b, t):
     return a * (1 - t) + b * t
 
 
-def gp(px, py, amount, seed):
-    """Paper grain at the pixels (px[i], py[i]) (common.grain, pointwise)."""
-    px, py = np.asarray(px), np.asarray(py)
-    if not px.size:
-        return np.ones(0)
-    return grain(px[None, :], py[None, :], amount, seed=seed)[0]
-
-
-def band(x, period, width, phase=0.0):
-    """True where x lies within `width` of a multiple of `period` (+ phase): lines every period."""
-    r = np.mod(x - phase, period)
-    return (r < width / 2) | (r > period - width / 2)
-
-
-def ihash(*a):
-    """A deterministic 0..1 hash of integer arrays."""
-    h = np.zeros(np.broadcast(*a).shape, np.uint64)
-    for k, x in enumerate(a):
-        h = h ^ (np.asarray(x).astype(np.int64).astype(np.uint64) * np.uint64([0x9E3779B1, 0x85EBCA77, 0xC2B2AE3D, 0x27D4EB2F][k % 4]))
-        h = (h ^ (h >> np.uint64(15))) * np.uint64(0x2C1B3C6D)
-    h = h ^ (h >> np.uint64(13))
-    return (h & np.uint64(0xFFFF)).astype(np.float64) / 65535.0
+def landmark_styles() -> dict:
+    """Well-known buildings' own materials, by ACT building id (v2/data/structures/landmark_styles.json)."""
+    import json
+    from v2.config import V2
+    return json.loads((V2 / "data" / "structures" / "landmark_styles.json").read_text())["buildings"]
 
 
 class Style:
     """One building's materials, chosen once from its id (deterministic)."""
 
-    def __init__(self, bid: str, roof_shape: str):
-        self.facade = FACADES[int(h01(bid + "facade") * len(FACADES)) % len(FACADES)]
-        stone = h01(bid + "w") < 0.18
-        self.wall = B("wall_stone") if stone else B(self.facade)
+    def __init__(self, bid: str, roof_shape: str, known: dict | None = None):
+        known = known or {}                    # a well-known building's own materials (landmark_styles.json)
+        self.facade = known.get("facade") or FACADES[int(h01(bid + "facade") * len(FACADES)) % len(FACADES)]
+        stone = known["stone"] if "stone" in known else (h01(bid + "w") < 0.18 and "facade" not in known)
+        # the building's own tone: every house a little lighter or darker than its neighbour of the same colour
+        self.stone = stone
+        self.wall = np.minimum((B("wall_stone") if stone else B(self.facade)) * (0.93 + 0.11 * h01(bid + "t")), 255.0)
+        self.rustic = (not stone) and h01(bid + "g") < 0.3
+        self.surround = np.minimum(mix(B("trim"), B("plinth"), 0.12 if stone else 0.3) * (0.96 + 0.06 * h01(bid + "u")), 255.0)
+        self.panes = "six" if h01(bid + "p") < 0.4 else "cross"
+        rt = 0.93 + 0.12 * h01(bid + "rt")
         if roof_shape == "flat":
-            self.roof, self.courses = B("roof_flat"), None
+            self.roof, self.courses, self.roof_name = B("roof_flat") * rt, None, "roof_flat"
         else:
-            r = h01(bid + "r")
-            self.roof, self.courses = ((B("roof_tile_old"), "tile") if r < 0.15 else (B("roof_tile"), "tile") if r < 0.22
-                                       else (B("roof_slate_dark"), "slate") if r < 0.5 else (B("roof_slate"), "slate"))
+            r, acc = h01(bid + "r"), 0.0
+            for name, courses, share in ROOFS:
+                acc += share
+                if r < acc:
+                    break
+            if known.get("roof"):
+                name, courses = next((n, c) for n, c, _ in ROOFS if n == known["roof"])
+            self.roof, self.courses, self.roof_name = B(name) * rt, courses, name
         self.quoins = h01(bid + "q") < 0.35
         self.shutters = h01(bid + "s") < 0.45
         self.shutter = B(SHUTTERS[int(h01(bid + "sc") * len(SHUTTERS)) % len(SHUTTERS)])
@@ -86,7 +92,8 @@ class ArtA:
 
     def __init__(self, scene, bmesh):
         self.scene = scene
-        self.styles = [Style(b["id"], b.get("roof_shape", "")) for b in scene.buildings]
+        known = landmark_styles()
+        self.styles = [Style(b["id"], b.get("roof_shape", ""), known.get(b["id"])) for b in scene.buildings]
         walls = scene.facades["walls"]
         self.walls = walls
         self.w_base = np.array([w["base"][0] for w in walls], float).reshape(-1, 3)
@@ -96,6 +103,9 @@ class ArtA:
         self.w_u = d / self.w_len[:, None]
         self.w_h = np.array([w.get("height", 0.0) for w in walls], float)
         self.w_floors = np.array([w.get("floors", 0) for w in walls], int)
+        # every wall's windows and doors as (u0, v0, u1, v1) across and up the wall, for their stone surrounds
+        self.w_win = [np.array([r[:4] for r in w["windows"]], float).reshape(-1, 4) for w in walls]
+        self.w_door = [np.array([r[:4] for r in w["doors"]], float).reshape(-1, 4) for w in walls]
         self.tri_wall = self._wall_of_tris(bmesh)
         self.materials = None        # method B: {name: (image (H, W, 3) float, (width_m, height_m))}
 
@@ -195,7 +205,7 @@ class ArtA:
             L = self.w_len[w]
             c = rgb[has]
             if self.materials:
-                names = np.array([("wall_stone" if (self.styles[b].wall == B("wall_stone")).all() else
+                names = np.array([("wall_stone" if self.styles[b].stone else
                                    "wall_" + self.styles[b].facade.split("_", 1)[1]) for b in bi[has]])
                 for nm in np.unique(names):
                     mm = names == nm
@@ -203,6 +213,16 @@ class ArtA:
                     if t is not None:
                         c[mm] = t
             trim = B("trim")
+            sty = [self.styles[b] for b in bi[has]]
+            # the wall's own surface: coursed ashlar on stone buildings; on render a faint mottle and, on some
+            # buildings, a banded ground floor
+            stone_w = np.array([x.stone for x in sty], bool)
+            t, j = slabs(u[stone_w], v[stone_w], 0.8, 0.36, joint=0.05, tone=0.05, seed=31)
+            c[stone_w] *= (t * (1 - 0.16 * j))[:, None]
+            rend = ~stone_w
+            c[rend] *= (1 + (vnoise(u[rend] + 13.0 * w[rend], v[rend], 1.6, 33) - 0.5) * 0.05)[:, None]
+            rus = np.array([x.rustic for x in sty], bool) & (v > 0.82) & (v < 3.42)
+            c[rus] *= (1 - 0.16 * soft_band(v[rus], 0.45, 0.07))[:, None]
             plinth = v < 0.7
             c[plinth] = mix(c[plinth], B("plinth"), 0.75)
             c[(v >= 0.7) & (v < 0.82)] *= 0.86                               # the plinth's top edge
@@ -216,10 +236,41 @@ class ArtA:
             q = np.array([self.styles[b].quoins for b in bi[has]])
             corner = q & ((u < 0.5) | (u > L - 0.5)) & (np.floor(v / 0.4) % 2 == 0) & (v > 0.7) & (v < H - 0.45)
             c[corner] = mix(c[corner], trim, 0.8)
+            # stone round the openings: jambs, a lintel with a keystone and a sill at every window; jambs and a
+            # lintel at every door (the opening itself is drawn over it by its own quad)
+            sur = np.zeros(len(w), bool)
+            shade = np.ones(len(w))
+            order = np.argsort(w, kind="stable")
+            cuts = np.flatnonzero(np.diff(w[order])) + 1
+            for g in np.split(order, cuts):
+                wn, dr = self.w_win[w[g[0]]], self.w_door[w[g[0]]]
+                if not len(wn) and not len(dr):
+                    continue
+                uu, vv = u[g][:, None], v[g][:, None]
+                hit = np.zeros(len(g), bool)
+                sh = np.ones(len(g))
+                if len(wn):
+                    u0, v0, u1, v1 = wn[:, 0][None], wn[:, 1][None], wn[:, 2][None], wn[:, 3][None]
+                    box = (uu > u0 - 0.15) & (uu < u1 + 0.15) & (vv > v0 - 0.05) & (vv < v1 + 0.24)
+                    sill = (uu > u0 - 0.24) & (uu < u1 + 0.24) & (vv > v0 - 0.17) & (vv <= v0 - 0.03)
+                    key = box & (np.abs(uu - (u0 + u1) / 2) < 0.11) & (vv > v1)
+                    under = sill & (vv < v0 - 0.12)
+                    hit |= (box | sill).any(1)
+                    sh = np.where(key.any(1) | under.any(1), 0.88, sh)
+                if len(dr):
+                    u0, v0, u1, v1 = dr[:, 0][None], dr[:, 1][None], dr[:, 2][None], dr[:, 3][None]
+                    box = (uu > u0 - 0.2) & (uu < u1 + 0.2) & (vv < v1 + 0.3)
+                    top = box & (vv > v1 + 0.2)
+                    hit |= box.any(1)
+                    sh = np.where(top.any(1), 0.88, sh)
+                sur[g] = hit
+                shade[g] = sh
+            sur &= (v > 0.82) & (v < H - 0.52) & ~corner
+            c[sur] = np.array([x.surround for x in sty]).reshape(-1, 3)[sur] * shade[sur, None]
             rgb[has] = c
             if cls_out is not None:
                 stone = (v < 0.82) | ((v > 3.0) & (v < H - 0.6) & band(v - 3.6 + 0.04, 3.0, 0.3)) | \
-                    ((v > H - 0.52) & (v <= H + 0.02) & (H > 2.5)) | corner
+                    ((v > H - 0.52) & (v <= H + 0.02) & (H > 2.5)) | corner | sur
                 sub = cls_out[has]
                 sub[stone] = CLASS["trim"]
                 cls_out[has] = sub
@@ -239,25 +290,44 @@ class ArtA:
         along = (P[:, :2] * e).sum(1)
         sinA = np.clip(h, 1e-3, 1)
         down = -P[:, 2] / sinA                                              # distance down the slope
-        course = np.where(kind == 2, 0.34, 0.42)
-        width = np.where(kind == 2, 0.28, 0.36)
+        # courses of 0.45 m (tile) and 0.5 m (slate): larger than life, as a drawing's are, so that at 0.125 m a pixel
+        # the lines are a minority of a roof face's pixels and the face's median stays the slate's own colour
+        course = np.where(kind == 2, 0.45, 0.5)
+        width = np.where(kind == 2, 0.34, 0.4)
         row = np.floor(down / course)
         col = np.floor((along + (row % 2) * width / 2) / width)
-        tone = 1 + (ihash(row, col, bi) - 0.5) * np.where(kind == 2, 0.12, 0.07)
+        tone = 1 + (ihash(row, col, bi) - 0.5) * np.where(kind == 2, 0.09, 0.06)
         rgb = base * np.where(slope_ok, tone, 1.0)[:, None]
-        line = slope_ok & (band(down, course, 0.07) | (band(along + (row % 2) * width / 2, width, 0.05)))
-        rgb[line] *= 0.8
+        # courses and joints by coverage, at the spacing the camera samples this roof face with (one map pixel
+        # across or up the screen, measured on the face). They fade out before a line and its pixel fill half a
+        # course: a face seen at a grazing angle cannot hold the lines and would show their average darkening in
+        # most pixels, a tone that a face seen square on (clean slates between lines) does not have. So no face is
+        # darker or lighter than another of the same roof (L5.1)
+        n3 = nrm / np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-9)
+        vn = n3 @ VIEW
+        vn = np.where(np.abs(vn) < 0.05, -0.05, vn)
+        t_down = np.column_stack([s * n3[:, 2:3], -h])
+        t_along = np.column_stack([e, np.zeros(n)])
+        px_down, px_along = np.zeros(n), np.zeros(n)
+        for axis in (RIGHT, UP):
+            d = 0.125 * (axis[None, :] - VIEW[None, :] * ((n3 @ axis) / vn)[:, None])
+            px_down = np.maximum(px_down, np.abs((d * t_down).sum(1)))
+            px_along = np.maximum(px_along, np.abs((d * t_along).sum(1)))
+        px_down, px_along = np.maximum(px_down, 0.125), np.maximum(px_along, 0.125)
+        keep_c = np.clip((0.4 * course - px_down) / (0.1 * course), 0, 1) * slope_ok
+        keep_j = np.clip((0.4 * width - px_along) / (0.1 * width), 0, 1) * keep_c
+        lines = 1 - 0.26 * keep_c * soft_band(down, course, 0.10 * course, px_down)
+        lines *= 1 - 0.12 * keep_j * soft_band(along + (row % 2) * width / 2, width, 0.08 * width, px_along)
+        rgb *= lines[:, None]
         if self.materials:
-            names = np.array([("roof_flat" if self.styles[b].courses is None else
-                               next((k for k in ("roof_tile_old", "roof_tile", "roof_slate_dark", "roof_slate")
-                                     if (B(k) == self.styles[b].roof).all()), "roof_slate")) for b in bi])
+            names = np.array([self.styles[b].roof_name for b in bi])
             for nm in np.unique(names):
                 mm = names == nm
                 t = self.tex(nm, along[mm], down[mm])
                 if t is not None:
                     rgb[mm] = t
         flat = ~slope_ok
-        rgb[flat] = base[flat] * gp(px[flat], py[flat], 0.05, 13)[:, None] if flat.any() else rgb[flat]
+        rgb[flat] = base[flat] * gp(px[flat], py[flat], 0.09, 13)[:, None] if flat.any() else rgb[flat]   # gravel
         return rgb
 
     def openings_rgb(self, O, ti, P, bi):
@@ -286,8 +356,12 @@ class ArtA:
         edge = (s < fr) | (s > W - fr) | (t < fr) | (t > H - fr)
         # windows: frame, glass, a central glazing bar and a transom, a sill line at the bottom
         m = k == OPEN_KIND["window"]
-        c = np.where(edge[:, None], trim, glass)
-        bar = (np.abs(s - W / 2) < 0.04) | (np.abs(t - H * 0.68) < 0.04)
+        # each window's glass its own tone (curtains, blinds: a hash of the window), the same all over the window
+        gl = glass * (0.86 + 0.3 * ihash(ti // 2, 51))[:, None]
+        c = np.where(edge[:, None], trim, gl)
+        six = np.array([x.panes == "six" for x in st], bool)
+        bar = (np.abs(s - W / 2) < 0.04) | np.where(six, (np.abs(t - H / 3) < 0.035) | (np.abs(t - 2 * H / 3) < 0.035),
+                                                     np.abs(t - H * 0.68) < 0.04)
         c = np.where((bar & ~edge)[:, None], trim, c)
         c = np.where((t < 0.05)[:, None], trim * 0.85, c)
         rgb[m] = c[m]

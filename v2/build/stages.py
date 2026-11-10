@@ -107,10 +107,15 @@ def graph() -> Graph:
         Stage("g0", report.g0, deps=checks + ("previews", "scene"), kind="report", doc="gate G0: all data checks, sizes, previews"),
     ]
     S += phase1(checks)
+    S += phase3_cutaways()
+    S += phase3()
+    from v2.build import report3
+    S.append(Stage("g3", report3.g3, deps=("g1", "check_tunnel_view", "check_cutaways", "check_cutaways_view"), code=("v2.build.report3",),
+                   params=_art, kind="report", doc="gate G3 so far: gate G1's suite again, the tunnel view and the cutaways"))
     return Graph(S)
 
 
-LAYER_CODE = GEO + CAM + ("v2.layers.common", "v2.layers.raster", "v2.layers.geometry", "v2.layers.render",
+LAYER_CODE = GEO + CAM + ("v2.layers.common", "v2.layers.raster", "v2.layers.geometry", "v2.layers.render", "v2.layers.detail",
                           "v2.layers.tiles", "v2.layers.light", "v2.layers.data", "v2.data.scene.facades",
                           "v2.layers.art_a", "v2.layers.bakeoff", "v2.config.art")
 
@@ -133,7 +138,7 @@ def _art_raw(area):
     stages only; layers 1-4 are shared by every method."""
     from v2.config import v2_data
     from v2.config.art import art_method
-    out = _layer_raw(area)
+    out = _layer_raw(area) + [REPO / "v2/data/structures/landmark_styles.json"]
     art = art_method()
     if art in ("b", "c"):
         d = v2_data() / area / "bakeoff" / art
@@ -164,7 +169,7 @@ def phase1(g0_checks) -> list:
               doc="far zoom: the colour layers merged by depth, from zoom 2 out"),
     ]
     layers = tuple(s.name for s in S)
-    S.append(Stage("release", L.release, deps=("scene",) + layers, code=LAYER_CODE, raw=_layer_raw,
+    S.append(Stage("release", L.release, deps=("scene",) + layers + ("layer_tunnels", "layer_cutaways"), code=LAYER_CODE, raw=_layer_raw,
                    doc="the viewer's folder: every layer behind one index.json"))
     web = lambda area: sorted(p for p in (REPO / "v2/web/src").rglob("*.ts")) + [REPO / "v2/web/index.html"]  # noqa: E731
     chk = dict(kind="check", params=_with(_art, "checks", "g1"), code=LAYER_CODE + ("v2.checks.framework", "v2.checks.layer_checks",
@@ -192,3 +197,50 @@ def phase1(g0_checks) -> list:
                    params=_art, kind="report",
                    doc="gate G1: every phase 1 check, speed, previews"))
     return S
+
+
+def phase3_cutaways() -> list:
+    """Phase 3, the landmark cutaways (PLAN_V2 section 9.1, specs/landmark-cutaways.md): the cut models as a small
+    layer of its own above layer 5, with a code placeholder interior and the inputs of the later painting, and their
+    checks K0-K6. Nothing here is painted or paid for."""
+    from v2.layers import cutaways as cw
+    from v2.checks import cutaway_checks as cc, cutaway_view_checks as cv
+
+    def check_params(area):
+        g1 = params()["g1"]
+        return dict(cw.stage_params(area), g1={k: g1[k] for k in ("shadow_photo_sun", "detector_queries", "detector_score",
+                                                                 "detector_box_m")})
+    raw = lambda area: _layer_raw(area) + [cw.CUTS, REPO / "v2/data/structures/landmark_styles.json"]  # noqa: E731
+    return [
+        Stage("layer_cutaways", cw.layer_cutaways, deps=("scene",), params=cw.stage_params, code=LAYER_CODE, raw=raw,
+              doc="landmark cutaways: the cut models' tiles (placeholder interior), opening masks and paint inputs"),
+        Stage("check_cutaways", cc.check_cutaways, deps=("layer_cutaways", "layer_buildings", "layer_ground", "scene"),
+              kind="check", params=check_params, raw=raw,
+              code=LAYER_CODE + ("v2.layers.cutaways", "v2.checks.framework", "v2.checks.line_checks"),
+              doc="K0-K6: the cut matches the model, the interior stays in its mask, flat light, depth, off means off"),
+        Stage("check_cutaways_view", cv.check_cutaways_view, deps=("release", "scene"), kind="check",
+              params=lambda area: {**_art(area), "g3": {k: v for k, v in params()["g3"].items() if k.startswith("cutview_")}},
+              raw=lambda area: (sorted((REPO / "v2/web/src").rglob("*.ts")) + [REPO / "v2/web/index.html", REPO / "v2/web/scripts/shot.mjs",
+                                                                              REPO / "v2/web/scripts/cutaway_checks.mjs"]),
+              code=("v2.layers.common", "v2.checks.framework", "v2.checks.g1_checks"),
+              doc="the cutaways in the viewer: off means off, the frame is the tiles', vehicles and labels against the cut building"),
+    ]
+
+
+def phase3() -> list:
+    """Phase 3 (PLAN_V2 sections 9.1 and 10): the tunnel view's tubes and its gate, checks X1-X8."""
+    from v2.layers import tunnels as T
+    from v2.checks import tunnel_checks as tc
+    web = lambda area: (sorted(p for p in (REPO / "v2/web/src").rglob("*.ts")) + [REPO / "v2/web/index.html"]  # noqa: E731
+                        + sorted((REPO / "v2/web/scripts").glob("xray_*")) + [REPO / "v2/web/scripts/shot.mjs"])
+    return [
+        Stage("layer_tunnels", T.layer_tunnels, deps=("scene",), code=GEO + CAM + ("v2.layers.common", "v2.layers.raster"),
+              params=lambda area: {"tunnels": params()["tunnels"], "portal_max_from_end_m": params()["checks"]["portal_max_from_end_m"]},
+              raw=lambda area: [T.CASEMATES], doc="tunnel view: the tunnels of the graph and the casemates as tubes"),
+        Stage("check_tunnel_view", tc.check_tunnel_view, deps=("release", "scene"), kind="check",
+              params=lambda area: {**_art(area), "g3": params()["g3"], "tunnels": params()["tunnels"],
+                                   "portal_max_from_end_m": params()["checks"]["portal_max_from_end_m"]},
+              code=LAYER_CODE + ("v2.layers.tunnels", "v2.checks.framework", "v2.checks.layer_checks", "v2.checks.g1_checks"),
+              raw=lambda area: _layer_raw(area) + [T.CASEMATES] + web(area),
+              doc="tunnel view (x-ray): tubes in place and at depth, vehicles in tunnels only, the fade, toggles, portals, speed"),
+    ]

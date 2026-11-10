@@ -13,8 +13,10 @@ cliffs, embankments with their measured top and foot).
 **Rules.**
 1. Relief shading is a *form* shading from a fixed north-west light, not the sun: it does not move with the time of
    day (layer 9 does that), and its strength is capped so flat ground is untouched.
-2. Steep faces get hatching along the fall line, spacing from the slope; cliffs get rock hatching; walls are drawn
-   as vertical faces between their measured top and foot, in stone colour, with an ink top edge.
+2. Steep faces get hatching along the fall line and a rock tint. Cliffs are layer 1's bare rock (its beds and
+   joints are drawn there), so here they get the form shading only (phase 3). Walls are drawn as vertical faces
+   between their measured top and foot with an ink top edge: built walls (retaining and city walls) as coursed
+   masonry, OSM cliffs and embankments as bedded rock, both from each pixel's place on the face.
 3. Cliff and wall faces are seen only where the camera sees them (depth test against the terrain).
 
 **Checks.**

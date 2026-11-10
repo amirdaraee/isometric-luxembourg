@@ -9,8 +9,9 @@ the lowest terrain along the bank, per reach), palette (`water.*`).
 **Output.** RGBA tiles plus a lossless water mask (the viewer's animation mask), depth = the water surface.
 
 **Rules.**
-1. Water areas are filled flat (palette `river`), bank edge inked (`bank`), no reflections or waves drawn (moving
-   things are code in the viewer).
+1. Water areas are filled flat (palette `river`), bank edge inked (`bank`), with a paler band of shallows 0.8 m
+   wide along the banks (palette `shallow`, phase 3); no reflections or waves drawn (moving things are code in the
+   viewer).
 2. Culverted stretches (tunnel=culvert) are not drawn.
 3. The water level of a reach is constant between weirs (the Grund lock) and never above the bank.
 

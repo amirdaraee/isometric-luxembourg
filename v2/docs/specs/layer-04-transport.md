@@ -19,6 +19,8 @@ lossless "drivable" id tile set (edge id per pixel) for the vehicle check.
 2. Tunnels are not drawn; a portal is drawn at each found portal (`portals`), on the cliff face.
 3. Markings: lane dashes from `lanes`, rails as two ink lines with sleepers, tram tracks as grooved lines, steps as
    treads across the width.
+   Surfaces on the ground carry drawn detail (phase 3): setts on pedestrian streets, paths and steps, a fine
+   grain on asphalt, from each pixel's place on the ground.
 4. Draw order is by depth, so a bridge deck covers the road it crosses (no OSM `layer` guessing).
 
 **Checks.**
