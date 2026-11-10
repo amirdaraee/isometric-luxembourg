@@ -11,7 +11,7 @@ from v2.config import V2
 def g3(ctx):
     g1 = json.loads((ctx.dep("g1") / "g1.json").read_text())
     checks = dict(g1["checks"])
-    for name in ("check_tunnel_view", "check_cutaways"):
+    for name in ("check_tunnel_view", "check_cutaways", "check_cutaways_view"):
         s = json.loads((ctx.dep(name) / "manifest.json").read_text())["summary"] or {}
         checks[name] = {"passed": s.get("passed"), "entries": s.get("entries", [])}
     passed = all(bool(c["passed"]) for c in checks.values())

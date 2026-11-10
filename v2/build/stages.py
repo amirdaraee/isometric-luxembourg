@@ -110,7 +110,7 @@ def graph() -> Graph:
     S += phase3_cutaways()
     S += phase3()
     from v2.build import report3
-    S.append(Stage("g3", report3.g3, deps=("g1", "check_tunnel_view", "check_cutaways"), code=("v2.build.report3",),
+    S.append(Stage("g3", report3.g3, deps=("g1", "check_tunnel_view", "check_cutaways", "check_cutaways_view"), code=("v2.build.report3",),
                    params=_art, kind="report", doc="gate G3 so far: gate G1's suite again, the tunnel view and the cutaways"))
     return Graph(S)
 
