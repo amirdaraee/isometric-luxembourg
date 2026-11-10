@@ -1,0 +1,54 @@
+{
+ "about": "The landmark cutaways' cuts, chosen once by hand (specs/landmark-cutaways.md). Per landmark: the scene buildings (ACT ids) it is made of, and one or two vertical cut planes. A plane is an origin (E, N in LUREF metres), a horizontal normal pointing into the removed slice, and an extent [t0, t1] in metres along the plane, measured from the origin along the normal turned a quarter turn to the left. The removed slice is what lies in front of every plane, within every extent, above floor_z. The camera is fixed in the south-east, so a cut face is seen when its normal points south and east. Code: v2/layers/cutaways.py.",
+ "buildings_rule": "The building whose footprint holds the landmark's place (v1's landmark card, scene places, by slug), or the nearest footprint within place_max_m. Check K0 holds the lists to that rule. ACT models each of the three as one building.",
+ "floor_rule": "floor_z is set by hand just above the LiDAR ground that the opening looks onto, so that the ground layer covers no pixel of the opening (check K-ground counts them: 0 today). Cathedral: the highest ground under the slice is 301.04 m. Palace: the ground rises to 304.8 m under the north end; 304.3 m is the lowest level, to 0.1 m, with nothing covered. Abbey: the court's level, 245.3 m, and a step; the ground rises 4.5 m under the south-east end of the block, behind the houses that stand in front of it. Below floor_z the model is drawn solid.",
+ "thickness_rule": "The LoD2 model is a hollow shell; its walls, roofs and floor slabs get a nominal thickness from params.json g3 cutaway_*. floors: true gives slabs at the facade layout's floor lines; open_to_roof lists areas (rings of E, N) that have none.",
+ "landmarks": {
+  "cathedral": {
+   "name": "Notre-Dame Cathedral",
+   "slug": "notre-dame-cathedral",
+   "buildings": ["ACT_e92ec91a-b2d2-445e-9305-4dd27f787994"],
+   "place_max_m": 0.0,
+   "floor_z": 301.1,
+   "floors": false,
+   "why": "The nave is the long northern part, 24 m wide under one roof, with the two tall towers at its south end. The slice takes the east half of the nave between the towers and the north front: plane 1 runs along the nave's middle and faces east, so it shows the nave lengthwise, from the floor to the ridge; plane 2 runs across the nave 7 m short of the north front and faces south, so it shows the nave's width under the roof. Both faces look at the camera. The towers, the choir and the north front stay whole. No floor slabs: the nave is one space up to the roof.",
+   "planes": [
+    {"origin": [77357.95, 75017.5], "normal": [0.9998, 0.02], "extent": [-13.0, 14.5],
+     "about": "along the nave's middle line, facing east; from just north of the towers to plane 2"},
+    {"origin": [77357.95, 75032.0], "normal": [0.02, -0.9998], "extent": [0.0, 20.0],
+     "about": "across the nave, facing south; from the middle line to beyond the east wall"}
+   ]
+  },
+  "palace": {
+   "name": "Grand Ducal Palace",
+   "slug": "grand-ducal-palace",
+   "buildings": ["ACT_78c0048b-4b0b-443f-aae0-71be9cf153ed"],
+   "place_max_m": 0.0,
+   "floor_z": 304.3,
+   "floors": true,
+   "why": "The state rooms are on the first floor of the main wing along the rue du Marché-aux-Herbes and of the middle wing behind it. The camera looks along the main wing from its south-east end, so a cut along the wing would be seen edge-on. The slice is therefore a quarter, a corner taken out towards the camera: its point stands in the middle of the main wing, plane 1 faces east and plane 2 faces south, each seen at 45 degrees. Plane 1 cuts the main wing, plane 2 the middle wing; the floors show as slabs at the facade layout's floor lines. The Chamber of Deputies, a building of its own in front, stays whole and hides the lowest part of the south end.",
+   "planes": [
+    {"origin": [77447.0, 75150.0], "normal": [1.0, 0.0], "extent": [-60.0, 0.0],
+     "about": "north to south through the main wing, facing east; from the slice's point southwards"},
+    {"origin": [77447.0, 75150.0], "normal": [0.0, -1.0], "extent": [0.0, 60.0],
+     "about": "west to east through the middle wing, facing south; from the slice's point eastwards"}
+   ]
+  },
+  "abbey": {
+   "name": "Neumünster Abbey",
+   "slug": "neumunster-abbey",
+   "buildings": ["ACT_221c9194-94ad-47d9-807a-60553478a3d2"],
+   "place_max_m": 15.0,
+   "floor_z": 245.6,
+   "floors": true,
+   "open_to_roof": [[[77670.5, 75093.6], [77703.1, 75116.9], [77691.2, 75133.6], [77658.6, 75110.3]]],
+   "why": "ACT models the abbey, its cloister and the church of St John as one building. From the south-east the camera looks over a 40 m deep block of wings at the cloister's court and, behind it, the church. The slice is a passage as wide as the court, from the church's middle line out through the south-east block: plane 1 runs along the middle of the church and faces the camera, so it shows the church lengthwise, floor to ridge, over 22 m; plane 2 is the passage's south-west side, just inside the court, facing north-east, and shows the south-east block and the cloister's walk in section. With the block out of the way the court and the cloister wing beside it are seen whole. The tower and the wing north-east of the court stay whole. The church is open to its roof (open_to_roof, its outline in plan); the other wings have floors. The place's point stands in the forecourt, 10.8 m from the building.",
+   "planes": [
+    {"origin": [77685.32, 75106.97], "normal": [0.5807, -0.8141], "extent": [0.0, 21.9],
+     "about": "along the middle line of the church, facing south-east; from plane 2 to just short of the tower"},
+    {"origin": [77685.32, 75106.97], "normal": [0.8141, 0.5807], "extent": [-80.0, 0.0],
+     "about": "the passage's south-west side, 0.3 m inside the court, facing north-east; from the south-east front to plane 1"}
+   ]
+  }
+ }
+}

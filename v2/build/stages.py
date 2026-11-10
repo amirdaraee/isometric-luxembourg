@@ -107,6 +107,7 @@ def graph() -> Graph:
         Stage("g0", report.g0, deps=checks + ("previews", "scene"), kind="report", doc="gate G0: all data checks, sizes, previews"),
     ]
     S += phase1(checks)
+    S += phase3_cutaways()
     return Graph(S)
 
 
@@ -192,3 +193,25 @@ def phase1(g0_checks) -> list:
                    params=_art, kind="report",
                    doc="gate G1: every phase 1 check, speed, previews"))
     return S
+
+
+def phase3_cutaways() -> list:
+    """Phase 3, the landmark cutaways (PLAN_V2 section 9.1, specs/landmark-cutaways.md): the cut models as a small
+    layer of its own above layer 5, with a code placeholder interior and the inputs of the later painting, and their
+    checks K0-K6. Nothing here is painted or paid for."""
+    from v2.layers import cutaways as cw
+    from v2.checks import cutaway_checks as cc
+
+    def check_params(area):
+        g1 = params()["g1"]
+        return dict(cw.stage_params(area), g1={k: g1[k] for k in ("shadow_photo_sun", "detector_queries", "detector_score",
+                                                                 "detector_box_m")})
+    raw = lambda area: _layer_raw(area) + [cw.CUTS]  # noqa: E731
+    return [
+        Stage("layer_cutaways", cw.layer_cutaways, deps=("scene",), params=cw.stage_params, code=LAYER_CODE, raw=raw,
+              doc="landmark cutaways: the cut models' tiles (placeholder interior), opening masks and paint inputs"),
+        Stage("check_cutaways", cc.check_cutaways, deps=("layer_cutaways", "layer_buildings", "layer_ground", "scene"),
+              kind="check", params=check_params, raw=raw,
+              code=LAYER_CODE + ("v2.layers.cutaways", "v2.checks.framework", "v2.checks.line_checks"),
+              doc="K0-K6: the cut matches the model, the interior stays in its mask, flat light, depth, off means off"),
+    ]
