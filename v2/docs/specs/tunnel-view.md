@@ -1,6 +1,7 @@
 # Tunnel view (x-ray)
 
-**Status:** spec only (owner's decision, 9 Nov 2026). Built in Phase 3 on the test area, $0, code only.
+**Status:** built in Phase 3 on the test area (owner's decision, 9 Nov 2026), $0, code only. The gate is the build
+stage `check_tunnel_view`; "How it is built" and "The checks as built" below say what the code does.
 
 **Purpose.** Let a visitor see what runs underground: a toggle (button, or a held key) fades the city layers so the
 tunnels show at their real place and depth, with the trains, trams and cars moving inside them. The Bock casemates
@@ -49,3 +50,55 @@ may be shown the same way.
 - **X7** (if casemates are shown) every casemate gallery from its data, inside the Bock's rock (its top ≥ 1 m under
   the terrain), and drawn only in tunnel view.
 - **X8** Speed: turning the view on or off takes ≤ 1 frame; panning in tunnel view ≥ 60 fps on desktop (as C2).
+
+## How it is built
+
+- **Data.** Stage `layer_tunnels` (`v2/layers/tunnels.py`) writes `tunnels.json` into the release: one *tube* per
+  tunnel edge of the graph that touches the area (and per indoor or passage edge whose clearance lies under the
+  ground on half its samples or more: one in the test area). A tube is the edge's own polyline and profile, its
+  width and clearance, its depth under the surface per sample (the graph's cover minus the profile), and how far each
+  sample is into the tunnel. The casemate galleries of `v2/data/structures/casemates.json` are tubes of the same
+  shape. `release` links the file and names it in `index.json` (`tunnels`).
+- **Mesh** (the same rule in `v2/layers/tunnels.py` and `v2/web/src/tunnels.ts`). Per segment: the floor, and each
+  wall whose inside faces the camera; nothing nearer is drawn, so what is in a tube is seen in it. A tube ends at
+  the face of the portal layer 4 draws (0.3 m out of the end node). Where tubes join at a node, a wall is left out as
+  far as it runs inside another of them, so a junction is open.
+- **Viewer** (`v2/web/src/gl/compositor.ts`). With the view on, the look pass writes the city at opacity 0.35 over
+  the neutral colour `tunnel.ground`; then the tubes are drawn unlit with their own depth buffer (fill, darker far
+  wall, ink on the edges, the profile as a centre line; one step darker per 10 m under the surface, 6 steps at most);
+  then the vehicles that are in a tunnel past its portal, tested against the tubes' depth only. The vehicles of the
+  surface are in the city's frame as before, so they fade with it. With the view off none of this runs: the frame is
+  the frame of before.
+- **Controls.** `?xray` in the address, the button "Tunnel view" in the panel (it writes `?xray` into the address),
+  or X held down (it shows the other state while held). `?off=casemates` leaves the casemates out.
+- **Constants.** `v2/config/light.json` `xray` (opacity, depth steps, line widths); colours `tunnel.*` in
+  `v2/config/palette.json`; thresholds in `v2/config/params.json` `g3`; build parameters in `tunnels`.
+
+## The casemates (rule 1, X7)
+
+`v2/data/structures/casemates.json` is an approximate hand model, to be reviewed, not a survey: the main gallery
+(110 m, published) and 25 gun branches (12 north, 13 south, published), on one level. Their place, level and section
+are assumptions, listed in the file; each branch stops where 1 m of rock still covers its top. The transport graph
+also holds the casemates' passages as OpenStreetMap maps them (84 path tunnels, 694 m): the tunnel view draws both.
+
+## The checks as built
+
+`python -m v2.build test check_tunnel_view` (`v2/checks/tunnel_checks.py`, with `v2/web/scripts/xray_checks.mjs` and
+`xray_audit.ts`). The viewer runs headless at views that together hold every tube at 1 screen px per map px; its
+debug frames (`?debug=xid`: class, depth step and tube per pixel; `?debug=xdepth`: the tubes' depth buffer) are
+compared with the graph itself.
+
+| Check | What is measured |
+|---|---|
+| X0a, X0d | every tunnel edge of the area has its tube, with the edge's width and clearance; the viewer's mesh is the reference mesh |
+| X1 | per tunnel edge, samples of its graph profile every 0.5 m: the drawn centre line within 1 px, over >= 99% of the samples seen (not behind a nearer tube, not where two floors meet) |
+| X2 | at the same samples: the depth buffer against the depth, at that pixel, of the floor built on the graph's profile (<= 1 cm); X2b the tube's depth under the surface against the graph's cover (<= 0.5 m); X2c the drawn tone is that cover's step |
+| X3a | still frames at two hours: every vehicle pixel of the tunnel pass lies on a vehicle that is in a tunnel past its portal |
+| X3b, X3c | a simulated day, every 20 s: the vehicles the viewer draws in tunnels are exactly those the graph puts past a portal (0 others, 0 lost) |
+| X3d | the same day: 0 pixels of those vehicles outside the tubes' footprint on screen. X3e (reported): pixels behind a tunnel face |
+| X4a | view off after it was on = the frame before it was ever on (0 pixels), day and night |
+| X4b, X4c | view on: city pixels = the plain frame faded offline (<= 1/255); no step added at tile borders |
+| X5 | per `?off=` layer in tunnel view: 0 pixels of that layer; tubes and vehicles unchanged; the city is the faded frame without it |
+| X6 | per portal layer 4 draws: the drawn tube ends at the portal's face, and layer 4's portal pixels lie in that face (<= 1 px) |
+| X7 | casemates: as X1 and X2 from their data; >= 1 m of rock over every gallery; 0 pixels with the view off or `?off=casemates` |
+| X8 | turning the view on or off: 1 frame; panning in tunnel view >= 60 fps (desktop) |

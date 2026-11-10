@@ -126,3 +126,11 @@ Stages of the build graph (`python -m v2.build test g1`), each a gate; threshold
 | `check_viewer` (`v2/web/scripts/viewer_checks.mjs`) | V1 layer off leaves no pixel; V2 no shadow of a layer that is off; V3 viewer shadows = Python reference at 10, 13, 16 h and they move; V4 no light by day; V5 seasons only on their masks; V6 labels never overlap; V7 look pass idempotent; C2 speed | 4, 5, speed |
 
 Exceptions: none were needed for G1 (`v2/data/exceptions.json` is unchanged).
+
+## G3 checks (phase 3, run on the test area)
+
+Thresholds in `params.json` "g3".
+
+| Stage | Checks |
+|---|---|
+| `check_tunnel_view` (`v2/checks/tunnel_checks.py`, `v2/web/scripts/xray_checks.mjs`, `xray_audit.ts`) | X1-X8 of [tunnel-view.md](tunnel-view.md): tubes in place and at depth against the graph, vehicles in tunnels only, the fade, the layer toggles, portals, casemates, speed |
