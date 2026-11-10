@@ -40,6 +40,14 @@ export ISOLUX_DATA=/path/to/repo/data       # where data/raw (v1's downloads) li
 .venv/bin/python -m v2.bakeoff status         # B and C's paid jobs, their quotes, and whether the owner approved them
 ```
 
+Phase 3 (gate G2 chose method A; `docs/PHASE3_REPORT.md`):
+
+```sh
+.venv/bin/python -m v2.build test g3         # the richer code art with every G1 check, the tunnel view (X1-X8), the cutaways (K0-K6)
+.venv/bin/python -m v2.view test             # add ?xray (tunnel view) or ?cutaway (landmark cutaways) to the address
+.venv/bin/python -m v2.build.sheets <before release folder> <after release folder>   # before/after sheets in docs/img
+```
+
 ## The build graph
 
 `python -m v2.build <area> [stage ...]` builds the stages and everything they need, in order (default target:
