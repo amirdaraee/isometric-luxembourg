@@ -109,3 +109,13 @@ def test_crown_lobes_stay_inside_the_measured_crown():
     assert np.allclose(top, C[:, 2] + b)                                  # and its top is the measured top
     again = crown_lobes(C, r, b, typ)
     assert all(np.array_equal(x, y) for x, y in zip((C2, r2, b2, own), again))
+
+
+def test_a_well_known_building_gets_its_own_materials():
+    from v2.layers.art_a import landmark_styles
+    known = landmark_styles()
+    assert known and all(set(v) <= {"name", "stone", "facade", "roof"} for v in known.values())
+    for bid, k in known.items():
+        st = Style(bid, "gable", k)
+        assert st.roof_name == k["roof"] and st.stone == bool(k.get("stone"))
+        assert "facade" not in k or (st.facade == k["facade"] and k["facade"] in FACADES)

@@ -48,12 +48,20 @@ def mix(a, b, t):
     return a * (1 - t) + b * t
 
 
+def landmark_styles() -> dict:
+    """Well-known buildings' own materials, by ACT building id (v2/data/structures/landmark_styles.json)."""
+    import json
+    from v2.config import V2
+    return json.loads((V2 / "data" / "structures" / "landmark_styles.json").read_text())["buildings"]
+
+
 class Style:
     """One building's materials, chosen once from its id (deterministic)."""
 
-    def __init__(self, bid: str, roof_shape: str):
-        self.facade = FACADES[int(h01(bid + "facade") * len(FACADES)) % len(FACADES)]
-        stone = h01(bid + "w") < 0.18
+    def __init__(self, bid: str, roof_shape: str, known: dict | None = None):
+        known = known or {}                    # a well-known building's own materials (landmark_styles.json)
+        self.facade = known.get("facade") or FACADES[int(h01(bid + "facade") * len(FACADES)) % len(FACADES)]
+        stone = known["stone"] if "stone" in known else (h01(bid + "w") < 0.18 and "facade" not in known)
         # the building's own tone: every house a little lighter or darker than its neighbour of the same colour
         self.stone = stone
         self.wall = np.minimum((B("wall_stone") if stone else B(self.facade)) * (0.93 + 0.11 * h01(bid + "t")), 255.0)
@@ -69,6 +77,8 @@ class Style:
                 acc += share
                 if r < acc:
                     break
+            if known.get("roof"):
+                name, courses = next((n, c) for n, c, _ in ROOFS if n == known["roof"])
             self.roof, self.courses, self.roof_name = B(name) * rt, courses, name
         self.quoins = h01(bid + "q") < 0.35
         self.shutters = h01(bid + "s") < 0.45
@@ -82,7 +92,8 @@ class ArtA:
 
     def __init__(self, scene, bmesh):
         self.scene = scene
-        self.styles = [Style(b["id"], b.get("roof_shape", "")) for b in scene.buildings]
+        known = landmark_styles()
+        self.styles = [Style(b["id"], b.get("roof_shape", ""), known.get(b["id"])) for b in scene.buildings]
         walls = scene.facades["walls"]
         self.walls = walls
         self.w_base = np.array([w["base"][0] for w in walls], float).reshape(-1, 3)
