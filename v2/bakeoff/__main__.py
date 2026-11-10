@@ -9,7 +9,10 @@
                                                 layout, mask, ids and normals), and the 80 training crops' list
     python -m v2.bakeoff inputs b               B's landmark list and each landmark's unlit crop; the material list
     python -m v2.bakeoff inputs facades         C4: ten buildings' camera-facing walls drawn front-on
-    python -m v2.bakeoff trial                  C4's result: line score of A, C3 and the projected facades
+    python -m v2.bakeoff trial [--no-build]     C4's result: on the ten trial buildings, method A against the facades
+                                                painted front-on and projected onto their walls (line score, flat
+                                                light, cars), a preview sheet, and the small C4 build registered as
+                                                its own column of the bake-off viewer
     python -m v2.bakeoff pilot-gates            C (stopped at its pilot): the line score of every method inside the
                                                 pilot's painted windows, and the used paintings' checks
     python -m v2.bakeoff previews [--url U]     the fixed views of every registered method from the running bake-off
@@ -226,24 +229,63 @@ def cmd_pick(a):
 
 
 def cmd_trial(a):
-    """C4's result: the line score of the trial buildings for A, C3 and the projected facades; a preview."""
+    """C4's result (facade_trial.evaluate), written to v2/docs/results/bakeoff_c4.json and v2/docs/img, and the
+    small C4 build (facade_trial.build_view) registered as "c4" for the bake-off viewer."""
     from v2.bakeoff import facade_trial as F
-    R, g = _renderer(a.area, "plain")
-    Ra, _ = _renderer(a.area, "a")
-    rel = json.loads((v2_data() / a.area / "bakeoff" / "releases.json").read_text())["a"]["release"]
-    c = v2_data() / a.area / "bakeoff" / "c"
-    res = F.evaluate(R, Ra, Path(rel), c, c / "checks")
-    print(json.dumps(res, indent=1))
+    from v2.bakeoff import previews as PV
+    from v2.config import V2
+    Ra, g = _renderer(a.area, "a")
+    base = v2_data() / a.area / "bakeoff"
+    c = base / "c"
+    res = F.evaluate(Ra, c, c / "checks")
+    if not res["painted"]:
+        print("C4: no painted facade yet (python -m v2.bakeoff run C4 --go, after the owner's approval)")
+        return 1
+    A, best = res["scores"]["A"], res["scores"][f"C4 seed {res['best_seed']}"]
+    res["answer"] = {
+        "straight_lines_survived": bool(best["lines_pass"]),
+        "window_rows": {"c4": best["windows"]["share"], "a": A["windows"]["share"]},
+        "building_edges": {"c4": best["edges"]["share"], "a": A["edges"]["share"]},
+        "no_baked_shadow": bool(best["flat_pass"]), "flat_light_worst": {"c4": best["flat_light"]["worst"], "a": A["flat_light"]["worst"]},
+        "flat_light_worst_between_painted_walls": best["flat_light_painted_walls"]["worst"],
+        "paintings_with_light_across_them": res.get("light_within_paintings", {}).get("over_5_percent"),
+        "no_cars": res.get("cars", {}).get("detections") == 0}
+    if not a.no_build:
+        rels = json.loads((base / "releases.json").read_text())
+        out = F.build_view(Ra, Path(rels["a"]["release"]), c, base / "c4" / "release", seed_k=res["best_seed"])
+        res["build"] = out
+        ok = res["answer"]["straight_lines_survived"] and res["answer"]["no_baked_shadow"]
+        rels["c4"] = {"release": out["folder"], "art": "c4",
+                      "note": (f"Facade trial, {'passing' if ok else 'failing'}: {out['facades']} facades of {len(res['buildings'])} "
+                               f"buildings painted front-on and put on their walls (views: C4 facade trial). Window rows "
+                               f"{best['windows']['share']:.1%}, edges {best['edges']['share']:.1%}, flat light worst "
+                               f"{best['flat_light']['worst']:.1%}. Everywhere else this column is method A.")}
+        (base / "releases.json").write_text(json.dumps(rels, indent=1))
+    (V2 / "docs" / "results" / "bakeoff_c4.json").write_text(json.dumps(res, indent=1))
+    if (c / "checks" / "c4_trial.png").exists():
+        PV.jpeg(c / "checks" / "c4_trial.png", PV.IMG / "test_c4_trial_buildings.jpg", max_px=2400)
+    print(json.dumps({k: v for k, v in res.items() if k != "buildings"}, indent=1))
     return 0
 
 
 def cmd_previews(a):
+    """The fixed views of every registered method (v2/docs/img/test_<method>_<view>.jpg) and the sheets: A beside B
+    at the brief's views (test_bakeoff_compare.jpg), A beside the C4 trial at its buildings (test_c4_trial.jpg)."""
     import shutil
     from v2.bakeoff import previews as PV
     res = PV.shoot(a.url)
     notes = {m: v.get("note", "").split(":")[0] for m, v in json.loads((v2_data() / a.area / "bakeoff" / "releases.json").read_text()).items()}
-    dst = PV.sheet(res, PV.IMG / "test_bakeoff_compare.jpg", notes=notes)
+    main = {**res, "methods": [m for m in res["methods"] if m in ("a", "b")],
+            "made": {k: v for k, v in res["made"].items() if k[1] in PV.BRIEF}}
+    dst = PV.sheet(main, PV.IMG / "test_bakeoff_compare.jpg", notes=notes)
     print(dst.name, dst.stat().st_size // 1024, "KB")
+    if "c4" in res["methods"]:
+        trial = {**res, "methods": ["a", "c4"], "made": {k: v for k, v in res["made"].items() if k[1].startswith("c4-")}}
+        dst = PV.sheet(trial, PV.IMG / "test_c4_trial.jpg", notes={"c4": notes.get("c4", "")})
+        print(dst.name, dst.stat().st_size // 1024, "KB")
+    if a.before:
+        dst = PV.before_after(Path(a.before), res, PV.IMG / "test_lighting_before_after.jpg")
+        print(dst.name, dst.stat().st_size // 1024, "KB")
     shutil.rmtree(res["tmp"])
     return 0
 
@@ -295,9 +337,11 @@ def main(argv=None):
     c = sub.add_parser("check"); c.add_argument("job")
     pk = sub.add_parser("pick"); pk.add_argument("method", choices=["b"])
     pt = sub.add_parser("painted"); pt.add_argument("method", choices=["b", "c"])
-    sub.add_parser("trial")
+    tr = sub.add_parser("trial"); tr.add_argument("--no-build", action="store_true", help="measure only, no C4 build")
     sub.add_parser("pilot-gates")
     pv = sub.add_parser("previews"); pv.add_argument("--url", default="http://localhost:5175/")
+    pv.add_argument("--before", help="a folder with the earlier test_a_grund_golden_hour.jpg and test_a_grund_night.jpg: "
+                                     "also writes the lighting before/after sheet")
     g = sub.add_parser("register"); g.add_argument("method", choices=["a", "b", "c"]); g.add_argument("--folder")
     g.add_argument("--note", help="shown over the method's column in the bake-off viewer (what its checks found)")
     a = ap.parse_args(argv)

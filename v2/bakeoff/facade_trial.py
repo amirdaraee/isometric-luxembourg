@@ -5,13 +5,19 @@ front-on, then put the painting back on its 3D wall, so its lines are straight b
                             windows (walls turned away are never seen, so they are not painted)
     make_inputs(scene, d)   each wall as a 1024 px front-on drawing: the wall's outline in its plain colour, the
                             facade layout's windows, doors and shop fronts, ink outlines; and its layout map
-    shader(...)             layer 5 with each trial wall's pixels read from its painting at the pixel's place on the
-                            wall (metres along and up), everything else plain; the mesh's ink outlines on top
-    evaluate(...)           the line score (L5.2's measure) of the trial buildings, three ways: method A, C as
-                            painted in the map view (C3), and C4's projected facades; and a preview
+    Projector               layer 5 as method A draws it, with each trial wall's pixels (the wall and its openings)
+                            read from its painting at the pixel's place on the wall (metres along and up); the
+                            mesh's ink outlines on top
+    evaluate(...)           on the trial buildings, method A against C4's projected facades (each seed): the line
+                            score (L5.2's measure), the flat-light check (no baked shadow: dataset.flat_light) and
+                            the car detector on the paintings; and a preview sheet
+    build_view(...)         a small C4 build for the bake-off viewer: method A's release with layer 5 drawn again
+                            from the mesh for the tiles the trial buildings touch (every other tile and layer is
+                            A's own, linked)
 
-Nothing is warped: a painting is sampled at the wall's own coordinates. A trial result, not a build stage: C's
-release keeps C3's paintings whatever the outcome here, and the result decides how the city would be painted.
+Nothing is warped: a painting is sampled at the wall's own coordinates. A trial result, not a build stage (owner,
+10 Nov 2026: C4 runs on its own, with v1's style model): the result says whether painting facades front-on keeps
+lines straight, and whether it looks richer than A.
 """
 from __future__ import annotations
 
@@ -21,7 +27,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
 
-from v2.layers.common import CLASS, TILE, VIEW, Tile, pal, project
+from v2.layers.common import TILE, VIEW, Tile, pal, project
 
 WIN = 1024
 MARGIN = 48
@@ -122,22 +128,13 @@ def make_inputs(scene, folder: Path, n=10):
 
 # ------------------------------------------------------------------------------------------------ projection
 class Projector:
-    """Layer 5 of the trial buildings with their painted facades put back on the walls."""
+    """Layer 5 as method A draws it, with the trial walls' painted facades put back on the walls."""
 
-    def __init__(self, R_plain, R_a, inputs: Path, painted: Path, seed_k=0, texel_m=0.0625):
-        self.R = R_plain
+    def __init__(self, R_a, inputs: Path, painted: Path, seed_k=0, texel_m=0.0625):
+        self.R = R_a
         self.meta = json.loads((inputs / "facades.json").read_text())
-        self.walls = R_plain.scene.facades["walls"]
+        self.walls = R_a.scene.facades["walls"]
         self.trial_b = {b["index"] for b in self.meta["buildings"]}
-        self.tri_wall = R_a.art_a.tri_wall                      # wall of every wall triangle of the buildings mesh
-        # the wall of every opening triangle (geometry.openings_mesh: two triangles per rectangle, in this order)
-        bidx = {b["id"]: i for i, b in enumerate(R_plain.scene.buildings)}
-        ow = []
-        for wi, w in enumerate(self.walls):
-            if bidx.get(w["building"]) is None:
-                continue
-            ow += [wi] * (2 * (len(w["windows"]) + len(w["doors"]) + len(w["shopfronts"])))
-        self.open_wall = np.array(ow, np.int64)
         self.tex = {}
         for name, f in self.meta["facades"].items():
             p = painted / f"{name}_{seed_k}.png"
@@ -147,33 +144,46 @@ class Projector:
             k = min(1.0, (1 / texel_m) / f["s"])
             n = max(int(round(WIN * k)), 8)
             img = np.asarray(Image.open(p).convert("RGB").resize((n, n), Image.BOX), np.float64)
-            self.tex[f["wall"]] = (img, f, n / WIN)
+            self.tex[f["wall"]] = (img, f, n / WIN, int(f["building"]))
+        self._took, self.painted = [], None
 
     def shader(self, mi, ti, P, nrm, base, px, py, cls, obj):
-        rgb = base.copy()
-        b, o = self.R.building_meshes
-        wall = np.full(len(mi), -1, np.int64)
+        rgb, pcls = self.R._shade_buildings_a(mi, ti, P, nrm, base, px, py, cls, obj)
+        b = self.R.building_meshes[0]
+        upright = mi == 1                                         # an opening (window, door, shop front, shutter)
         on_b = mi == 0
-        wall[on_b] = np.where(b["kind"][ti[on_b]] == 2, self.tri_wall[ti[on_b]], -1)
-        on_o = mi == 1
-        wall[on_o] = self.open_wall[ti[on_o]]
-        for wi, (img, f, k) in self.tex.items():
-            m = wall == wi
+        upright[on_b] = b["kind"][ti[on_b]] == 2                  # a wall face
+        for wi, (img, f, k, bi) in self.tex.items():
+            m = upright & (obj == bi)
             if not m.any():
                 continue
             w = self.walls[wi]
             (e0, n0, z0), (e1, n1, _) = w["base"]
             ux, uy = (e1 - e0) / f["L"], (n1 - n0) / f["L"]
-            u = (P[m, 0] - e0) * ux + (P[m, 1] - n0) * uy
+            nx, ny = w["normal"]
+            dx, dy = P[m, 0] - e0, P[m, 1] - n0
+            u = dx * ux + dy * uy
             v = P[m, 2] - z0
-            x, y = uv_to_xy(f, u, v)
+            # on this wall: in its plane (openings sit 0.05 m in front of it), within its length and height
+            on = (np.abs(dx * nx + dy * ny) < 0.15) & (u >= 0) & (u <= f["L"]) & (v >= -0.02) & (v <= f["H"] + 0.02)
+            if not on.any():
+                continue
+            x, y = uv_to_xy(f, u[on], v[on])
             xi = np.clip((x * k).astype(int), 0, img.shape[1] - 1)
             yi = np.clip((y * k).astype(int), 0, img.shape[0] - 1)
-            rgb[m] = img[yi, xi]
-        return rgb
+            sel = np.flatnonzero(m)[on]
+            rgb[sel] = img[yi, xi]
+            self._took.append((px[sel], py[sel]))
+        return rgb, pcls
 
     def layer(self, tile):
-        return self.R._mesh_layer(tile, self.R.building_meshes, shader=self.shader)
+        """The layer tile; `self.painted` is then the tile's mask of pixels that took a painting."""
+        self._took = []
+        L = self.R._mesh_layer(tile, self.R.building_meshes, shader=self.shader)
+        self.painted = np.zeros((tile.size, tile.size), bool)
+        for x, y in self._took:
+            self.painted[np.floor(y).astype(int) - tile.py0, np.floor(x).astype(int) - tile.px0] = True
+        return L
 
 
 class DictCache:
@@ -184,86 +194,216 @@ class DictCache:
         return self.c.get((tx, ty))
 
 
-def evaluate(R_plain, R_a, release_a: Path, c_dir: Path, out_dir: Path):
-    """Line score of the trial buildings for A, C3 (painted in the map view) and C4 (projected facades, each
-    seed), and a preview of three of them."""
-    from v2.bakeoff import compose
+def trial_tiles(sc, meta, ring=0):
+    """The zoom-0 tiles the trial buildings' model lines fall in (and `ring` tiles round them)."""
     from v2.checks import line_checks as lc
-    from v2.checks.layer_checks import load
+    from v2.layers import geometry as G
+    trial = np.array(sorted(b["index"] for b in meta["buildings"]))
+    A, B, O = lc.feature_edges(G.buildings_mesh(sc))
+    Ps, Ds, Os = lc.samples(A, B, O)
+    m = np.isin(Os, trial)
+    px, py, _ = project(Ps[m, 0], Ps[m, 1], Ps[m, 2])
+    tiles = {(int(a), int(b)) for a, b in zip(np.floor(px / TILE), np.floor(py / TILE))}
+    return sorted({(tx + dx, ty + dy) for tx, ty in tiles for dx in range(-ring, ring + 1) for dy in range(-ring, ring + 1)})
+
+
+def _mosaic(cache, tiles, key, fill):
+    """One array over the box of `tiles` from a DictCache's tiles."""
+    xs, ys = [t[0] for t in tiles], [t[1] for t in tiles]
+    x0, y0 = min(xs), min(ys)
+    first = next(iter(cache.c.values()))[key]
+    out = np.full(((max(ys) - y0 + 1) * TILE, (max(xs) - x0 + 1) * TILE) + first.shape[2:], fill, first.dtype)
+    for (tx, ty) in tiles:
+        t = cache.c.get((tx, ty))
+        if t is not None:
+            out[(ty - y0) * TILE:(ty - y0 + 1) * TILE, (tx - x0) * TILE:(tx - x0 + 1) * TILE] = t[key]
+    return out, x0 * TILE, y0 * TILE
+
+
+def evaluate(R_a, c_dir: Path, out_dir: Path, seeds=(0, 1), detector=True):
+    """The trial buildings in method A and with C4's projected facades (each seed): the line score, the flat-light
+    check per building, the car detector on the paintings; a preview sheet. Returns the result (also written to
+    out_dir/c4_trial.json)."""
+    from v2.bakeoff.dataset import flat_light
+    from v2.checks import line_checks as lc
     from v2.config import params
     from v2.layers import geometry as G
     P = params()["g1"]
-    sc = R_plain.scene
-    meta = json.loads((c_dir / "facade_inputs" / "facades.json").read_text())
+    sc = R_a.scene
+    inputs, painted = c_dir / "facade_inputs", c_dir / "facades"
+    meta = json.loads((inputs / "facades.json").read_text())
     trial = np.array(sorted(b["index"] for b in meta["buildings"]))
     lines = {}
     for name, (A, B, O) in (("edges", lc.feature_edges(G.buildings_mesh(sc))), ("windows", lc.window_rows(sc))):
         Ps, Ds, Os = lc.samples(A, B, O)
         m = np.isin(Os, trial)
         lines[name] = (Ps[m], Ds[m], Os[m])
-    px, py, _ = project(lines["edges"][0][:, 0], lines["edges"][0][:, 1], lines["edges"][0][:, 2])
-    tiles = sorted({(int(a), int(b)) for a, b in zip(np.floor(px / TILE), np.floor(py / TILE))})
-    near = sorted({(tx + dx, ty + dy) for tx, ty in tiles for dx in (-1, 0, 1) for dy in (-1, 0, 1)})
-    variants = {"A": DictCache(), "C3": DictCache()}
+    near = trial_tiles(sc, meta, ring=1)
     projs = {}
-    for k in (0, 1):
-        pr = Projector(R_plain, R_a, c_dir / "facade_inputs", c_dir / "facades", seed_k=k)
+    for k in seeds:
+        pr = Projector(R_a, inputs, painted, seed_k=k)
         if pr.tex:
             projs[f"C4 seed {k}"] = pr
-            variants[f"C4 seed {k}"] = DictCache()
+    variants = {"A": DictCache(), **{n: DictCache() for n in projs}}
     for tx, ty in near:
         t = Tile(tx, ty, apron=0)
-        a = load(release_a, "buildings", t.name)
-        if a is not None:
-            variants["A"].c[(tx, ty)] = a
-        if (c_dir / "painted").exists():
-            L = compose.layer(R_plain, "c", "buildings", t, c_dir)
-            variants["C3"].c[(tx, ty)] = {"rgb": L.rgb, "depth": L.depth, "ids": L.ids}
-        for name, pr in projs.items():
-            L = pr.layer(t)
-            variants[name].c[(tx, ty)] = {"rgb": L.rgb, "depth": L.depth, "ids": L.ids}
-    res = {"buildings": len(trial), "facades": len(meta["facades"]), "painted": {n: len(p.tex) for n, p in projs.items()}, "scores": {}}
+        for name in variants:
+            L = R_a.buildings(t) if name == "A" else projs[name].layer(t)
+            variants[name].c[(tx, ty)] = {"rgb": L.rgb, "depth": L.depth, "ids": L.ids, "normal": L.normal,
+                                          "painted": projs[name].painted if name != "A" else np.zeros(L.depth.shape, bool)}
+    res = {"buildings": [{"index": int(b["index"]), "id": b["id"], "walls": len(b["walls"])} for b in meta["buildings"]],
+           "facades": len(meta["facades"]), "painted": {n: len(p.tex) for n, p in projs.items()},
+           "thresholds": {"line_score_share": P["line_score_share"], "line_score_px": P["line_score_px"], "flat_light": 0.05},
+           "scores": {}}
     for vname, cache in variants.items():
-        if not cache.c:
-            continue
         row = {}
         for name, (Ps, Ds, Os) in lines.items():
             seen, on = lc.score(cache, Ps, Ds, P["line_score_px"], P["line_min_step"], obj=Os)
             row[name] = {"seen": int(seen.sum()), "share": round(float(on.sum() / max(seen.sum(), 1)), 4)}
-        row["pass"] = bool(all(v["share"] >= P["line_score_share"] for v in row.values() if isinstance(v, dict)))
+            per = {}
+            for bi in trial:
+                mb = Os == bi
+                if seen[mb].sum():
+                    per[int(bi)] = round(float(on[mb].sum() / seen[mb].sum()), 4)
+            row[name]["by_building"] = per
+        row["lines_pass"] = bool(all(row[k]["share"] >= P["line_score_share"] for k in ("edges", "windows")))
+        # flat light, one building at a time: its walls turned different ways must be as light as each other
+        rgb, _, _ = _mosaic(cache, near, "rgb", 0)
+        ids, _, _ = _mosaic(cache, near, "ids", 0)
+        nrm, _, _ = _mosaic(cache, near, "normal", 0.0)
+        flat = {}
+        for bi in trial:
+            worst, bad = flat_light(rgb, np.where((ids >> 8) == bi, ids, 0), nrm)
+            flat[int(bi)] = round(float(worst), 4)
+        row["flat_light"] = {"by_building": flat, "worst": max(flat.values()), "over_5_percent": sum(v > 0.05 for v in flat.values())}
+        row["flat_pass"] = row["flat_light"]["over_5_percent"] == 0
+        if vname != "A":
+            # the same, between the painted walls only (a building's unpainted walls keep A's own colour, which
+            # the trial's drawings did not use: that difference is the trial's, not a shadow)
+            took, _, _ = _mosaic(cache, near, "painted", False)
+            fp = {}
+            for bi in trial:
+                worst, bad = flat_light(rgb, np.where(((ids >> 8) == bi) & took, ids, 0), nrm)
+                fp[int(bi)] = round(float(worst), 4)
+            row["flat_light_painted_walls"] = {"by_building": fp, "worst": max(fp.values()),
+                                               "over_5_percent": sum(v > 0.05 for v in fp.values())}
         res["scores"][vname] = row
+    c4 = {n: r for n, r in res["scores"].items() if n != "A"}
+    if c4:
+        res["best_seed"] = int(max(c4, key=lambda n: (c4[n]["windows"]["share"], c4[n]["edges"]["share"])).split()[-1])
+    files = sorted(painted.glob("f*_[0-9].png"))
+    # light across each painting itself: the wall's left and right halves, and its top and bottom halves (a
+    # shadow under the eaves, a gradient from one side), by median luminance, within 5%
+    from v2.layers.common import lum
+    within = {}
+    for p in files:
+        f = meta["facades"].get(p.stem.rsplit("_", 1)[0])
+        if f is None:
+            continue
+        x0, x1 = int(f["x0"]) + 6, int(f["x0"] + f["L"] * f["s"]) - 6
+        y1, y0 = int(f["yb"]) - 6, int(f["yb"] - f["H"] * f["s"]) + 6
+        Lm = lum(np.asarray(Image.open(p).convert("RGB"), float)[y0:y1, x0:x1])
+        if Lm.size < 400:
+            continue
+        h, w = Lm.shape
+        rel = lambda a, b: float(abs(np.median(a) - np.median(b)) / max(np.median(a), np.median(b), 1e-6))  # noqa: E731
+        within[p.name] = {"left_right": round(rel(Lm[:, : w // 2], Lm[:, w // 2:]), 4),
+                          "top_bottom": round(rel(Lm[: h // 2], Lm[h // 2:]), 4)}
+    if within:
+        res["light_within_paintings"] = {
+            "paintings": len(within), "worst_left_right": max(v["left_right"] for v in within.values()),
+            "worst_top_bottom": max(v["top_bottom"] for v in within.values()),
+            "over_5_percent": sum(max(v.values()) > 0.05 for v in within.values()), "by_file": within}
+    if detector and files:
+        from v2.bakeoff import paintcheck as PC
+        det = PC.owl(files, out_dir / "owl", mpp=1 / float(np.median([f["s"] for f in meta["facades"].values()])))
+        res["cars"] = {"paintings": len(files), "detections": sum(len(v) for v in det["by_file"].values()),
+                       "max_score": det["max_score"]}
     out_dir.mkdir(parents=True, exist_ok=True)
-    # preview: the three trial buildings with the most seen window samples, each variant side by side
-    cols = [v for v in variants if variants[v].c]
+    # preview: each trial building at 2x, method A beside the projected facades
+    cols = list(variants)
     rows = []
-    for b in meta["buildings"][:4]:
+    for b in meta["buildings"]:
         bi = b["index"]
         Ps = lines["edges"][0][lines["edges"][2] == bi]
         if not len(Ps):
             continue
         qx, qy, _ = project(Ps[:, 0], Ps[:, 1], Ps[:, 2])
         cx, cy = int(np.median(qx)), int(np.median(qy))
-        x0, y0 = cx - 160, cy - 160
+        x0, y0 = cx - 150, cy - 150
         strip = []
         for v in cols:
-            im = np.full((320, 320, 3), 235, np.uint8)
+            im = np.full((300, 300, 3), 235, np.uint8)
             for (tx, ty), t in variants[v].c.items():
                 a0, b0 = tx * TILE - x0, ty * TILE - y0
-                xs0, ys0, xs1, ys1 = max(a0, 0), max(b0, 0), min(a0 + TILE, 320), min(b0 + TILE, 320)
+                xs0, ys0, xs1, ys1 = max(a0, 0), max(b0, 0), min(a0 + TILE, 300), min(b0 + TILE, 300)
                 if xs1 <= xs0 or ys1 <= ys0:
                     continue
                 sub = t["rgb"][ys0 - b0:ys1 - b0, xs0 - a0:xs1 - a0]
                 dm = np.isfinite(t["depth"][ys0 - b0:ys1 - b0, xs0 - a0:xs1 - a0])
                 tgt = im[ys0:ys1, xs0:xs1]
                 tgt[dm] = sub[dm]
-            strip.append(np.asarray(Image.fromarray(im).resize((640, 640), Image.NEAREST)))
+            strip.append(np.asarray(Image.fromarray(im).resize((600, 600), Image.NEAREST)))
         rows.append(np.concatenate(strip, 1))
     if rows:
-        sheet = Image.fromarray(np.concatenate(rows, 0))
+        half = (len(rows) + 1) // 2
+        blank = np.full_like(rows[0], 235)
+        left = np.concatenate(rows[:half], 0)
+        right = np.concatenate(rows[half:] + [blank] * (half - (len(rows) - half)), 0)
+        sheet = Image.fromarray(np.concatenate([left, right], 1))
         d = ImageDraw.Draw(sheet)
-        for i, v in enumerate(cols):
-            d.rectangle((i * 640 + 6, 6, i * 640 + 150, 30), fill=(255, 255, 255))
-            d.text((i * 640 + 12, 10), v, fill=(0, 0, 0))
-        sheet.save(out_dir / "c4_trial.jpg", quality=82)
+        for side in (0, 1):
+            for i, v in enumerate(cols):
+                x = side * left.shape[1] + i * 600
+                d.rectangle((x + 6, 6, x + 120, 26), fill=(255, 255, 255))
+                d.text((x + 12, 10), v, fill=(0, 0, 0))
+        sheet.save(out_dir / "c4_trial.png")
     (out_dir / "c4_trial.json").write_text(json.dumps(res, indent=1))
     return res
+
+
+def build_view(R_a, release_a: Path, c_dir: Path, out: Path, seed_k=0):
+    """The small C4 build: method A's release, with layer 5 drawn again from the mesh (Projector) for the tiles the
+    trial buildings touch. Every other tile, level 0, and every other layer is A's own file, linked. The far-zoom
+    set stays A's (the trial is looked at close up)."""
+    import os
+    import shutil
+    from v2.layers.common import write_tile
+    from v2.layers.tiles import pyramid, write_index
+    release_a = Path(release_a)
+    meta = json.loads((c_dir / "facade_inputs" / "facades.json").read_text())
+    pr = Projector(R_a, c_dir / "facade_inputs", c_dir / "facades", seed_k=seed_k)
+    if not pr.tex:
+        raise SystemExit(f"C4: no painted facade of seed {seed_k} in {c_dir / 'facades'}")
+    idx_a = json.loads((release_a / "index.json").read_text())
+    lay = idx_a["layers"]["buildings"]
+    if out.exists():
+        shutil.rmtree(out)
+    z0 = out / "buildings" / "0"
+    z0.mkdir(parents=True)
+    touched = {f"{tx}_{ty}" for tx, ty in trial_tiles(R_a.scene, meta)}
+    idx0 = {}
+    src0 = (release_a / "buildings" / "0").resolve()
+    for name, dmin in lay["tiles"]["0"].items():
+        if name in touched:
+            t = Tile(*(int(v) for v in name.split("_")))
+            L = pr.layer(t)
+            c = t.crop
+            idx0[name] = write_tile(z0, name, rgb=c(L.rgb), depth=c(L.depth), normal=c(L.normal), k=c(L.k), ids=c(L.ids), q=101)
+        else:
+            for ext in ("c.webp", "g.bin", "k.bin", "i.bin"):
+                if (src0 / f"{name}.{ext}").exists():
+                    os.symlink(src0 / f"{name}.{ext}", z0 / f"{name}.{ext}")
+            idx0[name] = dmin
+    idx = pyramid(out / "buildings", idx0, lay["levels"], lossless=True, has_ids=True)
+    d = write_index(out / "buildings", "buildings", idx, ["k.bin", "i.bin"])
+    for p in release_a.iterdir():
+        if p.name not in ("buildings", "index.json", "manifest.json"):
+            os.symlink(p.resolve(), out / p.name)
+    idx_a["layers"]["buildings"] = {**lay, "levels": d["levels"], "tiles": d["tiles"], "files": d["files"]}
+    (out / "index.json").write_text(json.dumps(idx_a))
+    (out / "trial.json").write_text(json.dumps({"what": "C4 facade front-on trial: method A's release with layer 5 drawn again "
+                                                        "for the trial buildings' tiles", "from_release": str(release_a),
+                                                "seed": seed_k, "tiles_drawn": sorted(touched & set(idx0)),
+                                                "facades_painted": len(pr.tex), "buildings": len(meta["buildings"])}, indent=1))
+    return {"folder": str(out), "tiles_drawn": len(touched & set(idx0)), "facades": len(pr.tex)}

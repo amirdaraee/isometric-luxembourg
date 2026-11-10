@@ -5,6 +5,38 @@
 its quote; `python -m v2.bakeoff run <job> --go` refuses otherwise (`Ledger.authorise`). It also refuses if the GPU's
 price has gone up since this quote, or if the job before it has not finished. Method A cost $0 and is built.
 
+## Update, 10 November 2026: the second round
+
+The table below is the first quote, of 9 November. What changed since, with the ledger's own numbers:
+
+| Quote | Job | Worst case | State |
+|---|---|---|---|
+| q0001 | B1 materials | $2.42 | Used up: failed at setup, $0.24 spent, no image. |
+| q0002 | B2 landmark portraits | $1.88 | Used: $0.76. |
+| q0003 | C1p pilot | $1.21 | Used: $0.80. The pilot failed and stopped C. |
+| q0004–q0007 | C1, C2p, C2, C3 | $10.49 | **Released** by the owner on 10 Nov: never spent, no longer committed, cannot run. |
+| q0008 | C4 facade trial | $0.94 | Used up: failed at setup, $0.06 spent, no painting. |
+| q0009 | B1 materials, rerun | $2.15 | Approved 10 Nov ("Rerun B materials + facade trial, about $3 more"). Used up: failed at setup, $0.05 spent, no image. |
+| q0010 | B1 materials, second rerun | $2.07 | Approved 10 Nov ("Approve both"). Used: **$1.16**, 75 images. |
+| q0011 | C4 facade trial, rerun | $0.86 | Approved 10 Nov ("Approve both"). Used: **$0.64**, 50 paintings. |
+
+- **Total spent on the bake-off: $3.72** of the $17 cap. Nothing is committed. Results: `PHASE2_RESULTS.md`.
+- With the $0.12 that q0009 and q0008 spent, both jobs stayed inside the worst cases approved first on 10 November
+  ($2.15 and $0.94).
+- **Why they failed.** On a new pod the setup script checked one package (torchvision) before another it needs
+  (numpy) was installed. The fix of 9 November had only run on a pod that already had numpy. Fixed in
+  `v2/bakeoff/pod/setup.sh`.
+- **What is different now.**
+  - A new pod is checked in its first minute (`pod/preflight.sh`: the GPU, the image's torch, the disk, Hugging
+    Face), before anything is installed. It passed on 10 November: the fault was one step later.
+  - A job that fails with nothing made no longer ends its pod at once. The pod is held for 7 minutes, so the fault
+    can be fixed and the same job started again on the same quote. Unless it is started again the pod terminates
+    itself.
+  - C4 runs on its own, with v1's style model, and no longer waits for C2.
+  - C1, C2p, C2 and C3 refuse to run whatever the ledger says.
+- **GPU.** H100 SXM at $2.69 an hour is the quoted price (read again on 10 November). The runner takes the cheaper
+  H100 NVL ($2.59) when it is free, as the owner allowed.
+
 ## The short version
 
 - **Expected cost: $14.14. Worst case: $16.94**, which fits the $17 bake-off cap. Every job has a hard time cap, and

@@ -152,6 +152,12 @@ def check(job: str) -> int:
 
 
 # ------------------------------------------------------------------------------------------------ B
+# A surface material is used only if it is the palette colour it was asked for ("Colour close to RGB ...",
+# prompts.MATERIAL_BRIEF): its median colour within this distance of the palette's (RGB, 0-441). Added on 10 Nov
+# 2026 when the first library came back: without it the nearest of three candidates was taken however far it was,
+# and a wall asked for as soft blue came back cyan. An opening (a window, a door) is a drawing of several colours
+# and is not held to one.
+MAX_COLOUR_DISTANCE = 45.0
 OBJECTS = ("window_casement", "window_shuttered", "window_shop", "door_panel", "door_double", "door_garage")
 
 
@@ -201,7 +207,8 @@ def pick_b() -> int:
             img = np.asarray(Image.open(p).convert("RGB"))
             r = {"file": p.name, **material_check(img, pal(*key.split(".")), name in OBJECTS),
                  "vehicles": len(det["by_file"].get(p.name, []))}
-            r["ok"] = bool(r["flat_ok"] and not r["vehicles"])
+            r["colour_ok"] = bool(name in OBJECTS or r["colour_distance"] <= MAX_COLOUR_DISTANCE)
+            r["ok"] = bool(r["flat_ok"] and not r["vehicles"] and r["colour_ok"])
             if name in OBJECTS:
                 r["crop"] = object_crop(img)
             rows.append(r)

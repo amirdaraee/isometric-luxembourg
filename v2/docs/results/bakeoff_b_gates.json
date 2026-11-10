@@ -1,0 +1,71 @@
+{
+ "about": "Method B as built on 10 Nov 2026 (release 41d06fa3ac36): A with 15 AI materials picked (11 of them drawn by the code), 13 landmark portraits and A's leaf-clump crowns. From the build's own check stages (python -m v2.build test g1 with V2_ART=b); thresholds are the build's, unchanged. The G1 report did not run because check_shadows failed, so this file stands in for g1_test_b.json.",
+ "stages": {
+  "ok": 48,
+  "of": 50,
+  "failed": [
+   "check_shadows",
+   "g1 (skipped: check_shadows failed)"
+  ]
+ },
+ "brief_5_no_baked_shadows": {
+  "check": "L5.1/L9.2",
+  "passed": false,
+  "value": 11,
+  "limit": 0,
+  "compared": 244,
+  "what": "materials darker or lighter in the 3D shadow of the photo's sun than lit next to it by more than 5% (median luminance inside surfaces)",
+  "worst_relative_difference_by_layer": {
+   "ground": 0.004,
+   "buildings": 1.9999,
+   "water": 0.0,
+   "transport": 0.0047,
+   "structures": 0.0272
+  },
+  "examples": [
+   {
+    "material": 9756,
+    "shadow_over_lit": 1.3818
+   },
+   {
+    "material": 548380,
+    "shadow_over_lit": 2.1314
+   },
+   {
+    "material": 135708,
+    "shadow_over_lit": 0.8573
+   }
+  ]
+ },
+ "brief_6_lines": {
+  "L5.2-edges": {
+   "passed": true,
+   "value": 0.9849,
+   "limit": 0.95
+  },
+  "L5.2-windows": {
+   "passed": true,
+   "value": 0.9944,
+   "limit": 0.95
+  }
+ },
+ "brief_9_no_cars": {
+  "passed": true,
+  "detections": 0,
+  "highest_score_below_threshold": 0.1428,
+  "threshold": 0.1
+ },
+ "seams": {
+  "passed": true,
+  "S-buildings": 0.0,
+  "S-structures": 0.0,
+  "S-trees": 0.0,
+  "limit": 3.0
+ },
+ "other_g1_checks": {
+  "check_layers": "ok",
+  "check_independence": "ok",
+  "check_vehicles": "ok",
+  "check_viewer": "ok"
+ }
+}

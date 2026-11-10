@@ -17,6 +17,11 @@ export const VIEWS: View[] = [
   // the eight windows of C's pilot (job C1p): the only part of the area C painted before it was stopped
   { id: "c-pilot", label: "C's pilot windows, 1:1", x: 65600, y: 30750, z: 1, hour: 13 },
   { id: "c-pilot-wide", label: "C's pilot windows, wide", x: 66400, y: 30600, z: 0.4, hour: 13 },
+  // C4, the facade front-on trial (python -m v2.bakeoff trial): four of its ten buildings; the others are in A's art
+  { id: "c4-1", label: "C4 facade trial: rue Munster", x: 61917, y: 34026, z: 2, hour: 11 },
+  { id: "c4-2", label: "C4 facade trial: Grund", x: 62311, y: 34414, z: 2, hour: 11 },
+  { id: "c4-3", label: "C4 facade trial: two houses, east", x: 66995, y: 34000, z: 2, hour: 14 },
+  { id: "c4-4", label: "C4 facade trial: upper town", x: 61377, y: 32417, z: 2, hour: 14 },
   { id: "area", label: "The whole test area", x: 64345, y: 33744, z: 0.12, hour: 15 },
 ];
 
@@ -24,6 +29,7 @@ export const METHODS = [
   { id: "a", label: "A: all code" },
   { id: "b", label: "B: code + AI materials" },
   { id: "c", label: "C: code + AI-painted buildings" },
+  { id: "c4", label: "C4: ten buildings' facades painted front-on" },
 ] as const;
 
 export function viewerUrl(method: string, v: View, extra = ""): string {
@@ -51,6 +57,7 @@ async function main() {
     (document.getElementById("hourOut") as HTMLElement).textContent = v.hour.toFixed(2);
     grid.innerHTML = "";
     for (const m of METHODS) {
+      if (m.id === "c4" && !index.c4) continue;      // the trial's column appears once its build is registered
       const col = document.createElement("section");
       const h = document.createElement("h2");
       h.textContent = m.label;
