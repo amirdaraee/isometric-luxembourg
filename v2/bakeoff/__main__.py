@@ -6,10 +6,27 @@
     python -m v2.bakeoff inputs c [--limit N]   C's unlit inputs: every 1024 px window with buildings (unlit render,
                                                 layout, mask, ids and normals), and the 80 training crops' list
     python -m v2.bakeoff inputs b               B's landmark list and each landmark's unlit crop; the material list
+    python -m v2.bakeoff inputs facades         C4: ten buildings' camera-facing walls drawn front-on
+    python -m v2.bakeoff trial                  C4's result: line score of A, C3 and the projected facades
+    python -m v2.bakeoff pilot-gates            C (stopped at its pilot): the line score of every method inside the
+                                                pilot's painted windows, and the used paintings' checks
+    python -m v2.bakeoff previews [--url U]     the fixed views of every registered method from the running bake-off
+                                                viewer, and the comparison sheet (v2/docs/img)
     python -m v2.bakeoff smoke c                local $0 smoke test: an identity "painting" through compose and the
                                                 checks on one window (no model runs; see PHASE2_QUOTE.md)
-    python -m v2.bakeoff run <job> [--go]       ledger authorise + live price + pod with its watchdog; without --go
-                                                only prints what it would start (the default)
+    python -m v2.bakeoff run <job> [--go] [--keep] [--on SESSION]
+                                                the whole job: ledger authorise + live price, the pod with its
+                                                watchdog, the bundle up, the results down, the spend recorded, the
+                                                pod terminated. Without --go it only prints what it would start.
+                                                --keep leaves the pod up for the next job; --on runs on that pod
+    python -m v2.bakeoff check <job>            the checks of a job's results (flat light, no cars, line score; a
+                                                pilot's measured speed against the full job's cap); a failure stops
+                                                the jobs after it
+    python -m v2.bakeoff end <session>|--all    terminate a session's pod and record its spend (the owner's pause)
+    python -m v2.bakeoff pods                   read-only: none of the pods created here is left on RunPod
+    python -m v2.bakeoff reconcile [--record]   the ledger against RunPod's billing (read-only API)
+    python -m v2.bakeoff pick b                 B: check every material and portrait, pick one each (picked.json)
+    python -m v2.bakeoff painted <method>       mark a method's paintings complete, so its layers can be built
     python -m v2.bakeoff register <method>      the current release (built with V2_ART=<method>) into the bake-off
                                                 viewer (python -m v2.view test --bakeoff)
 """
@@ -45,8 +62,11 @@ def cmd_status(a):
     ap = L.approved()
     for j in JOBS:
         q = quote_of(j, L)
+        sp = [e["usd"] for e in L.events if e["type"] == "spend" and e["quote"] == q]
+        from v2.bakeoff.runner import stopped
         print(f"{j.id:4} {j.title[:60]:60} quote {q or '-':6} {'APPROVED' if q in ap else 'not approved':12} "
-              f"est ${j.est_usd:5.2f} cap ${j.worst_usd:5.2f}")
+              f"est ${j.est_usd:5.2f} cap ${j.worst_usd:5.2f}  " + (f"spent ${sp[0]:.2f}" if sp else "not run")
+              + ("  CHECKS FAILED: branch stopped" if stopped(j.id) else ""))
     est, worst = totals()
     print(f"total: est ${est}, worst case ${worst}; goal phase2_bakeoff: {L.status()['goals']['phase2_bakeoff']}")
 
@@ -66,6 +86,11 @@ def cmd_inputs(a):
     from v2.bakeoff import inputs as I
     from v2.bakeoff.dataset import pick_crops
     R, g = _renderer(a.area, "plain")
+    if a.method == "facades":
+        from v2.bakeoff import facade_trial as F
+        meta = F.make_inputs(R.scene, v2_data() / a.area / "bakeoff" / "c" / "facade_inputs")
+        print(f"{len(meta['buildings'])} buildings, {len(meta['facades'])} camera-facing facades with windows (C4)")
+        return 0
     out = v2_data() / a.area / "bakeoff" / a.method
     if a.method == "c":
         rel = Path(a.release) if a.release else g.folder("release", a.area)
@@ -132,8 +157,77 @@ def cmd_smoke(a):
 
 
 def cmd_run(a):
-    from v2.bakeoff.runner import launch
-    print(json.dumps(launch(a.job, f"bash pod/run.sh {a.job}", dry_run=not a.go), indent=1))
+    from v2.bakeoff import runner
+    from v2.ledger.ledger import LedgerRefusal
+    try:
+        res = runner.run(a.job, go=a.go, keep=a.keep, on=a.on, session=a.session, wait_min=a.wait)
+    except LedgerRefusal as ex:
+        print("REFUSED:", ex, file=sys.stderr)
+        return 2
+    if res.get("dry_run"):
+        res["pod"]["env"] = [e if e["key"] != "PUBLIC_KEY" else {"key": "PUBLIC_KEY", "value": "(this laptop's public key)"} for e in res["pod"]["env"]]
+        res["pod"]["dockerArgs"] = res["pod"]["dockerArgs"][:60] + "... (pod/watchdog.sh)"
+    print(json.dumps(res, indent=1))
+    return 0 if res.get("dry_run") or res.get("ok") else 1
+
+
+def cmd_end(a):
+    from v2.bakeoff import runner
+    if a.all:
+        runner.end_all(a.note)
+    else:
+        runner.end(a.session, a.note)
+    print(json.dumps(runner.verify_none_left(), indent=1))
+
+
+def cmd_pods(a):
+    from v2.bakeoff import runner
+    v = runner.verify_none_left()
+    print(json.dumps(v, indent=1))
+    return 1 if v["still_listed"] else 0
+
+
+def cmd_reconcile(a):
+    from v2.bakeoff import billing
+    return billing.reconcile(record=a.record)
+
+
+def cmd_check(a):
+    from v2.bakeoff import results
+    return results.check(a.job)
+
+
+def cmd_pick(a):
+    from v2.bakeoff import results
+    return results.pick_b()
+
+
+def cmd_trial(a):
+    """C4's result: the line score of the trial buildings for A, C3 and the projected facades; a preview."""
+    from v2.bakeoff import facade_trial as F
+    R, g = _renderer(a.area, "plain")
+    Ra, _ = _renderer(a.area, "a")
+    rel = json.loads((v2_data() / a.area / "bakeoff" / "releases.json").read_text())["a"]["release"]
+    c = v2_data() / a.area / "bakeoff" / "c"
+    res = F.evaluate(R, Ra, Path(rel), c, c / "checks")
+    print(json.dumps(res, indent=1))
+    return 0
+
+
+def cmd_previews(a):
+    import shutil
+    from v2.bakeoff import previews as PV
+    res = PV.shoot(a.url)
+    notes = {m: v.get("note", "").split(":")[0] for m, v in json.loads((v2_data() / a.area / "bakeoff" / "releases.json").read_text()).items()}
+    dst = PV.sheet(res, PV.IMG / "test_bakeoff_compare.jpg", notes=notes)
+    print(dst.name, dst.stat().st_size // 1024, "KB")
+    shutil.rmtree(res["tmp"])
+    return 0
+
+
+def cmd_painted(a):
+    from v2.bakeoff import results
+    return results.mark_painted(a.method)
 
 
 def cmd_register(a):
@@ -150,7 +244,7 @@ def cmd_register(a):
     p = v2_data() / a.area / "bakeoff" / "releases.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     idx = json.loads(p.read_text()) if p.exists() else {}
-    idx[a.method] = {"release": str(folder), "art": a.method}
+    idx[a.method] = {"release": str(folder), "art": a.method, **({"note": a.note} if a.note else {})}
     p.write_text(json.dumps(idx, indent=1))
     print(f"registered {a.method}: {folder}  (current art method: {art_method()})")
 
@@ -161,16 +255,33 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status")
     q = sub.add_parser("quote"); q.add_argument("--record", action="store_true")
-    i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c"]); i.add_argument("--limit", type=int, default=0)
+    i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c", "facades"]); i.add_argument("--limit", type=int, default=0)
     i.add_argument("--crops", action="store_true", help="b: also each landmark's unlit crop")
     i.add_argument("--release", help="c: the built release whose layers 1-4 are used (default: this checkout's)")
     s = sub.add_parser("smoke"); s.add_argument("method", choices=["c"])
     r = sub.add_parser("run"); r.add_argument("job"); r.add_argument("--go", action="store_true",
                                                                        help="really start it (needs the owner's approval in the ledger)")
+    r.add_argument("--keep", action="store_true", help="leave the pod up for the next job of the session")
+    r.add_argument("--on", help="run on this open session's pod (the job before it is closed first)")
+    r.add_argument("--session", help="name of a new session (default: the job's id)")
+    r.add_argument("--wait", type=float, default=0, help="minutes to keep trying when RunPod has no free machine")
+    e = sub.add_parser("end"); e.add_argument("session", nargs="?"); e.add_argument("--all", action="store_true")
+    e.add_argument("--note", default="ended by hand")
+    sub.add_parser("pods")
+    rc = sub.add_parser("reconcile"); rc.add_argument("--record", action="store_true")
+    c = sub.add_parser("check"); c.add_argument("job")
+    pk = sub.add_parser("pick"); pk.add_argument("method", choices=["b"])
+    pt = sub.add_parser("painted"); pt.add_argument("method", choices=["b", "c"])
+    sub.add_parser("trial")
+    sub.add_parser("pilot-gates")
+    pv = sub.add_parser("previews"); pv.add_argument("--url", default="http://localhost:5175/")
     g = sub.add_parser("register"); g.add_argument("method", choices=["a", "b", "c"]); g.add_argument("--folder")
+    g.add_argument("--note", help="shown over the method's column in the bake-off viewer (what its checks found)")
     a = ap.parse_args(argv)
     return {"status": cmd_status, "quote": cmd_quote, "inputs": cmd_inputs, "smoke": cmd_smoke, "run": cmd_run,
-            "register": cmd_register}[a.cmd](a) or 0
+            "register": cmd_register, "end": cmd_end, "pods": cmd_pods, "reconcile": cmd_reconcile, "check": cmd_check,
+            "pick": cmd_pick, "painted": cmd_painted, "trial": cmd_trial, "previews": cmd_previews,
+            "pilot-gates": lambda a: __import__("v2.bakeoff.results", fromlist=["x"]).pilot_gates()}[a.cmd](a) or 0
 
 
 if __name__ == "__main__":

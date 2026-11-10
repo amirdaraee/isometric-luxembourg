@@ -893,7 +893,8 @@ class Renderer:
         b = np.where(typ == 2, np.clip(h * 0.42, 1.0, None), np.clip(np.minimum(h * 0.36, r * 1.7), 0.8, None))
         if self.art != "plain":
             # the crown fills the tree's measured height down to a trunk of a quarter of it (at least 2 m), as a
-            # crown does; its width stays the survey's (L7.1)
+            # crown does; its width is the scene's (the survey's, widened to the tree's shape by species and age:
+            # layer-07 rule 1, L7.1)
             b = np.maximum(b, (h - np.maximum(2.0, h * 0.25)) / 2)
         b = np.minimum(b, np.maximum(h / 2 - 0.2, 0.5))
         cz = base + h - b

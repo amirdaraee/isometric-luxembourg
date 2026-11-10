@@ -127,6 +127,20 @@ def _layer_raw(area):
     return [CONFIG / "palette.json", CONFIG / "light.json", CONFIG / "camera.json"]
 
 
+def _art_raw(area):
+    """As _layer_raw, for the stages that draw or read layers 5-7. For bake-off methods B and C that adds the
+    paintings (and the composer that reads them), so a new painting or pick makes a new build of that method's own
+    stages only; layers 1-4 are shared by every method."""
+    from v2.config import v2_data
+    from v2.config.art import art_method
+    out = _layer_raw(area)
+    art = art_method()
+    if art in ("b", "c"):
+        d = v2_data() / area / "bakeoff" / art
+        out += [REPO / "v2/bakeoff/compose.py"] + [p for p in (d / "painted.json", d / "picked.json", d / "painted") if p.exists()]
+    return out
+
+
 def phase1(g0_checks) -> list:
     """Phase 1 (PLAN_V2 section 10): the code layers on the test area, the viewer's data and the gate G1 checks."""
     from v2.layers import stages as L
@@ -134,18 +148,18 @@ def phase1(g0_checks) -> list:
     from v2.build import report1
     base = ("scene", "fetch_osm_ground", "fetch_osm_transport")
     lay = dict(code=LAYER_CODE, raw=_layer_raw)
-    art = dict(lay, params=_art)
+    art = dict(lay, params=_art, raw=_art_raw)
     S = [Stage(f"layer_{n}", L.colour_layer(n), deps=base, doc=f"layer {i + 1}: {n}" + (" (by the art method)" if i >= 4 else ""),
                **(art if i >= 4 else lay))
          for i, n in enumerate(L.COLOUR_LAYERS)]
     S += [
-        Stage("layer_buffers", L.layer_buffers, deps=base, params=_art, doc="layer 8: depth, normal, height, ids of the nearest surface", **lay),
-        Stage("layer_light", L.layer_light, deps=base, params=_art, doc="layer 9: the shadow height map", **lay),
-        Stage("layer_night", L.layer_night, deps=base, params=_art, doc="layer 10: windows, doors, shop fronts, street lamps", **lay),
+        Stage("layer_buffers", L.layer_buffers, deps=base, doc="layer 8: depth, normal, height, ids of the nearest surface", **art),
+        Stage("layer_light", L.layer_light, deps=base, doc="layer 9: the shadow height map", **art),
+        Stage("layer_night", L.layer_night, deps=base, doc="layer 10: windows, doors, shop fronts, street lamps", **art),
         Stage("layer_vehicles", L.layer_vehicles, deps=("scene",), params=_p("transit"), code=LAYER_CODE,
               raw=lambda area: _layer_raw(area) + [raw_dir() / params()["transit"]["gtfs_dir"]],
               doc="layer 12: roads and profiles for the simulation; trams and trains on the graph"),
-        Stage("layer_labels", L.layer_labels, deps=base, params=_art, doc="layer 15: labels and pins", **lay),
+        Stage("layer_labels", L.layer_labels, deps=base, doc="layer 15: labels and pins", **art),
         Stage("layer_far", L.layer_far, deps=tuple(f"layer_{n}" for n in L.COLOUR_LAYERS), code=LAYER_CODE,
               doc="far zoom: the colour layers merged by depth, from zoom 2 out"),
     ]

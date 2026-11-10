@@ -33,18 +33,19 @@ MATERIALS = {
     "railing": ("A simple painted steel railing with vertical bars", "structures.railing", (2.0, 1.1)),
 }
 
-LANDMARK_BRIEF = ("<isometric luxembourg ink> Paint the outlined building in the inked style: clean dark ink outlines, "
-                  "flat colour, detailed stonework, straight windows exactly where they are drawn. Evenly lit: no "
-                  "sun, no cast shadows, no shading from one side. Keep its exact outline and every line of the "
-                  "drawing. Nothing that moves: no cars, people or birds.")
+# The caption v1's style LoRA was trained with (pipeline/style/prompt.txt): every painting prompt keeps its wording
+# and its trigger, so the LoRA answers as trained, and adds the even-light sentence.
+V1_CAPTION = ("Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> "
+              "style, removing the border and exactly following the shape/style/structure of the surrounding image "
+              "(if present).")
+EVEN = " Evenly lit with flat light: no shadows, no shading from one side, nothing that moves."
+NEW_TRIGGER = "<isometric luxembourg ink unshadowed>"
 
-C_PAINT_PROMPT = ("<isometric luxembourg ink unshadowed> Fill in the outlined buildings in the inked style: clean dark "
-                  "ink lines, flat colours, detailed roofs and facades, every window exactly where the layout shows "
-                  "it. Evenly lit: no shadows. Nothing that moves.")
-
-C_TARGET_PROMPT = ("<isometric luxembourg ink> Convert the outlined section to the inked style with even, flat light: "
-                   "no sun shadows, no shading, no cars, no people. Keep every line and window of the input.")
-
-C_FACADE_PROMPT = ("<isometric luxembourg ink unshadowed> Paint this building facade seen exactly front-on, in the inked "
-                   "style: straight horizontal and vertical lines, each window where the layout shows it, flat even "
-                   "light, no shadows, nothing that moves.")
+# C1 (and B2 without C's LoRA): v1's style LoRA as the teacher, asked for even light
+C_TARGET_PROMPT = V1_CAPTION + EVEN
+# the caption of every training example of the unshadowed LoRA (C2), and the prompt it paints with (C3, B2)
+C_PAINT_PROMPT = V1_CAPTION.replace("<isometric luxembourg ink>", NEW_TRIGGER) + EVEN
+LANDMARK_BRIEF = C_TARGET_PROMPT
+# C4: one facade seen front-on
+C_FACADE_PROMPT = C_PAINT_PROMPT + (" The image is one building facade seen exactly front-on: straight horizontal and "
+                                    "vertical lines, each window where the layout shows it.")

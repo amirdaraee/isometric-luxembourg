@@ -262,6 +262,23 @@ def check_trees(ctx):
           bool(((h >= p["min_height_m"]) & (h <= p["max_height_m"])).all()), [float(h.min()), float(h.max())] if len(h) else None)
     T = np.load(ctx.dep("scene_terrain") / "terrain.npz") if "scene_terrain" in ctx.deps else None
     r.info("TE5", "trees", int(len(h)))
+    # TE6-TE8: the drawn crown follows the tree's shape by species and age (layer-07 rule 1): never wider than that
+    # shape allows, never narrower than surveyed unless thinned for a building or water; heights are the survey's
+    from v2.data.scene.trees import shape_radius
+    names = [str(s) for s in t["type_names"]]
+    cr = t["crown_r"].astype(float)
+    if len(h):
+        _, allo = shape_radius(h, np.zeros(len(h)), t["type"], t["e"], t["n"], p, names)
+        cap = np.maximum(allo, t["crown_r_measured"].astype(float) * p["crown_scale"])
+        over = cr - cap
+        r.at_most("TE6", "crowns wider than their species' and age's shape (or the survey's width, if that is wider), m",
+                  round(float(over.max()), 3), 0.01, [str(u) for u in t["uuid"][over > 0.01][:5]])
+        shape = t["crown_r_shape"].astype(float) if "crown_r_shape" in t.files else cr
+        r.add("TE7", "no crown wider than before thinning (thinning only narrows)", bool((cr <= shape + 1e-4).all()))
+        tall = h >= 8
+        r.info("TE8", "height over crown width, median (all trees; trees of 8 m or more)",
+               [round(float(np.median(h / np.maximum(2 * cr, 1e-3))), 2),
+                round(float(np.median(h[tall] / np.maximum(2 * cr[tall], 1e-3))), 2) if tall.any() else None])
     return r.result()
 
 

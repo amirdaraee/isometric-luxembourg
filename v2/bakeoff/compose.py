@@ -4,11 +4,14 @@ coverage. Nothing is warped or moved: a painting that does not fit fails its che
 
 C: each window's painting (painted/<x0>_<y0>.png, 1024 px over the map pixels it was rendered from) is sampled at the
    pixel, windows blended where they overlap by a tent weight (1 at a window's centre, falling to 0 at its edge), and
-   kept only where layer 5 (or 6) covers, grown by <= 2 px (the POC cut rule, L5.3).
-B: method A's render, with each generated pattern replaced by its material image (materials/<name>.png, picked by
-   the owner): walls, roofs, windows, doors and shop fronts sampled at the pixel's place on its surface (the same
-   coordinates A uses); landmark portraits (landmarks/<building>.png, painted from that building's unlit crop)
-   replace that building's pixels, cut to its mesh.
+   kept only where layer 5 (or 6) covers and is what the painting's window showed there (a house behind a viaduct
+   keeps method A's code art under it: the painting there is the viaduct's). Wherever no painting exists (a window
+   not painted) the layer is method A's. Layer 7 is method A's crowns.
+B: method A's render, with each generated pattern replaced by its material image (materials/<name>_<k>.png, the
+   pick in picked.json): walls, roofs, windows, doors and shop fronts sampled at the pixel's place on its surface
+   (the same coordinates A uses); landmark portraits (landmarks/<building>_<k>.png, painted from that building's
+   unlit crop) replace that building's pixels, cut to its mesh. A material or portrait that failed its checks is
+   not in picked.json: A's own pattern stays there.
 """
 from __future__ import annotations
 
@@ -61,28 +64,95 @@ def painted_rgb(folder: Path, px0, py0, W, H):
     return out, wsum > 0
 
 
-def layer(R, method, layer_name, tile, folder: Path):
-    from v2.layers.bakeoff import cut_to
+def _sub(R, art):
+    """A renderer of the same scene drawing with another art method (kept on R: its meshes are built once)."""
     from v2.layers.render import Renderer
-    plain = Renderer(R.scene, R.ground_osm_path, R.transport_osm_path, frozenset(R.omit), art="a" if method == "b" else "plain")
-    base = plain.layer(layer_name, tile)
+    cache = R.__dict__.setdefault("_bakeoff_sub", {})
+    if art not in cache:
+        cache[art] = Renderer(R.scene, R.ground_osm_path, R.transport_osm_path, frozenset(R.omit), art=art)
+    return cache[art]
+
+
+@lru_cache(maxsize=64)
+def _which(path: str):
+    return np.load(path)["which"]
+
+
+def seen_as(inputs: Path, layer_index: int, px0, py0, W, H):
+    """True where the painting windows saw this layer (geom.npz `which`): a painting is used only there. Every
+    window over a pixel saw the same scene, so the first one that covers it answers."""
+    out = np.zeros((H, W), bool)
+    done = np.zeros((H, W), bool)
+    for p in sorted(Path(inputs).glob("*.geom.npz")):
+        x0, y0 = (int(v) for v in p.name.split(".")[0].split("_")[:2])
+        a0, b0, a1, b1 = max(px0, x0), max(py0, y0), min(px0 + W, x0 + WIN), min(py0 + H, y0 + WIN)
+        if a1 <= a0 or b1 <= b0:
+            continue
+        dst = (slice(b0 - py0, b1 - py0), slice(a0 - px0, a1 - px0))
+        if done[dst].all():
+            continue
+        w = _which(str(p))[b0 - y0:b1 - y0, a0 - x0:a1 - x0]
+        out[dst] |= (w == layer_index) & ~done[dst]
+        done[dst] = True
+    return out
+
+
+M_PER_TEXEL = 0.0625          # materials are read at twice the map's 0.125 m per pixel
+
+
+@lru_cache(maxsize=2)
+def materials(folder: str):
+    """B's picked materials as ArtA reads them ({name: (image, (width m, height m))}), each resampled (area
+    filter) to M_PER_TEXEL: a 1024 px swatch of 2 m sampled at a map pixel's 0.125 m would alias to noise. An
+    opening's swatch is first cut to the opening itself (picked.json crop)."""
+    folder = Path(folder)
+    picks = json.loads((folder / "picked.json").read_text()) if (folder / "picked.json").exists() else {}
+    out = {}
+    for name, info in picks.get("materials", {}).items():
+        im = Image.open(folder / "materials" / info["file"]).convert("RGB")
+        if info.get("crop"):
+            im = im.crop(tuple(info["crop"]))
+        wm, hm = info["size_m"]
+        im = im.resize((max(int(round(wm / M_PER_TEXEL)), 2), max(int(round(hm / M_PER_TEXEL)), 2)), Image.BOX)
+        out[name] = (np.asarray(im, np.float64), (float(wm), float(hm)))
+    return out, picks
+
+
+def layer(R, method, layer_name, tile, folder: Path):
+    from v2.layers.common import COLOUR_LAYERS
     if method == "c":
-        sub = folder / ("painted" if layer_name != "trees" else "canopy")
-        if not sub.exists():
-            return base                          # C's trees: code crowns unless a canopy was painted
-        rgb, has = painted_rgb(sub, tile.px0, tile.py0, tile.size, tile.size)
-        mask = np.isfinite(base.depth)
-        cut, keep = cut_to(mask, rgb, grow=0)    # colour only where the mesh is; the outline is the mesh's
-        use = mask & has
-        out_rgb = base.rgb.copy()
-        out_rgb[use] = np.clip(np.round(cut[use]), 0, 255).astype(np.uint8)
-        base.rgb = out_rgb
-        return base
+        if layer_name == "trees" and not (folder / "canopy").exists():
+            return _sub(R, "a").layer("trees", tile)          # C's trees: the code crowns unless a canopy was painted
+        code = _sub(R, "a").layer(layer_name, tile)          # method A's art wherever no painting is used
+        if not (folder / "painted").exists():
+            return code
+        rgb, has = painted_rgb(folder / "painted", tile.px0, tile.py0, tile.size, tile.size)
+        if not has.any():
+            return code
+        plain = _sub(R, "plain").layer(layer_name, tile)     # the geometry the paintings were made from
+        # colour only where the mesh is (the outline is the mesh's) and where the painting saw this layer; a pixel
+        # that takes the painting takes the plain mesh's depth, normal and ids with it (what was painted)
+        use = np.isfinite(plain.depth) & has & seen_as(folder / "inputs", COLOUR_LAYERS.index(layer_name) + 1,
+                                                        tile.px0, tile.py0, tile.size, tile.size)
+        if not use.any():
+            return code
+        code.rgb = code.rgb.copy()
+        code.rgb[use] = np.clip(np.round(rgb[use]), 0, 255).astype(np.uint8)
+        for name in ("depth", "normal", "k", "ids"):
+            a, b = getattr(code, name), getattr(plain, name)
+            if a is not None and b is not None:
+                a = a.copy()
+                a[use] = b[use]
+                setattr(code, name, a)
+        return code
     if method == "b":
+        A = _sub(R, "a")
         if layer_name != "buildings":
-            return base
-        lm = folder / "landmarks"
-        picks = json.loads((folder / "picked.json").read_text()) if (folder / "picked.json").exists() else {}
+            return A.layer(layer_name, tile)
+        mats, picks = materials(str(folder))
+        if A.art_a.materials is None:
+            A.art_a.materials = mats                           # ArtA samples them in place of its own patterns
+        base = A.layer("buildings", tile)
         out_rgb = base.rgb.copy()
         bidx = base.ids >> 8
         for bid, info in picks.get("landmarks", {}).items():
@@ -90,11 +160,14 @@ def layer(R, method, layer_name, tile, folder: Path):
             m = (bidx == bi) & np.isfinite(base.depth)
             if not m.any():
                 continue
-            img = _img(str(lm / info["file"]))
+            img = _img(str(folder / "landmarks" / info["file"]))
+            g = np.load(folder / "landmark_inputs" / f"{bid}.geom.npz")
             x0, y0 = info["x0"], info["y0"]
             rr, cc = np.nonzero(m)
             X, Y = cc + tile.px0 - x0, rr + tile.py0 - y0
             ok = (X >= 0) & (Y >= 0) & (X < img.shape[1]) & (Y < img.shape[0])
+            # only where the portrait's window saw this building (not behind a bridge or another house)
+            ok[ok] &= (g["which"][Y[ok], X[ok]] == COLOUR_LAYERS.index("buildings") + 1) & ((g["ids"][Y[ok], X[ok]] >> 8) == bi)
             out_rgb[rr[ok], cc[ok]] = np.clip(np.round(img[Y[ok], X[ok]]), 0, 255).astype(np.uint8)
         base.rgb = out_rgb
         return base

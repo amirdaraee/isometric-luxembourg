@@ -41,9 +41,10 @@ See facades.md. Checks F1–F7.
   commune while streaming (`fetch_trees`).
 - **Rules:** keep trees in the area 2–50 m tall (taller are survey spikes: cranes, masts); drop trees centred in a
   building footprint or in water; crown radius = 0.85 × crown_mean / 2 (the POC's "measured crowns read too big"),
+  widened to the tree's shape by species and age (layer-07 rule 1; the height is never changed), then
   reduced (bisection) until ≤ 30% of the crown disc lies over buildings or water; base height = LiDAR terrain.
-- **Output:** `trees.npz` (e, n, base_z, height, crown_r, crown_r_measured, type, uuid).
-- **Checks:** TE1–TE5.
+- **Output:** `trees.npz` (e, n, base_z, height, crown_r, crown_r_shape, crown_r_measured, type, uuid).
+- **Checks:** TE1–TE8.
 
 ## Places (`scene_places`)
 v1's 129 landmark cards and 1,035 places, streets and pins, from v1 pixels back to LUREF by the ray inversion on
