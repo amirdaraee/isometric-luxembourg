@@ -485,6 +485,9 @@ def check_tunnel_view(ctx):
     data = json.loads((rel / "tunnels.json").read_text())
     casemates = json.loads(T.CASEMATES.read_text()) if T.CASEMATES.exists() else None
     tubes = data["tubes"]
+    if not tubes:
+        rep.info("X0", "tubes in the release: none (the area has no tunnel); nothing to check", 0)
+        return rep.result()
     from v2.config.camera import camera
     oe, on = camera()["origin_en"]
     kinds = {}

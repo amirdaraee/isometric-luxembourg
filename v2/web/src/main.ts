@@ -115,7 +115,7 @@ async function main() {
   // ------------------------------------------------------------------ tunnel view: the tubes
   let tunnels: TunnelIndex | null = null;
   const loadTunnels = async () => {
-    if (!xrayCan) return;
+    if (!xrayCan) { hooks.tunnelsReady = true; return; }       // a release built before the tunnel view: none to wait for
     comp.enableXray();
     const td = await fetchJSON<TunnelsData>(idx.tunnels!.file);
     comp.setTunnels(td);
