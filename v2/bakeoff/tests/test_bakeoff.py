@@ -452,6 +452,114 @@ def test_light_across_a_face_measures_light_not_what_is_drawn_on_it():
     assert _light(thin, k) <= 0.01
 
 
+def _wall(n=200):
+    """A cream wall as the painter draws one: panels between pale shafts in ink outlines, a white sill, a plinth
+    band in a darker stone."""
+    k, (yy, xx) = _floor(n)
+    cream, pale, white, plinth, ink = (228, 201, 160), (246, 232, 198), (253, 250, 240), (196, 172, 136), (40, 34, 30)
+    img = np.empty(k.shape + (3,)); img[:] = cream
+    shaft = (xx % 34 >= 12) & (xx % 34 < 20)                           # shafts 8 px wide (1 m), every 34 px
+    img[shaft] = pale
+    img[(xx % 34 == 11) | (xx % 34 == 20)] = ink
+    img[(yy >= 96) & (yy < 102) & ~shaft] = white                      # a sill, 6 px
+    img[(yy == 95) | (yy == 102)] = ink
+    img[(yy >= 168) & (yy < 174)] = plinth                             # a plinth band, 6 px, along the foot
+    return k, (yy, xx), img
+
+
+def test_light_across_a_face_is_not_what_is_drawn_lighter_on_it():
+    """The second cathedral run: cathedral-open_1's walls failed on a white sill and pale mouldings, its vault on
+    its ribs, its floor on the wall drawn below the model's line."""
+    from v2.bakeoff import cutaway_paint as CP
+    from v2.layers.cutaways import KIND
+    TOL = 0.05
+    k, (yy, xx), wall = _wall()
+    ribs = np.empty(k.shape + (3,)); ribs[:] = (228, 201, 160)         # a vault: pale ribs across its webs
+    for d in (xx + yy, xx - yy):
+        ribs[d % 40 < 5] = (246, 232, 198)
+        ribs[(d % 40 == 5) | (d % 40 == 39)] = (40, 34, 30)
+    drawn = {"wall": wall, "ribs": ribs}
+    for name, img in drawn.items():
+        sq = CP.light_squares(img.astype(np.uint8), k, k == KIND["floor"], 150, TOL)[KIND["floor"]]
+        assert abs(sq["tone"] - CP.lum(np.array((228, 201, 160.0)))) <= 2, name       # the surface, not the detail
+        lit = [float(np.percentile(CP.lum(img[y:y + 16, x:x + 16]), 90)) for y, x, _, _ in sq["squares"]]
+        assert (max(lit) - min(lit)) / max(lit) > TOL, name            # the first measure: the lightest tenth of all
+        assert _light(img, k) <= 0.01, name                            # evenly lit: no light measured
+        grad = img * (0.6 + 0.4 * (xx - 20) / 160)[..., None]          # the same with light from one side
+        assert _light(grad, k) > 3 * TOL, name
+        faint = img * (0.9 + 0.1 * (xx - 20) / 160)[..., None]
+        assert _light(faint, k) > TOL, name
+        down = img * (0.9 + 0.1 * (yy - 20) / 160)[..., None]          # darker towards the vault
+        assert _light(down, k) > TOL, name
+        for cx, cy, r in ((110, 100, 26), (97, 131, 14.5), (64, 75, 14.5), (150, 60, 14.5)):   # cast shadows
+            blob = img * np.where(np.hypot(xx - cx, yy - cy) < r, 0.65, 1.0)[..., None]
+            assert _light(blob, k) > 3 * TOL, name
+        dark = img.copy(); dark[:, 100:] *= 0.88                       # one half of the wall in a darker tone
+        assert _light(dark, k) > 2 * TOL, name
+        beam = img * np.where(np.abs(xx - yy) < 16, 1.0, 0.85)[..., None]   # a beam of light across a darker face
+        assert _light(beam, k) > 2 * TOL, name
+    # its limits, stated in light_across. A thing drawn in a tone within the limit of the surface's counts as it:
+    pilaster = np.empty(k.shape + (3,)); pilaster[:] = (228, 201, 160)
+    pilaster[:, 96:104] = np.array((228, 201, 160)) * 1.04
+    assert 0.03 < _light(pilaster, k) <= TOL
+    # ... and on a pattern, a shade exactly as deep as the pattern's contrast is measured while it covers the lesser
+    # part of the face (a cast shadow, a dark corner, one side), and reads as the pattern when it covers most of it
+    for cream, grey in (((236, 229, 214.0), (128, 126, 122.0)), ((245, 237, 211.0), (186, 180, 160.0))):
+        cream, grey = np.array(cream), np.array(grey)
+        chequer = np.where((((xx // 5) + (yy // 4)) % 2 == 0)[..., None], cream, grey)
+        assert _light(chequer, k) <= 0.01
+        depth = CP.lum(grey) / CP.lum(cream)
+        for r in (14.5, 26, 40):                                       # 3%, 8% and 20% of the face
+            for dd in (depth, depth * 1.04, depth * 0.96):
+                assert _light(chequer * np.where(np.hypot(xx - 100, yy - 100) < r, dd, 1.0)[..., None], k) > 3 * TOL, (r, dd)
+        assert _light(chequer * np.where(xx < 70, depth, 1.0)[..., None], k) > 3 * TOL          # a third of it, one side
+        patch = np.hypot(xx - 100, yy - 100) < 40                      # all but a fifth of it
+        assert _light(chequer * np.where(patch, 1.0, depth)[..., None], k) <= 0.01
+        assert _light(chequer * np.where(patch, 1.0, depth * 1.15)[..., None], k) > TOL
+        assert _light(chequer * np.where(patch, 1.0, depth * 0.85)[..., None], k) > TOL
+
+
+def test_a_wall_drawn_below_the_models_line_is_measured_as_the_wall():
+    from v2.bakeoff import cutaway_paint as CP
+    from v2.layers.cutaways import KIND
+    TOL = 0.05
+    n = 200
+    k = np.full((n, n), KIND["outside"], np.uint8)
+    k[20:90, 20:180] = KIND["inside_wall"]
+    k[90:180, 20:180] = KIND["floor"]
+    yy, xx = np.indices(k.shape)
+    ok = np.isin(k, (KIND["inside_wall"], KIND["floor"]))
+    cream = np.array((245, 237, 211.0))                                # cathedral-open_1's tones: tiles 243 and 184, wall 203
+    grey = cream * 0.76
+    floor = np.where((((xx // 9) + (yy // 9)) % 2 == 0)[..., None], cream, grey)
+    light = lambda img: CP.light_across(np.clip(img, 0, 255).astype(np.uint8), k, ok, 150, TOL)               # noqa: E731
+    stone = cream * 0.86                                               # the wall: a stone of the floor's colour, darker
+
+    def drawn(foot, tone=1.0):
+        """The painter's wall down to row `foot` (the model's line is row 90), the part below the line in `tone`."""
+        img = floor.copy()
+        img[yy < foot] = stone
+        img[(yy >= 90) & (yy < foot)] = stone * tone
+        return img
+
+    for foot in (90, 96, 110):                                         # on the line, and 0.75 and 2.5 m below it
+        assert max(light(drawn(foot)).values()) <= 0.01, foot
+    sq = CP.light_squares(drawn(110).astype(np.uint8), k, ok, 150, TOL)
+    assert sum(s[3] == "moved" for s in sq[KIND["inside_wall"]]["squares"]) > 20
+    assert not any(s[3] == "moved" for s in sq[KIND["floor"]]["squares"])
+    for tone in (0.93, 0.85, 0.7):                                     # the same strip darker than the wall: a shade
+        assert max(light(drawn(110, tone)).values()) > TOL, tone
+    lit = drawn(110) * (0.9 + 0.1 * (xx - 20) / 160)[..., None]        # light from one side over all of it
+    assert min(light(lit).values()) > TOL
+    away = drawn(90)                                                   # the wall's tone on the floor, not at the wall
+    away[130:160, 60:100] = stone
+    assert light(away)[KIND["floor"]] > 2 * TOL
+    corner = drawn(90)                                                 # a dark corner: the floor fading to the wall's tone
+    fade = np.clip((yy - 90) / 24, 0, 1)[..., None]
+    corner[yy >= 90] = (floor * (0.86 + 0.14 * fade))[yy >= 90]
+    assert light(corner)[KIND["floor"]] > TOL
+
+
 def test_a_pale_floor_slab_is_painted_and_a_blank_patch_or_edge_strip_is_not():
     """The first cathedral run: light squares of the floor, the colour of paper, were counted as unpainted."""
     from v2.bakeoff import cutaway_paint as CP

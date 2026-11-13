@@ -134,7 +134,7 @@ painting is cut to the opening mask (rule 2).
 | K2a | Interior pixels outside the opening mask | 0 |
 | K2b | Share of the mask the painter drew on. Unpainted: a pixel of paper's colour, or of the painting's own background, in a patch that holds a 7 x 7 px square | >= 99.5% |
 | K3 | The gate's shadow detector on the painted interior, on each face's own material (a wall's stone, not its glass or ink). A side of a face with under 150 px of its material to measure fails | <= 5%; 0 sides |
-| Light across a face | Per kind of face, on one material: the largest fall of the material's lit level between two 16 px squares | <= 5% |
+| Light across a face | Per kind of face, on its surface: the largest fall of the level between two 16 px squares. A square's level is the lightest tenth of its material; where the face's surface tone shows in the square, what is drawn lighter than it is left out. A square at a neighbouring face's tone that joins that face is measured with it | <= 5% |
 | Lines kept | The cut's outline: the section's lines inside the opening (a cut face on either side) with a drawn step within 1 px. The placeholder's own construction lines (floor against wall, wall corners, roof against wall) are reported, not gated: a painted interior may stand a pew or a column in front of them | >= 95% of the section's |
 | K4 | OWLv2 on the inputs, the paintings and the composites: vehicles, then people | 0 |
 | Painted at all | The interior moved from the placeholder (share changed >= 25%, drawn detail >= 5%) | both |
@@ -155,10 +155,24 @@ Tolerances of these checks (none loosens a limit above):
   drawn in another colour than the stone's is another material and is not measured; the light check and K7 remain.
 - K2b: colour within 8 (RGB) of paper or of the painting's background; a patch narrower than 7 px (0.9 m) is a
   detail of the drawing, not a hole. Pixels outside the mask count as blank for the patch.
-- Light: squares of 16 px every 4 px; "the same material" is chroma within 0.03 of the face's light pixels; a
-  square is measured if two fifths of it is that material; the lit level is the 90th percentile.
+- Light: squares of 16 px every 4 px; "the same material" is chroma within 0.03 of the face's light pixels, on
+  pixels that are not ink; a square is measured if two fifths of it is that colour; the lit level is the 90th
+  percentile.
+- Light, the surface tone: the luminance whose band of +-5% (the limit) holds the most of the face's material; of
+  the two tones of a pattern the lighter, if it is at least half as common. The surface shows in a square if a
+  tenth of its material is in that band.
 - Light, limits: a shade narrower than about 2.5 m is not measured; a shade drawn in another colour than its
-  surface counts as another material. K3 and K7 remain.
+  surface counts as another material; a thing drawn within 5% of the surface's tone counts as the surface; on a
+  pattern, a shade exactly as deep as the pattern's contrast reads as the pattern once it covers most of the
+  face. K3 and K7 remain.
+
+**The light check, corrected on 13 Nov 2026** (the owner's choice, "Investigate the check, free"; the limit is
+unchanged). It took the lightest tenth of every square as the surface's lit level. On `cathedral-open_1` the
+lightest squares of the walls held a white sill, those of the vault its pale ribs, and the darkest squares of the
+floor were the wall, drawn 2.5 m below the model's line. Lighter detail on a surface that shows its tone, and a
+neighbouring face's surface across the model's line, are no longer read as light. A gradient, a cast shadow, a
+dark corner and a darker wall are measured as before. No painting's verdict moved; none passes
+(`v2/docs/PHASE3_REPORT.md` section 9, "The light check looked into").
 
 **Into the layer.** `python -m v2.bakeoff adopt K1` writes the best passing candidate, cut to the mask, to
 `v2/data/structures/cutaway_paintings/<name>.png` with its record (frame, checks, the file's hash). It is refused
