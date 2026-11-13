@@ -461,9 +461,9 @@
     },
     {
      "id": "L8.4",
-     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1336 of 192976 vs 1323 of 188760; a seam would make it larger)",
+     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1334 of 192811 vs 1324 of 188745; a seam would make it larger)",
      "passed": true,
-     "value": 0.988,
+     "value": 0.986,
      "threshold": "<= 1.5",
      "severity": "gate",
      "examples": []
@@ -481,7 +481,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 82.6
+      "audit_s": 82.9
      },
      "threshold": null,
      "severity": "report",
@@ -667,7 +667,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 225.7,
+     "value": 232.1,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -679,7 +679,7 @@
    "entries": [
     {
      "id": "L5.2-edges",
-     "title": "line score, building edges (creases and outlines of the 3D model): share of 723357 seen samples (every 0.25 m, of 1647926) whose drawn line is within 1.0 px of the model's",
+     "title": "line score, building edges (creases and outlines of the 3D model): share of 723356 seen samples (every 0.25 m, of 1647926) whose drawn line is within 1.0 px of the model's",
      "passed": true,
      "value": 0.9635,
      "threshold": ">= 0.95",
@@ -691,45 +691,45 @@
        "z": 321.99
       },
       {
-       "e": 77740.3,
-       "n": 75036.35,
-       "z": 266.62
+       "e": 77748.06,
+       "n": 75038.78,
+       "z": 266.22
       },
       {
-       "e": 77652.04,
-       "n": 74837.39,
-       "z": 258.8
+       "e": 77654.65,
+       "n": 74834.11,
+       "z": 258.76
       },
       {
-       "e": 78158.56,
-       "n": 74765.72,
-       "z": 291.64
+       "e": 77555.12,
+       "n": 75057.42,
+       "z": 290.48
       },
       {
-       "e": 78264.64,
-       "n": 75321.94,
-       "z": 253.5
+       "e": 77549.46,
+       "n": 74748.1,
+       "z": 311.76
       },
       {
-       "e": 77512.86,
-       "n": 75031.54,
-       "z": 312.06
+       "e": 77217.19,
+       "n": 75503.87,
+       "z": 335.47
       },
       {
-       "e": 77509.09,
-       "n": 75117.85,
-       "z": 317.31
+       "e": 77507.79,
+       "n": 75118.23,
+       "z": 317.96
       },
       {
-       "e": 77952.13,
-       "n": 75268.1,
+       "e": 77952.75,
+       "n": 75266.46,
        "z": 257.26
       }
      ]
     },
     {
      "id": "L5.2-windows",
-     "title": "line score, window rows (top and bottom of every window): share of 74952 seen samples (every 0.25 m, of 220950) whose drawn line is within 1.0 px of the model's",
+     "title": "line score, window rows (top and bottom of every window): share of 75215 seen samples (every 0.25 m, of 221889) whose drawn line is within 1.0 px of the model's",
      "passed": true,
      "value": 0.9984,
      "threshold": ">= 0.95",
@@ -778,14 +778,39 @@
      ]
     },
     {
+     "id": "L5.8-tracery",
+     "title": "line score, church tracery (the mullion of every traceried window, a straight upright line): share of 931 seen samples (every 0.25 m, of 2716) whose drawn line is within 1.0 px of the model's",
+     "passed": true,
+     "value": 0.9968,
+     "threshold": ">= 0.95",
+     "severity": "gate",
+     "examples": [
+      {
+       "e": 77413.59,
+       "n": 74919.58,
+       "z": 306.84
+      },
+      {
+       "e": 77413.59,
+       "n": 74919.58,
+       "z": 307.09
+      },
+      {
+       "e": 77413.59,
+       "n": 74919.58,
+       "z": 308.59
+      }
+     ]
+    },
+    {
      "id": "L5.7",
      "title": "places of worship in the scene; of them churches all over (every wall); their pixels in layer 5; their window glass pixels",
      "passed": true,
      "value": [
-      10,
-      3,
-      258160,
-      10607
+      9,
+      6,
+      418582,
+      21215
      ],
      "threshold": null,
      "severity": "report",
@@ -831,7 +856,7 @@
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
       "images": 966,
-      "seconds": 361.7,
+      "seconds": 428.4,
       "queries": [
        "a car",
        "a parked car",
@@ -1007,7 +1032,7 @@
     },
     {
      "id": "V3-10",
-     "title": "shadows at 10:00 on 2026-06-21 match the Python reference (share of pixels; 17.1% in shadow)",
+     "title": "shadows at 10:00 on 2026-06-21 match the Python reference (share of pixels; 17.0% in shadow)",
      "passed": true,
      "value": 0.986,
      "threshold": ">= 0.97",
@@ -1045,7 +1070,7 @@
      "id": "V3b",
      "title": "share of pixels whose shadow changes between 10:00 and 16:00 (shadows move with ?hour)",
      "passed": true,
-     "value": 0.4255,
+     "value": 0.4257,
      "threshold": ">= 0.02",
      "severity": "gate",
      "examples": []
@@ -1091,24 +1116,24 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.14960000002384186,
-      "first_view_warm_s": 0.09229999995231629,
+      "first_view_cold_s": 0.15530000001192093,
+      "first_view_warm_s": 0.09689999997615814,
       "pan_whole_area": {
-       "fps": 120.17489069331667,
+       "fps": 120.13887154417968,
        "frame_ms_median": 0.5,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 92.21541921779333,
-       "frame_ms_median": 0.2999999523162842,
+       "fps": 91.74541272963694,
+       "frame_ms_median": 0.19999998807907104,
        "tiles_missing": 0
       },
-      "pan_fps": 92.21541921779333,
+      "pan_fps": 91.74541272963694,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 120.06689797986503,
-        "frame_ms_median": 0.7000000476837158,
+        "fps": 113.04651627104901,
+        "frame_ms_median": 0.800000011920929,
         "tiles_missing": 0
        }
       },
@@ -1122,7 +1147,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.092,
+     "value": 0.097,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1131,7 +1156,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 92.2,
+     "value": 91.7,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1143,8 +1168,8 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 120.06689797986503,
-       "frame_ms_median": 0.7000000476837158,
+       "fps": 113.04651627104901,
+       "frame_ms_median": 0.800000011920929,
        "tiles_missing": 0
       }
      },
@@ -1539,8 +1564,8 @@
      "title": "doors and shop fronts by source",
      "passed": true,
      "value": {
-      "door rule": 1062,
-      "shopfront rule": 516,
+      "door rule": 1066,
+      "shopfront rule": 524,
       "shopfront osm": 287,
       "door osm": 73
      },
@@ -1550,7 +1575,7 @@
     },
     {
      "id": "F16",
-     "title": "church walls with a window that is not the church rule's (its width)",
+     "title": "church walls with a window that is not the church rule's (its kind's width for its height and wall)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -1559,7 +1584,7 @@
     },
     {
      "id": "F17",
-     "title": "church walls with a window lower than the rule's least height, or reaching into the eave",
+     "title": "church walls with a window lower than its kind's least height, or reaching into the eave",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -1593,7 +1618,7 @@
        "ACT_e92ec91a-b2d2-445e-9305-4dd27f787994": [
         "landmark_styles",
         "Notre-Dame Cathedral",
-        554
+        559
        ],
        "ACT_f168f482-4608-419d-923a-fd8840718ef8": [
         "osm:way/48994118",
@@ -1603,12 +1628,12 @@
        "ACT_c2d735f1-ae17-43b6-a27d-1c7160c81fd0": [
         "osm:way/51071557",
         "Saint-Mathieu",
-        53
+        62
        ],
        "ACT_85cd4450-d089-4629-9d06-93054fdaaa84": [
         "osm:way/48995724",
         "Saint-Alphonse",
-        131
+        143
        ],
        "ACT_7915d1d0-8ade-4921-baf2-d85a89b46974": [
         "osm:way/162041608",
@@ -1618,17 +1643,12 @@
        "ACT_4df67993-baf9-45db-890c-acb665692493": [
         "osm:way/48994777",
         "\u00c9glise de Saint-Michel",
-        42
+        95
        ],
        "ACT_3a50b74c-f994-48f2-aae0-44f0991d7039": [
         "osm:way/48994393",
         "Al Kapell",
-        35
-       ],
-       "ACT_3949ee62-1e32-48c9-a1c1-e9413c10dec8": [
-        "osm:relation/11371126",
-        null,
-        208
+        39
        ],
        "ACT_221c9194-94ad-47d9-807a-60553478a3d2": [
         "osm:way/32858724",
@@ -1641,9 +1661,179 @@
         61
        ]
       },
-      1362,
-      249,
-      1127
+      1237,
+      291,
+      1006
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "F21",
+     "title": "places of worship without exactly one entrance front (one wall with a portal on a building that is a church all over, at most one on a church part), or with a rose that is not over the portal",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F22",
+     "title": "church walls with a belfry opening that are not a tower's (their top under the tower rise over the main eave) or whose opening starts under the main eave",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F23",
+     "title": "church walls whose buttresses are not upright strips of the rule's width with one top line, inside the outline and clear of every opening, or stand on a tower",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F24",
+     "title": "church walls whose normal points into the building's footprint",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F25",
+     "title": "places of worship: how the entrance front was told, portal, rose; windows by kind; tower walls; buttresses; exceptions (tagged as a place of worship, not drawn as one)",
+     "passed": true,
+     "value": [
+      {
+       "Notre-Dame Cathedral": [
+        "the OSM main entrance",
+        true,
+        true,
+        {
+         "traceried": 42,
+         "lancet": 20,
+         "rose": 1,
+         "oculus": 2,
+         "belfry": 14
+        },
+        7,
+        4
+       ],
+       "Sainte-Cun\u00e9gonde": [
+        "the tower end",
+        true,
+        true,
+        {
+         "traceried": 10,
+         "lancet": 11,
+         "oculus": 2,
+         "belfry": 8,
+         "rose": 1
+        },
+        4,
+        0
+       ],
+       "Saint-Mathieu": [
+        "the tower end",
+        true,
+        true,
+        {
+         "traceried": 7,
+         "lancet": 9,
+         "oculus": 5,
+         "rose": 1,
+         "belfry": 8
+        },
+        4,
+        4
+       ],
+       "Saint-Alphonse": [
+        "the end onto a street",
+        true,
+        true,
+        {
+         "lancet": 50,
+         "traceried": 2,
+         "rose": 1,
+         "oculus": 2
+        },
+        0,
+        17
+       ],
+       "osm:way/162041608": [
+        "opposite the apse",
+        true,
+        false,
+        {
+         "traceried": 6,
+         "oculus": 1,
+         "lancet": 1
+        },
+        0,
+        5
+       ],
+       "\u00c9glise de Saint-Michel": [
+        "the tower end",
+        true,
+        false,
+        {
+         "lancet": 15,
+         "traceried": 5,
+         "belfry": 6,
+         "oculus": 2
+        },
+        4,
+        8
+       ],
+       "Al Kapell": [
+        "the end onto a street",
+        true,
+        true,
+        {
+         "lancet": 12,
+         "rose": 1,
+         "traceried": 2
+        },
+        0,
+        0
+       ],
+       "Saint-Jean-Baptiste": [
+        "the OSM main entrance",
+        true,
+        true,
+        {
+         "lancet": 22,
+         "rose": 1,
+         "belfry": 6
+        },
+        4,
+        1
+       ],
+       "Trinit\u00e9": [
+        "the OSM main entrance",
+        true,
+        true,
+        {
+         "traceried": 12,
+         "rose": 1,
+         "lancet": 2
+        },
+        0,
+        12
+       ]
+      },
+      [
+       [
+        "relation/11371126",
+        "Back to a house"
+       ]
+      ]
      ],
      "threshold": null,
      "severity": "report",
@@ -1654,10 +1844,10 @@
      "title": "walls, with windows, party walls, windows",
      "passed": true,
      "value": [
-      23033,
-      6187,
+      23001,
+      6221,
       4421,
-      36908
+      37071
      ],
      "threshold": null,
      "severity": "report",
@@ -2517,7 +2707,7 @@
      "id": "X4c",
      "title": "view on: largest colour step the fade adds at a tile border (LAB, the 4 px either side per 64 px, against the offline faded frame; 448 border chunks)",
      "passed": true,
-     "value": 0.092,
+     "value": 0.081,
      "threshold": "<= 3.0",
      "severity": "gate",
      "examples": []
@@ -2701,69 +2891,69 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 8
+        "ms": 10.099999964237213
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8.899999976158142
+        "ms": 9.699999988079071
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 8.899999976158142
+        "ms": 14.199999988079071
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8.600000023841858
+        "ms": 10.700000047683716
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 10.300000011920929
+        "ms": 9
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 10
+        "ms": 10.899999976158142
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 8.5
-       },
-       {
-        "on": false,
-        "frames": 1,
-        "ms": 8.300000011920929
-       },
-       {
-        "on": true,
-        "frames": 1,
-        "ms": 8.5
+        "ms": 8.900000035762787
        },
        {
         "on": false,
         "frames": 1,
         "ms": 8.199999988079071
+       },
+       {
+        "on": true,
+        "frames": 1,
+        "ms": 7.800000011920929
+       },
+       {
+        "on": false,
+        "frames": 1,
+        "ms": 10
        }
       ],
       "pan_whole_area": {
-       "fps": 119.85018726591761,
+       "fps": 120.16888600230658,
        "frame_ms_median": 0.5,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
       "pan_zoom1": {
-       "fps": 92.17395648562467,
+       "fps": 85.4295206452131,
        "frame_ms_median": 0.19999998807907104,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
-      "pan_fps": 92.17395648562467,
+      "pan_fps": 85.4295206452131,
       "viewport": "1600x1000 CSS px, device pixel ratio 1"
      },
      "threshold": null,
@@ -2772,7 +2962,7 @@
     },
     {
      "id": "X8a",
-     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 10.3 ms at most)",
+     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 14.2 ms at most)",
      "passed": true,
      "value": 1,
      "threshold": "<= 1",
@@ -2783,7 +2973,7 @@
      "id": "X8b",
      "title": "panning in tunnel view, desktop (frames per second, the whole area and 1:1)",
      "passed": true,
-     "value": 92.2,
+     "value": 85.4,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -2792,7 +2982,7 @@
      "id": "X9",
      "title": "seconds",
      "passed": true,
-     "value": 115.1,
+     "value": 121.3,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -2872,7 +3062,7 @@
     },
     {
      "id": "K1b-cathedral",
-     "title": "Notre-Dame Cathedral: cut and inside pixels outside the whole model's outline (its raw roofs and walls, 0 px growth; of 33325)",
+     "title": "Notre-Dame Cathedral: cut and inside pixels outside the whole model's outline (its raw roofs and walls, 0 px growth; of 33266)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -2881,7 +3071,7 @@
     },
     {
      "id": "K2a-cathedral",
-     "title": "Notre-Dame Cathedral: painted interior pixels outside the opening mask (the k tile: 33325 px)",
+     "title": "Notre-Dame Cathedral: painted interior pixels outside the opening mask (the k tile: 33266 px)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -2908,7 +3098,7 @@
     },
     {
      "id": "K2d-cathedral",
-     "title": "Notre-Dame Cathedral: share of the model's own opening in the mask (33306 px that are surely of it; 156 more within 1 cm of the outside)",
+     "title": "Notre-Dame Cathedral: share of the model's own opening in the mask (33247 px that are surely of it; 156 more within 1 cm of the outside)",
      "passed": true,
      "value": 0.99997,
      "threshold": ">= 0.995",
@@ -2917,7 +3107,7 @@
     },
     {
      "id": "K2e-cathedral",
-     "title": "Notre-Dame Cathedral: opening pixels of the tiles that are not in the paint input's mask at the same depth (the paint input: the cut model alone, 1024 x 1024 px, 35545 px of opening)",
+     "title": "Notre-Dame Cathedral: opening pixels of the tiles that are not in the paint input's mask at the same depth (the paint input: the cut model alone, 1024 x 1024 px, 35486 px of opening)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -2977,7 +3167,7 @@
     },
     {
      "id": "K5a-cathedral",
-     "title": "Notre-Dame Cathedral: cut pixels, largest distance of the depth from the slice's faces (cm, 1230 px)",
+     "title": "Notre-Dame Cathedral: cut pixels, largest distance of the depth from the slice's faces (cm, 1225 px)",
      "passed": true,
      "value": 0.5,
      "threshold": "<= 1.0",
@@ -2986,7 +3176,7 @@
     },
     {
      "id": "K5b-cathedral",
-     "title": "Notre-Dame Cathedral: cut and inside pixels not on the model's surface within 1 cm (kept material and free space both within 1 cm of the drawn point; of 33325)",
+     "title": "Notre-Dame Cathedral: cut and inside pixels not on the model's surface within 1 cm (kept material and free space both within 1 cm of the drawn point; of 33266)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3004,7 +3194,7 @@
     },
     {
      "id": "K5c-cathedral",
-     "title": "Notre-Dame Cathedral: kept outside pixels whose depth differs from layer 5's by more than 1.0 cm where layer 5 shows the same surface (of 140596 compared)",
+     "title": "Notre-Dame Cathedral: kept outside pixels whose depth differs from layer 5's by more than 1.0 cm where layer 5 shows the same surface (of 140638 compared)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3025,7 +3215,7 @@
      "title": "Notre-Dame Cathedral: kept walls and roofs layer 5 does not show there (hidden before the cut): pixels, and those not on the building's surface within 1 cm",
      "passed": true,
      "value": [
-      83,
+      100,
       0
      ],
      "threshold": null,
@@ -3057,7 +3247,7 @@
     },
     {
      "id": "K-ground-cathedral",
-     "title": "Notre-Dame Cathedral: opening pixels the ground layer is in front of (the terrain stands above floor_z 301.1 there), of 33325",
+     "title": "Notre-Dame Cathedral: opening pixels the ground layer is in front of (the terrain stands above floor_z 301.1 there), of 33266",
      "passed": true,
      "value": 0,
      "threshold": null,
@@ -3070,11 +3260,11 @@
      "passed": true,
      "value": {
       "none": 1115591,
-      "outside": 140688,
-      "cut": 1230,
+      "outside": 140747,
+      "cut": 1225,
       "inside_wall": 16824,
       "inside_roof": 2938,
-      "floor": 12333,
+      "floor": 12279,
       "slab": 0,
       "other": 21116
      },
@@ -3452,9 +3642,9 @@
     },
     {
      "id": "K2d-abbey",
-     "title": "Neum\u00fcnster Abbey: share of the model's own opening in the mask (46442 px that are surely of it; 133 more within 1 cm of the outside)",
+     "title": "Neum\u00fcnster Abbey: share of the model's own opening in the mask (46431 px that are surely of it; 125 more within 1 cm of the outside)",
      "passed": true,
-     "value": 0.99903,
+     "value": 0.99927,
      "threshold": ">= 0.995",
      "severity": "gate",
      "examples": []
@@ -3636,7 +3826,7 @@
     },
     {
      "id": "K4-people",
-     "title": "detections >= 0.1 of ['a person', 'people'] (0.3-3.0 m) on 6 paint inputs and cutaway tiles (highest score of any query 0.008)",
+     "title": "detections >= 0.1 of ['a person', 'people'] (0.3-3.0 m) on 6 paint inputs and cutaway tiles (highest score of any query 0.0081)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3698,7 +3888,7 @@
      "id": "K6v-on-cathedral-13",
      "title": "Notre-Dame Cathedral, 13:00: pixels the cutaway changes when on",
      "passed": true,
-     "value": 31585,
+     "value": 31538,
      "threshold": ">= 1000",
      "severity": "gate",
      "examples": []
@@ -3716,7 +3906,7 @@
      "id": "K6v-on-cathedral-23",
      "title": "Notre-Dame Cathedral, 23:00: pixels the cutaway changes when on",
      "passed": true,
-     "value": 31600,
+     "value": 31560,
      "threshold": ">= 1000",
      "severity": "gate",
      "examples": []
@@ -3734,7 +3924,7 @@
      "id": "K6v-xray-on-cathedral",
      "title": "Notre-Dame Cathedral: in tunnel view, pixels the cutaway changes when on (it shows through the fade)",
      "passed": true,
-     "value": 31583,
+     "value": 31537,
      "threshold": ">= 1",
      "severity": "gate",
      "examples": []
@@ -3750,7 +3940,7 @@
     },
     {
      "id": "K2v-cathedral",
-     "title": "Notre-Dame Cathedral: interior pixels drawn by the viewer outside the tiles' opening mask (of 31208 drawn; the mask holds 33325 px in the view)",
+     "title": "Notre-Dame Cathedral: interior pixels drawn by the viewer outside the tiles' opening mask (of 31152 drawn; the mask holds 33266 px in the view)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3759,7 +3949,7 @@
     },
     {
      "id": "K2v-frame-cathedral",
-     "title": "Notre-Dame Cathedral: pixels of the view whose layer, or class in layer 5, is not the tiles' nearest surface with the cutaway in place (of 1920000; 31208 of the opening seen)",
+     "title": "Notre-Dame Cathedral: pixels of the view whose layer, or class in layer 5, is not the tiles' nearest surface with the cutaway in place (of 1920000; 31152 of the opening seen)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3768,7 +3958,7 @@
     },
     {
      "id": "K2v-colour-cathedral",
-     "title": "Notre-Dame Cathedral: layer 5 pixels (the cutaway's and the other buildings', 788622) whose colour is not the tiles'",
+     "title": "Notre-Dame Cathedral: layer 5 pixels (the cutaway's and the other buildings', 788631) whose colour is not the tiles'",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3777,7 +3967,7 @@
     },
     {
      "id": "K5v-vehicles-cathedral",
-     "title": "Notre-Dame Cathedral: probe vehicle pixels where the viewer's depth test against the cut building disagrees with the tiles (of 174232 px of 360 cars; 5 more on silhouettes)",
+     "title": "Notre-Dame Cathedral: probe vehicle pixels where the viewer's depth test against the cut building disagrees with the tiles (of 174232 px of 360 cars; 4 more on silhouettes)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3788,7 +3978,7 @@
      "id": "K5v-silhouette-cathedral",
      "title": "Notre-Dame Cathedral: share of probe pixels on silhouettes (edge rounding)",
      "passed": true,
-     "value": 3e-05,
+     "value": 2e-05,
      "threshold": "<= 0.01",
      "severity": "gate",
      "examples": []
@@ -3798,8 +3988,8 @@
      "title": "Notre-Dame Cathedral: probe pixels drawn; hidden behind the cutaway's own surfaces",
      "passed": true,
      "value": [
-      22408,
-      140171
+      22348,
+      140256
      ],
      "threshold": null,
      "severity": "report",
@@ -3807,7 +3997,7 @@
     },
     {
      "id": "K5v-labels-cathedral",
-     "title": "Notre-Dame Cathedral: label points (on and 3 m behind the cutaway's surfaces, 4248) that the viewer hides or shows against what the tiles say (2124 hidden)",
+     "title": "Notre-Dame Cathedral: label points (on and 3 m behind the cutaway's surfaces, 4250) that the viewer hides or shows against what the tiles say (2125 hidden)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3816,7 +4006,7 @@
     },
     {
      "id": "K3v-sky-even-cathedral-13",
-     "title": "Notre-Dame Cathedral, 13: opening pixels (of 31208 seen) that are not their unlit colour times the one sky light [0.853, 0.853, 0.853] (by more than 1 of 255): a shadow, or light by the face's direction",
+     "title": "Notre-Dame Cathedral, 13: opening pixels (of 31152 seen) that are not their unlit colour times the one sky light [0.853, 0.853, 0.853] (by more than 1 of 255): a shadow, or light by the face's direction",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3825,7 +4015,7 @@
     },
     {
      "id": "K3v-sky-outside-cathedral-13",
-     "title": "Notre-Dame Cathedral, 13: pixels the sky light rule changes outside the opening (it changes 31208 in it)",
+     "title": "Notre-Dame Cathedral, 13: pixels the sky light rule changes outside the opening (it changes 31152 in it)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3834,7 +4024,7 @@
     },
     {
      "id": "K3v-sky-even-cathedral-21.3",
-     "title": "Notre-Dame Cathedral, 21.3: opening pixels (of 31208 seen) that are not their unlit colour times the one sky light [0.94, 0.827, 0.695] (by more than 1 of 255): a shadow, or light by the face's direction",
+     "title": "Notre-Dame Cathedral, 21.3: opening pixels (of 31152 seen) that are not their unlit colour times the one sky light [0.94, 0.827, 0.695] (by more than 1 of 255): a shadow, or light by the face's direction",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3843,7 +4033,7 @@
     },
     {
      "id": "K3v-sky-outside-cathedral-21.3",
-     "title": "Notre-Dame Cathedral, 21.3: pixels the sky light rule changes outside the opening (it changes 31133 in it)",
+     "title": "Notre-Dame Cathedral, 21.3: pixels the sky light rule changes outside the opening (it changes 31077 in it)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3852,7 +4042,7 @@
     },
     {
      "id": "K3v-sky-even-cathedral-23.25",
-     "title": "Notre-Dame Cathedral, 23.25: opening pixels (of 31208 seen) that are not their unlit colour times the one sky light [0.244, 0.308, 0.522] (by more than 1 of 255): a shadow, or light by the face's direction",
+     "title": "Notre-Dame Cathedral, 23.25: opening pixels (of 31152 seen) that are not their unlit colour times the one sky light [0.244, 0.308, 0.522] (by more than 1 of 255): a shadow, or light by the face's direction",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3861,7 +4051,7 @@
     },
     {
      "id": "K3v-sky-outside-cathedral-23.25",
-     "title": "Notre-Dame Cathedral, 23.25: pixels the sky light rule changes outside the opening (it changes 29777 in it)",
+     "title": "Notre-Dame Cathedral, 23.25: pixels the sky light rule changes outside the opening (it changes 29721 in it)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -3876,17 +4066,17 @@
       "13": {
        "interior": 0.853,
        "interior_lit_as_a_building": 0.494,
-       "kept_outside_stone": 0.835
+       "kept_outside_stone": 0.847
       },
       "21.3": {
        "interior": 0.845,
        "interior_lit_as_a_building": 0.824,
-       "kept_outside_stone": 0.843
+       "kept_outside_stone": 0.842
       },
       "23.25": {
        "interior": 0.306,
        "interior_lit_as_a_building": 0.304,
-       "kept_outside_stone": 0.27
+       "kept_outside_stone": 0.271
       }
      },
      "threshold": null,
@@ -4322,7 +4512,7 @@
      "id": "K6v-far-on",
      "title": "far zoom: pixels the cutaways change when on",
      "passed": true,
-     "value": 832602,
+     "value": 832628,
      "threshold": ">= 1",
      "severity": "gate",
      "examples": []
@@ -4340,28 +4530,28 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.14960000002384186,
-  "first_view_warm_s": 0.09229999995231629,
+  "first_view_cold_s": 0.15530000001192093,
+  "first_view_warm_s": 0.09689999997615814,
   "pan_whole_area": {
-   "fps": 120.17489069331667,
+   "fps": 120.13887154417968,
    "frame_ms_median": 0.5,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 92.21541921779333,
-   "frame_ms_median": 0.2999999523162842,
+   "fps": 91.74541272963694,
+   "frame_ms_median": 0.19999998807907104,
    "tiles_missing": 0
   },
-  "pan_fps": 92.21541921779333,
+  "pan_fps": 91.74541272963694,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 120.06689797986503,
-    "frame_ms_median": 0.7000000476837158,
+    "fps": 113.04651627104901,
+    "frame_ms_median": 0.800000011920929,
     "tiles_missing": 0
    }
   },
   "viewport": "1600x1000 CSS px, device pixel ratio 1"
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/cc4d856c63d4"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/7c39be2ef469"
 }

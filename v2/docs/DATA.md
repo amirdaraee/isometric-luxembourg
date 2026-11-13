@@ -29,6 +29,7 @@ v1's painted art and warp outputs (reference only; PLAN_V2 section 11).
 | LiDAR 2024 terrain (MNT) and surface (MNS) | `fetch_lidar` (per area) | ACT "Lidar 2024 – Relevé 3D", COGs `MNT_Lidar2024.tif`, `MNS_Lidar2024.tif`, data.public.lu, **CC0** | survey 2024, published 23 Dec 2024 | test: 96 MB (0.5 m, full resolution); commune: 2.3 GB (the 0.5 m tiles, reduced to 1 m as they arrive: terrain by mean, surface by max) | test 46 MB, commune 541 MB (compressed float32) |
 | OSM entrances, shops, crafts and amenities (for doors and shop fronts) | `fetch_osm_pois` (shared) | Overpass API, **ODbL** | OSM of 9 Nov 2026 | ~ 3 MB | ~ 3 MB |
 | OSM places of worship with their outlines: ways and relations tagged `building=church`, `cathedral` or `chapel`, or `amenity=place_of_worship` (for church facades) | `fetch_osm_worship` (shared) | Overpass API, **ODbL** | OSM of 13 Nov 2026 | 0.07 MB | 0.07 MB |
+| Places of worship that are not drawn as one: OSM outlines with the reason, the date and the owner's words | `v2/data/structures/worship_exceptions.json` (in git) | the owner's decisions | 13 Nov 2026 | 1 entry | - |
 | LiDAR 2024 tree survey (crown centroids, height, crown widths, type) | `fetch_trees` (shared) | ACT "LiDAR 2024 – Arbres", GeoPackage points, data.public.lu, **CC0** | resource of 1 Oct 2026 | 3.9 GB streamed (not stored): the SQLite pages are decoded on the fly and only the commune's 1,119,104 trees kept | 61 MB |
 
 Downloads ran one at a time (the whole set in about 7 minutes at ~40 MB/s); the LiDAR COGs are read by HTTP ranges

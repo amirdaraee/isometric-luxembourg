@@ -151,7 +151,7 @@ def check_facades(ctx):
         poly = Polygon(w["outline"]) if len(w["outline"]) >= 4 else None
         if poly is not None and not poly.is_valid:
             poly = poly.buffer(0)
-        rects = [box(*x) for x in w["windows"]]
+        rects = [box(*x[:4]) for x in w["windows"]]
         if poly is None or any(not poly.contains(b) for b in rects):
             outside.append(w["wall"])
         ws = sorted(w["windows"], key=lambda x: (x[1], x[0]))
@@ -161,9 +161,11 @@ def check_facades(ctx):
         rows = {round(x[1] - p["sill_m"], 3) for x in w["windows"]}
         allowed = {round(v, 3) for v in lines(w["floors"])}
         if w.get("worship"):
-            # a place of worship: one row of tall windows, all their sills on one line and all their tops on one
-            rows = {(round(x[1], 3), round(x[3], 3)) for x in w["windows"]}
-            allowed = rows if len(rows) == 1 else set()
+            # a place of worship: its windows of one kind (the row, the belfry openings, the rose) have their
+            # sills on one line and their tops on one
+            kinds = {x[4] for x in w["windows"]}
+            rows = {(x[4], round(x[1], 3), round(x[3], 3)) for x in w["windows"]}
+            allowed = rows if len(rows) == len(kinds) else set()
         if not rows <= allowed:
             misrow.append(w["wall"])
         # the floor count must fit the wall: the top floor's line is below the eave
@@ -239,18 +241,35 @@ def check_facades(ctx):
     wor = f_all.get("worship", {})
     cw = [w for w in walls if w.get("worship")]
     house_win, shop, low, strays = [], [], [], []
+    from v2.data.scene import church
     for w in cw:
         for x in w["windows"]:
-            if abs((x[2] - x[0]) - p["church_window_w_m"]) > 2e-3:          # the layout rounds to the millimetre
+            wd, ht, kind = x[2] - x[0], x[3] - x[1], x[4]
+            if kind in church.TALL:
+                ok = abs(wd - church.window_width(ht, w["length"], p)) <= 1.1e-2         # the layout rounds a width to the centimetre
+                fits = ht >= p["church_window_min_h_m"] - 1e-6 and x[3] <= w["height"] - p["church_top_m"] + 1e-3
+            elif kind == "oculus":
+                ok = abs(wd - p["church_oculus_d_m"]) <= 2e-3 and abs(ht - wd) <= 2e-3
+                fits = x[3] <= w["height"] - 0.5 + 1e-3
+            elif kind == "rose":
+                ok = abs(ht - wd) <= 2e-3 and p["church_rose_min_d_m"] - 2e-3 <= wd <= min(p["church_rose_max_d_m"], p["church_rose_wall_share"] * w["length"]) + 2e-3
+                fits = True                                                              # inside the outline: F1
+            elif kind == "belfry":
+                ok = abs(wd - float(np.clip(p["church_belfry_w_share"] * w["length"], p["church_belfry_min_w_m"], p["church_belfry_max_w_m"]))) <= 1.1e-2
+                fits = ht >= p["church_belfry_min_h_m"] - 1e-6 and x[3] <= w["height"] - p["church_belfry_top_m"] + 1e-3
+            else:
+                ok = fits = False
+            if not ok:
                 house_win.append(w["wall"])
-            if x[3] - x[1] < p["church_window_min_h_m"] - 1e-6 or x[3] > w["height"] - p["church_top_m"] + 1e-3:
+            if not fits:
                 low.append(w["wall"])
         if w["shopfronts"]:
             shop.append(w["wall"])
         if w["building"] not in wor:
             strays.append(w["wall"])
-    r.at_most("F16", "church walls with a window that is not the church rule's (its width)", len(set(house_win)), 0, sorted(set(house_win)))
-    r.at_most("F17", "church walls with a window lower than the rule's least height, or reaching into the eave",
+    r.at_most("F16", "church walls with a window that is not the church rule's (its kind's width for its height and wall)",
+              len(set(house_win)), 0, sorted(set(house_win)))
+    r.at_most("F17", "church walls with a window lower than its kind's least height, or reaching into the eave",
               len(set(low)), 0, sorted(set(low)))
     r.at_most("F18", "church walls with a shop front", len(shop), 0, shop)
     r.at_most("F19", "church walls of a building that is not a listed place of worship; listed places of worship "
@@ -259,6 +278,67 @@ def check_facades(ctx):
     r.info("F20", "places of worship: by source; church walls; church windows; house windows they replaced",
            [{b: [v["source"], v["name"], v["walls"]] for b, v in wor.items()}, len(cw), sum(len(w["windows"]) for w in cw),
             sum(len(w["house_rule"]["windows"]) for w in cw)])
+    # the church as a whole (the owner's decision of 13 Nov 2026, "One more round")
+    by_church = {}
+    for w in cw:
+        by_church.setdefault(w["building"], []).append(w)
+    fronts, bell, butt, inward = [], [], [], []
+    fp = {b["id"]: g for b, g in zip(blds, footprints(blds))}
+    for bid, ws in by_church.items():
+        v = wor.get(bid)
+        if v is None:
+            continue
+        portals = [w for w in ws for d in w["doors"] if len(d) > 5 and d[5] == "portal"]
+        # exactly one front with a portal on a building that is a church all over; never more than one
+        if len(portals) > 1 or (v["whole_building"] and len(portals) != 1) or len({w["wall"] for w in ws if w.get("front")}) != len(portals):
+            fronts.append(bid)
+        for w in ws:
+            roses = [x for x in w["windows"] if x[4] == "rose"]
+            pr = [d for d in w["doors"] if len(d) > 5 and d[5] == "portal"]
+            # a rose stands over the portal of the front, on its axis
+            if roses and (len(roses) > 1 or not pr or abs((roses[0][0] + roses[0][2]) - (pr[0][0] + pr[0][2])) > 4e-3 or roses[0][1] < pr[0][3]):
+                fronts.append(w["wall"])
+            # belfry openings: on a tower wall only, and above the church's main eave
+            bl = [x for x in w["windows"] if x[4] == "belfry"]
+            if bl and (not w.get("tower") or v["main_eave"] is None
+                       or w["base"][0][2] + w["height"] < v["main_eave"] + p["church_tower_rise_m"] - 1e-3
+                       or min(x[1] for x in bl) + w["base"][0][2] < v["main_eave"] + p["church_belfry_over_eave_m"] - 1e-3):
+                bell.append(w["wall"])
+            # buttresses: upright strips of one width with one top line, inside the outline, clear of every opening,
+            # never on a tower
+            bs = w.get("buttresses") or []
+            if bs:
+                poly = Polygon(w["outline"]).buffer(0.03)
+                clear = all(b[2] + p["church_buttress_gap_m"] <= x[0] + 1e-3 or b[0] - p["church_buttress_gap_m"] >= x[2] - 1e-3
+                            for b in bs for x in list(w["windows"]) + list(w["doors"]))
+                if (w.get("tower") or not clear or len({round(b[3], 3) for b in bs}) != 1
+                        or any(abs(b[2] - b[0] - p["church_buttress_w_m"]) > 2e-3 for b in bs)
+                        or any(not poly.contains(box(b[0], b[1] + 0.05, b[2], b[3])) for b in bs)):
+                    butt.append(w["wall"])
+            # the outward side: where the footprint tells it (one side in it, the other outside), the normal points out
+            if w.get("merged") is None and w["length"] >= p["min_wall_len_m"] and bid in fp:
+                (e0, n0, _), (e1, n1, _) = w["base"]
+                votes = 0
+                for t in (0.25, 0.5, 0.75):
+                    mx, my = e0 + (e1 - e0) * t, n0 + (n1 - n0) * t
+                    a = fp[bid].contains(Point(mx + w["normal"][0] * 0.4, my + w["normal"][1] * 0.4))
+                    b = fp[bid].contains(Point(mx - w["normal"][0] * 0.4, my - w["normal"][1] * 0.4))
+                    votes += (a != b) * (-1 if a else 1)
+                if votes < 0:
+                    inward.append(w["wall"])
+    r.at_most("F21", "places of worship without exactly one entrance front (one wall with a portal on a building that is "
+              "a church all over, at most one on a church part), or with a rose that is not over the portal",
+              len(fronts), 0, fronts)
+    r.at_most("F22", "church walls with a belfry opening that are not a tower's (their top under the tower rise over the "
+              "main eave) or whose opening starts under the main eave", len(bell), 0, bell)
+    r.at_most("F23", "church walls whose buttresses are not upright strips of the rule's width with one top line, inside "
+              "the outline and clear of every opening, or stand on a tower", len(butt), 0, butt)
+    r.at_most("F24", "church walls whose normal points into the building's footprint", len(inward), 0, inward)
+    r.info("F25", "places of worship: how the entrance front was told, portal, rose; windows by kind; tower walls; "
+           "buttresses; exceptions (tagged as a place of worship, not drawn as one)",
+           [{str(v["name"] or v["source"]): [v["front"]["how"], v["front"]["portal"], v["front"]["rose"], v["windows"], v["towers"],
+                                             v["buttresses"]] for v in wor.values()},
+            [[x["osm"], x["owner"]] for x in f_all.get("worship_exceptions", [])]])
     r.info("F7", "walls, with windows, party walls, windows",
            [len(walls), sum(1 for w in walls if w["windows"]), sum(1 for w in walls if w["party"]), sum(len(w["windows"]) for w in walls)])
     return r.result()

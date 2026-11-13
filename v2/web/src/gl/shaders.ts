@@ -348,7 +348,7 @@ export const LIGHT_CUT_FS = LIGHT_FS
 export const WIN_VS = `#version 300 es
 in vec2 aCorner;
 in vec4 aA;              // x, y, z, ux
-in vec4 aB;              // uy, height, building, code (v2/layers/data.py: 8, 9 a church's arched window, 16 never lit)
+in vec4 aB;              // uy, height, building, code (v2/layers/data.py: 8 to 13 a church's window, 16 never lit)
 ${CAM_GLSL}
 ${VIEW_GLSL}
 uniform float uEps;
@@ -407,22 +407,56 @@ uniform float uGrow;
 uniform float uHalo;
 uniform vec3 uStained[4];  // the stained glass's colours (palette buildings.stained_*)
 uniform float uChurch;     // how strongly a lit church's windows glow (light.json night.church_glow)
+uniform float uChurchWarm; // the share of the warm light behind the glass in a pane's colour (night.church_warm)
 out vec4 oColor;
 void main() {
-  if (vKind > 7.5) {                         // a church's window: a dim glow of stained glass inside its arch
+  if (vKind > 7.5) {                         // a church's window: a glow of stained glass inside its stone
+    // kinds (v2/layers/data.py): 8, 9 a lancet (round, pointed), 10, 11 a traceried window, 12 a rose, 13 an
+    // oculus. The stone (frame, mullion, tracery, spokes) is not glass and is left dark, as art_a.py draws it
     float W = vArch.x, H = vArch.y;
     vec2 q = vUV * vArch.xy;
-    bool pointed = vKind > 8.5;
-    float ts = H - (pointed ? 0.8660254 : 0.5) * W;
-    float d = q.y > ts ? (pointed ? W - max(distance(q, vec2(0.0, ts)), distance(q, vec2(W, ts))) : 0.5 * W - distance(q, vec2(0.5 * W, ts)))
-                       : min(q.x, W - q.x);
-    if (d < 0.11 || q.y < 0.1) discard;      // its stone frame is not glass
-    float row = floor(q.y / 0.55), light = floor(q.x / (0.5 * W));
-    float fy = fract(q.y / 0.55);
-    bool lead = abs(q.x - 0.5 * W) < 0.05 || fy < 0.04 || fy > 0.96;
-    float h = fract(sin(dot(vec3(row, light, vArch.z * 97.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
-    vec3 c = uStained[int(min(h * 4.0, 3.0))];
-    oColor = vec4(c * ((lead ? 0.25 : 1.0) * uChurch * uNight), 1.0);
+    float h;                                  // the pane's own number
+    bool lead = false;
+    if (vKind > 11.5) {                       // rose, oculus: spokes from the hub, a ring, spokes between
+      bool rose = vKind < 12.5;
+      float R = 0.5 * W, r = distance(q, vec2(R, 0.5 * H));
+      if (R - r < 0.12) discard;
+      float n = rose ? (W >= 3.4 ? 12.0 : 8.0) : 4.0, stp = 6.2831853 / n;
+      bool outer = rose && r > 0.58 * R;
+      float ang = atan(q.y - 0.5 * H, q.x - R) + 3.14159265 + (outer ? 0.5 * stp : 0.0);
+      float a2 = mod(ang, stp);
+      if (r * sin(min(a2, stp - a2)) < (rose ? 0.055 : 0.05)) discard;
+      if (rose && (abs(r - 0.58 * R) < 0.06 || r < 0.13 * R)) discard;
+      h = fract(sin(dot(vec3(floor(ang / stp), outer ? 7.0 : 3.0, vArch.z * 97.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+    } else {
+      bool pointed = mod(vKind, 2.0) > 0.5;
+      bool traceried = vKind > 9.5;
+      float ts = H - (pointed ? 0.8660254 : 0.5) * W;
+      float d = q.y > ts ? (pointed ? W - max(distance(q, vec2(0.0, ts)), distance(q, vec2(W, ts))) : 0.5 * W - distance(q, vec2(0.5 * W, ts)))
+                         : min(q.x, W - q.x);
+      if (d < 0.12 || q.y < 0.1) discard;     // its stone frame is not glass
+      float row = floor(q.y / 0.45), col = floor(q.x / (0.5 * W));
+      float fy = fract(q.y / 0.45);
+      lead = fy < 0.05 || fy > 0.95;
+      if (traceried) {
+        float Ws = 0.5 * W, sl = q.x < Ws ? q.x : q.x - Ws;
+        float dsub = pointed ? Ws - max(distance(vec2(sl, q.y), vec2(0.0, ts)), distance(vec2(sl, q.y), vec2(Ws, ts)))
+                             : 0.5 * Ws - distance(vec2(sl, q.y), vec2(0.5 * Ws, ts));
+        bool inSub = q.y > ts ? dsub > 0.05 : abs(q.x - Ws) > 0.1;
+        vec2 c0 = vec2(Ws, ts + (pointed ? 0.5 : 1.0 / 3.0) * W);
+        bool inTop = distance(q, c0) < (pointed ? 0.16 : 1.0 / 6.0) * W - 0.04;
+        if (!inSub && !inTop) discard;        // the mullion and the tracery
+        col = floor(q.x / (0.25 * W));
+        if (inTop) { row = 900.0 + floor((atan(q.y - c0.y, q.x - c0.x) + 3.14159265) / 1.5707963); lead = false; }
+        else lead = lead || abs(sl - 0.5 * Ws) < 0.022;
+      } else {
+        lead = lead || abs(q.x - 0.5 * W) < 0.04;
+      }
+      h = fract(sin(dot(vec3(row, col, vArch.z * 97.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+    }
+    // lit from inside: each pane its stained colour, lifted by the warm light behind it; lead lines stay dark
+    vec3 c = mix(uStained[int(min(h * 4.0, 3.0))], uWarm, uChurchWarm) * (0.85 + 0.3 * fract(h * 7.31));
+    oColor = vec4(c * ((lead ? 0.2 : 1.0) * uChurch * uNight), 1.0);
     return;
   }
   if (uGrow > 0.0) {                         // the halo: warm light on the wall round the window, fading out

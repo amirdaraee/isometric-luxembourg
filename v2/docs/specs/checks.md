@@ -34,7 +34,7 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | **Facades** | | |
 | F1 | yes | Every window inside its wall outline |
 | F2 | yes | Windows in a row ≥ 0.3 m apart |
-| F3 | yes | Every window row on a floor line (straight rows); on a church's wall, one row with every sill on one line and every top on one line |
+| F3 | yes | Every window row on a floor line (straight rows); on a church's wall, the windows of one kind (the row, the belfry openings, the rose) have every sill on one line and every top on one line |
 | F4 | yes | No windows on party walls |
 | F5 | yes | Floor count fits the eave height |
 | F6 | yes | ≥ 90% of buildings ≥ 5 m tall and ≥ 40 m² have a window |
@@ -47,11 +47,16 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | F13 | yes | No window overlaps a door or a shop front (rows stay straight: F3) |
 | F14 | yes | ≥ 90% of OSM entrances at a building placed as doors |
 | F15 | report | Doors and shop fronts by source (OSM or rule) |
-| F16 | yes | Every window on a church wall is the church rule's (its width) |
-| F17 | yes | No church window lower than the rule's least height, none reaching into the eave |
+| F16 | yes | Every window on a church wall is the church rule's: its kind's width for its height and its wall (a tall window 0.26 of its height, a round window its diameter, a belfry opening 0.2 of the wall) |
+| F17 | yes | No church window lower than its kind's least height, none reaching into the eave |
 | F18 | yes | No shop front on a church wall |
 | F19 | yes | Every church wall belongs to a listed place of worship; every listed place of worship has a church wall |
 | F20 | report | Places of worship by source; church walls, church windows, house windows they replaced |
+| F21 | yes | One entrance front per church: exactly one wall with a portal on a building that is a church all over, at most one on a church part; a rose only over the portal, on its axis |
+| F22 | yes | Belfry openings only on tower walls (top at least 8 m over the church's main eave), and starting above that eave |
+| F23 | yes | Buttresses are upright strips of the rule's width with one top line per wall, inside the outline, 0.4 m clear of every opening, never on a tower |
+| F24 | yes | No church wall's normal points into the building's footprint (where the footprint tells the side) |
+| F25 | report | Per place of worship: how the entrance front was told, portal, rose, windows by kind, tower walls, buttresses; the exceptions list |
 | **Trees** | | |
 | TE1 | yes | No tree standing inside a building |
 | TE2 | yes | No tree standing in water |
@@ -155,4 +160,5 @@ of 13 Nov 2026): every opening pixel is its unlit colour times the one sky light
 and the rule changes 0 pixels outside the opening; the interior's lit level beside the outside stone's is reported.
 
 `check_lines` also holds L5.7 (layer-05-buildings.md): no shutter, shop front or house window glass pixel on a
-building that is a church all over.
+building that is a church all over; and L5.8: the mullions of traceried church windows are straight lines (the
+line score, the same 95%).

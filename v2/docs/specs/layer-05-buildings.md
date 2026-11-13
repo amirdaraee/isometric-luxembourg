@@ -18,11 +18,25 @@ Chosen by `params.json` art.method (or `V2_ART`); each method builds into its ow
 - **A, places of worship (owner, 13 Nov 2026):** the walls the facade layout marks as a church's (facades.md rules
   14-20) are drawn as a church, not as a house. Walls: stone (the kind "place_of_worship" of
   `v2/data/structures/landmark_styles.json`; a building's own entry there goes first), coursed ashlar, no cornice
-  at floor lines, no banded ground floor. Windows: the layout's tall rectangle as an arched window, its outline the
-  arch itself (round or pointed), a stone frame along the arch and a sill, a mullion between two lights, lead
-  lines, dark glass with some stained panes. No shutters. Doors: planks under a round arch, in stone, no fanlight.
-  No light in any of it. A building that is mostly church (half its footprint or more) is stone all over; where
-  the church is a smaller part of a building, only its walls are.
+  at floor lines, no banded ground floor. Windows: the layout's rectangle drawn by its kind, its outline the
+  arch itself (round or pointed) or a circle, with a stone frame along it. No shutters. Doors: planks under a
+  round arch, in stone, no fanlight. No light in any of it. A building that is mostly church (half its footprint
+  or more) is stone all over; where the church is a smaller part of a building, only its walls are.
+- **A, places of worship, round two (owner, 13 Nov 2026, "One more round"):** what the layout's rules 21 to 30
+  place is drawn so (`church_rgb` and `walls_rgb` in `v2/layers/art_a.py`):
+  - *lancet:* a sill, leaded glass, a lead line up the middle;
+  - *traceried window:* a stone mullion 0.2 m wide, two lights with their own heads springing where the window's
+    does, and a round top light that touches them and the arch;
+  - *rose:* a wheel: a hub, 8 spokes (12 from 3.4 m across) to a stone ring, and as many between them from the
+    ring to the frame; *oculus:* a round window with a cross of stone bars;
+  - *belfry opening:* wooden louvres in a stone frame, a stone mullion from 1.2 m wide; no glass;
+  - *portal:* two orders of stone round the arch, a tympanum over a lintel, two plank leaves;
+  - *walls:* a string course under the sills, a corbel table under the eave of a wall 5 m high or more, and the
+    buttresses: the wall's own stone a little lighter, between dark upright lines, with a set-off at 55% of their
+    height and a narrower upper stage. A buttress is drawn, not built: it casts no shadow.
+  - *stained glass by day:* seven panes in ten are stained, in the palette's four colours at 85% strength, and
+    every pane is scaled to the plain glass's brightness. Colour varies, brightness does not, so L5.1 measures
+    one glass whichever way a wall faces. The gate and its limit are as they were.
 - **B, C (stopped at G2, 10 Nov 2026):** `v2/layers/bakeoff.py`, `v2/bakeoff/` (kept as the bake-off's record).
 
 **Inputs.** Scene buildings (ACT LoD2: footprint, walls, roof planes, roof shape, installations; `mesh.npz`),
@@ -46,7 +60,7 @@ index) for hover.
 - L5.2 (gate) Line score: building edges and window rows within 1 px of the 3D model's lines over 95% of their
   length (brief 6). Measured (`check_lines`, phase 2): every crease (surfaces meeting at 20° or more, or of
   different classes) and outline of the model, and the top and bottom of every window (of an arched church window,
-  which has no straight top, the sill), sampled every 0.25 m where
+  which has no straight top, the sill; of a round one, nothing), sampled every 0.25 m where
   layer 5 shows that building; the drawn line is the luminance step (>= 12/255) across the projected line nearest
   to it, within 3 px; it must lie within 1 px. Building edges and window rows are scored separately, each >= 95%.
 - L5.3 (gate) 0 pixels outside the outline + 2 px (cut rule); 0 building pixels missing inside it (> 99.5%).
@@ -55,3 +69,6 @@ index) for hover.
 - L5.6 (owner) The bake-off comparison at fixed views (G2).
 - L5.7 (gate, `check_lines`) Places of worship: on the buildings that are a church all over (every wall), 0 shutter
   pixels, 0 shop front pixels, and 0 window glass pixels in a house window's colour.
+- L5.8 (gate, `check_lines`) Church tracery is straight: the mullion of every traceried window (its centre line
+  from over the sill to under the springing), sampled every 0.25 m and scored as L5.2's lines are, >= 95% (the
+  same limit, `line_score_share`).

@@ -13,24 +13,23 @@ Windows are known positions, straight by construction (PLAN_V2 section 6). For e
      wall: centre of bay i at u = L/2 + (i - (n - 1)/2) * (L - 2 edge_margin_m) / n.
   5. A window (window_w_m x window_h_m, sill_m above its floor line) is kept only when its rectangle, grown by
      inset_m, lies inside the wall outline (so gables and stepped walls lose the windows that don't fit).
-  6. Places of worship (the owner's decision of 13 Nov 2026; worship.py tells them from the data). The walls of a
-     church, a cathedral or a chapel get the church rule in place of rule 4 and 5. ACT gives many of a church's
-     walls in pieces (triangles), which cannot hold a tall window, so the church's walls that lie in one plane and
-     touch are first joined into one wall (a record of its own at the end of the list, "merged": the walls it is
-     made of; party walls and walls that are not planar stay out). On each joined wall one row of tall windows,
-     church_window_w_m wide, from church_sill_m above the wall's bottom up to church_top_m under the eave (at
-     most church_window_max_h_m tall). The row stands in the wall's clear spans: the stretches along it where
-     the wall is whole from under the sills to over the tops (between two buttresses, beside a porch); each span
-     has bays of church_bay_m (one bay if it is shorter), centred, with one window each. The wall's bottom is
-     the bottom of its outline that gives the row the most windows: a wall that stands on a lower roof (a nave's
-     wall above its aisle) starts there. A wall too low for the church sill (a chapel) takes the house sill; a
-     wall that still cannot hold a window church_window_min_h_m tall gets none. One row, so the sills are one
-     straight line and the tops another. The window's head is round or pointed (the wall's "worship"); the rectangle is
-     the whole window, head included. No shop fronts. Doors stay where the door rules put them.
+  6. Places of worship (the owner's decisions of 13 Nov 2026; worship.py tells them from the data). The walls of a
+     church, a cathedral or a chapel get the church rule in place of rule 4 and 5 (church.py). First each church
+     wall's outward side is set by the building's footprint, and what a neighbour's wall covers is cut out of
+     its outline. ACT gives many of a church's walls in pieces (triangles), which cannot hold a tall window, so the
+     church's walls that lie in one plane and touch are then joined into one wall (a record of its own at the end
+     of the list, "merged": the walls it is made of; walls that are not planar stay out). Each joined wall gets
+     one row of windows sized to it (tall, with tracery where they are big enough; round on a low wall; none on a
+     lower one), in its clear spans: the stretches along it where the wall is whole from under the sills to
+     over the tops (between two buttresses, beside a porch). A tower wall also gets louvred belfry openings near
+     its top. The church's one entrance front gets a portal and, where it fits, a rose window. Long rows get
+     buttresses between their bays, and every wall high enough a string course under the sills. No shop fronts.
+     Doors stay where the door rules put them, but for the one the portal replaces.
 Output facades.json: per wall {building, wall id, base [e, n, z] x 2, normal [e, n], length, height, floors, bays,
 party, windows: [[u0, v0, u1, v1], ...]}; a church's walls also "worship" (the head of its windows) and "house_rule"
-(what the house rule had given the wall: see `build`), its joined walls "merged"; and "worship": the places of
-worship, by building id.
+(what the house rule had given the wall: see `build`), its joined walls "merged", windows with their kind
+([u0, v0, u1, v1, "lancet" | "traceried" | "oculus" | "rose" | "belfry"]), "tower", "front", "buttresses" and
+"courses"; and "worship": the places of worship, by building id, each with its entrance front and how it was told.
 """
 from __future__ import annotations
 
@@ -121,45 +120,6 @@ def clear_spans(poly, L, v0, v1, margin):
     if at < L:
         spans.append((at, L))
     return [(a, b) for a, b in spans if b - a > 1e-6]
-
-
-def church_layout(poly, L, H, p):
-    """The window rectangles (u0, v0, u1, v1) of one wall of a place of worship (rule 6), and its bays."""
-    from v2.data.scene.entrances import bottom_at
-    w, inset = p["church_window_w_m"], p["inset_m"]
-    if L < w + 2 * inset:
-        return 0, []
-    # the bottoms the wall's outline has along it: the ground, and the lower roofs it stands on
-    steps = np.arange(0.25, max(L - 0.25, 0.26), 0.5)
-    under = [bottom_at(poly, u - 0.2, u + 0.2) for u in steps]
-    bases = sorted({round(b, 1) for b in under if b is not None}) or [0.0]
-    best = (0, [])
-    for base in bases:
-        for off in (p["church_sill_m"], p["sill_m"]):
-            sill = base + off
-            top = min(H - p["church_top_m"], sill + p["church_window_max_h_m"])
-            if top - sill >= p["church_window_min_h_m"]:
-                break
-        else:
-            continue
-        wins, bays = [], 0
-        for a, b in clear_spans(poly, L, sill - inset, top + inset, inset):
-            # a span's own ends (a buttress, a step) are no wall ends: the edge margin is for the wall's corners
-            a2, b2 = max(a, p["edge_margin_m"]), min(b, L - p["edge_margin_m"])
-            if b2 - a2 < w:
-                continue
-            n = max(1, int((b2 - a2) // p["church_bay_m"]))
-            pitch = (b2 - a2) / n
-            bays += n
-            for i in range(n):
-                cu = a2 + (i + 0.5) * pitch
-                wins.append([round(x, 3) for x in (cu - w / 2, sill, cu + w / 2, top)])
-        if len(wins) > len(best[1]):
-            best = (bays, wins)
-    if not best[1]:
-        usable = L - 2 * p["edge_margin_m"]
-        return (int(usable // p["church_bay_m"]) if usable >= p["church_bay_m"] else 1), []
-    return best
 
 
 def join_walls(members, tol_cos=0.9994, tol_m=0.15):
@@ -253,14 +213,16 @@ def build(ctx):
     pois = _json.loads((ctx.dep("fetch_osm_pois") / "pois.json").read_text())
     ds, unplaced, commercial = entrances.place(out, blds, fps, graph, pois, p)
     # places of worship (rule 6): the church rule on their walls, in place of what the house rule gave
-    from v2.data.scene import worship
+    from v2.data.scene import church, worship
     styles = worship.load_styles()
     places = _json.loads((ctx.dep("scene_places") / "places.json").read_text())
+    skip = {x["osm"] for x in worship.load_exceptions()}
     found = worship.find(blds, fps, _json.loads((ctx.dep("fetch_osm_worship") / "worship.json").read_text()),
-                         places["places"] if isinstance(places, dict) else places, styles["buildings"], p)
+                         places["places"] if isinstance(places, dict) else places, styles["buildings"], p, skip)
     kind = styles.get("kinds", {}).get("place_of_worship", {})
-    n_church = {"walls": 0, "windows": 0, "house_windows": 0, "shopfronts": 0, "joined": 0}
-    by_church = {}
+    main_ids = {f"{el['type']}/{el['id']}" for el in pois["elements"] if el.get("tags", {}).get("entrance") == "main"}
+    n_church = {"walls": 0, "windows": 0, "house_windows": 0, "shopfronts": 0, "joined": 0, "turned": 0, "freed": 0}
+    by_church, parts = {}, {}
     for i, w in enumerate(out):
         f = found.get(w["b"])
         if f is None or not worship.wall_in(f["area"], segs[i], p["worship_wall_tol_m"]):
@@ -274,25 +236,34 @@ def build(ctx):
         n_church["shopfronts"] += len(w["shopfronts"])
         w["shopfronts"], w["windows"], w["bays"] = [], [], 0
         n_church["walls"] += 1
-        if not party[i] and walls[i]["flat"] <= 0.5 and walls[i]["poly"].geom_type == "Polygon" and walls[i]["poly"].area > 1e-4:
-            by_church.setdefault(w["b"], []).append(dict(walls[i], i=i))
+        m = walls[i]
+        if m["flat"] > 0.5 or m["poly"].geom_type != "Polygon" or m["poly"].area <= 1e-4:
+            continue
+        # the church part of the building: its footprint in the mapped outline
+        if w["b"] not in parts:
+            part = fps[w["b"]] if f["area"] is None else fps[w["b"]].intersection(f["area"].buffer(p["worship_wall_tol_m"]))
+            parts[w["b"]] = fps[w["b"]] if part.is_empty else part
+        # free where no other building's wall stands against it (the outlines of the walls on its line cut out)
+        free = church.free_parts(m["poly"], church.covered(i, walls, segs, tree, p["party_wall_tol_m"]), p["church_free_min_area_m2"])
+        if party[i] and free:
+            w["party_free"] = round(sum(g.area for g in free) / m["poly"].area, 3)
+            n_church["freed"] += 1
+        # its outward side: the side outside the footprint, else away from the church part's centre
+        if not church.points_out(segs[i], m["n"], fps[w["b"]], parts[w["b"]].centroid.coords[0]):
+            L = m["L"]
+            church.flip(m, w)
+            free = [church.mirror(g, L) for g in free]
+            n_church["turned"] += 1
+        for g in free:
+            by_church.setdefault(w["b"], []).append(dict(m, poly=g, i=i))
     # the church's walls joined plane by plane, each joined wall a record of its own after every other wall (so the
-    # other walls keep their place in the list), with the church rule's windows
+    # other walls keep their place in the list), laid out by the church rule (church.py)
+    fronts = {}
     for b, members in by_church.items():
-        for g in join_walls(members):
-            H = eave_height(g["poly"], g["L"])
-            reason = "short" if g["L"] < p["min_wall_len_m"] else "low" if H < p["min_wall_height_m"] else None
-            bays, wins = (0, []) if reason else church_layout(g["poly"], g["L"], H, p)
-            # the doors of the walls it is made of, in its own frame: its windows give way to them
-            blocks = []
-            for i in g["members"]:
-                m = walls[i]
-                for r in out[i]["doors"]:
-                    a, c = ((m["o"] + m["u"] * r[k] - g["o"]) @ g["u"] for k in (0, 2))
-                    dz = m["z0"] - g["z0"]
-                    blocks.append(box(min(a, c) - p["door_window_gap_m"], r[1] + dz - 1, max(a, c) + p["door_window_gap_m"],
-                                      r[3] + dz + p["door_window_gap_m"]))
-            wins = [x for x in wins if not any(k.intersects(box(*x)) for k in blocks)]
+        gs = join_walls(members)
+        fronts[b] = church.plan(gs, walls, out, parts[b], main_ids, p)
+        for g in gs:
+            H = g["H"]
             first = out[g["members"][0]]
             floors = max(1, min(p["max_floors"], 1 + int(math.floor((H - p["ground_floor_m"]) / p["floor_m"] + 0.35)))) \
                 if H >= p["ground_floor_m"] else 1
@@ -301,26 +272,38 @@ def build(ctx):
                         "base": [[round(x, 3) for x in q] for q in base], "normal": [round(float(x), 4) for x in g["n"]],
                         "length": round(g["L"], 3), "height": round(H, 3),
                         "outline": [[round(x, 3), round(y, 3)] for x, y in g["poly"].exterior.coords],
-                        "floors": floors, "bays": bays, "party": False, "no_windows": reason, "windows": wins, "b": b,
-                        "doors": [], "shopfronts": [], "street": None, "worship": first["worship"],
+                        "floors": floors, "bays": g["bays"], "party": False, "no_windows": g["reason"], "windows": g["windows"],
+                        "b": b, "doors": [g["portal"] + [g["portal_src"] or "rule:church portal", "portal"]] if g["portal"] else [],
+                        "shopfronts": [], "street": g["street"], "worship": first["worship"],
                         "house_rule": {"windows": [], "doors": 0, "shopfronts": 0},
-                        "merged": [out[i]["wall"] for i in g["members"]]})
+                        "merged": [out[i]["wall"] for i in g["members"]], "tower": g["tower"], "front": g["portal"] is not None,
+                        "buttresses": g["buttresses"], "courses": g["courses"]})
             n_church["joined"] += 1
-            n_church["windows"] += len(wins)
+            n_church["windows"] += len(g["windows"])
+    worship_out = {}
+    for j, f in sorted(found.items()):
+        ws = [w for w in out if w["building"] == blds[j]["id"] and w.get("worship")]
+        kinds = {}
+        for w in ws:
+            for x in w["windows"]:
+                kinds[x[4]] = kinds.get(x[4], 0) + 1
+        worship_out[blds[j]["id"]] = {"source": f["source"], "name": f["name"], "osm_building": f["osm_building"],
+                                      "whole_building": f["area"] is None, "share": f["share"], "walls": len(ws),
+                                      "windows": kinds, "towers": sum(1 for w in ws if w.get("tower")),
+                                      "buttresses": sum(len(w.get("buttresses", [])) for w in ws),
+                                      **fronts.get(j, {"main_eave": None, "front": {"how": "no wall to lay out", "portal": False, "rose": False}})}
     for w in out:
         w.pop("b", None)
     ctx.write_json("facades.json", {"rule": p, "walls": out, "unplaced_entrances": unplaced,
-                                    "commercial_streets": commercial,
-                                    "worship": {blds[j]["id"]: {"source": f["source"], "name": f["name"],
-                                                                "osm_building": f["osm_building"],
-                                                                "whole_building": f["area"] is None, "share": f["share"],
-                                                                "walls": sum(1 for w in out if w["building"] == blds[j]["id"] and w.get("worship"))}
-                                                for j, f in sorted(found.items())}})
+                                    "commercial_streets": commercial, "worship": worship_out,
+                                    "worship_exceptions": worship.load_exceptions()})
     return {"walls": len(out), "with_windows": sum(1 for w in out if w["windows"]), "party_walls": int(party.sum()),
             "windows": sum(len(w["windows"]) for w in out), "windows_before_doors": n_win,
             "floors_max": max((w["floors"] for w in out), default=0), **ds,
             "places_of_worship": len(found), "church_walls": n_church["walls"], "church_walls_joined": n_church["joined"],
-            "church_windows": n_church["windows"],
+            "church_windows": n_church["windows"], "church_walls_turned": n_church["turned"],
+            "church_party_walls_freed": n_church["freed"],
+            "church_portals": sum(1 for v in worship_out.values() if v["front"]["portal"]),
             "house_windows_replaced": n_church["house_windows"], "shopfronts_removed_from_churches": n_church["shopfronts"]}
 
 
