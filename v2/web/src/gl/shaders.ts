@@ -330,11 +330,25 @@ void main() {
   oColor = vec4(c * light, 1.0);
 }`;
 
+/** The light pass while a cutaway is on (landmark-cutaways.md rule 3, the owner's decision of 13 Nov 2026): as
+ * LIGHT_FS, but an opening's pixels (layer 5, a class of uOpenMask: the cut and the inside faces) get the sky's
+ * light only, uOpen, the same on every face: no cast shadow, and no sun, fill or moon by the face's direction. The
+ * hour's colour is in uOpen, and the night takes its share out of the colours as everywhere. With no cutaway on the
+ * viewer uses LIGHT_FS itself, untouched. */
+export const LIGHT_CUT_FS = LIGHT_FS
+  .replace("uniform float uLightOn;", "uniform float uLightOn;\nuniform int uOpenMask;\nuniform vec3 uOpen;")
+  .replace("  if (uLightOn < 0.5) { oColor = vec4(c, 1.0); return; }", `  if (uLightOn < 0.5) { oColor = vec4(c, 1.0); return; }
+  if (layer == 5 && k < 31 && ((uOpenMask >> k) & 1) == 1) {
+    if (uMoon.w > 0.0) c = mix(c, vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), uSoft.w);
+    oColor = vec4(c * uOpen, 1.0);
+    return;
+  }`);
+
 // ------------------------------------------------------------------------------------------------ night (layer 10)
 export const WIN_VS = `#version 300 es
 in vec2 aCorner;
 in vec4 aA;              // x, y, z, ux
-in vec4 aB;              // uy, height, building, code
+in vec4 aB;              // uy, height, building, code (v2/layers/data.py: 8, 9 a church's arched window, 16 never lit)
 ${CAM_GLSL}
 ${VIEW_GLSL}
 uniform float uEps;
@@ -342,6 +356,7 @@ uniform vec4 uLit;       // homes share, shops share, seed, hour
 uniform float uGrow;     // 0: the window itself; > 0: its halo, the rectangle grown by this share of its size each way
 out vec2 vUV;
 flat out float vKind;
+flat out vec3 vArch;     // a church's window: its width and height (m), and a seed for its panes
 float hash(float n) { return fract(sin(n * 12.9898 + uLit.z * 78.233) * 43758.5453); }
 void main() {
   float id = float(gl_InstanceID);
@@ -352,13 +367,17 @@ void main() {
   // a building's windows are lit together by floor more often than not (a family's rooms)
   float floorKey = floor(aA.z / 3.0);
   float r = hash(id) * 0.6 + hash(aB.z * 31.0 + floorKey) * 0.4;
-  if (r > share) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+  // a place of worship (layer-10 rule 5): lit or dark as a whole building, as often as a home's window; no halo
+  bool church = code > 7.5;
+  if (church) { r = uGrow > 0.0 ? 2.0 : hash(aB.z * 57.0 + 11.0); share = uLit.x; }
+  if (r > share || code > 15.5) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
   vec2 q = aCorner + (aCorner * 2.0 - 1.0) * uGrow;          // the halo lies in the wall's own plane
   vec3 w = vec3(aA.x + aA.w * q.x, aA.y + aB.x * q.x, aA.z + aB.y * q.y);
   vec3 m = projectLocal(w);
   gl_Position = vec4(mapToClip(m.xy), depth01(m.z - uEps) * 2.0 - 1.0, 1.0);
   vUV = q;
-  vKind = kind + shop * 4.0;
+  vKind = church ? code : kind + shop * 4.0;
+  vArch = vec3(length(vec2(aA.w, aB.x)), aB.y, hash(id));
 }`;
 
 /** The windows while a cutaway is on: as WIN_VS, without those of a replaced building that stood in its slice
@@ -381,12 +400,31 @@ export const WIN_FS = `#version 300 es
 precision highp float;
 in vec2 vUV;
 flat in float vKind;
+flat in vec3 vArch;
 uniform vec3 uWarm;
 uniform float uNight;
 uniform float uGrow;
 uniform float uHalo;
+uniform vec3 uStained[4];  // the stained glass's colours (palette buildings.stained_*)
+uniform float uChurch;     // how strongly a lit church's windows glow (light.json night.church_glow)
 out vec4 oColor;
 void main() {
+  if (vKind > 7.5) {                         // a church's window: a dim glow of stained glass inside its arch
+    float W = vArch.x, H = vArch.y;
+    vec2 q = vUV * vArch.xy;
+    bool pointed = vKind > 8.5;
+    float ts = H - (pointed ? 0.8660254 : 0.5) * W;
+    float d = q.y > ts ? (pointed ? W - max(distance(q, vec2(0.0, ts)), distance(q, vec2(W, ts))) : 0.5 * W - distance(q, vec2(0.5 * W, ts)))
+                       : min(q.x, W - q.x);
+    if (d < 0.11 || q.y < 0.1) discard;      // its stone frame is not glass
+    float row = floor(q.y / 0.55), light = floor(q.x / (0.5 * W));
+    float fy = fract(q.y / 0.55);
+    bool lead = abs(q.x - 0.5 * W) < 0.05 || fy < 0.04 || fy > 0.96;
+    float h = fract(sin(dot(vec3(row, light, vArch.z * 97.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+    vec3 c = uStained[int(min(h * 4.0, 3.0))];
+    oColor = vec4(c * ((lead ? 0.25 : 1.0) * uChurch * uNight), 1.0);
+    return;
+  }
   if (uGrow > 0.0) {                         // the halo: warm light on the wall round the window, fading out
     vec2 d = max(max(-vUV, vUV - 1.0), 0.0) / uGrow;
     float r = length(d);

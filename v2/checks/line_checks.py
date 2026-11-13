@@ -2,7 +2,8 @@
 
 The 3D model's lines are projected into the map and sampled every 0.25 m: every crease and outline of the ACT LoD2
 buildings (edges where two surfaces of different planes meet, or a surface ends), and the top and bottom edge of
-every window of the facade layout (the window rows). At each sample seen in layer 5 (its building is what layer 5
+every window of the facade layout (the window rows; an arched window of a place of worship has no straight top, so
+its sill alone is sampled). At each sample seen in layer 5 (its building is what layer 5
 shows there, at its depth within 0.3 m, at the sample or one pixel either side), the drawn line is looked for across the projected line, along
 the line's screen normal within 3 px either side: the luminance steps of the layer's colour of at least
 `line_min_step` (out of 255). The sample is on its line when the step nearest the projected line lies within
@@ -55,7 +56,8 @@ def feature_edges(M, min_len=0.5, crease_deg=20.0):
 
 
 def window_rows(scene, offset=0.05):
-    """The top and bottom edge of every window of the facade layout, as 3D segments."""
+    """The top and bottom edge of every window of the facade layout, as 3D segments; of an arched window (a wall
+    of a place of worship) the bottom edge."""
     from v2.data.scene.facades import window_world
     bidx = {b["id"]: i for i, b in enumerate(scene.buildings)}
     A, B, O = [], [], []
@@ -65,7 +67,10 @@ def window_rows(scene, offset=0.05):
         bi = bidx.get(w["building"], -1)
         for r in w["windows"]:
             c = np.array(window_world(w, [float(x) for x in r[:4]])) + off
-            A += [c[0], c[3]]; B += [c[1], c[2]]; O += [bi, bi]
+            if w.get("worship"):
+                A += [c[0]]; B += [c[1]]; O += [bi]
+            else:
+                A += [c[0], c[3]]; B += [c[1], c[2]]; O += [bi, bi]
     return np.array(A, float).reshape(-1, 3), np.array(B, float).reshape(-1, 3), np.array(O, np.int64)
 
 
@@ -167,4 +172,44 @@ def check_lines(ctx):
         what = "building edges (creases and outlines of the 3D model)" if name == "edges" else "window rows (top and bottom of every window)"
         rep.at_least(f"L5.2-{name}", f"line score, {what}: share of {n} seen samples (every 0.25 m, of {len(Ps)}) whose "
                      f"drawn line is within {P['line_score_px']} px of the model's", round(share, 4), P["line_score_share"], ex)
+    worship_pixels(rep, rel, sc)
     return rep.result()
+
+
+def worship_pixels(rep, rel, sc):
+    """L5.7 (the owner's decision of 13 Nov 2026): what layer 5 draws on the places of worship. A building that is
+    a church all over has no shutter and no shop front pixel; its window glass is the church's (dark leaded glass
+    with stained panes), not the house window's."""
+    import json
+    from v2.layers.common import CLASS, pal, read_tile
+    wor = sc.facades.get("worship", {})
+    bidx = {b["id"]: i for i, b in enumerate(sc.buildings)}
+    church_walls, all_walls = {}, {}
+    for w in sc.facades["walls"]:
+        all_walls[w["building"]] = all_walls.get(w["building"], 0) + 1
+        church_walls[w["building"]] = church_walls.get(w["building"], 0) + bool(w.get("worship"))
+    whole = sorted(bidx[b] for b in wor if b in bidx and church_walls.get(b, 0) == all_walls.get(b, -1))
+    tiles = json.loads((rel / "index.json").read_text())["layers"]["buildings"]["tiles"]["0"]
+    n = {"shutter": 0, "shopfront": 0, "window": 0, "house_glass": 0, "all": 0}
+    house = np.round(pal("buildings", "window")).astype(int)
+    for name, dmin in tiles.items():
+        t = read_tile(rel / "buildings" / "0", name, dmin)
+        on = np.isin(t["ids"] >> 8, whole) & np.isfinite(t["depth"])
+        if not on.any():
+            continue
+        cls = (t["ids"] & 255)[on]
+        n["all"] += int(on.sum())
+        n["shutter"] += int((cls == CLASS["shutter"]).sum())
+        n["shopfront"] += int((cls == CLASS["shopfront"]).sum())
+        glass = cls == CLASS["window"]
+        n["window"] += int(glass.sum())
+        # a house window's glass is the palette's window colour in one tone per window (0.86 to 1.16 of it)
+        rgb = t["rgb"][on][glass].astype(float)
+        k = rgb.sum(1) / max(float(house.sum()), 1.0)
+        n["house_glass"] += int(((k > 0.84) & (k < 1.18) & (np.abs(rgb - house * k[:, None]).max(1) <= 2.5)).sum())
+    rep.info("L5.7", "places of worship in the scene; of them churches all over (every wall); their pixels in layer 5; "
+             "their window glass pixels", [len(wor), len(whole), n["all"], n["window"]])
+    rep.at_most("L5.7-shutters", "shutter pixels on buildings that are a church all over", n["shutter"], 0)
+    rep.at_most("L5.7-shopfronts", "shop front pixels on buildings that are a church all over", n["shopfront"], 0)
+    rep.at_most("L5.7-house-windows", "window glass pixels in a house window's colour on buildings that are a church all "
+                "over", n["house_glass"], 0)

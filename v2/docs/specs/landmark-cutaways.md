@@ -5,8 +5,8 @@ model, a small layer of tiles, the inputs of the painting, the viewer's toggle, 
 `layer_cutaways`, `check_cutaways`, `check_cutaways_view`). **The cathedral's interior is painted** (the second
 run's `cathedral-open_1`, in the map since 13 Nov 2026 on the owner's eye, K7: see "The painted step"). The palace
 and the abbey have a **code placeholder interior**; their paintings are not approved (paid from the Phase 3 line,
-$8 cap, quoted in the ledger and approved by the owner before any spend). Not built: the opening's own cast shadow
-(see "In the viewer"); the Bock casemates.
+$8 cap, quoted in the ledger and approved by the owner before any spend). **The opening is lit by the sky only**
+(the owner's decision of 13 Nov 2026: rule 3 and "In the viewer"). Not built: the Bock casemates.
 
 **Purpose.** Famous buildings shown cut open in place on the map, not in a modal: the visitor sees a slice taken out
 of the building, with its interior visible through the cut, at its real place and scale. First four: the Bock
@@ -28,8 +28,13 @@ casemates, Notre-Dame Cathedral, the Grand Ducal Palace and Neumünster Abbey (a
 2. **The interior stays inside the cut.** The painted interior is masked to the cut's section and the inside faces
    it exposes (the 3D outline of the opening, the POC cut rule with 0 px growth); it never covers the outside of the
    building or the map around it.
-3. **No baked light.** The interior is painted evenly lit, as layer 5; layer 9 lights it (the opening's own shadow is
-   cast by code).
+3. **No baked light.** The interior is painted evenly lit, as layer 5; layer 9 lights it. **The opening is lit by
+   the sky only** (the owner's decision of 13 Nov 2026, in the owner's words: "Light by sky only"): every pixel of
+   the opening (the cut and the inside faces) gets the hour's sky light at one level, the same on every face. No
+   cast shadow falls on it, from the building's own kept shell or from anything else, and no light comes by the
+   face's direction (no sun, no golden-hour fill, no moon). The hour's colour stays: warm at golden hour, a deep
+   blue at night, so the interior belongs to the scene. Nothing outside the opening changes, and nothing at all
+   with the cutaway off. The no-baked-shadow rule of every other layer is untouched.
 4. **Nothing that moves.** No people, cars or animals painted inside or outside (principle 5); the visitors and
    events are code layers.
 5. **In place.** The cutaway replaces that building's pixels in layer 5 (or a small layer above it) with its own
@@ -43,7 +48,9 @@ casemates, Notre-Dame Cathedral, the Grand Ducal Palace and Neumünster Abbey (a
 - **K2** The interior stays inside the cut: 0 interior pixels outside the opening's mask; ≥ 99.5% of the mask
   covered.
 - **K3** No baked shadows: the shadow detector of brief 5 on the interior (sunlit vs shadowed sides of the same
-  material within 5%), and the opening's shadow moves with `?hour` (L9.1 on the cut). On a painted interior "the
+  material within 5%). In the viewer the opening is lit by the sky only (rule 3): every opening pixel is its unlit
+  colour times one sky light, at 13:00, golden hour and night, and the rule changes 0 pixels outside the opening
+  (K3v-sky, below). On a painted interior "the
   same material" is the face's own: the stone of a wall, not its windows' glass and not the ink drawn on it
   (owner, 13 Nov 2026; see "The painted step").
 - **K4** No cars or people: the vehicle detector (OWLv2, as #9) on every input, reference and output at
@@ -238,14 +245,26 @@ with the same programs as before the feature.
 From zoom 2 out, the merged far tiles give way to the separate layers while a cutaway is on (the far tiles have no
 ids to cut by), and come back when it is off.
 
-**Not done: the opening's own shadow (K3's `?hour` part).** The shadow height map still holds the whole building,
-so the opening is lit as if roofed: its floor and inside faces are in the building's own shade whenever the sun
-casts one (measured on the painted cathedral: half its painted brightness at 13:00; at golden hour, with almost no
-direct sun left, as bright as the outside). A
-correct shadow needs the hollow shell in the height map, and the map cannot hold it: it is one height per 0.5 m
-cell, and the light's march takes steps that grow with distance, so it would step over 0.8 m walls. Lowering only
-the slice's cells would light the floor rightly and leave every inside face in shade whatever the sun does. It is
-left out rather than half done.
+**The opening's light: the sky only (rule 3; the owner's decision of 13 Nov 2026).** Before it, the opening was lit
+as any building. The shadow height map holds the whole building, so the opening stood in its own shell's shade
+whenever the sun cast one: on the painted cathedral, half its painted brightness at 13:00 (lit level 0.48 against
+0.85 for the outside stone), 0.80 at golden hour, 0.28 at night. The owner chose to light it by the sky only.
+- **Where.** The viewer's light pass (`LIGHT_CUT_FS` in `src/gl/shaders.ts`, used only while a cutaway is on). The
+  opening's pixels are told by the cutaway tiles' own `k` (layer 5 with a class of the opening mask: cut, inside
+  wall, inside roof, floor, slab). The tiles are unchanged: nothing is baked.
+- **What an opening pixel gets.** Its unlit colour times `sun.ambient` times the hour's sky colour (the grade's,
+  `src/gl/grade.ts`) times a level (`light.json` "cutaway"). Nothing else: no cast shadow (the march's result is
+  not used), no shadow tint, no sun, fill or moon term, so no face is darker than another. At night the colours
+  lose saturation as everywhere (`night_desaturate`).
+- **The levels** (`light.json` "cutaway": `sky_day` 1.47, `sky_golden` 1.08, `sky_night` 1.22). Each is set so that
+  the interior is about as bright as the kept outside stone at that hour, whose median lit level on the cathedral
+  on 24 June was 0.85 at 13:00, 0.84 at 21:18 and 0.31 at 23:15. Day: 0.58 x 1.47 = 0.85. Golden hour: the sky light
+  there is 0.78 (0.58 x 1.5, warm), x 1.08 = 0.84. Night: 0.25 (deep blue), x 1.22 = 0.31. Between them the level
+  moves as the sky's colour does, without a step (unit test `grade.test.ts`).
+- **Off.** With no cutaway on, the viewer uses the plain light pass, untouched. `?off=cutlight` lights the opening
+  as any building again (for the checks: the frame with the rule against the frame without it).
+- **Not done, and no longer wanted:** the opening's own cast shadow moving with `?hour`. The opening takes no cast
+  shadow. The kept shell still casts the whole building's shadow on the map around it.
 
 **Checks in the browser** (`python -m v2.build test check_cutaways_view`; all gates). What the viewer must show is
 worked out from the release's tiles: per map pixel the nearest surface, ties to the later layer, with the replaced
@@ -263,6 +282,9 @@ pixel (1600 x 1200), so they compare pixel for pixel.
 | K2v-colour | Layer 5 pixels whose colour is not the tiles' | 0 |
 | K5v-vehicles | Probe cars on a 4 m grid at the floor's level, through and round the landmark: pixels where the viewer's depth test disagrees with the tiles (silhouettes apart, at most 1%, as C4) | 0 of 174,232; 173,820; 384,210 (4, 4 and 24 on silhouettes) |
 | K5v-labels | Label points on and 3 m behind the cutaway's surfaces that the viewer hides or shows against the tiles | 0 of 4,248; 3,116; 5,038 |
+| K3v-sky-even | At 13:00, 21:18 and 23:15 on 24 June, with the look pass and the night lights off: opening pixels that are not their unlit colour times the one sky light the viewer gave the opening (by more than 1 of 255). One light on every pixel means no shadow and no light by direction | 0 in all 9 |
+| K3v-sky-outside | The same frames against the same with `?off=cutlight`: pixels the rule changes outside the opening | 0 in all 9 |
+| K3v-sky-levels (report) | Lit level of the interior with the rule, without it, and of the kept outside stone, at the three hours | `v2/docs/PHASE3_REPORT.md` section 10 |
 
 Checked once by hand (`v2/web/scripts/compare_viewers.mjs`): the viewer with the feature, toggle off, against the
 viewer before it, on the same release, at the three landmarks at 13:00 and 23:00, and the whole area in tunnel view: 0 pixels differ in all 7 frames.
@@ -270,5 +292,5 @@ viewer before it, on the same release, at the three landmarks at 13:00 and 23:00
 **Previews:** `v2/docs/img/test_cutaway_<name>_viewer.jpg` (placeholders); the painted cathedral:
 `test_cutaway_cathedral_map.jpg`, `test_cutaway_cathedral_map_wide.jpg`.
 
-**Known limits.** The opening is in the building's shade while the sun is up (above). The inside is a hollow shell with nominal walls: no rooms, vaults or columns until it is painted. A painting's windows are colour, not night windows: they do not glow.
+**Known limits.** The opening's light is flat by rule (above): no sun patch on its floor, no shade under its vault. The inside is a hollow shell with nominal walls: no rooms, vaults or columns until it is painted. A painting's windows are colour, not night windows: they do not glow.
 Walls on lower roofs have no thickness. Windows are not openings in the inside faces.

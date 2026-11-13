@@ -45,21 +45,67 @@ crafts and commercial amenities (`fetch_osm_pois`). Parameters: `params.json` fa
 12. **Windows give way.** Ground-floor windows a door or shop front overlaps (with a 0.2 m gap) are removed.
 13. **Dormers:** later (owner, G0 review).
 
+## Places of worship (owner's decision, 13 Nov 2026: "Fix facades first")
+
+Code: `v2/data/scene/worship.py` (which buildings), `v2/data/scene/facades.py` (`join_walls`, `church_layout`),
+`v2/data/fetch/worship.py` (stage `fetch_osm_worship`). Parameters: `params.json` facades, keys `worship_*` and
+`church_*`. How they are drawn: layer-05-buildings.md; by night: layer-10-night.md rule 5.
+
+14. **Which buildings.** From the data, never from a place in the picture, so it carries to the whole city:
+    - OSM outlines: a way or a multipolygon relation tagged `building=church|cathedral|chapel`, or
+      `amenity=place_of_worship`. A scene building belongs to it when the outline covers at least half its
+      footprint, or the building holds at least half the outline (ACT often models a church and the convent,
+      abbey or hospital it is part of as one building).
+    - The landmark list: a landmark card of category "church"; the building that holds its point, or the nearest
+      within 10 m.
+    - `v2/data/structures/landmark_styles.json`: a building entered with `"kind": "place_of_worship"` (for a church
+      OSM maps only as a point, as it does the cathedral).
+    - Not enough: an OSM node `amenity=place_of_worship` alone (prayer rooms in ordinary houses are mapped so), and
+      a site relation (a list of buildings, not an outline).
+15. **Which walls.** With an OSM outline, the walls whose middle stands in the outline grown by 1.5 m: the church
+    part of a larger building. The rest of that building keeps the house rule. Without an outline, every wall.
+16. **Walls are joined first.** ACT gives many church walls in pieces (triangles), and no tall window fits a
+    triangle. The church's walls that lie in one plane (normals within 2 degrees, 0.15 m apart at most) and touch
+    are joined into one wall: a record of its own after every other wall, with `merged`, the walls it is made
+    of. Party walls and walls that are not planar stay out. The pieces keep their records, without windows.
+17. **The church rule**, on each joined wall, in place of rules 4 and 5: bays of 4.5 m, centred; in each bay one
+    window 1.3 m wide, from 2.6 m above the wall's bottom to 1.0 m under the eave, at most 9.0 m tall. The wall's
+    bottom is the highest bottom of its outline under its bays, so a nave's wall above its aisle starts on the
+    aisle's roof. A wall too low for that takes the house sill (0.9 m); a wall that still cannot hold a window
+    2.2 m tall gets none. One row per wall: every sill on one line, every top on one line. A window is kept only
+    if its rectangle grown by 0.2 m lies inside the wall's outline, and gives way to a door.
+18. **The head.** The rectangle is the whole window; its head is round, or pointed where the building's entry in
+    `landmark_styles.json` says `"windows": "pointed"` (the cathedral). A round head rises half the window's
+    width above its springing line, a pointed one 0.866 of it.
+19. **No shop fronts** on a church's walls. **Doors** stay where rules 7 and 10 put them. No shutters and no
+    balconies are drawn (layer 5).
+20. **What the house rule had given** each church wall is kept as a count (`house_rule`: its windows, doors and
+    shop fronts). A window's glass tone (layer 5) and a night window's seed (layer 10) go by the opening's place
+    in the order of all openings; the count keeps every other building's windows exactly as they were.
+
 **Output.** `facades.json`: the rule's parameters and per wall: building id, wall id, base (two 3D points), normal,
 length, eave height, outline, floors, bays, party flag, reason for no windows, window rectangles (u0, v0, u1, v1),
 the street it faces (or none), doors (u0, v0, u1, v1, source "osm:node/…" or "rule:…", kind door/garage) and shop
-fronts (u0, v0, u1, v1, source); plus the OSM entrances that could not be placed, with the reason, and the
-commercial streets. `facades.window_world()` turns any rectangle into its four world corners.
+fronts (u0, v0, u1, v1, source); a church's walls also `worship` (round or pointed), `house_rule` and, on a joined
+wall, `merged`; plus the OSM entrances that could not be placed, with the reason, the commercial streets, and
+`worship`: the places of worship by building id (source, name, the share of the footprint that is church, walls). `facades.window_world()` turns any rectangle into its four world corners.
 
 **Checks.** F1 windows inside the outline · F2 gaps ≥ 0.3 m · F3 every window row on a floor line (straight rows,
 still true with doors) · F4 no windows on party walls · F5 floor count fits the eave · F6 ≥ 90% of buildings ≥ 5 m
 tall and ≥ 40 m² have a window · F7 counts (report) ·
+(F3 on a church's wall: one row, every sill on one line and every top on one line) ·
 **F8** every building with a street-facing wall has a door on one · **F9** no door or shop front on a party (shared)
 wall · **F10** shop fronts only on the ground floor (≤ 3.2 m above the wall's bottom) · **F11** doors and shop fronts
 inside their wall outline · **F12** doors and shop fronts stand on the bottom of their wall (the ground) · **F13** no
 window overlaps a door or a shop front · **F14** ≥ 90% of the OSM entrances at a building are placed as doors (the
-rest listed with their reason) · F15 doors and shop fronts by source (report).
+rest listed with their reason) · F15 doors and shop fronts by source (report) · **F16** every window on a church
+wall is the church rule's (its width) · **F17** none lower than 2.2 m, none reaching within 1.0 m of the eave ·
+**F18** no shop front on a church wall · **F19** every church wall belongs to a listed place of worship, and every
+listed place has a church wall · F20 places of worship by source, church walls and windows, house windows replaced
+(report). On layer 5: **L5.7** (layer-05-buildings.md).
 
-**Known limits** (bake-off): dormer windows on roofs (the installations are there), churches and towers (landmark
-portraits in B/C), irregular historic rows, shop signs. The rule is a layout, not a survey: it gives straight,
+**Known limits** (bake-off): dormer windows on roofs (the installations are there), irregular historic rows, shop
+signs. Churches: the rule is a layout, not a survey. It knows no nave, aisle, choir or tower: every wall gets the
+same bays, a tower gets one tall window per side and no belfry openings, there are no rose windows, no tracery and
+no buttresses beyond ACT's own. A church OSM does not map as a building, and that no list names, stays a house. The rule is a layout, not a survey: it gives straight,
 plausible openings; the owner judges the look at G2.

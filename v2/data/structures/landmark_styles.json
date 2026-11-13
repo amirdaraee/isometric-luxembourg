@@ -1,7 +1,10 @@
 {
- "about": "Materials of well-known buildings for the code art (method A, v2/layers/art_a.py), where the seeded rule would give a famous building a colour it does not have. One entry per ACT building id: facade (a palette buildings.facade_* name) or stone (true: yellow sandstone ashlar), and roof (a palette buildings.roof_* name). Everything else about the building (windows, surrounds, tone) follows the rule. Chosen by hand from public photographs; add a building here rather than changing the rule.",
+ "about": "Materials of well-known buildings for the code art (method A, v2/layers/art_a.py), where the seeded rule would give a famous building a colour it does not have. One entry per ACT building id: facade (a palette buildings.facade_* name) or stone (true: yellow sandstone ashlar), and roof (a palette buildings.roof_* name). Everything else about the building (windows, surrounds, tone) follows the rule. Chosen by hand from public photographs; add a building here rather than changing the rule. kinds: the materials of a kind of building that the data tells (v2/data/scene/worship.py): the walls of a place of worship are stone and its windows are arched, round-headed unless the building's own entry says windows: pointed. A building's own facade or stone goes before its kind's. An entry with kind: place_of_worship makes a building one that OSM does not map as a church.",
+ "kinds": {
+  "place_of_worship": {"stone": true, "windows": "round"}
+ },
  "buildings": {
-  "ACT_e92ec91a-b2d2-445e-9305-4dd27f787994": {"name": "Notre-Dame Cathedral", "stone": true, "roof": "roof_slate_dark"},
+  "ACT_e92ec91a-b2d2-445e-9305-4dd27f787994": {"name": "Notre-Dame Cathedral", "stone": true, "roof": "roof_slate_dark", "kind": "place_of_worship", "windows": "pointed"},
   "ACT_78c0048b-4b0b-443f-aae0-71be9cf153ed": {"name": "Grand Ducal Palace", "stone": true, "roof": "roof_slate"},
   "ACT_221c9194-94ad-47d9-807a-60553478a3d2": {"name": "Neumünster Abbey", "facade": "facade_white", "roof": "roof_slate_dark"}
  }

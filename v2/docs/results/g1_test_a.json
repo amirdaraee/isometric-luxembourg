@@ -249,7 +249,7 @@
     },
     {
      "id": "L5.1/L9.2",
-     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 226 compared)",
+     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 227 compared)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -407,7 +407,7 @@
     },
     {
      "id": "S-buildings-v1",
-     "title": "buildings: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 741",
+     "title": "buildings: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 740",
      "passed": true,
      "value": {
       "borders": 6,
@@ -461,9 +461,9 @@
     },
     {
      "id": "L8.4",
-     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1334 of 192934 vs 1324 of 188602; a seam would make it larger)",
+     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1336 of 192976 vs 1323 of 188760; a seam would make it larger)",
      "passed": true,
-     "value": 0.985,
+     "value": 0.988,
      "threshold": "<= 1.5",
      "severity": "gate",
      "examples": []
@@ -481,7 +481,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 76.7
+      "audit_s": 82.6
      },
      "threshold": null,
      "severity": "report",
@@ -667,7 +667,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 214.9,
+     "value": 225.7,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -679,9 +679,9 @@
    "entries": [
     {
      "id": "L5.2-edges",
-     "title": "line score, building edges (creases and outlines of the 3D model): share of 723358 seen samples (every 0.25 m, of 1647926) whose drawn line is within 1.0 px of the model's",
+     "title": "line score, building edges (creases and outlines of the 3D model): share of 723357 seen samples (every 0.25 m, of 1647926) whose drawn line is within 1.0 px of the model's",
      "passed": true,
-     "value": 0.9633,
+     "value": 0.9635,
      "threshold": ">= 0.95",
      "severity": "gate",
      "examples": [
@@ -691,45 +691,45 @@
        "z": 321.99
       },
       {
-       "e": 78192.44,
-       "n": 75265.05,
-       "z": 253.0
+       "e": 77740.3,
+       "n": 75036.35,
+       "z": 266.62
       },
       {
-       "e": 77657.06,
-       "n": 74838.01,
-       "z": 261.34
+       "e": 77652.04,
+       "n": 74837.39,
+       "z": 258.8
       },
       {
-       "e": 77556.63,
-       "n": 75061.38,
-       "z": 289.84
+       "e": 78158.56,
+       "n": 74765.72,
+       "z": 291.64
       },
       {
-       "e": 78219.77,
-       "n": 74877.4,
-       "z": 280.9
+       "e": 78264.64,
+       "n": 75321.94,
+       "z": 253.5
       },
       {
-       "e": 77513.07,
-       "n": 75027.45,
-       "z": 311.22
+       "e": 77512.86,
+       "n": 75031.54,
+       "z": 312.06
       },
       {
-       "e": 77520.05,
-       "n": 75126.63,
-       "z": 316.3
+       "e": 77509.09,
+       "n": 75117.85,
+       "z": 317.31
       },
       {
-       "e": 77701.12,
-       "n": 75109.66,
-       "z": 257.85
+       "e": 77952.13,
+       "n": 75268.1,
+       "z": 257.26
       }
      ]
     },
     {
      "id": "L5.2-windows",
-     "title": "line score, window rows (top and bottom of every window): share of 76718 seen samples (every 0.25 m, of 226716) whose drawn line is within 1.0 px of the model's",
+     "title": "line score, window rows (top and bottom of every window): share of 74952 seen samples (every 0.25 m, of 220950) whose drawn line is within 1.0 px of the model's",
      "passed": true,
      "value": 0.9984,
      "threshold": ">= 0.95",
@@ -751,31 +751,72 @@
        "z": 253.11
       },
       {
-       "e": 77662.36,
-       "n": 75473.07,
+       "e": 77667.14,
+       "n": 75470.26,
        "z": 251.85
       },
       {
-       "e": 77679.07,
-       "n": 75463.26,
+       "e": 77683.84,
+       "n": 75460.46,
        "z": 258.45
       },
       {
-       "e": 77407.51,
-       "n": 75337.59,
-       "z": 311.48
+       "e": 77410.29,
+       "n": 75335.64,
+       "z": 313.03
       },
       {
-       "e": 77806.04,
-       "n": 74533.55,
-       "z": 295.32
+       "e": 78123.22,
+       "n": 75503.03,
+       "z": 253.34
       },
       {
-       "e": 77423.21,
-       "n": 74824.12,
-       "z": 300.23
+       "e": 77415.76,
+       "n": 74837.82,
+       "z": 295.59
       }
      ]
+    },
+    {
+     "id": "L5.7",
+     "title": "places of worship in the scene; of them churches all over (every wall); their pixels in layer 5; their window glass pixels",
+     "passed": true,
+     "value": [
+      10,
+      3,
+      258160,
+      10607
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "L5.7-shutters",
+     "title": "shutter pixels on buildings that are a church all over",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L5.7-shopfronts",
+     "title": "shop front pixels on buildings that are a church all over",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L5.7-house-windows",
+     "title": "window glass pixels in a house window's colour on buildings that are a church all over",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
     }
    ]
   },
@@ -790,7 +831,7 @@
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
       "images": 966,
-      "seconds": 334.3,
+      "seconds": 361.7,
       "queries": [
        "a car",
        "a parked car",
@@ -1050,24 +1091,24 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.16119999998807907,
-      "first_view_warm_s": 0.09609999996423721,
+      "first_view_cold_s": 0.14960000002384186,
+      "first_view_warm_s": 0.09229999995231629,
       "pan_whole_area": {
-       "fps": 120.02794829636714,
-       "frame_ms_median": 0.3999999761581421,
+       "fps": 120.17489069331667,
+       "frame_ms_median": 0.5,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 90.61860302534319,
-       "frame_ms_median": 0.19999998807907104,
+       "fps": 92.21541921779333,
+       "frame_ms_median": 0.2999999523162842,
        "tiles_missing": 0
       },
-      "pan_fps": 90.61860302534319,
+      "pan_fps": 92.21541921779333,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 120.08788136087858,
-        "frame_ms_median": 0.800000011920929,
+        "fps": 120.06689797986503,
+        "frame_ms_median": 0.7000000476837158,
         "tiles_missing": 0
        }
       },
@@ -1081,7 +1122,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.096,
+     "value": 0.092,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1090,7 +1131,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 90.6,
+     "value": 92.2,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1102,8 +1143,8 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 120.08788136087858,
-       "frame_ms_median": 0.800000011920929,
+       "fps": 120.06689797986503,
+       "frame_ms_median": 0.7000000476837158,
        "tiles_missing": 0
       }
      },
@@ -1499,10 +1540,111 @@
      "passed": true,
      "value": {
       "door rule": 1062,
-      "shopfront rule": 535,
-      "shopfront osm": 288,
+      "shopfront rule": 516,
+      "shopfront osm": 287,
       "door osm": 73
      },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "F16",
+     "title": "church walls with a window that is not the church rule's (its width)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F17",
+     "title": "church walls with a window lower than the rule's least height, or reaching into the eave",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F18",
+     "title": "church walls with a shop front",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F19",
+     "title": "church walls of a building that is not a listed place of worship; listed places of worship without a church wall",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F20",
+     "title": "places of worship: by source; church walls; church windows; house windows they replaced",
+     "passed": true,
+     "value": [
+      {
+       "ACT_e92ec91a-b2d2-445e-9305-4dd27f787994": [
+        "landmark_styles",
+        "Notre-Dame Cathedral",
+        554
+       ],
+       "ACT_f168f482-4608-419d-923a-fd8840718ef8": [
+        "osm:way/48994118",
+        "Sainte-Cun\u00e9gonde",
+        162
+       ],
+       "ACT_c2d735f1-ae17-43b6-a27d-1c7160c81fd0": [
+        "osm:way/51071557",
+        "Saint-Mathieu",
+        53
+       ],
+       "ACT_85cd4450-d089-4629-9d06-93054fdaaa84": [
+        "osm:way/48995724",
+        "Saint-Alphonse",
+        131
+       ],
+       "ACT_7915d1d0-8ade-4921-baf2-d85a89b46974": [
+        "osm:way/162041608",
+        null,
+        18
+       ],
+       "ACT_4df67993-baf9-45db-890c-acb665692493": [
+        "osm:way/48994777",
+        "\u00c9glise de Saint-Michel",
+        42
+       ],
+       "ACT_3a50b74c-f994-48f2-aae0-44f0991d7039": [
+        "osm:way/48994393",
+        "Al Kapell",
+        35
+       ],
+       "ACT_3949ee62-1e32-48c9-a1c1-e9413c10dec8": [
+        "osm:relation/11371126",
+        null,
+        208
+       ],
+       "ACT_221c9194-94ad-47d9-807a-60553478a3d2": [
+        "osm:way/32858724",
+        "Saint-Jean-Baptiste",
+        98
+       ],
+       "ACT_06acefd4-faad-4255-9191-c11c49fe6fe2": [
+        "osm:way/52469831",
+        "Trinit\u00e9",
+        61
+       ]
+      },
+      1362,
+      249,
+      1127
+     ],
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -1512,10 +1654,10 @@
      "title": "walls, with windows, party walls, windows",
      "passed": true,
      "value": [
-      22544,
-      6216,
+      23033,
+      6187,
       4421,
-      37786
+      36908
      ],
      "threshold": null,
      "severity": "report",
@@ -2085,7 +2227,7 @@
      "id": "N3",
      "title": "stages in the build graph",
      "passed": true,
-     "value": 58,
+     "value": 59,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -2126,24 +2268,24 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.16119999998807907,
-  "first_view_warm_s": 0.09609999996423721,
+  "first_view_cold_s": 0.14960000002384186,
+  "first_view_warm_s": 0.09229999995231629,
   "pan_whole_area": {
-   "fps": 120.02794829636714,
-   "frame_ms_median": 0.3999999761581421,
+   "fps": 120.17489069331667,
+   "frame_ms_median": 0.5,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 90.61860302534319,
-   "frame_ms_median": 0.19999998807907104,
+   "fps": 92.21541921779333,
+   "frame_ms_median": 0.2999999523162842,
    "tiles_missing": 0
   },
-  "pan_fps": 90.61860302534319,
+  "pan_fps": 92.21541921779333,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 120.08788136087858,
-    "frame_ms_median": 0.800000011920929,
+    "fps": 120.06689797986503,
+    "frame_ms_median": 0.7000000476837158,
     "tiles_missing": 0
    }
   },
@@ -2277,5 +2419,5 @@
    }
   }
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/f39c120ae255"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/cc4d856c63d4"
 }

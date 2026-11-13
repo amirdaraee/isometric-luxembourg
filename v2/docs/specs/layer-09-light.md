@@ -32,6 +32,10 @@ of sun positions per season, or rendered in the viewer from the depth buffer for
    and deepens to the night's by −6°. No value steps anywhere between day and night (unit test `grade.test.ts`).
 7. **Night** (owner, 10 Nov 2026: readable, a deep blue and not black, moonlit): see layer 10 rule 4.
 
+8. **A landmark cutaway's opening** (owner, 13 Nov 2026) is lit by the sky only: the hour's sky light at one
+   level on every face, no cast shadow, no sun, fill or moon by direction (landmark-cutaways.md rule 3 and "In the
+   viewer"; `light.json` "cutaway"). Only while a cutaway is on, and only on the opening's own pixels.
+
 **Checks.**
 - L9.1 (gate) Shadows move with `?hour`: the shadow direction measured from building edges matches the sun azimuth
   within 10° at 08:00, 13:00 and 19:00 (brief 5).
@@ -40,4 +44,6 @@ of sun positions per season, or rendered in the viewer from the depth buffer for
 - L9.3 (gate) Speed: lighting pass ≤ 4 ms per frame on a mid phone at the reference view.
 - L9.4 (owner) Golden hour by code vs an AI-painted golden hour of the same view (G3).
 - L9.5 (unit test, `v2/web/src/grade.test.ts`) Day is untouched by the golden-hour and night settings; golden hour
-  is brighter and warmer than day's sky light; no value jumps by more than 0.012 per 0.01° from 8° to −9°.
+  is brighter and warmer than day's sky light; no value jumps by more than 0.012 per 0.01° from 8° to −9°. A
+  cutaway's opening: 0.85 by day, about 0.84 and warm at golden hour, about 0.31 and blue at night, always the
+  sky's own colour.

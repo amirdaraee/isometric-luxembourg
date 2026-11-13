@@ -16,6 +16,13 @@ computed per pixel from the pixel's world position on its surface (from the dept
   trees       crowns of leaf clumps (a cell pattern on the crown's surface) with darker gaps between them
 Windows, doors and shop fronts are the facade layout's rectangles (straight by construction, brief 6); shutters stand
 beside a window only where both fit inside the wall's outline.
+
+Places of worship (the owner's decision of 13 Nov 2026; the facade layout says which walls, facades.md rule 6):
+  walls       the stone of landmark_styles.json's kind "place_of_worship" (a building's own entry goes first), coursed
+              ashlar, no floor cornices (a nave has no storeys), no banded ground floor
+  windows     the layout's tall rectangle drawn as an arched window, its head round or pointed: a stone frame along
+              the arch, leaded glass in two lights, dark with some stained panes; no shutters
+  doors       a plank door under a round arch, in stone; no fanlight
 """
 from __future__ import annotations
 
@@ -37,7 +44,10 @@ ROOFS = [("roof_tile_old", "tile", 0.1), ("roof_tile", "tile", 0.08), ("roof_til
 SHUTTERS = ["shutter_green", "shutter_blue", "shutter_red", "shutter_grey"]
 DOORS = ["door_green", "door_red", "door_blue", "door_wood"]
 AWNINGS = ["awning_red", "awning_green", "awning_blue", "awning_yellow"]
-OPEN_KIND = {"window": 0, "door": 1, "garage": 2, "shopfront": 3, "shutter": 4}
+OPEN_KIND = {"window": 0, "door": 1, "garage": 2, "shopfront": 3, "shutter": 4, "church": 5, "portal": 6}
+STAINED = ["stained_blue", "stained_red", "stained_amber", "stained_green"]
+POINTED = 0.8660254037844386          # a pointed head's height over its width (two arcs struck from the springs)
+LUMA = np.array([0.2126, 0.7152, 0.0722])
 
 
 def B(name):
@@ -48,24 +58,45 @@ def mix(a, b, t):
     return a * (1 - t) + b * t
 
 
-def landmark_styles() -> dict:
-    """Well-known buildings' own materials, by ACT building id (v2/data/structures/landmark_styles.json)."""
+def landmark_styles(part="buildings") -> dict:
+    """Well-known buildings' own materials, by ACT building id; part "kinds": the materials of a kind of building
+    (v2/data/structures/landmark_styles.json)."""
     import json
     from v2.config import V2
-    return json.loads((V2 / "data" / "structures" / "landmark_styles.json").read_text())["buildings"]
+    return json.loads((V2 / "data" / "structures" / "landmark_styles.json").read_text()).get(part, {})
+
+
+def head_height(width, pointed):
+    """How far an arched window's head rises above its springing line."""
+    return width * (POINTED if pointed else 0.5)
+
+
+def arch_outline(u0, v0, u1, v1, pointed, n=6):
+    """An arched opening in its wall's (u, v): the layout's rectangle with a round or a pointed head, as a convex
+    polygon (counter-clockwise from the lower left corner)."""
+    W = u1 - u0
+    vs = v1 - head_height(W, pointed)
+    pts = [(u0, v0), (u1, v0), (u1, vs)]
+    if pointed:                                                # each side an arc struck from the other spring
+        pts += [(u0 + W * math.cos(a), vs + W * math.sin(a)) for a in np.linspace(0, math.pi / 3, n + 1)[1:]]
+        pts += [(u1 + W * math.cos(a), vs + W * math.sin(a)) for a in np.linspace(2 * math.pi / 3, math.pi, n + 1)[1:-1]]
+    else:
+        pts += [((u0 + u1) / 2 + W / 2 * math.cos(a), vs + W / 2 * math.sin(a)) for a in np.linspace(0, math.pi, 2 * n + 1)[1:-1]]
+    return pts + [(u0, vs)]
 
 
 class Style:
     """One building's materials, chosen once from its id (deterministic)."""
 
-    def __init__(self, bid: str, roof_shape: str, known: dict | None = None):
+    def __init__(self, bid: str, roof_shape: str, known: dict | None = None, church: bool = False):
         known = known or {}                    # a well-known building's own materials (landmark_styles.json)
+        self.church = church                   # the walls of a place of worship
         self.facade = known.get("facade") or FACADES[int(h01(bid + "facade") * len(FACADES)) % len(FACADES)]
         stone = known["stone"] if "stone" in known else (h01(bid + "w") < 0.18 and "facade" not in known)
         # the building's own tone: every house a little lighter or darker than its neighbour of the same colour
         self.stone = stone
         self.wall = np.minimum((B("wall_stone") if stone else B(self.facade)) * (0.93 + 0.11 * h01(bid + "t")), 255.0)
-        self.rustic = (not stone) and h01(bid + "g") < 0.3
+        self.rustic = (not stone) and not church and h01(bid + "g") < 0.3
         self.surround = np.minimum(mix(B("trim"), B("plinth"), 0.12 if stone else 0.3) * (0.96 + 0.06 * h01(bid + "u")), 255.0)
         self.panes = "six" if h01(bid + "p") < 0.4 else "cross"
         rt = 0.93 + 0.12 * h01(bid + "rt")
@@ -96,6 +127,20 @@ class ArtA:
         self.styles = [Style(b["id"], b.get("roof_shape", ""), known.get(b["id"])) for b in scene.buildings]
         walls = scene.facades["walls"]
         self.walls = walls
+        # places of worship: the style of their church walls; a building that is mostly church is that style all over
+        kind = landmark_styles("kinds").get("place_of_worship", {})
+        self.church = {}
+        for bi, b in enumerate(scene.buildings):
+            rec = scene.facades.get("worship", {}).get(b["id"])
+            if rec is None:
+                continue
+            own = known.get(b["id"], {})
+            mat = own if ("facade" in own or "stone" in own) else {**kind, **own}
+            self.church[bi] = Style(b["id"], b.get("roof_shape", ""), mat, church=True)
+            if rec.get("share", 1.0) >= 0.5:
+                self.styles[bi] = self.church[bi]
+        self.w_church = np.array([bool(w.get("worship")) for w in walls], bool)
+        self.w_joined = np.array([bool(w.get("merged")) for w in walls], bool)      # a church's walls joined in one plane
         self.w_base = np.array([w["base"][0] for w in walls], float).reshape(-1, 3)
         b1 = np.array([w["base"][1] for w in walls], float).reshape(-1, 3)
         d = b1[:, :2] - self.w_base[:, :2]
@@ -141,7 +186,8 @@ class ArtA:
             u = (rel * self.w_u[ws]).sum(1)
             ok = (align > 0.98) & (dist < 0.25) & (u > -0.3) & (u < self.w_len[ws] + 0.3)
             if ok.any():
-                out[t] = ws[ok][np.argmin(dist[ok])]
+                # a church's joined wall goes before the pieces it is made of (it holds the windows)
+                out[t] = ws[ok][np.argmin(dist[ok] - self.w_joined[ws[ok]])]
         return out
 
     # ------------------------------------------------------------------ openings (and shutters) as quads
@@ -150,30 +196,66 @@ class ArtA:
         from v2.data.scene.facades import window_world
         bidx = {b["id"]: i for i, b in enumerate(self.scene.buildings)}
         M = Mesh()
-        kind, frame, bld = [], [], []
+        kind, frame, bld, tone, head = [], [], [], [], []
+        # an opening's own number: its place in the order of the house rule's openings (each window's glass tone
+        # is a hash of it). A church wall's openings are numbered apart, below zero, and the wall passes over the
+        # numbers the house rule had used on it (the layout's "house_rule"), so that every other wall's are kept
+        count = [0, -1]
 
-        def add(w, bi, r, k, cls):
+        def shutters_of(r, outline):
+            u0, v0, u1, v1 = (float(x) for x in r[:4])
+            sw = (u1 - u0) / 2
+            return [s for s in ((u0 - sw - 0.05, v0, u0 - 0.05, v1), (u1 + 0.05, v0, u1 + 0.05 + sw, v1))
+                    if outline.buffer(-0.05).contains(box(*s))]
+
+        def add(w, bi, r, k, cls, pointed=None):
             c = np.array(window_world(w, [float(x) for x in r[:4]]), float)
             nx, ny = w["normal"]
-            c = c + np.array([nx * offset, ny * offset, 0.0])
-            M.quad(c[0], c[1], c[2], c[3], cls, bi, "buildings.window")
-            kind.extend([OPEN_KIND[k]] * 2)
-            frame.extend([np.r_[c[0], c[1] - c[0], c[3] - c[0]]] * 2)
-            bld.extend([bi] * 2)
+            off = np.array([nx * offset, ny * offset, 0.0])
+            c = c + off
+            n = 2
+            if pointed is None:
+                M.quad(c[0], c[1], c[2], c[3], cls, bi, "buildings.window")
+            else:                                              # an arched window: its outline, as a fan
+                (e0, n0, z0), (e1, n1, _) = w["base"]
+                L = w["length"] or 1.0
+                ux, uy = (e1 - e0) / L, (n1 - n0) / L
+                pts = arch_outline(*(float(x) for x in r[:4]), pointed)
+                V = np.array([(e0 + ux * u, n0 + uy * u, z0 + v) for u, v in pts]) + off
+                n = len(pts) - 2
+                M.add(V, [[0, i, i + 1] for i in range(1, n + 1)], cls, bi, "buildings.window")
+            kind.extend([OPEN_KIND[k]] * n)
+            frame.extend([np.r_[c[0], c[1] - c[0], c[3] - c[0]]] * n)
+            bld.extend([bi] * n)
+            head.extend([0 if pointed is None else (2 if pointed else 1)] * n)
+            if w.get("worship"):
+                tone.extend([count[1]] * n)
+                count[1] -= 1
+            else:
+                tone.extend([count[0]] * n)
+                count[0] += 1
         for w in self.walls:
             bi = bidx.get(w["building"])
             if bi is None:
                 continue
             st = self.styles[bi]
             outline = Polygon(w["outline"]) if len(w.get("outline", [])) >= 4 else None
+            shut = st.shutters and outline is not None and outline.is_valid
+            if w.get("worship"):
+                for r in w["windows"]:
+                    add(w, bi, r, "church", CLASS["window"], pointed=w["worship"] == "pointed")
+                for r in w["doors"]:
+                    add(w, bi, r, "garage" if (len(r) > 5 and r[5] == "garage") else "portal", CLASS["door"])
+                hr = w["house_rule"]
+                count[0] += len(hr["windows"]) + hr["doors"] + hr["shopfronts"]
+                if shut:
+                    count[0] += sum(len(shutters_of(r, outline)) for r in hr["windows"])
+                continue
             for r in w["windows"]:
                 add(w, bi, r, "window", CLASS["window"])
-                if st.shutters and outline is not None and outline.is_valid:
-                    u0, v0, u1, v1 = (float(x) for x in r[:4])
-                    sw = (u1 - u0) / 2
-                    for s in ((u0 - sw - 0.05, v0, u0 - 0.05, v1), (u1 + 0.05, v0, u1 + 0.05 + sw, v1)):
-                        if outline.buffer(-0.05).contains(box(*s)):
-                            add(w, bi, s, "shutter", CLASS["shutter"])
+                if shut:
+                    for s in shutters_of(r, outline):
+                        add(w, bi, s, "shutter", CLASS["shutter"])
             for r in w["doors"]:
                 add(w, bi, r, "garage" if (len(r) > 5 and r[5] == "garage") else "door", CLASS["door"])
             for r in w["shopfronts"]:
@@ -185,6 +267,8 @@ class ArtA:
         out["open_kind"] = np.array(kind, np.int8)
         out["frame"] = np.array(frame, float).reshape(-1, 9)
         out["open_bld"] = np.array(bld, np.int64)
+        out["tone"] = np.array(tone, np.int64)
+        out["head"] = np.array(head, np.int8)                  # 0 a rectangle, 1 a round head, 2 a pointed head
         return out
 
     # ------------------------------------------------------------------ shading
@@ -204,6 +288,9 @@ class ArtA:
             H = np.maximum(self.w_h[w], 0.1)
             L = self.w_len[w]
             c = rgb[has]
+            ch = self.w_church[w]                                              # a church's walls: their own style
+            if ch.any():
+                c[ch] = np.array([self.church[b].wall for b in bi[has][ch]])
             if self.materials:
                 names = np.array([("wall_stone" if self.styles[b].stone else
                                    "wall_" + self.styles[b].facade.split("_", 1)[1]) for b in bi[has]])
@@ -213,7 +300,7 @@ class ArtA:
                     if t is not None:
                         c[mm] = t
             trim = B("trim")
-            sty = [self.styles[b] for b in bi[has]]
+            sty = [self.church[b] if k else self.styles[b] for b, k in zip(bi[has], ch)]
             # the wall's own surface: coursed ashlar on stone buildings; on render a faint mottle and, on some
             # buildings, a banded ground floor
             stone_w = np.array([x.stone for x in sty], bool)
@@ -227,13 +314,13 @@ class ArtA:
             c[plinth] = mix(c[plinth], B("plinth"), 0.75)
             c[(v >= 0.7) & (v < 0.82)] *= 0.86                               # the plinth's top edge
             # a cornice line at each floor line of the layout (3.6 m, then every 3.0 m) below the eave
-            fl = (v > 3.0) & (v < H - 0.6) & band(v - 3.6, 3.0, 0.16)
+            fl = (v > 3.0) & (v < H - 0.6) & band(v - 3.6, 3.0, 0.16) & ~ch
             c[fl] = mix(c[fl], trim, 0.55) * 0.97
-            c[(v > 3.0) & (v < H - 0.6) & band(v - 3.6 + 0.14, 3.0, 0.08)] *= 0.86   # its shadowless underside line
+            c[(v > 3.0) & (v < H - 0.6) & band(v - 3.6 + 0.14, 3.0, 0.08) & ~ch] *= 0.86   # its shadowless underside line
             eave = (v > H - 0.42) & (v <= H + 0.02) & (H > 2.5)
             c[eave] = trim
             c[(v > H - 0.52) & (v <= H - 0.42) & (H > 2.5)] *= 0.82
-            q = np.array([self.styles[b].quoins for b in bi[has]])
+            q = np.array([x.quoins for x in sty], bool)
             corner = q & ((u < 0.5) | (u > L - 0.5)) & (np.floor(v / 0.4) % 2 == 0) & (v > 0.7) & (v < H - 0.45)
             c[corner] = mix(c[corner], trim, 0.8)
             # stone round the openings: jambs, a lintel with a keystone and a sill at every window; jambs and a
@@ -252,6 +339,8 @@ class ArtA:
                 if len(wn):
                     u0, v0, u1, v1 = wn[:, 0][None], wn[:, 1][None], wn[:, 2][None], wn[:, 3][None]
                     box = (uu > u0 - 0.15) & (uu < u1 + 0.15) & (vv > v0 - 0.05) & (vv < v1 + 0.24)
+                    if self.w_church[w[g[0]]]:                 # an arched window has its stone frame in its own
+                        box = np.zeros_like(box)               # outline (openings_rgb); the wall draws its sill
                     sill = (uu > u0 - 0.24) & (uu < u1 + 0.24) & (vv > v0 - 0.17) & (vv <= v0 - 0.03)
                     key = box & (np.abs(uu - (u0 + u1) / 2) < 0.11) & (vv > v1)
                     under = sill & (vv < v0 - 0.12)
@@ -269,7 +358,7 @@ class ArtA:
             c[sur] = np.array([x.surround for x in sty]).reshape(-1, 3)[sur] * shade[sur, None]
             rgb[has] = c
             if cls_out is not None:
-                stone = (v < 0.82) | ((v > 3.0) & (v < H - 0.6) & band(v - 3.6 + 0.04, 3.0, 0.3)) | \
+                stone = (v < 0.82) | ((v > 3.0) & (v < H - 0.6) & band(v - 3.6 + 0.04, 3.0, 0.3) & ~ch) | \
                     ((v > H - 0.52) & (v <= H + 0.02) & (H > 2.5)) | corner | sur
                 sub = cls_out[has]
                 sub[stone] = CLASS["trim"]
@@ -343,7 +432,7 @@ class ArtA:
         s = (rel * au).sum(1) / np.maximum(W ** 2, 1e-9) * W               # metres across
         t = (rel * av).sum(1) / np.maximum(H ** 2, 1e-9) * H               # metres up
         rgb = np.zeros((len(k), 3))
-        cls = np.select([k == OPEN_KIND["shutter"], np.isin(k, (OPEN_KIND["door"], OPEN_KIND["garage"])),
+        cls = np.select([k == OPEN_KIND["shutter"], np.isin(k, (OPEN_KIND["door"], OPEN_KIND["garage"], OPEN_KIND["portal"])),
                          k == OPEN_KIND["shopfront"]], [CLASS["shutter"], CLASS["door"], CLASS["shopfront"]],
                         CLASS["window"]).astype(np.int64)
         trim, glass = B("trim"), B("window")
@@ -357,7 +446,7 @@ class ArtA:
         # windows: frame, glass, a central glazing bar and a transom, a sill line at the bottom
         m = k == OPEN_KIND["window"]
         # each window's glass its own tone (curtains, blinds: a hash of the window), the same all over the window
-        gl = glass * (0.86 + 0.3 * ihash(ti // 2, 51))[:, None]
+        gl = glass * (0.86 + 0.3 * ihash(O["tone"][ti], 51))[:, None]
         c = np.where(edge[:, None], trim, gl)
         six = np.array([x.panes == "six" for x in st], bool)
         bar = (np.abs(s - W / 2) < 0.04) | np.where(six, (np.abs(t - H / 3) < 0.035) | (np.abs(t - 2 * H / 3) < 0.035),
@@ -382,6 +471,10 @@ class ArtA:
         rgb[m] = c[m]
         cls[m & fan & ~dtrim] = CLASS["window"]
         cls[m & dtrim] = CLASS["trim"]
+        # a church's windows and doors: arched, in stone
+        m = np.isin(k, (OPEN_KIND["church"], OPEN_KIND["portal"]))
+        if m.any():
+            rgb[m], cls[m] = self.church_rgb(O, ti[m], k[m], s[m], t[m], W[m], H[m], bi[m])
         # garage doors: horizontal panels
         m = k == OPEN_KIND["garage"]
         c = door * np.where(band(t, 0.5, 0.05), 0.75, 1.0)[:, None]
@@ -414,6 +507,46 @@ class ArtA:
         cls[m & ~aw & bars] = CLASS["door"]                  # the shop's painted frame
         cls[m & ~aw & ~bars] = CLASS["window"]
         return rgb, cls
+
+    def church_rgb(self, O, ti, k, s, t, W, H, bi):
+        """A place of worship's arched windows and doors, from (s, t) metres across and up their rectangle:
+        (albedo, class). The window is its arched outline (openings_mesh): a stone frame along it and a sill, a
+        mullion between two lights, lead lines, dark glass with some stained panes (each pane's colour a hash of
+        the window and the pane, no light). Every pane is as light as the plain glass: a stained pane differs in
+        colour only, so the glass of a wall has one brightness whichever way the wall faces (L5.1). The door is a
+        rectangle: planks under a round arch, stone above it."""
+        stone = np.array([self.church[b].surround if b in self.church else self.styles[b].surround for b in bi]).reshape(-1, 3)
+        pointed = O["head"][ti] == 2
+        win = k == OPEN_KIND["church"]
+        ts = H - np.where(win, np.where(pointed, POINTED, 0.5) * W, 0.5 * W)       # the springing line
+        # how far inside the arch the pixel is (metres; negative outside it)
+        d_head = np.where(pointed, W - np.maximum(np.hypot(s, t - ts), np.hypot(s - W, t - ts)),
+                          W / 2 - np.hypot(s - W / 2, t - ts))
+        d = np.where(t > ts, d_head, np.minimum(s, W - s))
+        # windows
+        glass = B("glass_church")
+        row = np.floor(t / 0.55)
+        light = np.floor(s / np.maximum(W / 2, 1e-6))
+        h = ihash(O["tone"][ti], row, light, 53)
+        jewel = np.array([B(n) for n in STAINED])[(ihash(O["tone"][ti], row, light, 54) * len(STAINED)).astype(int).clip(0, len(STAINED) - 1)]
+        stained = mix(glass, jewel, 0.5)
+        stained = stained * ((glass @ LUMA) / np.maximum(stained @ LUMA, 1e-6))[:, None]
+        pane = np.where((h < 0.4)[:, None], stained, glass)
+        lead = (np.abs(s - W / 2) < 0.05) | band(t, 0.55, 0.045)
+        c = np.where(lead[:, None], glass * 0.55, pane)
+        frame = (d < 0.11) | (t < 0.1)
+        c = np.where(frame[:, None], stone, c)
+        cls = np.where(frame, CLASS["trim"], CLASS["window"]).astype(np.int64)
+        # doors
+        wood = B("door_wood")
+        plank = band(s, 0.3, 0.035) | (np.abs(s - W / 2) < 0.03)
+        strap = (np.abs(t - 0.5) < 0.04) | (np.abs(t - 1.5) < 0.04)
+        cd = np.where((plank | strap)[:, None], wood * 0.72, wood)
+        out = d < 0.09
+        cd = np.where(out[:, None], stone * np.where(d < 0, 1.0, 0.9)[:, None], cd)
+        c = np.where(win[:, None], c, cd)
+        cls = np.where(win, cls, np.where(out, CLASS["trim"], CLASS["door"]))
+        return c, cls
 
     # ------------------------------------------------------------------ structures and trees
     @staticmethod

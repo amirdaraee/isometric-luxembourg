@@ -15,6 +15,14 @@ Chosen by `params.json` art.method (or `V2_ART`); each method builds into its ow
   on render; a stone surround with a lintel, keystone and sill round every window and a surround and lintel round
   every door; windows with a cross or six panes, each window's glass its own tone; gravel on flat roofs. All of it
   per pixel from the pixel's place on its wall, straight by construction.
+- **A, places of worship (owner, 13 Nov 2026):** the walls the facade layout marks as a church's (facades.md rules
+  14-20) are drawn as a church, not as a house. Walls: stone (the kind "place_of_worship" of
+  `v2/data/structures/landmark_styles.json`; a building's own entry there goes first), coursed ashlar, no cornice
+  at floor lines, no banded ground floor. Windows: the layout's tall rectangle as an arched window, its outline the
+  arch itself (round or pointed), a stone frame along the arch and a sill, a mullion between two lights, lead
+  lines, dark glass with some stained panes. No shutters. Doors: planks under a round arch, in stone, no fanlight.
+  No light in any of it. A building that is mostly church (half its footprint or more) is stone all over; where
+  the church is a smaller part of a building, only its walls are.
 - **B, C (stopped at G2, 10 Nov 2026):** `v2/layers/bakeoff.py`, `v2/bakeoff/` (kept as the bake-off's record).
 
 **Inputs.** Scene buildings (ACT LoD2: footprint, walls, roof planes, roof shape, installations; `mesh.npz`),
@@ -37,10 +45,13 @@ index) for hover.
   sides (for the photo's sun) differs by ≤ 5%; the shadow detector finds nothing (brief 5).
 - L5.2 (gate) Line score: building edges and window rows within 1 px of the 3D model's lines over 95% of their
   length (brief 6). Measured (`check_lines`, phase 2): every crease (surfaces meeting at 20° or more, or of
-  different classes) and outline of the model, and the top and bottom of every window, sampled every 0.25 m where
+  different classes) and outline of the model, and the top and bottom of every window (of an arched church window,
+  which has no straight top, the sill), sampled every 0.25 m where
   layer 5 shows that building; the drawn line is the luminance step (>= 12/255) across the projected line nearest
   to it, within 3 px; it must lie within 1 px. Building edges and window rows are scored separately, each >= 95%.
 - L5.3 (gate) 0 pixels outside the outline + 2 px (cut rule); 0 building pixels missing inside it (> 99.5%).
 - L5.4 (gate) No cars (vehicle detector on every input and output; brief 9).
 - L5.5 (gate) Seams and layer-off checks.
 - L5.6 (owner) The bake-off comparison at fixed views (G2).
+- L5.7 (gate, `check_lines`) Places of worship: on the buildings that are a church all over (every wall), 0 shutter
+  pixels, 0 shop front pixels, and 0 window glass pixels in a house window's colour.

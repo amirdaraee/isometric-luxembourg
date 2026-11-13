@@ -17,7 +17,7 @@
   in place in the viewer (`?cutaway`). The cathedral's interior is painted (since 13 November, section 9, "In the
   map"); the palace and the abbey have a placeholder interior. The Bock casemates' cutaway is not built.
 - **Two quotes are in the ledger, not approved:** q0012 (cathedral, at most $0.54) and q0013 (the other three, at
-  most $0.90).
+  most $0.90). (q0013 was dropped on 13 November, unspent: section 10.)
 - **Added 13 November:** the cathedral's painting was tried once, for $0.43. The interior style works; no painting
   passed the checks. Section 9 has the run, the free fixes and the new quote q0015 (not approved).
 - **Added later on 13 November:** q0015 ran ($0.47, four paintings, none passes). The light check was then looked
@@ -25,8 +25,11 @@
 - **Added last on 13 November: the cathedral's painting is in the map.** The owner took `cathedral-open_1` by
   eye ("Take it on my eye (Recommended)"). For painted cutaways the light check is now a reported number; the other
   checks stay gates, and the owner's eye (K7) is recorded per landmark. $0. Section 9, "In the map".
-- `data/v2/test/release/current.json` points at the final A build (`f39c120ae255`), which holds the painted
-  cathedral cutaway.
+- **Added after that on 13 November, three decisions of the owner (section 10):** a cutaway's opening is lit by
+  the sky only; churches have church facades, in code; quote q0013 is dropped. $0, no pod. 57 of 57 stages, 273
+  gate entries, 0 fail, no threshold changed.
+- `data/v2/test/release/current.json` points at the final A build (`cc4d856c63d4`), which holds the painted
+  cathedral cutaway, the sky light rule's settings and the church facades.
 
 ## 2. What changed in the look
 
@@ -153,7 +156,8 @@ painted cathedral in the map is `test_cutaway_cathedral_map.jpg` and `..._map_wi
 - **Not done:**
   - **The Bock casemates' cutaway** (a cut through rock). Its gallery data exists.
   - **The opening's own shadow** (the `?hour` part of K3). The shadow map still holds the whole building, so the
-    opened interior is in shade at every hour. It was left out rather than faked.
+    opened interior is in shade at every hour. It was left out rather than faked. (Since 13 November the opening
+    is lit by the sky only and takes no cast shadow: section 10.)
   - K7 is the owner's.
 
 **Quotes (not approved, nothing committed, no pod):**
@@ -175,13 +179,14 @@ painted cathedral in the map is `test_cutaway_cathedral_map.jpg` and `..._map_wi
 
 - **Richness against v1.** Closer, not there. Still plainer than v1: roofs (no chimneys or dormer windows beyond
   ACT's shapes, faint courses), no balconies or signs, flat-roof detail, bridges and viaducts unchanged, car parks
-  without bays. The cathedral and other churches get house windows and shutters from the facade rule.
+  without bays. The cathedral and other churches got house windows and shutters from the facade rule; since
+  13 November they have church facades (section 10).
 - **Palette, grade and ink:** one small change so far (saturation cap). The owner's eye at fixed views is the tuning.
 - **Code vs AI night and golden hour comparison** (plan section 9): not done; no AI version exists.
 - **Seasons:** the viewer has them from Phase 1 (`?season=`, `?snow`). Not tuned or reviewed in Phase 3.
 - **Events as objects:** not started.
-- **Cutaways:** the palace's and the abbey's paintings (q0013, not approved), the casemates' cutaway, the
-  opening's shadow. The cathedral's painting is in the map.
+- **Cutaways:** the palace's and the abbey's paintings (no quote: q0013 was dropped, a fresh one comes later), the
+  casemates' cutaway. The cathedral's painting is in the map, lit by the sky only (section 10).
 - **Owner checks:** L2.5, L14.4, K7.
 
 ## 7. Open questions for the owner
@@ -199,9 +204,11 @@ painted cathedral in the map is `test_cutaway_cathedral_map.jpg` and `..._map_wi
 8. **Tunnel view:** tubes are drawn whole, also beyond the area's outline. Clip them?
 9. **Cutaways:** are the three cuts the right ones? The palace and abbey slices are large.
 10. **Cutaways:** the interior is in shade at every hour until the opening's shadow is solved. Accept for now?
+    (Answered on 13 November: "Light by sky only", section 10.)
 11. **Cutaways:** while one is on, far zoom switches from the merged tiles to separate layers for the whole view.
     Accept, or switch cutaways off when zoomed far out?
-12. **Quotes q0012 and q0013:** approve the cathedral first?
+12. **Quotes q0012 and q0013:** approve the cathedral first? (q0012 ran as q0014 and q0015, section 9; q0013 was
+    dropped on 13 November, section 10.)
 
 New tolerances added inside the new checks (none loosens a spec threshold; each is listed in its spec):
 - Tunnel view: samples within 5 cm of a depth-tone step or of the portal line are set aside; vehicle boxes are
@@ -750,3 +757,212 @@ in the map). 15, 16 and 17 no longer decide anything for the cathedral.
     75% margin. The casemates cannot be in it: their cutaway and paint input are not built. Each landmark also
     needs its own prompt (only the cathedral's exists), and both have floor slabs, which the painter has not been
     tried on. I recommend deciding 23 to 25 first. Phase 3 has $7.11 of $8 left.
+
+
+## 10. Sky light in cutaways, church facades, q0013 dropped (13 November, $0)
+
+Branch `v2-phase3-facades`, into `v2`. **Spent: $0.** No pod, no quote made, none approved.
+
+The owner decided three things on 13 November 2026. Each is done as decided and nothing wider.
+
+| Question | The owner's words | Done |
+|---|---|---|
+| 24 (and 10): the interior in shade by day | "Light by sky only" | The opening is lit by the sky only |
+| 25: the cathedral's outside | "Fix facades first" | Places of worship have church facades, in code |
+| 26: quote q0013 | "Drop q0013, requote later" | Released in the ledger, unspent; no new quote |
+| 23: K7 at fixed views | The owner merged PR #10 after seeing its screenshots | Closed |
+
+**Rebuilt** for the test area (`python -m v2.build test g3`): **57 of 57 stages, 273 gate entries, 0 fail** (248
+before; the 25 new ones are F16 to F19, L5.7 and K3v-sky). No threshold was changed. Release `cc4d856c63d4`.
+
+### 10.1 The opening is lit by the sky only
+
+**The rule.** For the pixels inside a cutaway's opening (the cut and the inside faces): the hour's sky light at one
+level, the same on every face. No cast shadow, from the building's own kept shell or from anything else. No sun,
+no golden-hour fill and no moon by the face's direction. The hour's colour stays, and the night takes its share of
+colour out as everywhere. Spec: `v2/docs/specs/landmark-cutaways.md` rule 3 and "In the viewer".
+
+**Where.** In the viewer's light pass (`LIGHT_CUT_FS`, `v2/web/src/gl/shaders.ts`), which is used only while a
+cutaway is on. The opening is told by the cutaway tiles' own `k`. No tile changed for it: nothing is baked.
+
+**The numbers chosen** (`v2/config/light.json` "cutaway"). The light is the sky light (`sun.ambient` 0.58 times
+the hour's sky colour) times a level:
+
+| Hour | Sky light | Level | Light on the opening | Why |
+|---|---|---|---|---|
+| Day | 0.58, white | **1.47** | **0.85** | The kept outside stone's median at 13:00 was 0.85 (section 9). The plain sky light, 0.58, is still the shade's level |
+| Golden hour | 0.78, warm | 1.08 | 0.84 | The outside stone's level at 21:18 |
+| Night | 0.25, deep blue | 1.22 | 0.31 | The outside stone's level at 23:15 |
+
+Between them the level moves with the sky's colour, without a step (unit test).
+
+**Measured** (gate `check_cutaways_view`, 24 June, 1:1, with the look pass and the night lights off so that a pixel
+is its colour times its light; lit level is lit over unlit luminance, pale surfaces, median):
+
+| Cathedral | Interior, before | Interior, now | Kept outside stone |
+|---|---|---|---|
+| Day, 13:00 | 0.494 | **0.853** | 0.835 |
+| Golden hour, 21:18 | 0.824 | **0.845** | 0.843 |
+| Night, 23:15 | 0.304 | **0.306** | 0.270 |
+
+- The palace's and the abbey's placeholder interiors measure the same (0.854, 0.844, 0.305 and 0.854, 0.843,
+  0.309) beside outside levels of 0.89 / 0.86 / 0.29 and 0.90 / 0.86 / 0.29.
+- At the cathedral view at 2:1 the interior's level by day lies between 0.851 and 0.854 for 90% of its pale
+  pixels: one light. The outside stone in that tighter view measures 0.755 by day (more of it is turned from the
+  sun), 0.843 at golden hour, 0.261 at night.
+- The outside level differs from section 9's 0.85 / 0.84 / 0.31 because these frames have no window glow and no
+  look pass, and frame another part of the building.
+
+| Gate | What | Result |
+|---|---|---|
+| K3v-sky-even, 3 landmarks x 3 hours | Opening pixels that are not their unlit colour times the one sky light, by more than 1 of 255 | **0** of 31,208, 32,416 and 43,691 |
+| K3v-sky-outside, 3 x 3 | Pixels the rule changes outside the opening (the same frame with `?off=cutlight`) | **0** in all 9 |
+| K6v-off, 7 views | A view after the cutaway was on and off against one that never had it on | 0 |
+| By hand, cathedral view at 2:1, day, golden hour, night, with and without the look pass | Pixels the rule changes outside the opening | **0** in all 6; it changes 112,671 to 124,832 inside |
+
+Sheets: `v2/docs/img/test_cutaway_cathedral_skylight.jpg` (before and after at day, golden hour, night) and
+`test_cutaway_cathedral_skylight_wide.jpg` (in the map at 1:2, and the cutaway off).
+
+### 10.2 Church facades
+
+**Which buildings**, from the data (`v2/data/scene/worship.py`; spec `v2/docs/specs/facades.md` rules 14 to 20):
+OSM outlines tagged `building=church`, `cathedral` or `chapel`, or `amenity=place_of_worship` (a new fetch,
+`fetch_osm_worship`, 52 elements over the commune); the landmark list's cards of category "church"; an entry in
+`landmark_styles.json` with `"kind": "place_of_worship"`. Ten in the test area:
+
+| Building | Source | Share of the ACT building | Church windows | House windows replaced |
+|---|---|---|---|---|
+| Notre-Dame Cathedral | `landmark_styles.json` (OSM maps it as a point only) | all | 65 | 259 |
+| Sainte-Cunégonde, Clausen | OSM way 48994118 | 97% | 24 | 84 |
+| Saint-Alphonse | OSM way 48995724 | 94% | 30 | 155 |
+| Saint-Mathieu, Pfaffenthal | OSM way 51071557 | 91% | 15 | 61 |
+| A church beside St Michael's, no name | OSM relation 11371126, `building=church` | 90% | 41 | 175 |
+| Al Kapell, Rham plateau | OSM way 48994393, `building=chapel` | 97% | 14 | 64 |
+| St Michael's | OSM way 48994777 | 69% | 9 | 40 |
+| Trinity Church | OSM way 52469831 | 38% | 19 | 158 |
+| St Jean du Grund (the abbey's church) | OSM way 32858724 | 14% of the abbey's building | 23 | 73 |
+| The hospice's church, Pfaffenthal | OSM way 162041608 | 8% | 9 | 58 |
+
+- 873 walls are church walls. 1,127 house windows and 20 shop fronts went; 249 church windows came.
+- Where the church is part of a larger ACT building (the last four), only the walls in the OSM outline changed.
+- Not taken: OSM nodes (prayer rooms in houses are mapped so) and one site relation (the abbey's cultural centre,
+  tagged `amenity=place_of_worship`: a list of buildings, not an outline).
+- The Saint-Quirin chapel has no ACT building.
+
+**What they get.**
+- **Windows:** one row of tall arched windows per wall, 1.3 m wide, from 2.6 m above the wall's bottom to 1 m
+  under the eave, 9 m at most; one per bay of 4.5 m, and between buttresses one per gap. Round-headed; pointed on
+  the cathedral (its entry in `landmark_styles.json`). Leaded dark glass with some stained panes, a stone frame.
+  No shutters.
+- **Walls:** stone (the kind "place_of_worship" in `landmark_styles.json`); the abbey's church keeps the abbey's
+  white, its own entry. No floor cornices, no banded ground floor.
+- **Doors:** planks under a round arch, no fanlight. No shop fronts.
+- **Night:** a church is lit or dark as a whole. Lit, its windows show a dim stained-glass glow (0.42 of a house
+  window's strength, no halo). On the three churches that are a church all over, the light the night pass adds
+  went from a mean (87, 70, 43) of 255, warm, over 37,983 pixels to (54, 46, 42) over 9,392.
+- ACT gives many church walls as triangles, which hold no tall window. A church's walls in one plane are joined
+  first (489 joined walls).
+
+**Gates.** F16 to F19 on the layout, L5.7 on the drawn tiles: 0 shutter pixels, 0 shop front pixels and 0 window
+glass pixels in a house window's colour on the buildings that are a church all over (3 buildings, 258,160 pixels,
+10,607 of them church glass). F3 (straight rows) holds on church walls: one sill line, one top line.
+
+**Every other pixel is as it was.** Measured against the build before (`f39c120ae255`):
+
+| What | Result |
+|---|---|
+| Tile files of ground, relief, water, transport, structures and trees, all zooms | all identical, byte for byte |
+| Layer 5 tile files without a church pixel | 228 of 228 identical |
+| Layer 5 tile files that differ | 50, every one holds a church |
+| Viewer, cutaway off, day and golden hour: 16 frames at 1:2 to 2:1 (the churches, Grund, the Bock, the facade view, tunnel view) | 3,874 to 176,832 pixels differ per frame; **all on church buildings**, 0 elsewhere |
+| The same by night: 13 frames | all on church buildings but for 0 to 701 pixels per frame within 3 m of one (the halos of the house windows that are gone); 0 further away |
+| Night window list (`windows.bin`) | 19,318 of 19,727 rows unchanged at the same place; the 409 changed rows are all on a building with a church part; 97 church windows added at the end |
+| Far zoom (the whole area, merged tiles) | 263,172 pixels differ by day; 12,222 on a church, the rest by 19 of 255 at most |
+
+- The far zoom's merged tiles are lossy: 16 of them hold a church and were coded again, so their other pixels
+  moved by a few levels. The 17 merged tiles without a church are identical.
+- To keep it so, each church wall remembers how many openings the house rule had given it. A window's glass tone
+  and a night window's seed go by the opening's place in the order of all openings; without the count every
+  later window in the map would have changed tone and every later night window its chance to be lit.
+
+Sheets: `v2/docs/img/test_church_facades.jpg` (the cathedral, St Michael's, St Jean du Grund; day and night, before
+and after) and `test_church_facades_others.jpg` (the other five that the camera sees well).
+
+### 10.3 q0013 is dropped
+
+- Released in the ledger on 13 November, unspent and never approved. No replacement quote was made. A fresh quote
+  for the palace and the abbey comes only after the church facades and the light rule are settled.
+- **One change to the ledger's rule, needed for it.** `release` took only approved quotes; q0013 was never
+  approved, and the command refused. It now also takes an unapproved quote: the quote can then no longer be
+  approved or run. It cannot make a spend possible. Unit test and `v2/docs/specs/ledger.md` updated.
+- Ledger: valid. Phase 3 line: $8 cap, $0.8928 spent, $0 committed, $7.1072 left.
+
+### 10.4 Gates, with the numbers near their limits
+
+| Check | Before | Now | Limit |
+|---|---|---|---|
+| Build stages | 56 of 56 | **57 of 57** (the new fetch) | all |
+| Gate entries, failing | 248, 0 | **273, 0** | 0 |
+| Line score, building edges | 96.33% | **96.35%** | ≥ 95% |
+| Line score, window rows | 99.84% | 99.84% | ≥ 95% |
+| Shadows at 10:00, 13:00, 16:00 | 98.6%, 99.63%, 97.18% | the same | ≥ 97% |
+| Seams, ground / water / transport | 2.645 / 1.502 / 1.395 | the same | ≤ 3 |
+| No baked shadows, worst material | 4.0% | 4.0% | ≤ 5% |
+| K1a cathedral cut outline; K3 wall tone | 97.2%; 2.0% | the same | ≥ 95%; ≤ 5% |
+| First view; panning | 0.096 s; 90.6 fps | 0.092 s; 92.2 fps | ≤ 0.5 s; ≥ 60 |
+
+- The first build of this change failed the no-baked-shadows gate on one material: the glass of Saint-Alphonse,
+  0.48 in shade against lit. The cause was the drawing, not light: stained panes were lighter and darker than
+  plain ones, and a wall's few panes gave another median than the next wall's. Every pane is now as light as the
+  plain glass and differs in colour only. The limit was not touched.
+- The window-row score samples the sill of an arched window, not its top: an arch has no straight top.
+
+### 10.5 What still looks wrong
+
+- **The church windows are a rule, not the buildings' own.** Every wall gets the same tall window. The cathedral
+  has no rose window, no tracery, no portals; its towers have one slit a side and no belfry openings. Low walls
+  get small arched windows that read as oddly small beside the tall ones.
+- **Stained glass by day is muted.** Every pane has the plain glass's brightness, to keep the shadow gate honest,
+  so amber reads as brown. Inside the cutaway the painted glass is far brighter than the outside's.
+- **Blank church walls.** Saint-Alphonse's upper nave wall and some of St Michael's walls are flagged as party
+  walls and get nothing. St Michael's own walls show few church windows to the camera.
+- **St Jean du Grund's nave windows do not glow at night.** That wall's outward direction is taken from the
+  centre of the whole abbey building, which lies on the other side, so the night list leaves it out. The same
+  was true of its house windows.
+- **The unnamed church beside St Michael's** (OSM relation 11371126, noted there as "transformation into
+  flats?") was a pink house and is now a stone church with tall windows. It is what the data says; it may be wrong.
+- **Mixed buildings.** Trinity Church and the hospice's church are stone only on their church walls; the join
+  with the rest of the building is abrupt.
+- **Night:** at 23:15 about half the churches are dark by chance; the glow is in square panes and reads as
+  coloured tiles at 2:1.
+- **The interior's light is flat.** By day it is as bright as sunlit stone on every face, so the opening has no
+  depth beyond the painting's own lines; at golden hour it is strongly yellow.
+- From section 9, unchanged: the pews are too big, the red door, trees over the lower right, the soft painting.
+
+### 10.6 Not verified
+
+- On a phone or with a real GPU window (headless Chrome on this laptop only).
+- With the simulation running (frames were taken with `nosim`).
+- Other seasons and snow on the lit opening and on the church facades.
+- The church rule outside the test area: the commune was not built.
+- Whether each tagged building is a church in fact (no photographs were consulted).
+
+### 10.7 Open questions
+
+23 to 26 are closed (above). New:
+
+27. **The unnamed church beside St Michael's** (OSM relation 11371126): keep it as a church, or enter it in a
+    small exceptions list as a house?
+28. **St Jean du Grund** keeps the abbey's white. Stone, as the other churches, or white?
+29. **Stained glass by day:** muted so that the shadow gate holds. Accept, or give church glass its own measure
+    in that gate so the panes can be bright?
+30. **Night:** a church is lit as often as a home's window (55% in the evening, 18% late). Always lit, always
+    dark, or as it is?
+31. **The night level of the opening** (0.31, the outside's level) leaves the nave a dim blue room. Brighter at
+    night, as if lit from inside?
+32. **Window numbering.** Glass tones and night seeds go by an opening's place in the order of all openings,
+    which is why church walls must remember the house rule's count. At Phase 4 the whole city is built anew: key
+    them by building and wall then, and drop the count? Every window's tone would change once.
+33. **Other landmarks' facades** (the palace and the rest of the landmark list) are not covered by this rule and
+    were not touched. Which next, if any?
+34. **A fresh quote for the palace and the abbey:** say when.

@@ -160,6 +160,10 @@ def check_facades(ctx):
                 overlap.append(w["wall"]); break
         rows = {round(x[1] - p["sill_m"], 3) for x in w["windows"]}
         allowed = {round(v, 3) for v in lines(w["floors"])}
+        if w.get("worship"):
+            # a place of worship: one row of tall windows, all their sills on one line and all their tops on one
+            rows = {(round(x[1], 3), round(x[3], 3)) for x in w["windows"]}
+            allowed = rows if len(rows) == 1 else set()
         if not rows <= allowed:
             misrow.append(w["wall"])
         # the floor count must fit the wall: the top floor's line is below the eave
@@ -231,6 +235,30 @@ def check_facades(ctx):
             k = "shopfront " + str(sf[4]).split(":")[0]
             src[k] = src.get(k, 0) + 1
     r.info("F15", "doors and shop fronts by source", src)
+    # places of worship (the owner's decision of 13 Nov 2026)
+    wor = f_all.get("worship", {})
+    cw = [w for w in walls if w.get("worship")]
+    house_win, shop, low, strays = [], [], [], []
+    for w in cw:
+        for x in w["windows"]:
+            if abs((x[2] - x[0]) - p["church_window_w_m"]) > 2e-3:          # the layout rounds to the millimetre
+                house_win.append(w["wall"])
+            if x[3] - x[1] < p["church_window_min_h_m"] - 1e-6 or x[3] > w["height"] - p["church_top_m"] + 1e-3:
+                low.append(w["wall"])
+        if w["shopfronts"]:
+            shop.append(w["wall"])
+        if w["building"] not in wor:
+            strays.append(w["wall"])
+    r.at_most("F16", "church walls with a window that is not the church rule's (its width)", len(set(house_win)), 0, sorted(set(house_win)))
+    r.at_most("F17", "church walls with a window lower than the rule's least height, or reaching into the eave",
+              len(set(low)), 0, sorted(set(low)))
+    r.at_most("F18", "church walls with a shop front", len(shop), 0, shop)
+    r.at_most("F19", "church walls of a building that is not a listed place of worship; listed places of worship "
+              "without a church wall", len(strays) + sum(1 for v in wor.values() if not v["walls"]), 0,
+              strays + [b for b, v in wor.items() if not v["walls"]])
+    r.info("F20", "places of worship: by source; church walls; church windows; house windows they replaced",
+           [{b: [v["source"], v["name"], v["walls"]] for b, v in wor.items()}, len(cw), sum(len(w["windows"]) for w in cw),
+            sum(len(w["house_rule"]["windows"]) for w in cw)])
     r.info("F7", "walls, with windows, party walls, windows",
            [len(walls), sum(1 for w in walls if w["windows"]), sum(1 for w in walls if w["party"]), sum(len(w["windows"]) for w in walls)])
     return r.result()
