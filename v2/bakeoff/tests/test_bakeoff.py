@@ -394,11 +394,17 @@ def test_a_cutaway_painting_is_cut_to_its_mask_and_judged_inside_it():
     tiles = d["unlit"].copy()                                          # a tiled floor and wall, evenly lit
     tiles[d["mask"] & ((xx + yy) % 4 == 0)] = (60, 50, 45)
     r = CP.check_candidate(tiles, d, P)
-    assert r["K2_ok"] and r["K3_ok"] and r["light_across_ok"] and r["interior_painted"]
+    assert r["K2_ok"] and r["K3_ok"] and r["light_across_within_limit"] and r["interior_painted"]
     lit = tiles.astype(float)                                          # the same with light from one side
     lit[d["mask"]] *= (0.5 + 0.5 * (xx[d["mask"]] - 24) / 48)[:, None]
     r = CP.check_candidate(lit.astype(np.uint8), d, P)
-    assert not r["light_across_ok"] and not CP.verdict(r)
+    # light across a face is a reported number with its limit, not a gate (owner, 13 Nov 2026): it is measured and
+    # says it is over; the verdict is the gates' alone
+    assert not r["light_across_within_limit"] and r["light_across_worst"] > r["light_across_limit"] == P["cutaway_shadow_lum_tol"]
+    assert CP.verdict(r) == all(r.get(g, True) for g in CP.GATES) and not any("light" in g for g in CP.GATES)
+    for gate in CP.GATES:                                             # every gate still decides
+        assert not CP.verdict({**r, **{g: g != gate for g in CP.GATES}}), gate
+    assert CP.verdict({**r, **{g: True for g in CP.GATES}})           # ... and the light number does not
     assert set(CP.input_names("cathedral")) == {"cathedral", "cathedral-open"}
     pr = CP.PROMPTS["cathedral"]
     assert "<isometric luxembourg ink>" in pr and "no shadows" in pr
@@ -671,7 +677,8 @@ def test_k3_on_a_painting_measures_the_stone_not_the_glass_or_the_ink():
     assert flat["K3_worst"] == flat["K3_every_pixel_worst"] == 0 and flat["K3_ok"]
 
 
-def test_only_a_candidate_that_passed_is_handed_to_the_layer(tmp_path, monkeypatch):
+def test_only_a_candidate_that_passed_its_gates_and_the_owner_accepted_is_handed_to_the_layer(tmp_path, monkeypatch):
+    import hashlib
     from PIL import Image
     from v2.bakeoff import cutaway_paint as CP
     from v2.layers import cutaways as cw
@@ -680,18 +687,68 @@ def test_only_a_candidate_that_passed_is_handed_to_the_layer(tmp_path, monkeypat
     monkeypatch.setattr(CP, "load", lambda src, name: d)
     (tmp_path / "checks").mkdir(); (tmp_path / "painted").mkdir()
     art = np.random.default_rng(5).integers(0, 255, d["unlit"].shape).astype(np.uint8)
+    other = np.random.default_rng(6).integers(0, 255, d["unlit"].shape).astype(np.uint8)
     Image.fromarray(art).save(tmp_path / "painted" / "cathedral_1.png")
-    cand = {"label": "cathedral_1", "file": "cathedral_1.png", "input": "cathedral", "seed": 1868, "pass": False, "K3_worst": 0.2}
-    res = {"source": "x", "candidates": [cand], "passing": [], "best": None}
-    (tmp_path / "checks" / "K1.json").write_text(json.dumps(res))
+    Image.fromarray(other).save(tmp_path / "painted" / "cathedral_0.png")
+    sha = hashlib.sha256((tmp_path / "painted" / "cathedral_1.png").read_bytes()).hexdigest()
+    cand = {"label": "cathedral_1", "file": "cathedral_1.png", "input": "cathedral", "seed": 1868, "pass": False, "K3_worst": 0.2,
+            "K3_ok": False, "light_across_worst": 0.09, "light_across_limit": 0.05, "light_across_within_limit": False}
+    twin = dict(cand, label="cathedral_0", file="cathedral_0.png", seed=1867, **{"pass": True}, K3_ok=True)
+    res = {"source": "x", "candidates": [cand, twin], "passing": ["cathedral_0"]}
+    k7 = {"job": "K1", "run": {"quote": "q0", "date": "2026-11-13"}, "candidate": "cathedral_1", "painting_sha256": sha,
+          "asked": "Which way on?", "owner_words": "Take it on my eye", "date": "2026-11-13"}
+    acc = tmp_path / "acceptances.json"
+    put = lambda r=res, k=k7: ((tmp_path / "checks" / "K1.json").write_text(json.dumps(r)),                    # noqa: E731
+                               acc.write_text(json.dumps({"landmarks": {"cathedral": k} if k else {}})))
+    adopt = lambda label=None: CP.adopt("K1", label=label, dst=tmp_path / "paintings", accepted=acc)           # noqa: E731
+    # the owner's acceptance does not carry a painting past a gate (here K3)
+    put()
     for label in (None, "cathedral_1"):
-        with pytest.raises(SystemExit, match="did not pass"):
-            CP.adopt("K1", label=label, dst=tmp_path / "paintings")
+        with pytest.raises(SystemExit, match="did not pass its gates"):
+            adopt(label)
+    # a painting that passes its gates is not taken without the owner's acceptance of that very painting: none
+    # recorded, one of another candidate, one of another job, one of another file under the same name
+    cand.update({"pass": True, "K3_ok": True})
+    res["passing"] = ["cathedral_0", "cathedral_1"]
+    put(k=None)
+    with pytest.raises(SystemExit, match="no owner acceptance"):
+        adopt()
+    with pytest.raises(SystemExit, match="no owner acceptance .K7. of this painting"):
+        adopt("cathedral_1")
+    put()
+    with pytest.raises(SystemExit, match="no owner acceptance .K7. of this painting"):
+        adopt("cathedral_0")
+    for wrong in ({"job": "K2"}, {"painting_sha256": "0" * 64}):
+        put(k=dict(k7, **wrong))
+        with pytest.raises(SystemExit, match="no owner acceptance .K7. of this painting"):
+            adopt()
+    put(k={k: v for k, v in k7.items() if k != "owner_words"})                 # a record without the owner's words
+    with pytest.raises(SystemExit, match="lacks owner_words"):
+        adopt()
     assert not (tmp_path / "paintings").exists()                       # the placeholder stays
-    cand["pass"] = True
-    res.update(passing=["cathedral_1"], best="cathedral_1")
-    (tmp_path / "checks" / "K1.json").write_text(json.dumps(res))
-    meta = CP.adopt("K1", dst=tmp_path / "paintings")
+    # gates passed and accepted: taken, though its light number is over its limit, and the record says all of it
+    put()
+    meta = adopt()
     p = cw.load_painting("cathedral", tmp_path / "paintings")
     assert meta["candidate"] == "cathedral_1" and meta["checks"]["K3_worst"] == 0.2 and meta["frame_px"] == [0, 0, 96, 96]
+    assert meta["run"] == k7["run"] and meta["painting_sha256"] == sha and meta["seed"] == 1868
+    assert meta["K7"]["owner_words"] == "Take it on my eye" and meta["K7"]["date"] == "2026-11-13" and meta["K7"]["candidate"] == "cathedral_1"
+    assert meta["light_across"] == {"status": "reported, not a gate", "limit": 0.05, "worst": 0.09, "by_kind": None, "within_limit": False}
+    assert meta["gates"]["K3_ok"] is True and set(meta["gates"]) == set(CP.GATES)
     assert (p["on"] == d["mask"]).all() and (p["rgb"][d["mask"]] == art[d["mask"]]).all()
+
+
+def test_the_recorded_acceptances_are_complete_and_name_the_painting_in_the_repo():
+    from v2.bakeoff import cutaway_paint as CP
+    from v2.layers import cutaways as cw
+    all_ = json.loads(CP.ACCEPTANCES.read_text())["landmarks"]
+    assert set(all_) <= set(cw.load_cuts()["landmarks"])
+    for name in all_:
+        k7 = CP.acceptance(name)                                       # complete, or it raises
+        assert len(k7["painting_sha256"]) == 64 and k7["date"] >= "2026-11-13"
+    # every painting in the repo is the one its landmark's acceptance names
+    for f in (cw.PAINTINGS.glob("*.json") if cw.PAINTINGS.is_dir() else []):
+        meta, k7 = json.loads(f.read_text()), CP.acceptance(f.stem)
+        assert k7 and (meta["candidate"], meta["job"], meta["painting_sha256"], meta["run"]) == \
+            (k7["candidate"], k7["job"], k7["painting_sha256"], k7["run"])
+        assert meta["K7"]["owner_words"] == k7["owner_words"] and all(meta["gates"].values())

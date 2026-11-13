@@ -1,0 +1,158 @@
+{
+ "landmark": "cathedral",
+ "frame_px": [
+  59709,
+  32471,
+  1024,
+  1024
+ ],
+ "opening_px": 35545,
+ "file": "cathedral.png",
+ "sha256": "150e5a5f8e28983ca9fbdbb96117a94740689a3e7f6e15ca11ab4c5c178ffa1d",
+ "job": "K1",
+ "run": {
+  "name": "second cathedral run",
+  "quote": "q0015",
+  "date": "2026-11-13",
+  "pod": "1zj2z6jzs0dz39"
+ },
+ "candidate": "cathedral-open_1",
+ "seed": 1870,
+ "input": "cathedral-open",
+ "painting_sha256": "8af812b87bde57b1689893477ed78b939c2ace807eda84c37fc6b70f458f5e42",
+ "pass": true,
+ "gates": {
+  "K1_ok": true,
+  "K2_ok": true,
+  "K3_ok": true,
+  "lines_kept_ok": true,
+  "K4_ok": true,
+  "interior_painted": true
+ },
+ "light_across": {
+  "status": "reported, not a gate",
+  "limit": 0.05,
+  "worst": 0.0991,
+  "by_kind": {
+   "inside_wall": 0.0849,
+   "inside_roof": 0.0599,
+   "floor": 0.0991
+  },
+  "within_limit": false
+ },
+ "K7": {
+  "asked": "The cleanest cathedral painting (cathedral-open_1) still fails the corrected light check (6-10% against 5%) because of stone detail drawn in several tones; its real shading on plain wall is 2-4%. Which way on?",
+  "owner_words": "Take it on my eye (Recommended)",
+  "date": "2026-11-13",
+  "candidate": "cathedral-open_1",
+  "painting_sha256": "8af812b87bde57b1689893477ed78b939c2ace807eda84c37fc6b70f458f5e42"
+ },
+ "checks": {
+  "K2a_interior_px_outside_mask": 0,
+  "K2b_mask_covered": 1.0,
+  "K2_ok": true,
+  "K3_worst": 0.0205,
+  "K3_unmeasured_sides": 0,
+  "K3_ok": true,
+  "K3_material_share": {
+   "cut": 0.4118,
+   "inside_wall": 0.4026,
+   "inside_roof": 0.4828,
+   "floor": 0.3691
+  },
+  "K3_every_pixel_worst": 0.4507,
+  "K3_by_kind": {
+   "cut": {
+    "sides": 0,
+    "worst": 0.0,
+    "sun": null,
+    "unmeasured": 0
+   },
+   "inside_wall": {
+    "sides": 3,
+    "worst": 0.0205,
+    "sun": null,
+    "unmeasured": 0
+   },
+   "inside_roof": {
+    "sides": 1,
+    "worst": 0.0,
+    "sun": null,
+    "unmeasured": 0
+   },
+   "floor": {
+    "sides": 1,
+    "worst": 0.0,
+    "sun": null,
+    "unmeasured": 0
+   }
+  },
+  "light_across_kind": {
+   "inside_wall": 0.0849,
+   "inside_roof": 0.0599,
+   "floor": 0.0991
+  },
+  "light_across_worst": 0.0991,
+  "light_surface_tone": {
+   "inside_wall": 212.5,
+   "inside_roof": 202.0,
+   "floor": 238.0
+  },
+  "light_squares": {
+   "inside_wall": {
+    "surface": 593,
+    "other": 0,
+    "moved": 17
+   },
+   "inside_roof": {
+    "surface": 127,
+    "other": 0,
+    "moved": 0
+   },
+   "floor": {
+    "surface": 417,
+    "other": 1,
+    "moved": 0
+   }
+  },
+  "interior_lines": {
+   "line_px": 3095,
+   "kept": 0.9331,
+   "section_px": 1453,
+   "section_kept": 0.9986,
+   "placeholder_px": 1642,
+   "placeholder_kept": 0.8752,
+   "placeholder_by_junction": {
+    "floor_wall": {
+     "px": 347,
+     "kept": 0.7406
+    },
+    "roof_wall": {
+     "px": 250,
+     "kept": 0.8
+    },
+    "wall_wall": {
+     "px": 907,
+     "kept": 0.9283
+    }
+   }
+  },
+  "changed_share": 0.8916,
+  "detail_share": 0.5599,
+  "placeholder_detail_share": 0.0,
+  "pixels": 27820,
+  "interior_painted": true,
+  "raw_outside_changed_share": 0.2407,
+  "raw_drawn_outside_outline_px": 2451,
+  "light_across_limit": 0.05,
+  "light_across_within_limit": false,
+  "lines_kept_ok": true,
+  "K1a_section_line_share": 0.9767,
+  "K1a_seen": 257,
+  "K1_ok": true,
+  "K4_vehicles": 0,
+  "K4_people": 0,
+  "K4_ok": true,
+  "K7_owner_accepted": true
+ }
+}

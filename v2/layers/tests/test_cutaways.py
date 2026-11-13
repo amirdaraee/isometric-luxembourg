@@ -253,8 +253,15 @@ def test_a_painting_that_passed_replaces_the_placeholder_inside_the_opening_and_
     frame_px = [f.px0, f.py0, f.size, f.size]
     with pytest.raises(ValueError, match="passed"):
         cw.write_painting(tmp_path, "house", art, mask, frame_px, {"pass": False})
+    k7 = {"candidate": "house_0", "owner_words": "Take it", "date": "2026-11-13"}
+    for rec, lacks in (({"pass": True, "candidate": "house_0"}, "which candidate of which run"),
+                       ({"pass": True, "candidate": "house_0", "run": "r"}, "the owner's acceptance"),
+                       ({"pass": True, "candidate": "house_0", "run": "r", "K7": {"candidate": "house_0"}}, "the owner's acceptance"),
+                       ({"pass": True, "candidate": "house_0", "run": "r", "K7": dict(k7, candidate="house_1")}, "acceptance of house_0")):
+        with pytest.raises(ValueError, match=lacks):                           # K7 is part of the record
+            cw.write_painting(tmp_path, "house", art, mask, frame_px, rec)
     assert cw.load_painting("house", tmp_path) is None                         # none yet: the placeholder is drawn
-    meta = cw.write_painting(tmp_path, "house", art, mask, frame_px, {"pass": True, "candidate": "house_0"})
+    meta = cw.write_painting(tmp_path, "house", art, mask, frame_px, {"pass": True, "candidate": "house_0", "run": "r", "K7": k7})
     p = cw.load_painting("house", tmp_path)
     assert meta["opening_px"] == mask.sum() and (p["on"] == mask).all() and (p["rgb"][mask] == art[mask]).all()
     assert not p["rgb"][~mask].any()                                           # what it drew outside the mask is gone
@@ -280,14 +287,17 @@ def test_a_painting_that_passed_replaces_the_placeholder_inside_the_opening_and_
     rec.write_text(rec.read_text().replace('"pass": true', '"pass": false'))
     with pytest.raises(RuntimeError, match="passed"):
         cw.load_painting("house", tmp_path)
-    rec.write_text(rec.read_text().replace('"pass": false', '"pass": true'))
+    rec.write_text(rec.read_text().replace('"pass": false', '"pass": true').replace('"owner_words"', '"words"'))
+    with pytest.raises(RuntimeError, match="owner's acceptance"):              # ... and one without the owner's K7
+        cw.load_painting("house", tmp_path)
+    rec.write_text(rec.read_text().replace('"words"', '"owner_words"'))
     from PIL import Image
     Image.fromarray(np.dstack([art, np.full(art.shape[:2], 255, np.uint8)]), "RGBA").save(tmp_path / "house.png")
     with pytest.raises(RuntimeError, match="sha256"):
         cw.load_painting("house", tmp_path)
 
 
-def test_no_painting_is_in_the_repo_until_one_passes_and_the_stage_would_see_it():
+def test_a_painting_in_the_repo_passed_and_was_accepted_and_the_stage_sees_it():
     from v2.build.stages import graph
     assert not cw.PAINTINGS.is_dir() or all(cw.load_painting(p.stem) for p in cw.PAINTINGS.glob("*.json"))
     raw = graph().stages["layer_cutaways"].raw("test")

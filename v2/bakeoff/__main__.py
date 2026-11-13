@@ -29,8 +29,9 @@
     python -m v2.bakeoff check <job>            the checks of a job's results (flat light, no cars, line score; a
                                                 pilot's measured speed against the full job's cap); a failure stops
                                                 the jobs after it. K1: the cutaway candidates through K1-K4
-    python -m v2.bakeoff adopt K1 [--candidate L]   the best candidate that passed (or the named one, if it passed) to
-                                                the cutaway layer; refused while none passes ($0, cutaway_paint.py)
+    python -m v2.bakeoff adopt K1 [--candidate L]   the candidate the owner accepted by eye (K7, recorded in
+                                                v2/data/structures/cutaway_acceptances.json) to the cutaway layer;
+                                                refused if it fails a gate or has no such record ($0, cutaway_paint.py)
     python -m v2.bakeoff end <session>|--all    terminate a session's pod and record its spend (the owner's pause)
     python -m v2.bakeoff pods                   read-only: none of the pods created here is left on RunPod
     python -m v2.bakeoff reconcile [--record]   the ledger against RunPod's billing (read-only API)
@@ -239,7 +240,7 @@ def cmd_check(a):
         res = CP.check(a.job, run=a.run or "")
         for c in res["candidates"]:
             print(json.dumps(c))
-        print(json.dumps({k: res[k] for k in ("passing", "best", "K4_inputs_ok", "K1a_of_the_render_as_built", "timing")}))
+        print(json.dumps({k: res[k] for k in ("passing", "accepted", "K4_inputs_ok", "K1a_of_the_render_as_built", "timing")}))
         return 0 if res["candidates"] else 1
     from v2.bakeoff import results
     return results.check(a.job)

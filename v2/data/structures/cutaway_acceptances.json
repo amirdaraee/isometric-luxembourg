@@ -1,0 +1,21 @@
+{
+ "about": "K7 of specs/landmark-cutaways.md: the owner's eye, per landmark. One record per painted cutaway the owner accepted: which candidate of which run (and that file's hash), what was asked, the owner's words and the date. `python -m v2.bakeoff adopt` puts no painting into the map without one, and none that fails a gate.",
+ "landmarks": {
+  "cathedral": {
+   "job": "K1",
+   "run": {
+    "name": "second cathedral run",
+    "quote": "q0015",
+    "date": "2026-11-13",
+    "pod": "1zj2z6jzs0dz39"
+   },
+   "candidate": "cathedral-open_1",
+   "seed": 1870,
+   "painting_sha256": "8af812b87bde57b1689893477ed78b939c2ace807eda84c37fc6b70f458f5e42",
+   "asked": "The cleanest cathedral painting (cathedral-open_1) still fails the corrected light check (6-10% against 5%) because of stone detail drawn in several tones; its real shading on plain wall is 2-4%. Which way on?",
+   "option": "Take it on my eye (Recommended): Put cathedral-open_1 into the map, free. For painted cutaways the light check becomes a reported number; wall tone (2.1%), outline and no-people checks stay as gates. I show you the viewer by day and night",
+   "owner_words": "Take it on my eye (Recommended)",
+   "date": "2026-11-13"
+  }
+ }
+}
