@@ -5,6 +5,8 @@ slice geometry from the 3D model, a small layer of tiles with a **code placehold
 later painting, the viewer's toggle, and checks K0-K6 (stages `layer_cutaways`, `check_cutaways`,
 `check_cutaways_view`). Not built: the painted interiors (paid from the Phase 3 line, $8 cap, quoted in the ledger
 and approved by the owner before any spend); the opening's own cast shadow (see "In the viewer"); the Bock casemates.
+The cathedral's painting was tried once (10 Nov 2026): no candidate passed, so the placeholder stays. The checks of
+a painting and the step that puts one into the layer are built: see "The painted step".
 
 **Purpose.** Famous buildings shown cut open in place on the map, not in a modal: the visitor sees a slice taken out
 of the building, with its interior visible through the cut, at its real place and scale. First four: the Bock
@@ -112,6 +114,43 @@ and a JSON with the frame.
 
 **Left for the painted step:** K2a, K2b, K3 and K4 on the paintings and their reference photos (the same
 functions); K7.
+
+## The painted step
+
+Code: `v2/bakeoff/cutaway_paint.py` (inputs, checks, `adopt`), `v2/layers/cutaways.py` (`write_painting`,
+`load_painting`, `paint_into`). Job K1 in `v2/bakeoff/jobs.py`. First run: `v2/docs/PHASE3_REPORT.md` section 9.
+
+**Candidates.** Four per landmark: the cut render as built and the same render with its inside faces cleared to
+paper (ink lines and the section kept), two seeds each, four seeds in all. The painter draws the whole frame; the
+painting is cut to the opening mask (rule 2).
+
+**Checks of a candidate** (`python -m v2.bakeoff check K1`; thresholds are the gate's own, `params.json` g3):
+
+| Id | What is measured | Limit |
+|---|---|---|
+| K1 | Line score of the model's section on the painting cut into the render | >= 95% |
+| K2a | Interior pixels outside the opening mask | 0 |
+| K2b | Share of the mask the painter drew on. Unpainted: a pixel of paper's colour, or of the painting's own background, in a patch that holds a 7 x 7 px square | >= 99.5% |
+| K3 | The gate's shadow detector on the painted interior | <= 5% |
+| Light across a face | Per kind of face, on one material: the largest fall of the material's lit level between two 16 px squares | <= 5% |
+| Lines kept (not a rule of this spec; an open question) | The model's lines inside the opening with a drawn step within 1 px; the section's and the placeholder's reported apart | >= 95% |
+| K4 | OWLv2 on the inputs, the paintings and the composites: vehicles, then people | 0 |
+| Painted at all | The interior moved from the placeholder (share changed >= 25%, drawn detail >= 5%) | both |
+
+Tolerances of these checks (none loosens a limit above):
+- K2b: colour within 8 (RGB) of paper or of the painting's background; a patch narrower than 7 px (0.9 m) is a
+  detail of the drawing, not a hole. Pixels outside the mask count as blank for the patch.
+- Light: squares of 16 px every 4 px; "the same material" is chroma within 0.03 of the face's light pixels; a
+  square is measured if two fifths of it is that material; the lit level is the 90th percentile.
+- Light, limits: a shade narrower than about 2.5 m is not measured; a shade drawn in another colour than its
+  surface counts as another material. K3 and K7 remain.
+
+**Into the layer.** `python -m v2.bakeoff adopt K1` writes the best passing candidate, cut to the mask, to
+`v2/data/structures/cutaway_paintings/<name>.png` with its record (frame, checks, the file's hash). It is refused
+while no candidate passes. At the next build `layer_cutaways` draws the painting where k is the opening and keeps
+depth, normals, ids and k; the paint inputs stay the placeholder; `index.json` says per landmark whether its
+interior is painted. A record that does not say "passed", a file that is not the recorded one, or a painting that
+leaves an opening pixel of the tiles unpainted stops the build. Gates K1-K6 then run on the painted tiles.
 
 ## In the viewer (Phase 3, $0)
 

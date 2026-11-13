@@ -210,7 +210,9 @@ def phase3_cutaways() -> list:
         g1 = params()["g1"]
         return dict(cw.stage_params(area), g1={k: g1[k] for k in ("shadow_photo_sun", "detector_queries", "detector_score",
                                                                  "detector_box_m")})
-    raw = lambda area: _layer_raw(area) + [cw.CUTS, REPO / "v2/data/structures/landmark_styles.json"]  # noqa: E731
+    # a painted interior (python -m v2.bakeoff adopt) is an input: a new painting makes a new build of the layer
+    raw = lambda area: (_layer_raw(area) + [cw.CUTS, REPO / "v2/data/structures/landmark_styles.json"]  # noqa: E731
+                        + (sorted(p for p in cw.PAINTINGS.iterdir() if p.is_file()) if cw.PAINTINGS.is_dir() else []))
     return [
         Stage("layer_cutaways", cw.layer_cutaways, deps=("scene",), params=cw.stage_params, code=LAYER_CODE, raw=raw,
               doc="landmark cutaways: the cut models' tiles (placeholder interior), opening masks and paint inputs"),

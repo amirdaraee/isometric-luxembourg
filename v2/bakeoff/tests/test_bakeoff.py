@@ -312,3 +312,202 @@ def test_a_job_that_fails_with_nothing_made_holds_its_pod_for_a_restart_in_place
     res = runner.run("B1", go=True, on="fake")
     assert res["ok"] and "hold_until" not in s.d["job"] and s.ended == "finished"
     assert any(c.startswith(f"echo {int(s.d['job']['deadline'])} > /workspace/DEADLINE") for c in s.cmds)
+
+
+# ------------------------------------------------------------------ Phase 3: the cathedral's cutaway painting (K1)
+def test_the_cutaway_job_is_the_ledgers_quote_and_cannot_pass_its_worst_case():
+    j = J.BY_ID["K1"]
+    real = Ledger()
+    q = runner.quote_of(j, real)
+    # q0012 (an H100) was released unspent, q0014 paid for the first run; q0015 is the second run's
+    assert q == "q0015" and real.quotes()[q]["worst_usd"] == j.worst_usd == 0.99
+    assert any(e["type"] == "spend" and e["quote"] == "q0014" for e in real.events)
+    assert not any(e["type"] == "spend" and e["quote"] == q for e in real.events)
+    assert j.cloud == "secure" and j.price_h == 2.19
+    assert j.goal == "phase3_lock_look" and j not in J.JOBS            # not part of the bake-off's total
+    for cost_h in (j.price_h, 2.59, 1.0):
+        s = runner.cap_seconds(j, cost_h)
+        assert s <= 27 * 60 and (s + 20) / 3600 * (cost_h + runner.DISK_GB * runner.DISK_USD_GB_H) <= j.worst_usd
+    assert runner.quote_of(J.BY_ID["B1"], real) != q
+
+
+def test_the_second_cathedral_run_is_planned_from_the_first_runs_measured_times():
+    j = J.BY_ID["K1"]
+    need = sum(J.K1_MEASURED_S.values())                               # 908 s: the first run, had it not been capped
+    assert 900 <= need <= j.est_h * 3600 <= need + 60
+    # the runner stops waiting 45 s before the pod's deadline: half as long again as measured still finishes
+    assert runner.cap_seconds(j) - 45 >= 1.5 * need
+    assert "--seed-step" in (runner.POD / "paint.py").read_text() and 'K1)  paint "$V1" 1867,1868 2' in (runner.POD / "run.sh").read_text()
+    from v2.bakeoff import cutaway_paint as CP
+    seeds = [CP.seed_of(kind, k) for kind in CP.KINDS for k in range(len(CP.SEEDS))]
+    assert sorted(seeds) == [1867, 1868, 1869, 1870]                   # four candidates, four seeds
+
+
+def test_the_cutaway_job_needs_its_own_approval(L):
+    j = J.BY_ID["K1"]
+    with pytest.raises(LedgerRefusal, match="no quote"):
+        runner.authorise(j, L, price_now=j.price_h)
+    q = L.quote(j.goal, j.provider, j.ledger_job(), j.worst_usd)["id"]
+    with pytest.raises(LedgerRefusal, match="not approved"):
+        runner.authorise(j, L, price_now=j.price_h)
+    L.approve(q, by="owner")
+    assert runner.authorise(j, L, price_now=j.price_h)["id"] == q
+    assert runner.record_quotes(L) and runner.quote_of(j, L) == q      # the bake-off's quotes are another line
+
+
+def _cut(n=96):
+    """A small frame: a floor (kind 5) beside a wall (kind 3) inside a mask, the outside (kind 1) round it."""
+    from v2.layers.cutaways import KIND
+    k = np.zeros((n, n), np.uint8)
+    k[8:88, 8:88] = KIND["outside"]
+    k[24:72, 24:48] = KIND["floor"]
+    k[24:72, 48:72] = KIND["inside_wall"]
+    normal = np.zeros((n, n, 3)); normal[..., 2] = 1.0
+    normal[k == KIND["inside_wall"]] = (1.0, 0.0, 0.0)
+    unlit = np.full((n, n, 3), 239, np.uint8)
+    unlit[k == KIND["outside"]] = (120, 110, 90)
+    unlit[k == KIND["floor"]] = (212, 200, 176)
+    unlit[k == KIND["inside_wall"]] = (234, 224, 204)
+    return {"unlit": unlit, "mask": np.isin(k, (KIND["floor"], KIND["inside_wall"])), "outline": k > 0, "k": k,
+            "ids": (k.astype(np.uint32) << 8) | k, "normal": normal, "depth": np.where(k > 0, 10.0, np.inf),
+            "meta": {"frame_px": [0, 0, n, n], "opening_bbox": [24, 24, 72, 72]}}
+
+
+def test_a_cutaway_painting_is_cut_to_its_mask_and_judged_inside_it():
+    from v2.bakeoff import cutaway_paint as CP
+    from v2.layers.cutaways import cut_params
+    P = dict(cut_params(), cutaway_shadow_min_px=20)
+    d = _cut()
+    yy, xx = np.indices(d["mask"].shape)
+    same = CP.check_candidate(d["unlit"], d, P)                       # the model returned the render as given
+    assert same["K2_ok"] and same["K3_ok"] and not same["interior_painted"] and not CP.verdict(same)
+    wild = np.random.default_rng(1).integers(0, 255, d["unlit"].shape).astype(np.uint8)   # drawn over everything
+    comp = CP.compose(d["unlit"], wild, d["mask"])
+    assert (comp[~d["mask"]] == d["unlit"][~d["mask"]]).all() and (comp[d["mask"]] == wild[d["mask"]]).all()
+    assert CP.check_candidate(wild, d, P)["K2a_interior_px_outside_mask"] == 0
+    blank = d["unlit"].copy(); blank[d["mask"]] = CP.paper()           # the opening left as paper
+    assert CP.check_candidate(blank, d, P)["K2b_mask_covered"] == 0.0
+    tiles = d["unlit"].copy()                                          # a tiled floor and wall, evenly lit
+    tiles[d["mask"] & ((xx + yy) % 4 == 0)] = (60, 50, 45)
+    r = CP.check_candidate(tiles, d, P)
+    assert r["K2_ok"] and r["K3_ok"] and r["light_across_ok"] and r["interior_painted"]
+    lit = tiles.astype(float)                                          # the same with light from one side
+    lit[d["mask"]] *= (0.5 + 0.5 * (xx[d["mask"]] - 24) / 48)[:, None]
+    r = CP.check_candidate(lit.astype(np.uint8), d, P)
+    assert not r["light_across_ok"] and not CP.verdict(r)
+    assert set(CP.input_names("cathedral")) == {"cathedral", "cathedral-open"}
+    pr = CP.PROMPTS["cathedral"]
+    assert "<isometric luxembourg ink>" in pr and "no shadows" in pr
+    assert "lit evenly from every side" in pr and "No cast shadows, no dark floor" in pr and "No people" not in pr.replace("no people", "")
+    assert (CP.opened(d)[d["mask"] & ~CP.geometry_edges(d)] == CP.paper()).all()
+
+
+def _floor(n=200):
+    """A frame that is one floor (kind 5) inside the outside's ring, and its pixel grid."""
+    from v2.layers.cutaways import KIND
+    k = np.full((n, n), KIND["outside"], np.uint8)
+    k[20:180, 20:180] = KIND["floor"]
+    return k, np.indices(k.shape)
+
+
+def _light(rgb, k, min_px=150):
+    from v2.bakeoff import cutaway_paint as CP
+    from v2.layers.cutaways import KIND
+    return CP.light_across(np.clip(rgb, 0, 255).astype(np.uint8), k, k == KIND["floor"], min_px)[KIND["floor"]]
+
+
+def test_light_across_a_face_measures_light_not_what_is_drawn_on_it():
+    """The first cathedral run: a chequered floor failed the light check as a pattern, not as light."""
+    from scipy import ndimage
+    TOL = 0.05                                                         # params g3 cutaway_shadow_lum_tol
+    k, (yy, xx) = _floor()
+    cream, grey, navy, wood = (236, 229, 214), (128, 126, 122), (44, 60, 104), (120, 50, 24)
+    flat = np.empty(k.shape + (3,)); flat[:] = cream
+    chequer = np.where((((xx // 5) + (yy // 4)) % 2 == 0)[..., None], cream, grey).astype(float)
+    blue = np.where((((xx // 5) + (yy // 4)) % 2 == 0)[..., None], cream, navy).astype(float)
+    iso = np.where(((((xx + 2 * yy) // 12) + ((xx - 2 * yy) // 12)) % 2 == 0)[..., None], cream, grey).astype(float)   # lozenges
+    joints = flat.copy(); joints[(xx % 9 == 0) | (yy % 6 == 0)] = (70, 62, 55)
+    soft = ndimage.uniform_filter(chequer, (2, 2, 1))                  # the painter's soft edges
+    patterns = {"flat": flat, "chequer": chequer, "navy chequer": blue, "lozenges": iso, "joints": joints, "soft chequer": soft}
+    for name, img in patterns.items():
+        assert _light(img, k) <= 0.01, name                            # a pattern, evenly lit: no light measured
+    pews = chequer.copy(); pews[60:90, 30:150] = wood; pews[120:150, 30:150] = wood     # another material is not shade
+    assert _light(pews, k) <= 0.01
+    for name, img in patterns.items():
+        grad = img * (0.6 + 0.4 * (xx - 20) / 160)[..., None]          # light from one side
+        assert _light(grad, k) > 3 * TOL, name
+        faint = img * (0.9 + 0.1 * (xx - 20) / 160)[..., None]         # 10% from side to side: still over 5%
+        assert _light(faint, k) > TOL, name
+        blob = img * np.where(np.hypot(xx - 110, yy - 100) < 26, 0.65, 1.0)[..., None]  # a cast shadow
+        assert _light(blob, k) > 3 * TOL, name
+        for cx, cy in ((110, 100), (97, 131), (64, 75)):               # a small one, 3.5 m across, wherever it falls
+            small = img * np.where(np.hypot(xx - cx, yy - cy) < 14.5, 0.65, 1.0)[..., None]
+            assert _light(small, k) > 3 * TOL, name
+    # its limit, stated in light_across: a shade narrower than a block is not measured (K3 and the eye remain)
+    thin = chequer.copy(); thin[100:104, 30:150] *= 0.65
+    assert _light(thin, k) <= 0.01
+
+
+def test_a_pale_floor_slab_is_painted_and_a_blank_patch_or_edge_strip_is_not():
+    """The first cathedral run: light squares of the floor, the colour of paper, were counted as unpainted."""
+    from v2.bakeoff import cutaway_paint as CP
+    k, (yy, xx) = _floor()
+    mask = k == 5
+    outline = np.ones(k.shape, bool); outline[:8] = False              # the top rows are the painting's background
+    paper = CP.paper().astype(int)
+    img = np.where((((xx // 5) + (yy // 4)) % 2 == 0)[..., None], paper + (-2, -2, -4), (128, 126, 122)).astype(np.uint8)
+    for bg in (paper, (255, 255, 255)):                                # the painter's background: paper, or white
+        a = img.copy(); a[~outline] = bg
+        # slabs of paper's colour are painted; only those lying on the opening's very edge count as blank (0.2%)
+        assert CP.covered(a, mask, outline).sum() / mask.sum() >= 0.998
+        assert CP.covered(a, mask & (np.minimum(xx, yy) > 30) & (np.maximum(xx, yy) < 170), outline)[40:160, 40:160].all()
+        hole = a.copy(); hole[90:110, 60:90] = bg                      # a blank patch inside the opening
+        assert mask.sum() - CP.covered(hole, mask, outline).sum() >= 20 * 30
+        strip = a.copy(); strip[20:23, 20:180] = bg                    # a blank strip 3 px wide along the edge
+        assert mask.sum() - CP.covered(strip, mask, outline).sum() >= 3 * 160
+        assert CP.covered(strip, mask, outline).sum() / mask.sum() < 0.995   # ... fails K2b's 99.5%
+    empty = img.copy(); empty[mask] = paper
+    assert CP.covered(empty, mask, outline).sum() == 0
+
+
+def test_lost_lines_are_told_apart_the_sections_and_the_placeholders():
+    from v2.bakeoff import cutaway_paint as CP
+    from v2.layers.cutaways import KIND, cut_params
+    d = _cut()
+    d["k"][24:27, 24:72] = KIND["cut"]                                 # a section along the opening's top
+    d["ids"] = (d["k"].astype(np.uint32) << 8) | d["k"]
+    d["unlit"][d["k"] == KIND["cut"]] = (150, 60, 50)
+    r = CP.interior_lines(d["unlit"], d)                               # the render itself keeps all of its lines
+    assert r["kept"] == r["section_kept"] == r["placeholder_kept"] == 1.0 and r["section_px"] and r["placeholder_px"]
+    over = d["unlit"].copy()                                           # a painting that draws one tone over floor and wall
+    inner = d["mask"] & (d["k"] != KIND["cut"])
+    over[inner] = (200, 190, 170)
+    r = CP.interior_lines(over, d)
+    assert r["section_kept"] > 0.95 and r["placeholder_by_junction"]["floor_wall"]["kept"] < 0.2
+    assert CP.check_candidate(over, d, dict(cut_params(), cutaway_shadow_min_px=20))["lines_kept_ok"] is False   # the rule stands
+
+
+def test_only_a_candidate_that_passed_is_handed_to_the_layer(tmp_path, monkeypatch):
+    from PIL import Image
+    from v2.bakeoff import cutaway_paint as CP
+    from v2.layers import cutaways as cw
+    d = _cut()
+    monkeypatch.setattr(CP, "base", lambda: tmp_path)
+    monkeypatch.setattr(CP, "load", lambda src, name: d)
+    (tmp_path / "checks").mkdir(); (tmp_path / "painted").mkdir()
+    art = np.random.default_rng(5).integers(0, 255, d["unlit"].shape).astype(np.uint8)
+    Image.fromarray(art).save(tmp_path / "painted" / "cathedral_1.png")
+    cand = {"label": "cathedral_1", "file": "cathedral_1.png", "input": "cathedral", "seed": 1868, "pass": False, "K3_worst": 0.2}
+    res = {"source": "x", "candidates": [cand], "passing": [], "best": None}
+    (tmp_path / "checks" / "K1.json").write_text(json.dumps(res))
+    for label in (None, "cathedral_1"):
+        with pytest.raises(SystemExit, match="did not pass"):
+            CP.adopt("K1", label=label, dst=tmp_path / "paintings")
+    assert not (tmp_path / "paintings").exists()                       # the placeholder stays
+    cand["pass"] = True
+    res.update(passing=["cathedral_1"], best="cathedral_1")
+    (tmp_path / "checks" / "K1.json").write_text(json.dumps(res))
+    meta = CP.adopt("K1", dst=tmp_path / "paintings")
+    p = cw.load_painting("cathedral", tmp_path / "paintings")
+    assert meta["candidate"] == "cathedral_1" and meta["checks"]["K3_worst"] == 0.2 and meta["frame_px"] == [0, 0, 96, 96]
+    assert (p["on"] == d["mask"]).all() and (p["rgb"][d["mask"]] == art[d["mask"]]).all()

@@ -9,6 +9,8 @@
                                                 layout, mask, ids and normals), and the 80 training crops' list
     python -m v2.bakeoff inputs b               B's landmark list and each landmark's unlit crop; the material list
     python -m v2.bakeoff inputs facades         C4: ten buildings' camera-facing walls drawn front-on
+    python -m v2.bakeoff inputs cutaway         K1 (Phase 3): the cathedral's cut render as the painter's two control
+                                                images, as built and with its opening cleared (cutaway_paint.py)
     python -m v2.bakeoff trial [--no-build]     C4's result: on the ten trial buildings, method A against the facades
                                                 painted front-on and projected onto their walls (line score, flat
                                                 light, cars), a preview sheet, and the small C4 build registered as
@@ -26,7 +28,9 @@
                                                 --keep leaves the pod up for the next job; --on runs on that pod
     python -m v2.bakeoff check <job>            the checks of a job's results (flat light, no cars, line score; a
                                                 pilot's measured speed against the full job's cap); a failure stops
-                                                the jobs after it
+                                                the jobs after it. K1: the cutaway candidates through K1-K4
+    python -m v2.bakeoff adopt K1 [--candidate L]   the best candidate that passed (or the named one, if it passed) to
+                                                the cutaway layer; refused while none passes ($0, cutaway_paint.py)
     python -m v2.bakeoff end <session>|--all    terminate a session's pod and record its spend (the owner's pause)
     python -m v2.bakeoff pods                   read-only: none of the pods created here is left on RunPod
     python -m v2.bakeoff reconcile [--record]   the ledger against RunPod's billing (read-only API)
@@ -109,6 +113,10 @@ def cmd_quote(a):
 
 
 def cmd_inputs(a):
+    if a.method == "cutaway":
+        from v2.bakeoff import cutaway_paint as CP
+        print(json.dumps(CP.make_inputs(), indent=1))
+        return 0
     from v2.bakeoff import inputs as I
     from v2.bakeoff.dataset import pick_crops
     R, g = _renderer(a.area, "plain")
@@ -218,7 +226,21 @@ def cmd_reconcile(a):
     return billing.reconcile(record=a.record)
 
 
+def cmd_adopt(a):
+    from v2.bakeoff import cutaway_paint as CP
+    print(json.dumps(CP.adopt(a.job, label=a.candidate), indent=1))
+    print("now: python -m v2.build test check_cutaways check_cutaways_view   (the gates on the painted tiles)")
+    return 0
+
+
 def cmd_check(a):
+    if a.job == "K1":
+        from v2.bakeoff import cutaway_paint as CP
+        res = CP.check(a.job, run=a.run or "")
+        for c in res["candidates"]:
+            print(json.dumps(c))
+        print(json.dumps({k: res[k] for k in ("passing", "best", "K4_inputs_ok", "K1a_of_the_render_as_built", "timing")}))
+        return 0 if res["candidates"] else 1
     from v2.bakeoff import results
     return results.check(a.job)
 
@@ -320,7 +342,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status")
     q = sub.add_parser("quote"); q.add_argument("--record", action="store_true"); q.add_argument("--again", metavar="JOB")
-    i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c", "facades"]); i.add_argument("--limit", type=int, default=0)
+    i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c", "facades", "cutaway"]); i.add_argument("--limit", type=int, default=0)
     i.add_argument("--crops", action="store_true", help="b: also each landmark's unlit crop")
     i.add_argument("--release", help="c: the built release whose layers 1-4 are used (default: this checkout's)")
     s = sub.add_parser("smoke"); s.add_argument("method", choices=["c"])
@@ -334,7 +356,8 @@ def main(argv=None):
     e.add_argument("--note", default="ended by hand")
     sub.add_parser("pods")
     rc = sub.add_parser("reconcile"); rc.add_argument("--record", action="store_true")
-    c = sub.add_parser("check"); c.add_argument("job")
+    c = sub.add_parser("check"); c.add_argument("job"); c.add_argument("--run", help="K1: run1 = the first run's paintings again")
+    ad = sub.add_parser("adopt"); ad.add_argument("job", choices=["K1"]); ad.add_argument("--candidate")
     pk = sub.add_parser("pick"); pk.add_argument("method", choices=["b"])
     pt = sub.add_parser("painted"); pt.add_argument("method", choices=["b", "c"])
     tr = sub.add_parser("trial"); tr.add_argument("--no-build", action="store_true", help="measure only, no C4 build")
@@ -346,7 +369,7 @@ def main(argv=None):
     g.add_argument("--note", help="shown over the method's column in the bake-off viewer (what its checks found)")
     a = ap.parse_args(argv)
     return {"status": cmd_status, "quote": cmd_quote, "inputs": cmd_inputs, "smoke": cmd_smoke, "run": cmd_run,
-            "register": cmd_register, "end": cmd_end, "pods": cmd_pods, "reconcile": cmd_reconcile, "check": cmd_check,
+            "register": cmd_register, "end": cmd_end, "pods": cmd_pods, "reconcile": cmd_reconcile, "check": cmd_check, "adopt": cmd_adopt,
             "pick": cmd_pick, "painted": cmd_painted, "trial": cmd_trial, "previews": cmd_previews,
             "pilot-gates": lambda a: __import__("v2.bakeoff.results", fromlist=["x"]).pilot_gates()}[a.cmd](a) or 0
 

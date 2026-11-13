@@ -14,9 +14,9 @@ export HF_HOME=/hf HF_XET_HIGH_PERFORMANCE=1 HF_HUB_ENABLE_HF_TRANSFER=1
 V1=/workspace/lora/luxembourg-ink-v2_000002000.safetensors
 NEW=/workspace/lora/luxembourg-ink-unshadowed.safetensors
 LIGHT=/workspace/lora/Qwen-Image-Edit-2511-Lightning-8steps-V1.0-bf16.safetensors
-paint() {   # paint <lora> <seeds>
+paint() {   # paint <lora> <seeds> [<seed step per input>]
   bash "$J/pod/setup.sh" paint && /venv/bin/python "$J/pod/paint.py" --inputs "$J/inputs" --out "$OUT" \
-    --prompt-file "$J/prompt.txt" --lora "$1" --lightning "$LIGHT" --seeds "$2" --steps 8
+    --prompt-file "$J/prompt.txt" --lora "$1" --lightning "$LIGHT" --seeds "$2" --seed-step "${3:-0}" --steps 8
 }
 train() {   # train <steps> <sample_every>
   bash "$J/pod/setup.sh" train || return 1
@@ -49,6 +49,7 @@ case "$JOB" in
   C2)  train 2000 600 ;;
   C3)  paint "$NEW" 1867 ;;
   C4)  if [ -f "$NEW" ]; then paint "$NEW" 1867,1868; else paint "$V1" 1867,1868; fi ;;
+  K1)  paint "$V1" 1867,1868 2 ;;
   *) echo "unknown job $JOB"; false ;;
 esac
 RC=$?
