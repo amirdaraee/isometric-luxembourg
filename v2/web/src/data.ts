@@ -34,7 +34,7 @@ export interface LightConfig {
     moon_tint: number[]; moon_direct: number; moon_shadow: number };
   night: { window_lit_share_evening: number; window_lit_share_late: number; lamp_height_m: number; lamp_radius_px: number;
     depth_eps_m: number; window_gain: number; window_halo: number; window_halo_grow: number; lamp_gain: number;
-    church_glow?: number };
+    church_glow?: number; church_warm?: number };
   /** The sky's light on a cutaway's opening: its level by day, at golden hour and at night (releases before it: none). */
   cutaway?: { sky_day: number; sky_golden: number; sky_night: number };
   seasons: Record<string, { tree: number[]; green: number[]; sat: number }> & { snow_cos: number };

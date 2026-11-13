@@ -1,0 +1,11 @@
+{
+ "about": "Buildings that the data tags as a place of worship and that are not to be drawn as one (v2/data/scene/worship.py; facades.md rule 14). One entry per OSM outline: its id, the reason, the date and the owner's words. A listed outline makes no building a church: its buildings keep the house rule. Add an entry here rather than changing the rule; the list stays short.",
+ "not_drawn_as_worship": [
+  {"osm": "relation/11371126",
+   "place": "the building beside St Michael's, rue Sigefroi (no name in OSM)",
+   "tags": "building=church, note=\"transformation into flats?\"",
+   "reason": "OSM tags it building=church, with a note asking whether it has been turned into flats. Drawn as a stone church with tall windows it read wrong beside St Michael's; it goes back to the house rule.",
+   "date": "2026-11-13",
+   "owner": "Back to a house"}
+ ]
+}

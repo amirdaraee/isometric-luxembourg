@@ -3,7 +3,7 @@
 The 3D model's lines are projected into the map and sampled every 0.25 m: every crease and outline of the ACT LoD2
 buildings (edges where two surfaces of different planes meet, or a surface ends), and the top and bottom edge of
 every window of the facade layout (the window rows; an arched window of a place of worship has no straight top, so
-its sill alone is sampled). At each sample seen in layer 5 (its building is what layer 5
+its sill alone is sampled, and a round one has neither), and the mullion of every traceried church window (L5.8). At each sample seen in layer 5 (its building is what layer 5
 shows there, at its depth within 0.3 m, at the sample or one pixel either side), the drawn line is looked for across the projected line, along
 the line's screen normal within 3 px either side: the luminance steps of the layer's colour of at least
 `line_min_step` (out of 255). The sample is on its line when the step nearest the projected line lies within
@@ -57,7 +57,7 @@ def feature_edges(M, min_len=0.5, crease_deg=20.0):
 
 def window_rows(scene, offset=0.05):
     """The top and bottom edge of every window of the facade layout, as 3D segments; of an arched window (a wall
-    of a place of worship) the bottom edge."""
+    of a place of worship) the bottom edge; of a round one (a rose, an oculus) nothing."""
     from v2.data.scene.facades import window_world
     bidx = {b["id"]: i for i, b in enumerate(scene.buildings)}
     A, B, O = [], [], []
@@ -68,9 +68,33 @@ def window_rows(scene, offset=0.05):
         for r in w["windows"]:
             c = np.array(window_world(w, [float(x) for x in r[:4]])) + off
             if w.get("worship"):
+                if len(r) > 4 and r[4] in ("rose", "oculus"):
+                    continue
                 A += [c[0]]; B += [c[1]]; O += [bi]
             else:
                 A += [c[0], c[3]]; B += [c[1], c[2]]; O += [bi, bi]
+    return np.array(A, float).reshape(-1, 3), np.array(B, float).reshape(-1, 3), np.array(O, np.int64)
+
+
+def mullions(scene, offset=0.05):
+    """The mullion of every traceried window of a place of worship (its centre line from over the sill to under
+    the springing of its head), as 3D segments."""
+    from v2.data.scene.facades import window_world
+    from v2.layers.art_a import head_height
+    bidx = {b["id"]: i for i, b in enumerate(scene.buildings)}
+    A, B, O = [], [], []
+    for w in scene.facades["walls"]:
+        if not w.get("worship"):
+            continue
+        nx, ny = w["normal"]
+        off = np.array([nx * offset, ny * offset, 0.0])
+        for r in w["windows"]:
+            if len(r) < 5 or r[4] != "traceried":
+                continue
+            u0, v0, u1, v1 = (float(x) for x in r[:4])
+            uc, ts = (u0 + u1) / 2, v1 - head_height(u1 - u0, w["worship"] == "pointed")
+            c = np.array(window_world(w, [uc, v0 + 0.2, uc, ts - 0.1])) + off
+            A += [c[0]]; B += [c[2]]; O += [bidx.get(w["building"], -1)]
     return np.array(A, float).reshape(-1, 3), np.array(B, float).reshape(-1, 3), np.array(O, np.int64)
 
 
@@ -161,7 +185,7 @@ def check_lines(ctx):
     rep = Report("lines")
     cache = TileCache(rel, "buildings", maxn=64)
     bm = G.buildings_mesh(sc)
-    for name, (A, B, O) in (("edges", feature_edges(bm)), ("windows", window_rows(sc))):
+    for name, (A, B, O) in (("edges", feature_edges(bm)), ("windows", window_rows(sc)), ("tracery", mullions(sc))):
         Ps, Ds, Os = samples(A, B, O)
         seen, on = score(cache, Ps, Ds, P["line_score_px"], P["line_min_step"], obj=Os)
         n = int(seen.sum())
@@ -169,8 +193,10 @@ def check_lines(ctx):
         bad = np.flatnonzero(seen & ~on)
         ex = [{"e": round(float(Ps[i, 0]), 2), "n": round(float(Ps[i, 1]), 2), "z": round(float(Ps[i, 2]), 2)}
               for i in bad[:: max(len(bad) // 8, 1)][:8]]
-        what = "building edges (creases and outlines of the 3D model)" if name == "edges" else "window rows (top and bottom of every window)"
-        rep.at_least(f"L5.2-{name}", f"line score, {what}: share of {n} seen samples (every 0.25 m, of {len(Ps)}) whose "
+        what = {"edges": "building edges (creases and outlines of the 3D model)",
+                "windows": "window rows (top and bottom of every window)",
+                "tracery": "church tracery (the mullion of every traceried window, a straight upright line)"}[name]
+        rep.at_least("L5.8-tracery" if name == "tracery" else f"L5.2-{name}", f"line score, {what}: share of {n} seen samples (every 0.25 m, of {len(Ps)}) whose "
                      f"drawn line is within {P['line_score_px']} px of the model's", round(share, 4), P["line_score_share"], ex)
     worship_pixels(rep, rel, sc)
     return rep.result()

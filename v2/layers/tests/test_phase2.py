@@ -217,3 +217,103 @@ def test_church_glass_and_doors_are_their_own_materials_without_light():
         # the same picture whatever the wall's direction: nothing here knows a sun
         rgb2, cls2 = A.openings_rgb(O, np.full(len(P), ti[0]), P, np.full(len(P), 1))
         assert (rgb == rgb2).all() and (cls == cls2).all()
+
+
+def test_church_window_kinds_tracery_rose_and_belfry_are_drawn_in_stone_glass_and_wood_without_light():
+    """Round two (13 Nov 2026): a traceried window has a straight stone mullion, a rose is a circle with stone
+    spokes, a belfry opening has louvres and no glass, the portal is stone and wood; stained panes differ in colour
+    and not in brightness."""
+    from v2.layers.art_a import OPEN_KIND
+    from v2.layers.common import CLASS
+    from v2.layers.data import NIGHT_CHURCH
+    wins = [(1.0, 2.6, 3.2, 11.0, "traceried"), (5.0, 6.0, 8.0, 9.0, "rose"), (9.0, 7.0, 10.0, 10.0, "belfry")]
+    church = _wall(1, 20, wins, [(5.4, 0.0, 7.6, 4.0, "rule:church portal", "portal")], worship="pointed", merged=["a"],
+                   house_rule={"windows": [], "doors": 0, "shopfronts": 0}, buttresses=[[3.6, 0.0, 4.5, 8.0]], courses=[2.25])
+    A = _art(_scene([church], {"B1": {"source": "osm:way/1", "name": "x", "share": 1.0, "walls": 1}}))
+    O = A.openings_mesh()
+    assert set(O["open_kind"].tolist()) == {OPEN_KIND[k] for k in ("traceried", "rose", "belfry", "entrance")}
+    assert set(O["head"][O["open_kind"] == OPEN_KIND["rose"]].tolist()) == {3}             # a circle
+    V = O["V"][O["T"][O["open_kind"] == OPEN_KIND["rose"]]].reshape(-1, 3)
+    assert np.hypot(V[:, 0] - 26.5, V[:, 2] - 307.5).max() <= 1.5 + 1e-9                   # inside its square's circle
+
+    def draw(kind, lo, hi):
+        ti = np.flatnonzero(O["open_kind"] == OPEN_KIND[kind])
+        xs, zs = np.meshgrid(np.linspace(lo[0] + 0.01, hi[0] - 0.01, 111), np.linspace(lo[1] + 0.01, hi[1] - 0.01, 201))
+        P = np.column_stack([xs.ravel(), np.full(xs.size, -0.05), zs.ravel()])
+        rgb, cls = A.openings_rgb(O, np.full(len(P), ti[0]), P, np.full(len(P), 1))
+        return rgb.reshape(xs.shape + (3,)), cls.reshape(xs.shape), xs, zs
+    lumw = np.array([0.2126, 0.7152, 0.0722])
+    # traceried: the mullion is stone all the way up its centre line to the springing; glass either side of it
+    rgb, cls, xs, zs = draw("traceried", (21.0, 302.6), (23.2, 311.0))
+    mid = xs.shape[1] // 2
+    below = zs[:, 0] < 311.0 - 0.866 * 2.2 - 0.1
+    assert (cls[below, mid] == CLASS["trim"]).all() and (cls[below][:, mid - 12] == CLASS["window"]).mean() > 0.9
+    glass = rgb[cls == CLASS["window"]] @ lumw
+    panes = glass > 0.8 * glass.max()
+    assert np.ptp(glass[panes]) < 0.02 * glass.max() and len(np.unique(np.round(rgb[cls == CLASS["window"]]), axis=0)) >= 5
+    # rose: stone spokes and glass between them, the same count on every ring of pixels round the hub
+    rgb, cls, xs, zs = draw("rose", (25.0, 306.0), (28.0, 309.0))
+    r = np.hypot(xs - 26.5, zs - 307.5)
+    assert (cls[r < 0.15] == CLASS["trim"]).all() and (cls[(r > 0.3) & (r < 0.8)] == CLASS["window"]).mean() > 0.6
+    # belfry: louvres of wood in a stone frame, no glass
+    rgb, cls, xs, zs = draw("belfry", (29.0, 307.0), (30.0, 310.0))
+    assert set(cls.ravel().tolist()) == {CLASS["door"], CLASS["trim"]}
+    wood = rgb[cls == CLASS["door"]]
+    assert len(np.unique(np.round(wood), axis=0)) == 2                                     # slats and the dark between them
+    # the portal: stone orders and a tympanum, plank leaves, no glass
+    rgb, cls, xs, zs = draw("entrance", (25.4, 300.0), (27.6, 304.0))
+    assert set(cls.ravel().tolist()) == {CLASS["door"], CLASS["trim"]} and (cls[:60, mid - 20] == CLASS["door"]).all()
+    assert (cls[-12:] == CLASS["trim"]).all()
+    # the wall: the string course is stone trim, straight
+    n = 400
+    u, v = np.linspace(0.05, 11.95, n), np.full(n, 2.25)
+    P = np.column_stack([20 + u, np.zeros(n), 300 + v])
+    cl = np.full(n, CLASS["building"])
+    A.tri_wall = np.zeros(1, np.int64)
+    A.walls_rgb(np.full(n, 1), np.zeros(n, np.int64), P, np.zeros(n), np.zeros(n), cls_out=cl)
+    assert (cl[(u < 3.6) | (u > 4.5)] == CLASS["trim"]).all()                              # the course, up to the buttress
+    v = np.linspace(1.0, 7.9, n)
+    P = np.column_stack([np.full(n, 20 + 4.05), np.zeros(n), 300 + v])
+    cl = np.full(n, CLASS["building"])
+    face = A.walls_rgb(np.full(n, 1), np.zeros(n, np.int64), P, np.zeros(n), np.zeros(n), cls_out=cl)
+    P[:, 0] = 20 + 3.66
+    line = A.walls_rgb(np.full(n, 1), np.zeros(n, np.int64), P, np.zeros(n), np.zeros(n))
+    P[:, 0] = 20 + 5.2
+    wall = A.walls_rgb(np.full(n, 1), np.zeros(n, np.int64), P, np.zeros(n), np.zeros(n))
+    # the buttress: the wall's own stone a little lighter, between two dark upright lines, bottom to top
+    assert (cl[np.abs(v - 2.25) > 0.3] == CLASS["building"]).all()
+    low = (v < 4.0) & (np.abs(v - 2.25) > 0.3)                                             # its lower stage, off the course
+    assert (line @ lumw)[low].mean() < 0.75 * (wall @ lumw)[low].mean()
+    assert 1.0 < np.median(face @ lumw) / np.median(wall @ lumw) < 1.08
+    # by night: glass kinds have a row, a belfry opening has none
+    assert NIGHT_CHURCH[("traceried", "pointed")] == 11 and NIGHT_CHURCH[("rose", "round")] == 12 and ("belfry", "round") not in NIGHT_CHURCH
+
+
+def test_a_church_wall_turned_round_keeps_the_night_rows_the_house_rule_had():
+    """A window's seed in the viewer is its row number. A church wall whose frame was turned round (its normal had
+    pointed into the building) keeps the dark rows it had when it faced the camera in the house rule's frame, and
+    gives none when it did not: every other building's rows stay where they were."""
+    from types import SimpleNamespace
+    from v2.layers.data import NIGHT_DARK, night_data
+    house = [(1.0, 0.9, 2.1, 2.35), (4.0, 0.9, 5.1, 2.35)]
+    hr = {"windows": [list(x) for x in house], "doors": 1, "shopfronts": 0}
+    out = [[0, 0], [12, 0], [12, 12], [0, 12], [0, 0]]
+    glass = [(5.0, 2.6, 7.0, 11.0, "traceried"), (9.0, 7.0, 10.0, 10.0, "belfry")]
+
+    def rows(walls):
+        sc = _scene(walls, {"B1": {"source": "osm:way/1", "name": "x", "share": 1.0, "walls": 1}})
+        win, _ = night_data(SimpleNamespace(scene=sc, ground_osm_path=None))
+        return win
+    before = rows([_wall(0, 0, house), _wall(1, 20, house), _wall(2, 40, house)])          # all three face the camera
+    assert before[:, 6].tolist() == [0, 0, 1, 1, 2, 2]
+    # building 1 is a church; its wall faced the camera and still does: dark rows in place, its glass at the end
+    same = rows([_wall(0, 0, house), _wall(1, 20, glass, worship="round", house_rule=hr), _wall(2, 40, house)])
+    assert same[:, 7].tolist() == [0, 0, NIGHT_DARK, NIGHT_DARK, NIGHT_DARK, 0, 0, 10]      # no row for the belfry opening
+    assert (same[[0, 1, 5, 6]] == before[[0, 1, 4, 5]]).all()
+    # the wall was turned round and now faces away: the dark rows stay, no glass is seen
+    away = rows([_wall(0, 0, house), _wall(1, 20, glass, worship="round", normal=[0.0, 1.0], house_rule=dict(hr, outline=out)),
+                 _wall(2, 40, house)])
+    assert away[:, 7].tolist() == [0, 0, NIGHT_DARK, NIGHT_DARK, NIGHT_DARK, 0, 0]
+    # it had faced away and was turned to the camera: no dark rows (it had none), its glass at the end
+    to = rows([_wall(0, 0, house), _wall(1, 20, glass, worship="round", house_rule=dict(hr, outline=out)), _wall(2, 40, house)])
+    assert to[:, 7].tolist() == [0, 0, 0, 0, 10] and (to[:4] == before[[0, 1, 4, 5]]).all()

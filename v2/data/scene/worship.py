@@ -13,6 +13,9 @@ A building is told from the data, never from a place in the picture:
      building.
 A point alone (an OSM node amenity=place_of_worship) does not make a building a church: prayer rooms and community
 centres in ordinary houses are mapped that way.
+
+Exceptions: an OSM outline listed in `v2/data/structures/worship_exceptions.json` (with its reason, the date and the
+owner's words) makes no building a church; its buildings keep the house rule.
 """
 from __future__ import annotations
 
@@ -32,11 +35,14 @@ def _ring(geom):
     return np.column_stack([e, n])
 
 
-def outlines(worship_json) -> list:
-    """The mapped places of worship as (outline in LUREF metres, name, "way/123", building tag)."""
+def outlines(worship_json, skip=()) -> list:
+    """The mapped places of worship as (outline in LUREF metres, name, "way/123", building tag). `skip`: the OSM
+    ids ("way/123") that are not to be drawn as one (load_exceptions)."""
     out = []
     for el in worship_json["elements"]:
         tg = el.get("tags", {})
+        if f"{el['type']}/{el['id']}" in skip:
+            continue
         if tg.get("building") not in BUILDING_TAGS and tg.get("amenity") != "place_of_worship":
             continue
         poly = None
@@ -56,13 +62,14 @@ def outlines(worship_json) -> list:
     return out
 
 
-def find(blds, fps, worship_json, places, styles, p) -> dict:
+def find(blds, fps, worship_json, places, styles, p, skip=()) -> dict:
     """{building index: {"source", "name", "area", "share"}}: the scene's places of worship. "area" is the mapped
     outline (a shapely geometry) when OSM gives one, else None: the whole building. "share": how much of the
-    building's footprint the church is."""
+    building's footprint the church is. A building of which the outline covers `worship_whole_share` or more is the
+    church all over ("area" None)."""
     found = {}
     tree = STRtree(fps) if fps else None
-    for poly, name, oid, tag in outlines(worship_json):
+    for poly, name, oid, tag in outlines(worship_json, skip):
         for j in (tree.query(poly) if tree is not None else []):
             f = fps[j]
             if f.is_empty or not f.intersects(poly):
@@ -74,6 +81,10 @@ def find(blds, fps, worship_json, places, styles, p) -> dict:
                 found[int(j)] = {"source": f"osm:{oid}" if prev is None else prev["source"], "name": name if prev is None else prev["name"],
                                  "area": area, "osm_building": tag if prev is None else prev["osm_building"],
                                  "share": round(min(1.0, f.intersection(area).area / f.area), 3)}
+    # a building that is mostly church is the church all over: its tower or porch may stand outside the mapped outline
+    for f in found.values():
+        if f["share"] >= p["worship_whole_share"]:
+            f["area"] = None
     by_id = {b["id"]: i for i, b in enumerate(blds)}
     for pl in places:
         if pl.get("source") != "landmark" or pl.get("category") != "church":
@@ -97,6 +108,12 @@ def find(blds, fps, worship_json, places, styles, p) -> dict:
 def wall_in(area, seg: LineString, tol: float) -> bool:
     """Is a wall (its base line) the church's? Its middle stands in the mapped outline, grown by `tol`."""
     return area is None or area.buffer(tol).contains(seg.interpolate(0.5, normalized=True))
+
+
+def load_exceptions() -> list:
+    """The OSM outlines tagged as a place of worship that are not drawn as one: [{"osm", "reason", "date", "owner"}]."""
+    from v2.config import V2
+    return json.loads((V2 / "data" / "structures" / "worship_exceptions.json").read_text())["not_drawn_as_worship"]
 
 
 def load_styles() -> dict:

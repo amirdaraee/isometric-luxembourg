@@ -38,7 +38,7 @@
  },
  "night": {"window_lit_share_evening": 0.55, "window_lit_share_late": 0.18, "lamp_height_m": 5.0, "lamp_radius_px": 44,
            "depth_eps_m": 0.35, "window_gain": 1.05, "window_halo": 0.36, "window_halo_grow": 1.4, "lamp_gain": 1.5,
-           "church_glow": 0.42},
+           "church_glow": 0.8, "church_warm": 0.22},
  "cutaway": {
   "about": "The light on a landmark cutaway's opening (landmark-cutaways.md rule 3; the owner, 13 Nov 2026: lit by the sky only). The opening's faces get the hour's sky light (sun.ambient times the grade's sky colour) times these levels, the same on every face: no cast shadow, no sun, fill or moon by direction. Each level is set so that the interior is about as bright as the kept outside stone at that hour (its median lit level on 24 June: 0.85 at 13:00, 0.84 at 21:18, 0.31 at 23:15): day 0.58 x 1.47 = 0.85, golden hour 0.78 x 1.08 = 0.84, night 0.25 x 1.22 = 0.31.",
   "sky_day": 1.47,

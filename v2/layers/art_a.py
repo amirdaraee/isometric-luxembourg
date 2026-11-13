@@ -20,9 +20,15 @@ beside a window only where both fit inside the wall's outline.
 Places of worship (the owner's decision of 13 Nov 2026; the facade layout says which walls, facades.md rule 6):
   walls       the stone of landmark_styles.json's kind "place_of_worship" (a building's own entry goes first), coursed
               ashlar, no floor cornices (a nave has no storeys), no banded ground floor
-  windows     the layout's tall rectangle drawn as an arched window, its head round or pointed: a stone frame along
-              the arch, leaded glass in two lights, dark with some stained panes; no shutters
-  doors       a plank door under a round arch, in stone; no fanlight
+  windows     the layout's rectangle drawn by its kind, its head round or pointed: a lancet (a stone frame along
+              the arch, leaded glass); a traceried window (a stone mullion, two lights with their own heads and a
+              round top light); a rose (a wheel of stone spokes in two rings) and an oculus (a round window with a
+              cross); a belfry opening (louvres in a stone frame). Stained panes in four colours, every pane as
+              light as the plain glass; no shutters
+  walls       a string course under the sills, a corbel table under the eave, buttresses with a set-off where
+              the layout puts them
+  doors       a plank door under a round arch, in stone; no fanlight. The portal of the entrance front: two
+              orders of stone round the arch, a tympanum over a lintel, two plank leaves
 """
 from __future__ import annotations
 
@@ -44,7 +50,11 @@ ROOFS = [("roof_tile_old", "tile", 0.1), ("roof_tile", "tile", 0.08), ("roof_til
 SHUTTERS = ["shutter_green", "shutter_blue", "shutter_red", "shutter_grey"]
 DOORS = ["door_green", "door_red", "door_blue", "door_wood"]
 AWNINGS = ["awning_red", "awning_green", "awning_blue", "awning_yellow"]
-OPEN_KIND = {"window": 0, "door": 1, "garage": 2, "shopfront": 3, "shutter": 4, "church": 5, "portal": 6}
+OPEN_KIND = {"window": 0, "door": 1, "garage": 2, "shopfront": 3, "shutter": 4, "church": 5, "portal": 6,
+             "traceried": 7, "rose": 8, "oculus": 9, "belfry": 10, "entrance": 11}
+CHURCH_KINDS = {"lancet": "church", "traceried": "traceried", "rose": "rose", "oculus": "oculus", "belfry": "belfry"}
+ROUND_KINDS = ("rose", "oculus")
+HEAD = {None: 0, "round": 1, "pointed": 2, "circle": 3}
 STAINED = ["stained_blue", "stained_red", "stained_amber", "stained_green"]
 POINTED = 0.8660254037844386          # a pointed head's height over its width (two arcs struck from the springs)
 LUMA = np.array([0.2126, 0.7152, 0.0722])
@@ -71,10 +81,13 @@ def head_height(width, pointed):
     return width * (POINTED if pointed else 0.5)
 
 
-def arch_outline(u0, v0, u1, v1, pointed, n=6):
+def arch_outline(u0, v0, u1, v1, pointed, n=6, circle=False):
     """An arched opening in its wall's (u, v): the layout's rectangle with a round or a pointed head, as a convex
-    polygon (counter-clockwise from the lower left corner)."""
+    polygon (counter-clockwise from the lower left corner); `circle`: the circle in the (square) rectangle."""
     W = u1 - u0
+    if circle:
+        return [((u0 + u1) / 2 + W / 2 * math.cos(a), (v0 + v1) / 2 + W / 2 * math.sin(a))
+                for a in np.linspace(-math.pi / 2, 1.5 * math.pi, 4 * n + 1)[:-1]]
     vs = v1 - head_height(W, pointed)
     pts = [(u0, v0), (u1, v0), (u1, vs)]
     if pointed:                                                # each side an arc struck from the other spring
@@ -149,7 +162,12 @@ class ArtA:
         self.w_h = np.array([w.get("height", 0.0) for w in walls], float)
         self.w_floors = np.array([w.get("floors", 0) for w in walls], int)
         # every wall's windows and doors as (u0, v0, u1, v1) across and up the wall, for their stone surrounds
-        self.w_win = [np.array([r[:4] for r in w["windows"]], float).reshape(-1, 4) for w in walls]
+        # (a church's round windows have no sill: they are left out here)
+        self.w_win = [np.array([r[:4] for r in w["windows"] if not (len(r) > 4 and r[4] in ROUND_KINDS)], float).reshape(-1, 4)
+                      for w in walls]
+        # a church's joined walls: their buttresses (u0, v0, u1, v1) and string courses (v)
+        self.w_extra = {wi: (np.array(w.get("buttresses") or [], float).reshape(-1, 4), np.array(w.get("courses") or [], float))
+                        for wi, w in enumerate(walls) if w.get("merged")}
         self.w_door = [np.array([r[:4] for r in w["doors"]], float).reshape(-1, 4) for w in walls]
         self.tri_wall = self._wall_of_tris(bmesh)
         self.materials = None        # method B: {name: (image (H, W, 3) float, (width_m, height_m))}
@@ -208,26 +226,28 @@ class ArtA:
             return [s for s in ((u0 - sw - 0.05, v0, u0 - 0.05, v1), (u1 + 0.05, v0, u1 + 0.05 + sw, v1))
                     if outline.buffer(-0.05).contains(box(*s))]
 
-        def add(w, bi, r, k, cls, pointed=None):
+        def add(w, bi, r, k, cls, pointed=None, shape=None):
             c = np.array(window_world(w, [float(x) for x in r[:4]]), float)
             nx, ny = w["normal"]
             off = np.array([nx * offset, ny * offset, 0.0])
             c = c + off
             n = 2
-            if pointed is None:
+            if pointed is not None and shape is None:
+                shape = "pointed" if pointed else "round"
+            if shape is None or k == "entrance":
                 M.quad(c[0], c[1], c[2], c[3], cls, bi, "buildings.window")
-            else:                                              # an arched window: its outline, as a fan
+            else:                                              # an arched or a round window: its outline, as a fan
                 (e0, n0, z0), (e1, n1, _) = w["base"]
                 L = w["length"] or 1.0
                 ux, uy = (e1 - e0) / L, (n1 - n0) / L
-                pts = arch_outline(*(float(x) for x in r[:4]), pointed)
+                pts = arch_outline(*(float(x) for x in r[:4]), shape == "pointed", circle=shape == "circle")
                 V = np.array([(e0 + ux * u, n0 + uy * u, z0 + v) for u, v in pts]) + off
                 n = len(pts) - 2
                 M.add(V, [[0, i, i + 1] for i in range(1, n + 1)], cls, bi, "buildings.window")
             kind.extend([OPEN_KIND[k]] * n)
             frame.extend([np.r_[c[0], c[1] - c[0], c[3] - c[0]]] * n)
             bld.extend([bi] * n)
-            head.extend([0 if pointed is None else (2 if pointed else 1)] * n)
+            head.extend([HEAD[shape]] * n)
             if w.get("worship"):
                 tone.extend([count[1]] * n)
                 count[1] -= 1
@@ -242,12 +262,21 @@ class ArtA:
             outline = Polygon(w["outline"]) if len(w.get("outline", [])) >= 4 else None
             shut = st.shutters and outline is not None and outline.is_valid
             if w.get("worship"):
+                arch = "pointed" if w["worship"] == "pointed" else "round"
                 for r in w["windows"]:
-                    add(w, bi, r, "church", CLASS["window"], pointed=w["worship"] == "pointed")
+                    kd = r[4] if len(r) > 4 else "lancet"
+                    add(w, bi, r, CHURCH_KINDS[kd], CLASS["door"] if kd == "belfry" else CLASS["window"],
+                        shape="circle" if kd in ROUND_KINDS else arch)
                 for r in w["doors"]:
-                    add(w, bi, r, "garage" if (len(r) > 5 and r[5] == "garage") else "portal", CLASS["door"])
+                    if len(r) > 5 and r[5] == "portal":
+                        add(w, bi, r, "entrance", CLASS["door"], shape=arch)
+                    else:
+                        add(w, bi, r, "garage" if (len(r) > 5 and r[5] == "garage") else "portal", CLASS["door"])
                 hr = w["house_rule"]
                 count[0] += len(hr["windows"]) + hr["doors"] + hr["shopfronts"]
+                if "outline" in hr:                            # the wall's frame was turned round: the house
+                    outline = Polygon(hr["outline"]) if len(hr["outline"]) >= 4 else None     # rule's own outline
+                    shut = st.shutters and outline is not None and outline.is_valid
                 if shut:
                     count[0] += sum(len(shutters_of(r, outline)) for r in hr["windows"])
                 continue
@@ -354,8 +383,42 @@ class ArtA:
                     sh = np.where(top.any(1), 0.88, sh)
                 sur[g] = hit
                 shade[g] = sh
+            # a church's joined walls: a corbel table under the eave, string courses, buttresses with a set-off.
+            # A buttress is the wall's own stone, a little lighter, drawn by its outline and the lines of its
+            # set-off and cap: a wide strip in another stone would be a second colour inside the trim's material
+            butt = np.ones(len(w))
+            for wi_ in np.unique(w[ch]) if ch.any() else ():
+                ex = self.w_extra.get(int(wi_))
+                if ex is None:
+                    continue
+                g = np.flatnonzero(w == wi_)
+                uu, vv, Hh = u[g], v[g], H[g]
+                hit = np.zeros(len(g), bool)
+                sh = np.ones(len(g))
+                if Hh[0] >= 5.0:
+                    cb = (vv > Hh - 0.84) & (vv <= Hh - 0.52) & (np.floor(uu / 0.4) % 2 == 0)
+                    hit |= cb
+                    sh = np.where(cb & (vv < Hh - 0.76), 0.82, sh)
+                for cv in ex[1]:
+                    line = np.abs(vv - cv) < 0.1
+                    under = (vv > cv - 0.18) & (vv <= cv - 0.1)
+                    hit |= line | under
+                    sh = np.where(under, 0.8, np.where(line, 1.0, sh))
+                for b0, v0, b1, v1 in ex[0]:
+                    vm = v0 + 0.55 * (v1 - v0)
+                    inb = (uu > b0) & (uu < b1) & (vv >= v0) & (vv < v1)
+                    up = inb & (vv > vm) & (uu > b0 + 0.14) & (uu < b1 - 0.14)
+                    on = (inb & (vv <= vm)) | up
+                    edge = (on & ((uu < b0 + 0.14) | (uu > b1 - 0.14))) | (up & ((uu < b0 + 0.28) | (uu > b1 - 0.28)))
+                    cap = (on & (vv > vm - 0.25) & (vv <= vm)) | (up & (vv > v1 - 0.3))
+                    hit &= ~inb
+                    butt[g] = np.where(on, np.where(edge | cap, 0.66, 1.05), butt[g])
+                sur[g] |= hit
+                shade[g] = np.where(hit, sh, shade[g])
             sur &= (v > 0.82) & (v < H - 0.52) & ~corner
             c[sur] = np.array([x.surround for x in sty]).reshape(-1, 3)[sur] * shade[sur, None]
+            bt = (butt != 1.0) & (v > 0.82) & (v < H - 0.52)
+            c[bt] = np.minimum(c[bt] * butt[bt, None], 255.0)
             rgb[has] = c
             if cls_out is not None:
                 stone = (v < 0.82) | ((v > 3.0) & (v < H - 0.6) & band(v - 3.6 + 0.04, 3.0, 0.3) & ~ch) | \
@@ -472,7 +535,7 @@ class ArtA:
         cls[m & fan & ~dtrim] = CLASS["window"]
         cls[m & dtrim] = CLASS["trim"]
         # a church's windows and doors: arched, in stone
-        m = np.isin(k, (OPEN_KIND["church"], OPEN_KIND["portal"]))
+        m = k >= OPEN_KIND["church"]
         if m.any():
             rgb[m], cls[m] = self.church_rgb(O, ti[m], k[m], s[m], t[m], W[m], H[m], bi[m])
         # garage doors: horizontal panels
@@ -509,43 +572,109 @@ class ArtA:
         return rgb, cls
 
     def church_rgb(self, O, ti, k, s, t, W, H, bi):
-        """A place of worship's arched windows and doors, from (s, t) metres across and up their rectangle:
-        (albedo, class). The window is its arched outline (openings_mesh): a stone frame along it and a sill, a
-        mullion between two lights, lead lines, dark glass with some stained panes (each pane's colour a hash of
-        the window and the pane, no light). Every pane is as light as the plain glass: a stained pane differs in
-        colour only, so the glass of a wall has one brightness whichever way the wall faces (L5.1). The door is a
-        rectangle: planks under a round arch, stone above it."""
+        """A place of worship's windows and doors, from (s, t) metres across and up their rectangle: (albedo,
+        class). Each is its outline (openings_mesh) with a stone frame along it; inside, by kind:
+          lancet      a sill, leaded glass with a lead line up the middle
+          traceried   a stone mullion, two lights with their own heads, a round top light between them and the arch
+          rose        a wheel: a hub, spokes to a stone ring, and spokes between them from the ring to the frame
+          oculus      a cross of stone bars
+          belfry      louvres (slats of wood), a stone mullion in a wide one; no glass
+          entrance    the portal: two orders of stone round the arch, a tympanum over a lintel, two plank leaves
+          portal      a side door: planks under a round arch
+        The glass is dark with stained panes in four colours (each pane's colour a hash of the window and the
+        pane, no light). Every pane is as light as the plain glass: a stained pane differs in colour only, so the
+        glass of a wall has one brightness whichever way the wall faces (L5.1)."""
+        K = OPEN_KIND
         stone = np.array([self.church[b].surround if b in self.church else self.styles[b].surround for b in bi]).reshape(-1, 3)
-        pointed = O["head"][ti] == 2
-        win = k == OPEN_KIND["church"]
-        ts = H - np.where(win, np.where(pointed, POINTED, 0.5) * W, 0.5 * W)       # the springing line
-        # how far inside the arch the pixel is (metres; negative outside it)
+        head = O["head"][ti]
+        pointed, circ = head == 2, head == 3
+        hh = np.where(pointed, POINTED, 0.5) * W
+        ts = H - hh                                                              # the springing line
+        # how far inside the outline the pixel is (metres; negative outside it)
         d_head = np.where(pointed, W - np.maximum(np.hypot(s, t - ts), np.hypot(s - W, t - ts)),
                           W / 2 - np.hypot(s - W / 2, t - ts))
-        d = np.where(t > ts, d_head, np.minimum(s, W - s))
-        # windows
+        r = np.hypot(s - W / 2, t - H / 2)
+        d = np.where(circ, W / 2 - r, np.where(t > ts, d_head, np.minimum(s, W - s)))
+        tone = O["tone"][ti]
+        # ---- the stone inside the frame, and each pane's place (two numbers)
+        frame = (d < 0.12) | (~circ & (t < 0.1))
+        bar = np.zeros(len(k), bool)                                             # stone bars: trim
+        lead = np.abs(np.mod(t + 0.225, 0.45) - 0.225) < 0.022                   # lead lines: dark glass
+        pa, pb = np.floor(t / 0.45), np.floor(s / np.maximum(W / 2, 1e-6))
+        m = k == K["church"]
+        lead |= m & (np.abs(s - W / 2) < 0.04)
+        # traceried: the two lights' heads spring where the window's does; the top light touches them and the arch
+        m = k == K["traceried"]
+        Ws = W / 2
+        sl = np.where(s < Ws, s, s - Ws)
+        d_sub = np.where(pointed, Ws - np.maximum(np.hypot(sl, t - ts), np.hypot(sl - Ws, t - ts)), Ws / 2 - np.hypot(sl - Ws / 2, t - ts))
+        in_sub = np.where(t > ts, d_sub > 0.05, np.abs(s - Ws) > 0.1)
+        cy, rc = ts + np.where(pointed, 0.5, 1 / 3) * W, np.where(pointed, 0.16, 1 / 6) * W
+        rr = np.hypot(s - Ws, t - cy)
+        in_top = rr < rc - 0.04
+        bar |= m & ~(in_sub | in_top)
+        lead |= m & in_sub & (np.abs(sl - Ws / 2) < 0.022)
+        pb = np.where(m, np.floor(s / np.maximum(W / 4, 1e-6)), pb)
+        ang = np.arctan2(t - cy, s - Ws)
+        pa = np.where(m & in_top, 900 + np.floor((ang + np.pi) / (np.pi / 2)), pa)
+        lead &= ~(m & in_top)
+        # rose and oculus: spokes from the hub to a ring, and between them from the ring to the frame
+        m = np.isin(k, (K["rose"], K["oculus"]))
+        rose = k == K["rose"]
+        n = np.where(rose, np.where(W >= 3.4, 12, 8), 4)
+        R = W / 2
+        ang = np.arctan2(t - H / 2, s - W / 2) + np.pi
+        step = 2 * np.pi / n
+        outer = rose & (r > 0.58 * R)
+        a2 = np.mod(ang + np.where(outer, step / 2, 0.0), step)
+        spoke = r * np.sin(np.minimum(a2, step - a2)) < np.where(rose, 0.055, 0.05)
+        ring = rose & (np.abs(r - 0.58 * R) < 0.06)
+        hub = r < np.where(rose, 0.13 * R, 0.0)
+        bar |= m & (spoke | ring | hub)
+        pa = np.where(m, np.where(outer, 700, 800) + np.floor((ang + np.where(outer, step / 2, 0.0)) / step), pa)
+        pb = np.where(m, 0, pb)
+        lead &= ~m
+        # ---- glass: plain or stained, every pane as light as the plain glass
         glass = B("glass_church")
-        row = np.floor(t / 0.55)
-        light = np.floor(s / np.maximum(W / 2, 1e-6))
-        h = ihash(O["tone"][ti], row, light, 53)
-        jewel = np.array([B(n) for n in STAINED])[(ihash(O["tone"][ti], row, light, 54) * len(STAINED)).astype(int).clip(0, len(STAINED) - 1)]
-        stained = mix(glass, jewel, 0.5)
+        h = ihash(tone, pa, pb, 53)
+        jewel = np.array([B(x) for x in STAINED])[(ihash(tone, pa, pb, 54) * len(STAINED)).astype(int).clip(0, len(STAINED) - 1)]
+        stained = mix(glass, jewel, 0.85)
         stained = stained * ((glass @ LUMA) / np.maximum(stained @ LUMA, 1e-6))[:, None]
-        pane = np.where((h < 0.4)[:, None], stained, glass)
-        lead = (np.abs(s - W / 2) < 0.05) | band(t, 0.55, 0.045)
-        c = np.where(lead[:, None], glass * 0.55, pane)
-        frame = (d < 0.11) | (t < 0.1)
-        c = np.where(frame[:, None], stone, c)
-        cls = np.where(frame, CLASS["trim"], CLASS["window"]).astype(np.int64)
-        # doors
+        c = np.where((h < 0.7)[:, None], stained, glass)
+        c = np.where(lead[:, None], glass * 0.55, c)
+        c = np.where((frame | bar)[:, None], stone * np.where(bar & ~frame, 0.96, 1.0)[:, None], c)
+        cls = np.where(frame | bar, CLASS["trim"], CLASS["window"]).astype(np.int64)
+        # ---- belfry: louvres
         wood = B("door_wood")
+        m = k == K["belfry"]
+        slat = np.mod(t, 0.34) < 0.12
+        cb = np.where(slat[:, None], wood * 0.62, wood)
+        mull = (W >= 1.2) & (np.abs(s - W / 2) < 0.07)
+        fb = frame | mull
+        c = np.where(m[:, None], np.where(fb[:, None], stone, cb), c)
+        cls = np.where(m, np.where(fb, CLASS["trim"], CLASS["door"]), cls)
+        # ---- doors: planks, straps
         plank = band(s, 0.3, 0.035) | (np.abs(s - W / 2) < 0.03)
         strap = (np.abs(t - 0.5) < 0.04) | (np.abs(t - 1.5) < 0.04)
-        cd = np.where((plank | strap)[:, None], wood * 0.72, wood)
+        leaf = np.where((plank | strap)[:, None], wood * 0.72, wood)
+        m = k == K["portal"]
         out = d < 0.09
-        cd = np.where(out[:, None], stone * np.where(d < 0, 1.0, 0.9)[:, None], cd)
-        c = np.where(win[:, None], c, cd)
-        cls = np.where(win, cls, np.where(out, CLASS["trim"], CLASS["door"]))
+        cd = np.where(out[:, None], stone * np.where(d < 0, 1.0, 0.9)[:, None], leaf)
+        c = np.where(m[:, None], cd, c)
+        cls = np.where(m, np.where(out, CLASS["trim"], CLASS["door"]), cls)
+        # ---- the portal of the entrance front
+        m = k == K["entrance"]
+        o1 = d < 0.24                                                            # the outer order, and the wall round it
+        o2 = (d >= 0.24) & (d < 0.5)                                             # the inner order
+        line = (np.abs(d - 0.24) < 0.035) | (np.abs(d - 0.5) < 0.035) | ((d < 0) & (t > H - 0.1))
+        tymp = (d >= 0.5) & (t > ts)
+        lintel = (d >= 0.5) & (np.abs(t - ts) < 0.07)
+        trim = B("trim")
+        ce = np.where(o1[:, None], stone, np.where(o2[:, None], stone * 0.93, np.where(tymp[:, None], trim, leaf)))
+        ce = np.where((line | lintel)[:, None], stone * 0.68, ce)
+        st_ = o1 | o2 | tymp | line | lintel
+        c = np.where(m[:, None], ce, c)
+        cls = np.where(m, np.where(st_, CLASS["trim"], CLASS["door"]), cls)
         return c, cls
 
     # ------------------------------------------------------------------ structures and trees

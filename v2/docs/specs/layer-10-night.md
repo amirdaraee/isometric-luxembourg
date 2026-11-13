@@ -25,13 +25,17 @@ height and colour; the viewer draws them with glow.
    - lit windows glow: each has a warm halo on its wall (`window_halo`, the rectangle grown by 1.4 times its size,
      fading out); lamps are larger and stronger (`lamp_radius_px` 44, `lamp_gain` 1.5).
 
-5. **Places of worship** (owner, 13 Nov 2026): a church's arched windows are not lit like a flat's. A church is
-   lit or dark as a whole building, as often as a home's window at that hour. Lit, each window shows a dim glow of
-   stained glass inside its arch: panes in the palette's four stained colours (`buildings.stained_*`), dark lead
-   lines between them, at `night.church_glow` (0.42) of a house window's strength, with no halo on the wall. Dark,
-   nothing is drawn. A church's doors are not lit. In `windows.bin` a church window has kind 8 (round) or 9
-   (pointed); kind 16 is a row that is never lit (it keeps the place of a window the house rule had on a church
-   wall, so every other window's seed, its row number, stays the same).
+5. **Places of worship** (owner, 13 Nov 2026): a church's windows are not lit like a flat's. A church is lit or
+   dark as a whole building, as often as a home's window at that hour. Lit, each window shows a glow of stained
+   glass inside its stone (round two, "One more round": a clearer glow): the panes of the day's drawing in the
+   palette's four stained colours (`buildings.stained_*`), each lifted by 22% of the warm light behind it
+   (`night.church_warm`) and a little lighter or darker than the next; dark lead lines; the frame, the mullion,
+   the tracery and a rose's spokes stay dark. The strength is `night.church_glow`, 0.8 of a house window's (0.42
+   before), which with the glass's own colours leaves a church window dimmer than a house window. No halo on the
+   wall. Dark, nothing is drawn. A church's doors and belfry openings are not lit. In `windows.bin` a church
+   window has kind 8 or 9 (a lancet, round or pointed), 10 or 11 (a traceried window), 12 (a rose) or 13 (an
+   oculus); a belfry opening has no row; kind 16 is a row that is never lit (it keeps the place of a window the
+   house rule had on a church wall, so every other window's seed, its row number, stays the same).
 
 **Checks.**
 - L10.1 (gate) Every lit window lies on a window rectangle of the facade layout (straight rows by construction).

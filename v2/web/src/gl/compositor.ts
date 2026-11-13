@@ -773,6 +773,7 @@ export class Compositor {
         p.f("uNight", night * cfg.night.window_gain);
         p.f("uHalo", cfg.night.window_halo);
         p.f("uChurch", cfg.night.church_glow ?? 0);
+        p.f("uChurchWarm", cfg.night.church_warm ?? 0);
         gl.uniform3fv(p.u("uStained"), new Float32Array(["stained_blue", "stained_red", "stained_amber", "stained_green"]
           .flatMap((n) => (pal.buildings[n]?.rgb ?? [0, 0, 0]).map((v) => v / 255))));
         const a = this.bindQuad(p);

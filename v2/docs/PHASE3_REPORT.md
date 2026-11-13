@@ -28,8 +28,12 @@
 - **Added after that on 13 November, three decisions of the owner (section 10):** a cutaway's opening is lit by
   the sky only; churches have church facades, in code; quote q0013 is dropped. $0, no pod. 57 of 57 stages, 273
   gate entries, 0 fail, no threshold changed.
-- `data/v2/test/release/current.json` points at the final A build (`cc4d856c63d4`), which holds the painted
-  cathedral cutaway, the sky light rule's settings and the church facades.
+- **Added at the end of 13 November (section 11):** the building beside St Michael's is a house again ("Back to
+  a house"), and church outsides got one more round of code art ("One more round"): windows sized to the wall,
+  tracery, buttresses, a portal and a rose on the entrance front, belfry openings, a clearer glow at night. $0, no
+  pod. 57 of 57 stages, 278 gate entries, 0 fail, no threshold changed.
+- `data/v2/test/release/current.json` points at the final A build (`7c39be2ef469`), which holds the painted
+  cathedral cutaway, the sky light rule's settings and the church facades of both rounds.
 
 ## 2. What changed in the look
 
@@ -952,7 +956,7 @@ and after) and `test_church_facades_others.jpg` (the other five that the camera 
 23 to 26 are closed (above). New:
 
 27. **The unnamed church beside St Michael's** (OSM relation 11371126): keep it as a church, or enter it in a
-    small exceptions list as a house?
+    small exceptions list as a house? (Answered on 13 November: "Back to a house", section 11.)
 28. **St Jean du Grund** keeps the abbey's white. Stone, as the other churches, or white?
 29. **Stained glass by day:** muted so that the shadow gate holds. Accept, or give church glass its own measure
     in that gate so the panes can be bright?
@@ -966,3 +970,242 @@ and after) and `test_church_facades_others.jpg` (the other five that the camera 
 33. **Other landmarks' facades** (the palace and the rest of the landmark list) are not covered by this rule and
     were not touched. Which next, if any?
 34. **A fresh quote for the palace and the abbey:** say when.
+
+
+## 11. Church outsides, round two; the building beside St Michael's is a house (13 November, $0)
+
+Branch `v2-phase3-churches`, into `v2`. **Spent: $0.** No pod, no quote made, none approved.
+
+The owner decided two things on 13 November 2026 and accepted a third. Each is done as decided and nothing wider.
+
+| Question | The owner's words | Done |
+|---|---|---|
+| 27: the church beside St Michael's | "Back to a house" | Entered in an exceptions list; it keeps the house rule |
+| The church facades look correct but plain | "One more round" | One more round of code art on church outsides, by rule |
+| The ledger's `release` takes an unapproved quote (section 10.3) | "Keep it" | Recorded; nothing to change |
+
+**Rebuilt** for the test area (`python -m v2.build test g3`): **57 of 57 stages, 278 gate entries, 0 fail**
+(273 before; the new ones are F21 to F24 and L5.8). No threshold was changed. Release `7c39be2ef469`.
+
+### 11.1 The building beside St Michael's
+
+- OSM relation 11371126 is tagged `building=church`, with the note "transformation into flats?". It had become
+  a stone church with 41 tall windows.
+- **The exceptions list:** `v2/data/structures/worship_exceptions.json`. One entry per OSM outline that is tagged
+  as a place of worship and is not to be drawn as one: its id, the reason, the date, the owner's words. An
+  outline listed there makes no building a church (`worship.py`). One entry so far.
+- **Measured against the build before church facades** (`f39c120ae255`):
+
+| What | Result |
+|---|---|
+| Layer 5 tiles that hold the building | 4 |
+| Of them identical to that build, byte for byte | 2 |
+| The other 2 | They also hold St Michael's, which is a church now |
+| The building's own pixels in all 4 tiles | 99,669; **14 differ** |
+| Where the 14 are | One patch of 5 by 8 pixels in tile `122_64`, each within 2 pixels of a St Michael's pixel |
+| Its night windows | 51 rows, identical to that build's, at the same row numbers |
+
+- The 14 pixels: a house window that the house rule had put on a St Michael's wall stood proud of this
+  building's wall there. St Michael's has no house windows now, so 7 pixels show this building's wall again, and
+  7 beside them lost that window's ink line.
+- In the map it is a cream stone house with blue shutters, as it was in that build.
+
+### 11.2 Church outsides: what the rule does now
+
+Code: `v2/data/scene/church.py` (new: the layout), `facades.py`, `worship.py`, `v2/layers/art_a.py` (the
+drawing), `v2/layers/data.py` and `v2/web/src/gl/shaders.ts` (night). Spec: `v2/docs/specs/facades.md` rules 21
+to 30, `layer-05-buildings.md`, `layer-10-night.md` rule 5. Everything follows from the walls' outlines, their
+heights and the church's footprint. Nothing is placed by hand.
+
+- **Windows sized to the wall.** A tall window is 0.26 of its own height wide (1.0 to 2.6 m; it was 1.3 m
+  everywhere) and up to 12 m tall (9 m before). From 1.5 m wide and 4.5 m tall it has **tracery**: a stone
+  mullion, two lights with their own heads, a round top light. Narrower, it is a lancet.
+- **Low walls.** The sill drops with the wall (0.3 of its height, 1.2 to 2.6 m). A wall too low for a window
+  2.6 m tall gets **round windows** (1.1 m) if it is 3.4 m high or more, and nothing if it is lower. No small
+  arches.
+- **Buttresses** between the bays of a row of three windows or more, on walls 6 m high or more that are not a
+  tower's, where the strip lies in the wall's outline. Where ACT models the buttresses itself (Sainte-Cunégonde,
+  the cathedral's nave), none is added. A **string course** under the sills and a **corbel table** under the
+  eave on every wall high enough, so tall walls without windows are not blank.
+- **The entrance front**, one per church, is told from the data in this order:
+  1. the wall that holds an OSM door tagged `entrance=main`;
+  2. the end of the footprint's long axis where a tower stands (if only one end has one);
+  3. the end opposite the apse, which is the end where the footprint narrows;
+  4. the end with a wall onto a street;
+  5. the largest wall that holds any door.
+  At an end it is the outermost wall that faces out along the axis and can hold the portal.
+- **The portal** is an arched doorway with two orders of stone, a tympanum and two plank leaves, on the ground
+  in the middle of that front (or where the OSM door is). **A rose** stands over it where a circle of 2.2 m or
+  more fits the wall; up to 5 m.
+- **Belfry openings**, louvred, near the top of tower walls: one, or a pair on a wall 5 m long or more. A wall is
+  a tower's when its top stands 8 m or more over the church's main eave and it is slender or stands on the roofs.
+  No clock.
+- **Free-standing walls.** A church wall is free where no other building's wall stands against it. What a
+  neighbour's wall covers is cut out of its outline; the rest gets windows. Before, a wall with any neighbour
+  along half the shorter wall's length was a party wall all over. 22 church walls were freed so.
+- **The outward side** of a church wall is the side outside the building's footprint; where that does not tell,
+  it points away from the centre of the church part, not of the whole building. 88 church walls were turned
+  round, St Jean du Grund's nave wall among them.
+- **A church that is most of its building is the church all over.** St Michael's OSM outline leaves out its
+  tower, which kept house windows. Where the outline covers half the building's footprint or more, every wall is
+  now the church's. This is wider than "walls wrongly treated as party walls"; it is listed as question 35.
+- **Night.** A lit church shows the day's panes in the four stained colours, each lifted by the warm light behind
+  it, with dark lead lines; the frame, mullion, tracery and spokes stay dark. Strength 0.8 of a house window's
+  (0.42 before), no halo. Still lit or dark per church as a whole. Belfry openings and doors stay dark.
+- **Stained glass by day.** Seven panes in ten are stained (four in ten before), at 85% of the palette's colour
+  (50% before), and every pane is scaled to the plain glass's brightness. So the colour is richer and the
+  brightness is one. The no-baked-shadows gate and its 5% limit were not touched; its worst material is
+  4.0% (4.0% before).
+
+**What each church got** (from `facades.json`; gate F25 reports it):
+
+| Church | Entrance front, told by | Portal (w x h, m) | Rose | Tall windows: traceried / lancet | Round | Belfry openings (tower walls) | Buttresses | Party walls freed | Walls turned | Church windows before |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Notre-Dame Cathedral | the OSM main entrance | 3.0 x 5.4 | 4.3 m | 42 / 20 | 2 | 14 (7) | 4 | 2 | 29 | 65 |
+| Sainte-Cunégonde | the tower end | 1.7 x 3.0 | 2.4 m | 10 / 11 | 2 | 8 (4) | 0 | 0 | 15 | 24 |
+| Saint-Mathieu | the tower end | 1.6 x 2.9 | 2.3 m | 7 / 9 | 5 | 8 (4) | 4 | 3 | 1 | 15 |
+| Saint-Alphonse | the end onto a street | 2.8 x 5.1 | 5.0 m | 2 / 50 | 2 | 0 (0) | 17 | 9 | 8 | 30 |
+| Hospice church | opposite the apse | 1.6 x 2.9 | none fits | 6 / 1 | 1 | 0 (0) | 5 | 0 | 2 | 9 |
+| St Michael's | the tower end | 1.8 x 3.2 | none fits | 5 / 15 | 2 | 6 (4) | 8 | 8 | 2 | 9 |
+| Al Kapell | the end onto a street | 2.2 x 4.0 | 2.2 m | 2 / 12 | 0 | 0 (0) | 0 | 0 | 4 | 14 |
+| St Jean du Grund | the OSM main entrance | 3.4 x 6.1 | 5.0 m | 0 / 22 | 0 | 6 (4) | 1 | 0 | 16 | 23 |
+| Trinity Church | the OSM main entrance | 3.4 x 6.1 | 5.0 m | 12 / 2 | 0 | 0 (0) | 12 | 0 | 11 | 19 |
+
+- 780 walls are church walls (873 before, which counted the building that is a house again); 291 church windows
+  (249 before); 1,006 house windows and 12 shop fronts replaced.
+- Of the nine, three have an OSM main entrance (the cathedral, St Jean du Grund, Trinity Church). For the other
+  six the front is a guess from the geometry.
+
+### 11.3 Gates, with the numbers near their limits
+
+| Check | Before | Now | Limit |
+|---|---|---|---|
+| Build stages | 57 of 57 | 57 of 57 | all |
+| Gate entries, failing | 273, 0 | **278, 0** | 0 |
+| Line score, building edges | 96.35% | 96.35% | ≥ 95% |
+| Line score, window rows | 99.84% | 99.84% | ≥ 95% |
+| Line score, church tracery (new) | - | 99.68% | ≥ 95% |
+| Shadows at 10:00, 13:00, 16:00 | 98.6%, 99.63%, 97.18% | the same | ≥ 97% |
+| Seams, ground / water / transport | 2.645 / 1.502 / 1.395 | the same | ≤ 3 |
+| No baked shadows, worst material | 4.0% | 4.0% | ≤ 5% |
+| OSM entrances placed as doors | 93.59% | 93.59% | ≥ 90% |
+| K1a cathedral cut outline; K3 wall tone | 97.2%; 2.0% | the same | ≥ 95%; ≤ 5% |
+| K6 (cutaway off) and K3v-sky (sky light), every entry | 0 | 0 | 0 |
+| First view; panning | 0.092 s; 92.2 fps | 0.097 s; 91.7 fps | ≤ 0.5 s; ≥ 60 |
+
+- **Panning depends on what else the laptop is doing.** The build before this last one measured 67.1 fps while
+  other projects' tests ran on the laptop (load average 6 to 23 on 12 cores). Measured then by hand, back to
+  back: the old release 77.6 fps, the new one 66.1. The final build, on a quieter machine, measured 91.7. The
+  change adds nothing to a daytime frame; the night pass has 27 more window rows of 19,851.
+- **Three builds were needed.** The first moved the night windows' row numbers: a church wall that was turned
+  round no longer gave the dark rows that keep every other window's number, so 9,588 rows changed and other
+  buildings' windows would have been lit differently. Fixed at the cause (`night_data` keeps those rows by the
+  house rule's own frame; unit test). The second counted four OSM entrances as not placed, because the
+  portal had replaced their doors (93.24%). The portal now keeps the door's source.
+- The no-baked-shadows gate was kept honest by drawing, not by its limit: a buttress is the wall's own stone with
+  dark outlines, not a strip of paler trim, because a wide strip of another stone inside the trim's material
+  would move that material's median on one side of a church.
+
+New and changed gates. None loosens a limit.
+
+| Gate | What | Result |
+|---|---|---|
+| F3 (changed) | On a church wall, the windows of one kind have one sill line and one top line (it was one row per wall; a tower now has a row and belfry openings) | 0 walls off |
+| F16 (changed) | Every church window is the rule's: its kind's width for its height and wall (it was "1.3 m wide") | 0 |
+| F17 (changed) | None lower than its kind's least height (2.6 m for a tall window; it was 2.2 m), none into the eave | 0 |
+| F21 (new) | One entrance front per church; a rose only over the portal, on its axis | 0 off; 9 of 9 have one portal |
+| F22 (new) | Belfry openings only on tower walls, and above the main eave | 0 |
+| F23 (new) | Buttresses upright, one width, one top line per wall, inside the outline, clear of openings, none on a tower | 0 |
+| F24 (new) | No church wall's normal points into the footprint | 0 |
+| L5.8 (new) | Tracery is straight: the mullions of traceried windows, scored as the line score is, same 95% limit | 99.68% of 931 seen samples |
+| L5.7 | Now 6 churches are a church all over (3 before): shutter, shop front and house-glass pixels on them | 0, 0, 0 |
+
+### 11.4 Every other pixel is as it was
+
+Measured against the build before (`cc4d856c63d4`):
+
+| What | Result |
+|---|---|
+| Tile files of ground, relief, water, transport, structures and trees, all zooms (5,658 files) | all identical, byte for byte |
+| Layer 5 tiles at 1:1 | 168 identical; **21 differ, every one holds a church** |
+| Differing layer 5 pixels | 125,866 on a church building (or the building that is a house again); **0 elsewhere** |
+| Layer 8 (buffers) files | 1,196 identical, 152 differ (the tiles with a church: ids and depth of the openings) |
+| Far zoom (merged, lossy) files | 71 identical, 34 differ (the merged tiles that hold a church were coded again) |
+| Viewer, cutaway off, 14 frames by day (the nine churches and the house at 2:1, the cathedral at 3:2; Grund 1:2, the Bock 3:4, the abbey 1:1, the facade view 2:1) | 1,668 to 105,280 pixels differ per frame; **all on those buildings** but 162 pixels in 3 frames within 3 m of one; **0 further away** |
+| The same by night, 14 frames | 1,666 to 145,811 differ per frame; all on those buildings but 5,917 within 3 m (the halos of house windows that came or went); **0 further away** |
+| Night window list (`windows.bin`) | 19,651 of 19,824 rows unchanged at the same place; the 173 changed rows are all on those buildings; 124 church windows at the end (97 before) |
+
+- "Those buildings": the nine churches and the building beside St Michael's.
+- The 162 daytime pixels within 3 m are in the three frames that are not at a whole zoom step (3:2, 1:2, 3:4),
+  at the buildings' edges, where a frame pixel straddles two map pixels.
+- A frame pixel is told to be on a church from layer 8 (the nearest surface there is a church building's, in the
+  old or the new build).
+- Church windows facing the camera, by night rows: the cathedral 35 (34), Sainte-Cunégonde 11 (12), Saint-Mathieu
+  10 (5), Saint-Alphonse 25 (9), the hospice's church 6 (9), St Michael's 10 (0), Al Kapell 8 (7), St Jean du
+  Grund 11 (4), Trinity Church 8 (3). Belfry openings have no glass and no row.
+
+Sheets (before and after, 13:00 and 23:15 on 24 June, 1600 by 1000, `nosim`):
+`v2/docs/img/test_church_facades_round2.jpg` (the cathedral, St Michael's, St Jean du Grund, Sainte-Cunégonde,
+Saint-Alphonse), `test_church_facades_round2_others.jpg` (Saint-Mathieu, Trinity Church, the hospice's church, Al
+Kapell, the building that is a house again) and `test_church_facades_round2_cutaway.jpg` (the cathedral cutaway
+by day; the abbey with St Jean).
+
+### 11.5 What still looks wrong, church by church
+
+Looked at in the frames of the sheets below (24 June, 13:00 and 23:15, 2:1; the cathedral at 3:2).
+
+- **Notre-Dame Cathedral.** The portal and the rose are on the front that holds the OSM main entrance. It faces
+  west, away from the camera. The seen sides have traceried windows between ACT's buttresses and
+  belfry pairs on the three towers. The big tower's lower faces are still tall blank stone with one small round
+  window. The low rooms round the choir have small lancets. No flying buttresses, no gables over the windows.
+- **St Michael's.** Mostly hidden behind its neighbours' roofs. The tower now has belfry openings and a lancet
+  and no house windows; its octagonal top is plain. The part of its ACT building outside the OSM outline is a
+  church now too (question 35); whether that part is church was not checked. The portal is on a low wall at the
+  tower end that faces south-west, away from the camera.
+- **St Jean du Grund.** Still white. Its nave wall is free only 4.6 m above the cloister roof, so the windows
+  are narrow lancets without tracery. The portal and the 5 m rose are on the south-west front, away from the camera.
+  The nave windows now face the camera (11 night rows against 4), but at 23:15 this church is dark by chance, so
+  the frame does not show the glow.
+- **Sainte-Cunégonde.** Reads best. The rose on the tower is small (2.4 m), and the portal under it (1.7 m) is
+  hard to see. A plain side door stays on the nave.
+- **Saint-Alphonse.** The upper nave wall has its windows. Buttresses appear on part of it only: further along,
+  the strip would cross the aisle roof's line and is left out, so the rhythm breaks. The round apse is still
+  blank above the course: its facets are under 2.2 m. The stair turret has lancets and no belfry openings (it
+  rises 3.5 m over the main eave, a tower needs 8 m).
+- **Saint-Mathieu.** Largely behind trees and houses. Its round apse is blank but for the course and the corbels.
+- **Trinity Church.** The courtyard wall has traceried windows and buttresses. Only the church walls are stone,
+  so the join with the rest of the building is abrupt. Portal and rose are on the north-east front, away from the camera.
+- **The hospice's church.** Wide traceried windows and buttresses on a brick building: the join is abrupt. No
+  rose fits its front (3.3 m wide).
+- **Al Kapell.** Behind trees in every frame. Its portal (2.2 by 4.0 m) is large for a chapel 8 m high.
+- **All of them.** Buttresses are flat strips with dark edges: no depth, no shadow. One tracery, one rose and one
+  portal pattern everywhere. At 1:1 a rose is a coloured disc with a few spokes; it reads as a wheel only at 2:1.
+  Stained glass by day is richer in colour but stays as dark as plain glass. At 23:15 about half the churches are
+  dark by chance (question 30). The portals face away from the camera on five of the nine.
+- From section 10.5, unchanged: mixed buildings, the flat light inside the cutaway, the painted interior's flaws.
+
+### 11.6 Not verified
+
+- On a phone or with a real GPU window (headless Chrome on this laptop only).
+- With the simulation running (frames were taken with `nosim`).
+- Other seasons, snow and golden hour on the new church detail (frames are 24 June, 13:00 and 23:15).
+- The rule outside the test area: the commune was not built. Nine churches are a small sample for a rule.
+- Whether each entrance front is the real one. No photographs were consulted.
+- Whether the rest of St Michael's ACT building (the part outside the OSM outline) is all church.
+
+### 11.7 Open questions
+
+27 is closed (above). 28 to 34 stay open; 29 is half answered: the glass is richer by day within the gate.
+New:
+
+35. **A church that is most of its building is now the church all over** (St Michael's tower lies outside its
+    OSM outline and had house windows). Keep that, or go back to the mapped outline and list towers apart?
+36. **The entrance front is a guess for six of nine churches.** Enter the true front per church in a small data
+    file, as for the landmark materials, or leave the rule?
+37. **Buttresses are drawn, not built:** they cast no shadow and have no depth. Enough, or model them as geometry
+    in Phase 4 (that changes roofs and shadows near churches)?
+38. **The outward side** is now right for church walls only. The same mistake stands on other large buildings
+    (their night windows on such walls do not glow). Apply the footprint rule to every building at Phase 4? Every
+    such wall's windows would move once.
+39. **One pattern for every church:** the same tracery, rose and portal everywhere, round heads everywhere but
+    the cathedral. Give more churches their own entry (pointed heads, a bigger rose), or leave it?
