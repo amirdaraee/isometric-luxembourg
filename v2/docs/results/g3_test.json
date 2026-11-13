@@ -481,7 +481,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 80.9
+      "audit_s": 76.7
      },
      "threshold": null,
      "severity": "report",
@@ -667,7 +667,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 228.6,
+     "value": 214.9,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -790,7 +790,7 @@
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
       "images": 966,
-      "seconds": 329.5,
+      "seconds": 334.3,
       "queries": [
        "a car",
        "a parked car",
@@ -1050,23 +1050,23 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.1240999999642372,
-      "first_view_warm_s": 0.09230000001192093,
+      "first_view_cold_s": 0.16119999998807907,
+      "first_view_warm_s": 0.09609999996423721,
       "pan_whole_area": {
-       "fps": 120.09987515605494,
-       "frame_ms_median": 0.6000000238418579,
+       "fps": 120.02794829636714,
+       "frame_ms_median": 0.3999999761581421,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 93.45327336331835,
-       "frame_ms_median": 0.30000001192092896,
+       "fps": 90.61860302534319,
+       "frame_ms_median": 0.19999998807907104,
        "tiles_missing": 0
       },
-      "pan_fps": 93.45327336331835,
+      "pan_fps": 90.61860302534319,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 120.03693444065237,
+        "fps": 120.08788136087858,
         "frame_ms_median": 0.800000011920929,
         "tiles_missing": 0
        }
@@ -1081,7 +1081,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.092,
+     "value": 0.096,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1090,7 +1090,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 93.5,
+     "value": 90.6,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1102,7 +1102,7 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 120.03693444065237,
+       "fps": 120.08788136087858,
        "frame_ms_median": 0.800000011920929,
        "tiles_missing": 0
       }
@@ -2559,17 +2559,27 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 7.599999964237213
+        "ms": 8.800000011920929
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 6.800000011920929
+        "ms": 9.5
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 7.099999964237213
+        "ms": 8.600000023841858
+       },
+       {
+        "on": false,
+        "frames": 1,
+        "ms": 9.100000023841858
+       },
+       {
+        "on": true,
+        "frames": 1,
+        "ms": 8.699999988079071
        },
        {
         "on": false,
@@ -2579,17 +2589,7 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 8.399999976158142
-       },
-       {
-        "on": false,
-        "frames": 1,
-        "ms": 8.199999988079071
-       },
-       {
-        "on": true,
-        "frames": 1,
-        "ms": 9.800000011920929
+        "ms": 8.699999988079071
        },
        {
         "on": false,
@@ -2599,29 +2599,29 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 10
+        "ms": 8.399999976158142
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8.300000011920929
+        "ms": 8.399999976158142
        }
       ],
       "pan_whole_area": {
-       "fps": 119.88011988011989,
-       "frame_ms_median": 0.5,
+       "fps": 119.82924332861386,
+       "frame_ms_median": 0.40000003576278687,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
       "pan_zoom1": {
-       "fps": 91.5828612778949,
-       "frame_ms_median": 0.3999999761581421,
+       "fps": 92.18547017060584,
+       "frame_ms_median": 0.19999998807907104,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
-      "pan_fps": 91.5828612778949,
+      "pan_fps": 92.18547017060584,
       "viewport": "1600x1000 CSS px, device pixel ratio 1"
      },
      "threshold": null,
@@ -2630,7 +2630,7 @@
     },
     {
      "id": "X8a",
-     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 10.0 ms at most)",
+     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 9.5 ms at most)",
      "passed": true,
      "value": 1,
      "threshold": "<= 1",
@@ -2641,7 +2641,7 @@
      "id": "X8b",
      "title": "panning in tunnel view, desktop (frames per second, the whole area and 1:1)",
      "passed": true,
-     "value": 91.6,
+     "value": 92.2,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -2650,7 +2650,7 @@
      "id": "X9",
      "title": "seconds",
      "passed": true,
-     "value": 112.7,
+     "value": 111.2,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -2683,19 +2683,39 @@
      "id": "K1a-cathedral",
      "title": "Notre-Dame Cathedral: the cut's outline on the model's section: share of 214 seen samples (every 0.25 m of 89 m of section, 320 samples) with a drawn line within 1.0 px",
      "passed": true,
-     "value": 0.9907,
+     "value": 0.972,
      "threshold": ">= 0.95",
      "severity": "gate",
      "examples": [
       {
-       "e": 77367.43,
-       "n": 75032.19,
-       "z": 315.73
+       "e": 77359.16,
+       "n": 75032.02,
+       "z": 325.74
+      },
+      {
+       "e": 77369.01,
+       "n": 75032.22,
+       "z": 314.51
       },
       {
        "e": 77366.24,
        "n": 75032.17,
        "z": 316.64
+      },
+      {
+       "e": 77365.05,
+       "n": 75032.14,
+       "z": 317.55
+      },
+      {
+       "e": 77357.96,
+       "n": 75031.25,
+       "z": 327.58
+      },
+      {
+       "e": 77358.18,
+       "n": 75020.25,
+       "z": 327.54
       }
      ]
     },
@@ -2719,7 +2739,7 @@
     },
     {
      "id": "K2a-cathedral",
-     "title": "Notre-Dame Cathedral: placeholder interior pixels outside the opening mask (the k tile: 33325 px)",
+     "title": "Notre-Dame Cathedral: painted interior pixels outside the opening mask (the k tile: 33325 px)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -2764,9 +2784,9 @@
     },
     {
      "id": "K3-cathedral",
-     "title": "Notre-Dame Cathedral: placeholder interior, largest difference in median luminance between faces of one kind turned different ways, or to and away from the photo's sun (2024-06-15T11:00:00+02:00)",
+     "title": "Notre-Dame Cathedral: painted interior, on each face's own material (not its glass or ink), largest difference in median luminance between faces of one kind turned different ways, or to and away from the photo's sun (2024-06-15T11:00:00+02:00)",
      "passed": true,
-     "value": 0.0,
+     "value": 0.02,
      "threshold": "<= 0.05",
      "severity": "gate",
      "examples": [
@@ -2781,7 +2801,7 @@
       {
        "inside_wall": {
         "sides": 3,
-        "worst": 0.0,
+        "worst": 0.02,
         "sun": null,
         "unmeasured": 0
        }
@@ -2803,6 +2823,15 @@
        }
       }
      ]
+    },
+    {
+     "id": "K3-measured-cathedral",
+     "title": "Notre-Dame Cathedral: painted interior, sides of a face with too little of its material to measure (under 150 px)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
     },
     {
      "id": "K5a-cathedral",
@@ -3563,7 +3592,7 @@
      "id": "K6v-xray-on-cathedral",
      "title": "Notre-Dame Cathedral: in tunnel view, pixels the cutaway changes when on (it shows through the fade)",
      "passed": true,
-     "value": 31570,
+     "value": 31564,
      "threshold": ">= 1",
      "severity": "gate",
      "examples": []
@@ -3932,28 +3961,28 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.1240999999642372,
-  "first_view_warm_s": 0.09230000001192093,
+  "first_view_cold_s": 0.16119999998807907,
+  "first_view_warm_s": 0.09609999996423721,
   "pan_whole_area": {
-   "fps": 120.09987515605494,
-   "frame_ms_median": 0.6000000238418579,
+   "fps": 120.02794829636714,
+   "frame_ms_median": 0.3999999761581421,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 93.45327336331835,
-   "frame_ms_median": 0.30000001192092896,
+   "fps": 90.61860302534319,
+   "frame_ms_median": 0.19999998807907104,
    "tiles_missing": 0
   },
-  "pan_fps": 93.45327336331835,
+  "pan_fps": 90.61860302534319,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 120.03693444065237,
+    "fps": 120.08788136087858,
     "frame_ms_median": 0.800000011920929,
     "tiles_missing": 0
    }
   },
   "viewport": "1600x1000 CSS px, device pixel ratio 1"
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/e1f764e945d7"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/f39c120ae255"
 }

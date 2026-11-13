@@ -10,17 +10,23 @@
   paving, setts, lawns and garden flowers, trees are lobed crowns in many greens, and buildings have more colours,
   stone surrounds round every window and door, ashlar and banded ground floors. All of it is code, from the data or
   from seeded rules. It is closer to v1 but not at v1's richness yet (section 6).
-- **Every gate passes:** 56 of 56 build stages, 247 gate entries. No threshold was changed.
+- **Every gate passes:** 56 of 56 build stages, 248 gate entries (247 before the painted cathedral; the new one is
+  K3's "no side too small to measure"). No threshold was changed.
 - **Tunnel view is built** (`?xray`, a button, or X held): X1–X8 pass.
-- **Landmark cutaways are prepared** for the cathedral, the palace and the abbey: the cut from the 3D model, shown
-  in place in the viewer with a placeholder interior (`?cutaway`). The Bock casemates' cutaway is not built.
+- **Landmark cutaways are built** for the cathedral, the palace and the abbey: the cut from the 3D model, shown
+  in place in the viewer (`?cutaway`). The cathedral's interior is painted (since 13 November, section 9, "In the
+  map"); the palace and the abbey have a placeholder interior. The Bock casemates' cutaway is not built.
 - **Two quotes are in the ledger, not approved:** q0012 (cathedral, at most $0.54) and q0013 (the other three, at
   most $0.90).
 - **Added 13 November:** the cathedral's painting was tried once, for $0.43. The interior style works; no painting
   passed the checks. Section 9 has the run, the free fixes and the new quote q0015 (not approved).
 - **Added later on 13 November:** q0015 ran ($0.47, four paintings, none passes). The light check was then looked
   into at $0 and corrected; the best painting still fails it. The placeholder stays (section 9).
-- `data/v2/test/release/current.json` points at the final A build (`619f7c040341`).
+- **Added last on 13 November: the cathedral's painting is in the map.** The owner took `cathedral-open_1` by
+  eye ("Take it on my eye (Recommended)"). For painted cutaways the light check is now a reported number; the other
+  checks stay gates, and the owner's eye (K7) is recorded per landmark. $0. Section 9, "In the map".
+- `data/v2/test/release/current.json` points at the final A build (`f39c120ae255`), which holds the painted
+  cathedral cutaway.
 
 ## 2. What changed in the look
 
@@ -83,7 +89,7 @@ From `v2/docs/results/g3_test.json` (`python -m v2.build test g3`). Thresholds a
 | Viewer: layer off leaves no trace (7 layers) | **0 pixels** each | 0 | 0 |
 | Viewer: shadows match the reference at 10:00, 13:00, 16:00 | **98.6%, 99.6%, 97.2%** | ≥ 97% | pass |
 | Look pass applied twice (V7) | **0** | ≤ 1 | 0 |
-| Speed: first view / panning (desktop) | **0.086 s / 95 fps** | ≤ 0.5 s / ≥ 60 | 0.094 s / 94 fps |
+| Speed: first view / panning (desktop) | **0.096 s / 91 fps** (13 Nov build; 0.086 s / 95 fps on 10 Nov) | ≤ 0.5 s / ≥ 60 | 0.094 s / 94 fps |
 | Data checks, no patching, ledger | **all pass** | | pass |
 
 Three numbers moved towards their limits and are worth knowing:
@@ -122,12 +128,15 @@ Spec as built: `v2/docs/specs/tunnel-view.md`. Pictures: `v2/docs/img/test_xray_
 
 Spec as built: `v2/docs/specs/landmark-cutaways.md`. `?cutaway` (or `?cutaway=cathedral,palace`), or the
 "Cutaways" button. Pictures: `v2/docs/img/test_cutaway_<cathedral|palace|abbey>_placeholder.jpg` (whole beside
-cut) and `..._viewer.jpg` (in the map).
+cut) and `..._viewer.jpg` (in the map). The cathedral's two show its placeholder, as it was until 13 November; the
+painted cathedral in the map is `test_cutaway_cathedral_map.jpg` and `..._map_wide.jpg` (section 9).
 
 - **Built for three:** Notre-Dame Cathedral, the Grand Ducal Palace, Neumünster Abbey. The cuts are data
   (`v2/data/structures/cutaways.json`); the slice, the cut faces and the inside faces come from the 3D model; the
-  interior is a plain code placeholder; the inputs for the later painting are written by the build.
-- **Checks:** K0–K6 on the tiles, 45 gates pass; in the browser, 42 gates pass.
+  interior is a plain code placeholder (the palace and the abbey) or the adopted painting (the cathedral, since
+  13 November); the inputs for a painting are written by the build.
+- **Checks:** K0–K6 on the tiles, 46 gates pass; in the browser, 42 gates pass. The table is of 10 November
+  (placeholders); the painted cathedral's numbers are in section 9, "In the map".
 
 | Check | Cathedral | Palace | Abbey |
 |---|---|---|---|
@@ -139,8 +148,8 @@ cut) and `..._viewer.jpg` (in the map).
 | K6 off means off (pixels differing) | 0 | 0 | 0 |
 | K4 no cars or people on the inputs | 0 | 0 | 0 |
 
-- K2 and K3 pass trivially today, because the placeholder is flat colour inside its own mask. They become real
-  tests when there is a painting.
+- K2 and K3 pass trivially on a placeholder, because it is flat colour inside its own mask. On the painted
+  cathedral they are real tests (K3 2.0%).
 - **Not done:**
   - **The Bock casemates' cutaway** (a cut through rock). Its gallery data exists.
   - **The opening's own shadow** (the `?hour` part of K3). The shadow map still holds the whole building, so the
@@ -171,7 +180,8 @@ cut) and `..._viewer.jpg` (in the map).
 - **Code vs AI night and golden hour comparison** (plan section 9): not done; no AI version exists.
 - **Seasons:** the viewer has them from Phase 1 (`?season=`, `?snow`). Not tuned or reviewed in Phase 3.
 - **Events as objects:** not started.
-- **Cutaways:** the paintings (after approval), the casemates' cutaway, the opening's shadow.
+- **Cutaways:** the palace's and the abbey's paintings (q0013, not approved), the casemates' cutaway, the
+  opening's shadow. The cathedral's painting is in the map.
 - **Owner checks:** L2.5, L14.4, K7.
 
 ## 7. Open questions for the owner
@@ -205,12 +215,15 @@ New tolerances added inside the new checks (none loosens a spec threshold; each 
 export ISOLUX_DATA=/Users/amirdaraee/00/projects/isometric-luxembourg/data
 .venv/bin/python -m v2.view test          # http://localhost:5174/   (Ctrl-C stops it)
 # add ?xray for the tunnel view, ?cutaway for the cutaways, ?hour=21.3 or ?hour=23.25 for golden hour and night
+# the painted cathedral: http://localhost:5174/?cutaway=cathedral&x=60290&y=32990&z=2&hour=13&date=2026-06-24
 ```
 
-## 9. The cathedral cutaway: first painting test (10 November), free fixes, second run and the light check (13 November)
+## 9. The cathedral cutaway: first painting test (10 November), free fixes, second run, the light check, and into the map (13 November)
 
-Branches `v2-phase3-cathedral` and `v2-phase3-cathedral2`, into `v2`. **Spent: $0.4256** (the first run) **and $0.4672** (the second). The fixes cost $0. **No painting passes yet; the placeholder stays in the map.** The second
-run and the look into the light check (branch `v2-phase3-cathedral3`, $0) are at the end of this section.
+Branches `v2-phase3-cathedral` to `v2-phase3-cathedral4`, into `v2`. **Spent: $0.4256** (the first run) **and
+$0.4672** (the second). Everything else cost $0. **The second run's `cathedral-open_1` is in the map since
+13 November, taken on the owner's eye** (the last part of this section, "In the map"). The parts before it are
+kept as they were written, when no painting had passed.
 
 ### The first run
 
@@ -586,3 +599,154 @@ pews, the chequered floor, shafts and capitals, stained glass.
     - have me try the width rule, with the risk named above.
 22. **The short wall's shade** (2% darker, 4% at its top): acceptable in the map if the painting is taken?
 
+
+### In the map (13 November, $0)
+
+Branch `v2-phase3-cathedral4`. **Spent: $0.** No pod, no quote. **The painting is in the map.**
+
+**The owner's decision** (question 21), 13 November 2026. Asked "The cleanest cathedral painting
+(cathedral-open_1) still fails the corrected light check (6-10% against 5%) because of stone detail drawn in
+several tones; its real shading on plain wall is 2-4%. Which way on?", the owner answered: "Take it on my eye
+(Recommended)". That option read: "Put cathedral-open_1 into the map, free. For painted cutaways the light check
+becomes a reported number; wall tone (2.1%), outline and no-people checks stay as gates. I show you the viewer by
+day and night".
+
+**The rule, as changed. Nothing wider.**
+
+- For a painted cutaway interior, light across a face is a reported number. It is still measured for every
+  candidate and written to the results and to the adopted painting's record, with its 5% limit.
+- The gates stay: K1 (the section's outline and lines), K2 (nothing outside the mask, the mask covered), K3 (wall
+  tone on the stone, 5%), K4 (no vehicles, no people), K5, K6.
+- **K7, the owner's eye, is now a recorded gate.** `v2/data/structures/cutaway_acceptances.json` holds, per
+  landmark: the job, the run, the candidate, the hash of that candidate's file, the question, the owner's words
+  and the date.
+- `python -m v2.bakeoff adopt K1` takes the candidate the owner accepted. It refuses a candidate that fails a gate,
+  and one without a recorded acceptance of that very file. The build refuses a painting whose record lacks the
+  candidate, the run or the acceptance.
+- The no-baked-shadow rule of every other layer is untouched (L5.1: 0 of 226 materials over 5%, worst 4.0%, as
+  before).
+- **One consequence to know.** Without the light check, the second run's `cathedral_1` also passes the gates
+  (K3 3.5%). It is the visibly shaded one (light 23.4%). Only K7 keeps it out: `adopt K1 --candidate cathedral_1`
+  is refused because no acceptance of it is recorded.
+
+**Adopted:** `cathedral-open_1` of the second run (q0015, seed 1870, pod `1zj2z6jzs0dz39`), cut to the mask:
+`v2/data/structures/cutaway_paintings/cathedral.png` (99 KB) and `cathedral.json` (its record).
+
+| Check of the candidate | `cathedral-open_1` | Limit | Kind |
+|---|---|---|---|
+| K1 section outline within 1 px | 97.7% | ≥ 95% | gate |
+| K2 interior pixels outside the mask | 0 | 0 | gate |
+| K2 mask covered | 100% | ≥ 99.5% | gate |
+| K3 wall tone, the stone only | 2.05% | ≤ 5% | gate |
+| K3 sides too small to measure | 0 | 0 | gate |
+| Lines kept, the section's | 99.9% | ≥ 95% | gate |
+| K4 vehicles, people | 0, 0 | 0 | gate |
+| An interior was painted | yes | yes | gate |
+| K7 the owner's eye | "Take it on my eye (Recommended)", 13 Nov 2026 | recorded | gate |
+| Light across a face: walls / vault / floor | 8.5% / 6.0% / 9.9% | 5% shown | **reported** |
+
+**Rebuilt** for the test area: the cutaway layer, the release and every check after them (`python -m v2.build test
+g3`). **56 of 56 stages, 248 gates, 0 fail.** No threshold was changed. Release `f39c120ae255`.
+
+| Gate on the painted tiles (cathedral) | Result | Limit | With the placeholder |
+|---|---|---|---|
+| K1a cut outline within 1 px | 97.2% | ≥ 95% | 99.07% |
+| K1b cut and inside pixels outside the model | 0 | 0 | 0 |
+| K2a painted interior pixels outside the opening mask | 0 | 0 | 0 |
+| K2b mask covered | 100% | ≥ 99.5% | 100% |
+| K2c, K2d, K2e the mask against the model and the paint input | 0; 99.997%; 0 | 0; ≥ 99.5%; 0 | the same |
+| K3 wall tone on the stone | 2.0% | ≤ 5% | 0% |
+| K3 sides too small to measure (new gate) | 0 | 0 | not run |
+| K4 vehicles / people, on 6 paint inputs and cutaway tiles | 0 / 0 (highest score 0.014 / 0.008) | 0 | 0 / 0 |
+| K5a, K5b, K5c depth | 0.5 cm; 0; 0 | ≤ 1 cm; 0; 0 | the same |
+| K6b cutaway pixels where layer 5 shows another surface | 0 | 0 | 0 |
+| In the browser: K6v off after on, 13:00 and 23:00 | 0, 0 | 0 | 0, 0 |
+| K2v interior pixels outside the tiles' mask | 0 of 31,208 | 0 | 0 of 31,208 |
+| K2v-frame, K2v-colour | 0 of 1,920,000; 0 of 788,607 | 0 | the same |
+| K5v vehicles, labels | 0 of 174,232; 0 of 4,248 | 0 | the same |
+
+- Every other number of the g3 set is the same as before, to the last digit, apart from the three speed
+  measurements (first view 0.096 s, panning 91 fps and 92 fps in tunnel view).
+- K1a fell from 99.07% to 97.2%: the painter's line along the cut is a little softer than the code's.
+
+**Looked at in the viewer** (headless Chrome on this laptop, 1600 × 1000, 24 June). Sheets:
+`v2/docs/img/test_cutaway_cathedral_map.jpg` (day, golden hour, night, and the cutaway off) and
+`test_cutaway_cathedral_map_wide.jpg` (in place in the map, tunnel view, far zoom).
+
+| What | Result |
+|---|---|
+| Cutaway off, this build against the build before (`e1f764e945d7`): pixels that differ | **0 of 1,600,000** in each of 6 frames: day and night at 1:1 and 2:1, far zoom, tunnel view |
+| Opening pixels in view (1:1, unlit colours) | 35,545 |
+| of these, exactly the painting's colour at its own map pixel | 31,208 |
+| of these, hidden by a tree or a nearer building (same as with the cutaway off) | 4,337 |
+| of these, anything else (a gap, a wrong colour) | **0** |
+| The painting moved by 1 px any way: pixels that still match | under 2,400 (so it is not off by one) |
+| Pixels the cutaway changes outside the cathedral's own outline (halo, bleed onto neighbours) | **0** |
+| Pixels it changes outside the opening, inside the outline | 344: the ink line of the cut's rim on the kept shell, within 2 px of the opening. The placeholder had the same |
+| Tunnel view with the cutaway on: pixels the cutaway changes | 31,564; it shows through the fade |
+
+**The light on the interior** (lit level against the unlit colour, pale stone only):
+
+| Hour | Walls | Vault | Floor | Kept outside stone, median |
+|---|---|---|---|---|
+| Day, 13:00 | 0.48 | 0.48 | 0.49 | 0.85 |
+| Golden hour, 21:18 | 0.80 | 0.75 | 0.82 | 0.84 |
+| Night, 23:15 | 0.28 | 0.24 | 0.30 | 0.31 |
+
+- **By day the interior is in full shade**, at half its painted brightness. The cream stone reads grey-mauve and
+  the pale chequer reads grey. It is legible, but dull beside the sunlit towers, and in the wide shot the opening
+  is a dark hole. This is the missing shadow of the opening (question 10), not the painting.
+- **At golden hour it is as bright as the outside** and warm. This is the hour at which it reads best. The earlier
+  statement "in shade at every hour" is true of the sun's shadow; at 21:18 there is almost no direct sun left, so
+  inside and outside are lit alike.
+- **By night** it is a dim blue room, as dark as the walls outside. Nothing in it glows.
+- **Night windows.** The windows that stood in the removed slice are not lit. The kept ones (towers, apse, the
+  wings) are lit as before. The painted stained glass does not glow: it is colour, not a window of layer 10.
+
+**What looks wrong, said plainly:**
+
+- **Outside and inside disagree.** The kept outside of the cathedral has the facade rule's house windows with red
+  shutters, lit like a block of flats at night. Next to it the interior shows tall pointed stained-glass windows.
+  This is the most visible fault, and it is the outside's (section 6), not the painting's.
+- **The pews are too big.** Each block is four or five benches, each several metres long and about as tall as a storey
+  of the houses beside it. A nave of this size would hold many more, smaller rows.
+- **The red door** is not in the model. In the map a tree stands in front of it; a few red pixels show.
+- **Trees hide the lower right** of the opening: one block of pews and the door. About 2,100 of the opening's
+  pixels are behind trees, 2,200 behind nearer buildings.
+- **The interior is softer than the code art.** Its lines are smoothed where the code's are hard-edged. At 2:1
+  it shows; at 1:1 it does not.
+- **The opening is small:** 27 m by 20 m of one nave bay, seen from the east. No columns, no aisles, no choir.
+- **Far zoom.** With the cutaway on, the view leaves the merged far tiles for the separate layers (question 11):
+  914,742 of 1,600,000 pixels change, most by 4 of 255, and 31,816 by more than 30, nearly all outside the
+  cathedral. The cathedral itself reads as a dark notch with blue windows.
+- Seams: none found. The cut's red-brown rim is continuous, and the painting meets it without a gap.
+- Not from this change: at the area's west edge a red-roofed block stands half outside the area with a dark sliver
+  above it. It is there with the cutaway off too.
+
+**Stopped afterwards:** both viewers and the browser. Nothing is left running.
+
+**Not verified:** on a phone or with a real GPU window (headless only); with the simulation running (frames were
+taken with `nosim`); the other seasons and snow on the painted interior; the palace's and the abbey's cutaways
+beside it, beyond the gates.
+
+### Open questions after the painting went in
+
+21 is answered (taken on the owner's eye). 22 is answered by the same choice (the short wall's 2% to 4% shade is
+in the map). 15, 16 and 17 no longer decide anything for the cathedral.
+
+23. **K7 at fixed views.** You accepted the painting from its sheet. Look at it in the viewer by day, golden
+    hour and night (section 8). If it does not hold up, removing `cutaway_paintings/cathedral.*` and the
+    acceptance brings the placeholder back at the next build.
+24. **The interior in shade by day** (question 10 again, now with a painting): accept, or have the opening lit?
+    A cheap honest option is to light the opening's faces by the sky only (no sun shadow) at every hour, which is
+    what golden hour looks like now. It needs your decision, since it is a light rule.
+25. **The cathedral's outside** (house windows, shutters): fix it in code before the other landmarks are painted?
+    It is free, and it is the most visible fault next to the painted interior.
+26. **q0013** (palace, abbey, casemates): still not approved, and it should not be approved as written. It is
+    quoted for a community H100 at Phase 2's times. A correct quote would be for the A100 SXM on the secure cloud
+    ($2.19/h and $0.02/h disk when last read; the live price is read again first), at the second run's measured
+    times: 23 s to ssh, about 6 minutes of setup, 279 s to load the model, 22 s a painting. For the palace and the
+    abbey, 2 views × 4 candidates: about 14 minutes, expected about $0.52, worst case about $0.91 at the same
+    75% margin. The casemates cannot be in it: their cutaway and paint input are not built. Each landmark also
+    needs its own prompt (only the cathedral's exists), and both have floor slabs, which the painter has not been
+    tried on. I recommend deciding 23 to 25 first. Phase 3 has $7.11 of $8 left.

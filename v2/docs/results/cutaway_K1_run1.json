@@ -2,7 +2,7 @@
  "job": "K1",
  "run": "run1",
  "landmark": "cathedral",
- "source": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/layer_cutaways/b63d9c92da04/paint",
+ "source": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/layer_cutaways/02e5e379e74c/paint",
  "frame_px": [
   59709,
   32471,
@@ -18,6 +18,24 @@
   "cutaway_line_px": 1.0,
   "cutaway_line_share": 0.95,
   "cutaway_line_min_step": 12
+ },
+ "gates": [
+  "K1_ok",
+  "K2_ok",
+  "K3_ok",
+  "lines_kept_ok",
+  "K4_ok",
+  "interior_painted",
+  "K7_owner_accepted (to be put into the map)"
+ ],
+ "light_across": {
+  "status": "reported, not a gate (owner, 13 Nov 2026); its limit is shown",
+  "limit": 0.05,
+  "worst": {
+   "cathedral_0": 0.2765,
+   "cathedral_1": 0.2762,
+   "cathedral-open_0": 0.2952
+  }
  },
  "own_tolerances": {
   "paper_rgb": 8,
@@ -55,6 +73,7 @@
   {
    "label": "cathedral_0",
    "file": "cathedral_0.png",
+   "file_sha256": "c3163eb2d6c8fea75061cea9f977713f5a2279b391cbea19c22e480c94ac27f2",
    "input": "cathedral",
    "seed": 1867,
    "K2a_interior_px_outside_mask": 0,
@@ -153,7 +172,8 @@
    "interior_painted": true,
    "raw_outside_changed_share": 0.2847,
    "raw_drawn_outside_outline_px": 2918,
-   "light_across_ok": false,
+   "light_across_limit": 0.05,
+   "light_across_within_limit": false,
    "lines_kept_ok": true,
    "K1a_section_line_share": 0.9883,
    "K1a_seen": 257,
@@ -161,11 +181,13 @@
    "K4_vehicles": 0,
    "K4_people": 0,
    "K4_ok": true,
-   "pass": false
+   "pass": false,
+   "K7_owner_accepted": false
   },
   {
    "label": "cathedral_1",
    "file": "cathedral_1.png",
+   "file_sha256": "a1e3cbb80ede5a1b5b325e0912e564de7266ddb93e09eca6ed7bde55af5e8e17",
    "input": "cathedral",
    "seed": 1868,
    "K2a_interior_px_outside_mask": 0,
@@ -264,7 +286,8 @@
    "interior_painted": true,
    "raw_outside_changed_share": 0.2417,
    "raw_drawn_outside_outline_px": 2314,
-   "light_across_ok": false,
+   "light_across_limit": 0.05,
+   "light_across_within_limit": false,
    "lines_kept_ok": true,
    "K1a_section_line_share": 0.9844,
    "K1a_seen": 257,
@@ -272,11 +295,13 @@
    "K4_vehicles": 0,
    "K4_people": 0,
    "K4_ok": true,
-   "pass": false
+   "pass": false,
+   "K7_owner_accepted": false
   },
   {
    "label": "cathedral-open_0",
    "file": "cathedral-open_0.png",
+   "file_sha256": "416f02bde275fafdf283feca965b7f9d62b587cc466322d22ad071f567c95fda",
    "input": "cathedral-open",
    "seed": 1867,
    "K2a_interior_px_outside_mask": 0,
@@ -375,7 +400,8 @@
    "interior_painted": true,
    "raw_outside_changed_share": 0.2852,
    "raw_drawn_outside_outline_px": 2950,
-   "light_across_ok": false,
+   "light_across_limit": 0.05,
+   "light_across_within_limit": false,
    "lines_kept_ok": true,
    "K1a_section_line_share": 0.9922,
    "K1a_seen": 257,
@@ -383,11 +409,13 @@
    "K4_vehicles": 0,
    "K4_people": 0,
    "K4_ok": true,
-   "pass": false
+   "pass": false,
+   "K7_owner_accepted": false
   }
  ],
  "passing": [],
- "best": null,
+ "K7": null,
+ "accepted": null,
  "timing": {
   "done": 3,
   "of": 4,

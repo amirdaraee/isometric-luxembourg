@@ -1,12 +1,12 @@
 # Landmark cutaways ("slice of cake")
 
-**Status:** built for three landmarks on the test area, without paintings (Phase 3, $0): the cuts as data, the
-slice geometry from the 3D model, a small layer of tiles with a **code placeholder interior**, the inputs of the
-later painting, the viewer's toggle, and checks K0-K6 (stages `layer_cutaways`, `check_cutaways`,
-`check_cutaways_view`). Not built: the painted interiors (paid from the Phase 3 line, $8 cap, quoted in the ledger
-and approved by the owner before any spend); the opening's own cast shadow (see "In the viewer"); the Bock casemates.
-The cathedral's painting was tried twice (10 and 13 Nov 2026): no candidate passed, so the placeholder stays. The checks of
-a painting and the step that puts one into the layer are built: see "The painted step".
+**Status:** built for three landmarks on the test area (Phase 3): the cuts as data, the slice geometry from the 3D
+model, a small layer of tiles, the inputs of the painting, the viewer's toggle, and checks K0-K6 (stages
+`layer_cutaways`, `check_cutaways`, `check_cutaways_view`). **The cathedral's interior is painted** (the second
+run's `cathedral-open_1`, in the map since 13 Nov 2026 on the owner's eye, K7: see "The painted step"). The palace
+and the abbey have a **code placeholder interior**; their paintings are not approved (paid from the Phase 3 line,
+$8 cap, quoted in the ledger and approved by the owner before any spend). Not built: the opening's own cast shadow
+(see "In the viewer"); the Bock casemates.
 
 **Purpose.** Famous buildings shown cut open in place on the map, not in a modal: the visitor sees a slice taken out
 of the building, with its interior visible through the cut, at its real place and scale. First four: the Bock
@@ -51,7 +51,9 @@ casemates, Notre-Dame Cathedral, the Grand Ducal Palace and Neumünster Abbey (a
 - **K5** Depth: the cutaway's depth equals the model's (cut faces and inside walls) per pixel (≤ 1 cm); vehicles and
   labels depth-tested against it (as C4).
 - **K6** Off means off: with the cutaway off, the building's pixels equal layer 5's (0 differ).
-- **K7** (owner) the four cutaways at fixed views.
+- **K7** (owner) the four cutaways at fixed views. The owner's eye is a gate of every painted interior: it is
+  recorded per landmark with the owner's words and the date (`v2/data/structures/cutaway_acceptances.json`), and
+  no painting is put into the map without it (see "The painted step").
 
 **Cost.** Estimated in `v2/docs/PHASE2_QUOTE.md` as a separate Phase 3 item (not part of the bake-off total).
 
@@ -114,8 +116,9 @@ and a JSON with the frame.
 | K6b | Cutaway pixels where layer 5 shows neither a replaced building nor another building in front: 0 | 0, 0, 0 |
 | K-ground (report) | Opening pixels the ground layer covers | 0, 0, 0 |
 
-**Left for the painted step:** K2a, K2b, K3 and K4 on the paintings and their reference photos (the same
-functions); K7.
+**On a painted landmark** the same stage runs the same gates on the painted tiles: K2a, K2b, K3 (on each face's
+own material) and K4. K7 is recorded apart (below). The numbers of the painted cathedral:
+`v2/docs/PHASE3_REPORT.md` section 9, "In the map".
 
 ## The painted step
 
@@ -134,10 +137,16 @@ painting is cut to the opening mask (rule 2).
 | K2a | Interior pixels outside the opening mask | 0 |
 | K2b | Share of the mask the painter drew on. Unpainted: a pixel of paper's colour, or of the painting's own background, in a patch that holds a 7 x 7 px square | >= 99.5% |
 | K3 | The gate's shadow detector on the painted interior, on each face's own material (a wall's stone, not its glass or ink). A side of a face with under 150 px of its material to measure fails | <= 5%; 0 sides |
-| Light across a face | Per kind of face, on its surface: the largest fall of the level between two 16 px squares. A square's level is the lightest tenth of its material; where the face's surface tone shows in the square, what is drawn lighter than it is left out. A square at a neighbouring face's tone that joins that face is measured with it | <= 5% |
 | Lines kept | The cut's outline: the section's lines inside the opening (a cut face on either side) with a drawn step within 1 px. The placeholder's own construction lines (floor against wall, wall corners, roof against wall) are reported, not gated: a painted interior may stand a pew or a column in front of them | >= 95% of the section's |
 | K4 | OWLv2 on the inputs, the paintings and the composites: vehicles, then people | 0 |
 | Painted at all | The interior moved from the placeholder (share changed >= 25%, drawn detail >= 5%) | both |
+| K7 | The owner's eye on this painting, recorded (below). Needed to put it into the map, not to pass the table above | recorded |
+
+Reported with them, with its limit shown, **not a gate** (the owner's decision of 13 Nov 2026, below):
+
+| What | What is measured | Limit shown |
+|---|---|---|
+| Light across a face | Per kind of face, on its surface: the largest fall of the level between two 16 px squares. A square's level is the lightest tenth of its material; where the face's surface tone shows in the square, what is drawn lighter than it is left out. A square at a neighbouring face's tone that joins that face is measured with it | 5% |
 
 **K3 and the lines, corrected on 13 Nov 2026** (the owner's choice, "Correct both, free", made before the second
 run; the limits are unchanged):
@@ -167,19 +176,39 @@ Tolerances of these checks (none loosens a limit above):
   face. K3 and K7 remain.
 
 **The light check, corrected on 13 Nov 2026** (the owner's choice, "Investigate the check, free"; the limit is
-unchanged). It took the lightest tenth of every square as the surface's lit level. On `cathedral-open_1` the
+unchanged; since the later decision of the same day, above, it is a reported number). It took the lightest tenth of every square as the surface's lit level. On `cathedral-open_1` the
 lightest squares of the walls held a white sill, those of the vault its pale ribs, and the darkest squares of the
 floor were the wall, drawn 2.5 m below the model's line. Lighter detail on a surface that shows its tone, and a
 neighbouring face's surface across the model's line, are no longer read as light. A gradient, a cast shadow, a
-dark corner and a darker wall are measured as before. No painting's verdict moved; none passes
+dark corner and a darker wall are measured as before. No painting's verdict moved; none was within the limit
 (`v2/docs/PHASE3_REPORT.md` section 9, "The light check looked into").
 
-**Into the layer.** `python -m v2.bakeoff adopt K1` writes the best passing candidate, cut to the mask, to
-`v2/data/structures/cutaway_paintings/<name>.png` with its record (frame, checks, the file's hash). It is refused
-while no candidate passes. At the next build `layer_cutaways` draws the painting where k is the opening and keeps
-depth, normals, ids and k; the paint inputs stay the placeholder; `index.json` says per landmark whether its
-interior is painted. A record that does not say "passed", a file that is not the recorded one, or a painting that
-leaves an opening pixel of the tiles unpainted stops the build. Gates K1-K6 then run on the painted tiles.
+**The light check is a reported number; the owner's eye is the gate (13 Nov 2026).** Asked "The cleanest cathedral
+painting (cathedral-open_1) still fails the corrected light check (6-10% against 5%) because of stone detail drawn
+in several tones; its real shading on plain wall is 2-4%. Which way on?", the owner chose "Take it on my eye
+(Recommended)": "Put cathedral-open_1 into the map, free. For painted cutaways the light check becomes a reported
+number; wall tone (2.1%), outline and no-people checks stay as gates. I show you the viewer by day and night".
+- For a painted cutaway interior, light across a face is still measured for every candidate and written to the
+  results and to the adopted painting's record, with its 5% limit and whether it is within it. It no longer
+  decides.
+- The gates of a painting are K1 (the section's outline, and its lines kept), K2 (nothing outside the mask, the
+  mask covered), K3 (the wall tone on the stone, 5%), K4 (no vehicles, no people), painted at all, then K5 and K6
+  on the painted tiles, and K7.
+- **K7 is recorded per landmark** in `v2/data/structures/cutaway_acceptances.json`: the job, the run, the candidate,
+  the hash of that candidate's file as the run returned it, what was asked, the owner's words and the date.
+- Nothing else changes: rule 3 stands, K3's limit stands, and the no-baked-shadow rule of every other layer
+  (brief 5, L5.1) is untouched.
+
+**Into the layer.** `python -m v2.bakeoff adopt K1` takes the candidate the owner accepted, cut to the mask, to
+`v2/data/structures/cutaway_paintings/<name>.png` with its record: the frame, the file's hash, the job, the run, the
+candidate and its seed, every gate, the light number with its limit, the owner's acceptance, and all the checks. It
+is refused if the candidate fails a gate (an acceptance does not carry a painting past one), and if no acceptance
+of that very painting is recorded (the same job and candidate, the same file by its hash). At the next build
+`layer_cutaways` draws the painting where k is the opening and keeps depth, normals, ids and k; the paint inputs
+stay the placeholder; `index.json` says per landmark whether its interior is painted. A record that does not say
+"passed", or lacks the candidate, the run or the owner's acceptance of that candidate, a file that is not the
+recorded one, or a painting that leaves an opening pixel of the tiles unpainted stops the build. Gates K1-K6 then
+run on the painted tiles.
 
 ## In the viewer (Phase 3, $0)
 
@@ -210,7 +239,9 @@ From zoom 2 out, the merged far tiles give way to the separate layers while a cu
 ids to cut by), and come back when it is off.
 
 **Not done: the opening's own shadow (K3's `?hour` part).** The shadow height map still holds the whole building,
-so the opening is lit as if roofed: its floor and inside faces are in the building's own shade at every hour. A
+so the opening is lit as if roofed: its floor and inside faces are in the building's own shade whenever the sun
+casts one (measured on the painted cathedral: half its painted brightness at 13:00; at golden hour, with almost no
+direct sun left, as bright as the outside). A
 correct shadow needs the hollow shell in the height map, and the map cannot hold it: it is one height per 0.5 m
 cell, and the light's march takes steps that grow with distance, so it would step over 0.8 m walls. Lowering only
 the slice's cells would light the floor rightly and leave every inside face in shade whatever the sun does. It is
@@ -236,7 +267,8 @@ pixel (1600 x 1200), so they compare pixel for pixel.
 Checked once by hand (`v2/web/scripts/compare_viewers.mjs`): the viewer with the feature, toggle off, against the
 viewer before it, on the same release, at the three landmarks at 13:00 and 23:00, and the whole area in tunnel view: 0 pixels differ in all 7 frames.
 
-**Previews:** `v2/docs/img/test_cutaway_<name>_viewer.jpg`.
+**Previews:** `v2/docs/img/test_cutaway_<name>_viewer.jpg` (placeholders); the painted cathedral:
+`test_cutaway_cathedral_map.jpg`, `test_cutaway_cathedral_map_wide.jpg`.
 
-**Known limits.** The opening is in shade at every hour (above). The inside is a hollow shell with nominal walls: no rooms, vaults or columns until it is painted.
+**Known limits.** The opening is in the building's shade while the sun is up (above). The inside is a hollow shell with nominal walls: no rooms, vaults or columns until it is painted. A painting's windows are colour, not night windows: they do not glow.
 Walls on lower roofs have no thickness. Windows are not openings in the inside faces.

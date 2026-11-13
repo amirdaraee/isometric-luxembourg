@@ -2,7 +2,7 @@
  "job": "K1",
  "run": "current",
  "landmark": "cathedral",
- "source": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/layer_cutaways/b63d9c92da04/paint",
+ "source": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/layer_cutaways/02e5e379e74c/paint",
  "frame_px": [
   59709,
   32471,
@@ -18,6 +18,25 @@
   "cutaway_line_px": 1.0,
   "cutaway_line_share": 0.95,
   "cutaway_line_min_step": 12
+ },
+ "gates": [
+  "K1_ok",
+  "K2_ok",
+  "K3_ok",
+  "lines_kept_ok",
+  "K4_ok",
+  "interior_painted",
+  "K7_owner_accepted (to be put into the map)"
+ ],
+ "light_across": {
+  "status": "reported, not a gate (owner, 13 Nov 2026); its limit is shown",
+  "limit": 0.05,
+  "worst": {
+   "cathedral_0": 0.3642,
+   "cathedral_1": 0.2338,
+   "cathedral-open_0": 0.476,
+   "cathedral-open_1": 0.0991
+  }
  },
  "own_tolerances": {
   "paper_rgb": 8,
@@ -55,6 +74,7 @@
   {
    "label": "cathedral_0",
    "file": "cathedral_0.png",
+   "file_sha256": "188cf6bd21fd3074f02e61fc4663bb9925916149cc9f83c9e7d61406e09e6a02",
    "input": "cathedral",
    "seed": 1867,
    "K2a_interior_px_outside_mask": 0,
@@ -153,7 +173,8 @@
    "interior_painted": true,
    "raw_outside_changed_share": 0.2738,
    "raw_drawn_outside_outline_px": 2180,
-   "light_across_ok": false,
+   "light_across_limit": 0.05,
+   "light_across_within_limit": false,
    "lines_kept_ok": true,
    "K1a_section_line_share": 0.9922,
    "K1a_seen": 257,
@@ -161,11 +182,13 @@
    "K4_vehicles": 0,
    "K4_people": 0,
    "K4_ok": true,
-   "pass": false
+   "pass": false,
+   "K7_owner_accepted": false
   },
   {
    "label": "cathedral_1",
    "file": "cathedral_1.png",
+   "file_sha256": "ad53d488f336da5bdd920793d4fdc7a0e29f09d54927db2195063cd5f37c1532",
    "input": "cathedral",
    "seed": 1868,
    "K2a_interior_px_outside_mask": 0,
@@ -264,7 +287,8 @@
    "interior_painted": true,
    "raw_outside_changed_share": 0.2579,
    "raw_drawn_outside_outline_px": 74860,
-   "light_across_ok": false,
+   "light_across_limit": 0.05,
+   "light_across_within_limit": false,
    "lines_kept_ok": true,
    "K1a_section_line_share": 0.9883,
    "K1a_seen": 257,
@@ -272,11 +296,13 @@
    "K4_vehicles": 0,
    "K4_people": 0,
    "K4_ok": true,
-   "pass": false
+   "pass": true,
+   "K7_owner_accepted": false
   },
   {
    "label": "cathedral-open_0",
    "file": "cathedral-open_0.png",
+   "file_sha256": "685d0dc08efa54440616f1155851a99b485288b452897ff618e88060e391a5e0",
    "input": "cathedral-open",
    "seed": 1869,
    "K2a_interior_px_outside_mask": 0,
@@ -375,7 +401,8 @@
    "interior_painted": true,
    "raw_outside_changed_share": 0.2694,
    "raw_drawn_outside_outline_px": 2180,
-   "light_across_ok": false,
+   "light_across_limit": 0.05,
+   "light_across_within_limit": false,
    "lines_kept_ok": true,
    "K1a_section_line_share": 0.9922,
    "K1a_seen": 257,
@@ -383,11 +410,13 @@
    "K4_vehicles": 0,
    "K4_people": 0,
    "K4_ok": true,
-   "pass": false
+   "pass": false,
+   "K7_owner_accepted": false
   },
   {
    "label": "cathedral-open_1",
    "file": "cathedral-open_1.png",
+   "file_sha256": "8af812b87bde57b1689893477ed78b939c2ace807eda84c37fc6b70f458f5e42",
    "input": "cathedral-open",
    "seed": 1870,
    "K2a_interior_px_outside_mask": 0,
@@ -486,7 +515,8 @@
    "interior_painted": true,
    "raw_outside_changed_share": 0.2407,
    "raw_drawn_outside_outline_px": 2451,
-   "light_across_ok": false,
+   "light_across_limit": 0.05,
+   "light_across_within_limit": false,
    "lines_kept_ok": true,
    "K1a_section_line_share": 0.9767,
    "K1a_seen": 257,
@@ -494,11 +524,31 @@
    "K4_vehicles": 0,
    "K4_people": 0,
    "K4_ok": true,
-   "pass": false
+   "pass": true,
+   "K7_owner_accepted": true
   }
  ],
- "passing": [],
- "best": null,
+ "passing": [
+  "cathedral_1",
+  "cathedral-open_1"
+ ],
+ "K7": {
+  "job": "K1",
+  "run": {
+   "name": "second cathedral run",
+   "quote": "q0015",
+   "date": "2026-11-13",
+   "pod": "1zj2z6jzs0dz39"
+  },
+  "candidate": "cathedral-open_1",
+  "seed": 1870,
+  "painting_sha256": "8af812b87bde57b1689893477ed78b939c2ace807eda84c37fc6b70f458f5e42",
+  "asked": "The cleanest cathedral painting (cathedral-open_1) still fails the corrected light check (6-10% against 5%) because of stone detail drawn in several tones; its real shading on plain wall is 2-4%. Which way on?",
+  "option": "Take it on my eye (Recommended): Put cathedral-open_1 into the map, free. For painted cutaways the light check becomes a reported number; wall tone (2.1%), outline and no-people checks stay as gates. I show you the viewer by day and night",
+  "owner_words": "Take it on my eye (Recommended)",
+  "date": "2026-11-13"
+ },
+ "accepted": "cathedral-open_1",
  "timing": {
   "done": 4,
   "of": 4,

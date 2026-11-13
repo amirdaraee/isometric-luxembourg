@@ -29,10 +29,11 @@ and ink where surfaces meet.
 
 **A painted interior** replaces the placeholder's colour inside the same mask, and nothing else (depth, normals,
 ids and k stay the model's): v2/data/structures/cutaway_paintings/<name>.png, a painting in the landmark's paint
-frame cut to the opening mask, with <name>.json (its frame, its checks, the file's hash). It is put there by
-`python -m v2.bakeoff adopt` from a candidate that passed its checks (bakeoff/cutaway_paint.py); a painting whose
-record does not say it passed, or whose file is not the recorded one, stops the build. Without one the placeholder
-is drawn.
+frame cut to the opening mask, with <name>.json (its frame, its checks, the file's hash, which candidate of which
+run it is, and the owner's acceptance, K7). It is put there by `python -m v2.bakeoff adopt` from a candidate that
+passed its gates and that the owner accepted by eye (bakeoff/cutaway_paint.py); a painting whose record does not
+say it passed, or does not carry the owner's acceptance of that candidate, or whose file is not the recorded one,
+stops the build. Without one the placeholder is drawn.
 
 Every pixel lies inside the whole landmark's own silhouette, with exact depth and normals. Classes of the cut and
 inside faces are this module's own (CUT_CLASS, above common.CLASS's ids), written with the tiles' index.
@@ -69,15 +70,30 @@ def load_cuts(path: Path = CUTS) -> dict:
     return json.loads(Path(path).read_text())
 
 
+def owner_acceptance(record: dict) -> str | None:
+    """What a painting's record lacks of K7 (None if nothing): the candidate and its run, and the owner's acceptance
+    of that same candidate with the owner's words and date."""
+    k7 = record.get("K7") or {}
+    if not record.get("candidate") or not record.get("run"):
+        return "which candidate of which run it is"
+    if not k7.get("owner_words") or not k7.get("date"):
+        return "the owner's acceptance (K7: the owner's words and date)"
+    if k7.get("candidate") != record["candidate"]:
+        return f"the owner's acceptance of {record['candidate']} (its K7 is of {k7.get('candidate')})"
+    return None
+
+
 def write_painting(folder: Path, name: str, rgb, mask, frame_px, record: dict) -> dict:
     """A landmark's painted interior as the layer reads it: the painting cut to the opening mask (RGBA, alpha = the
     mask) and its record. `frame_px`: the paint frame (x0, y0, width, height in map pixels); `record`: where it came
-    from and its checks, with "pass" true."""
+    from (candidate, run), its checks with "pass" true, and the owner's acceptance of that candidate (K7)."""
     import hashlib
     from PIL import Image
     rgb, mask = np.asarray(rgb, np.uint8), np.asarray(mask, bool)
     if not record.get("pass"):
         raise ValueError(f"{name}: only a painting that passed its checks is handed to the layer")
+    if owner_acceptance(record):
+        raise ValueError(f"{name}: the painting's record lacks {owner_acceptance(record)}")
     if rgb.shape[:2] != mask.shape or list(mask.shape) != [int(frame_px[3]), int(frame_px[2])]:
         raise ValueError(f"{name}: painting {rgb.shape}, mask {mask.shape}, frame {list(frame_px)}")
     folder.mkdir(parents=True, exist_ok=True)
@@ -100,6 +116,8 @@ def load_painting(name: str, folder: Path | None = PAINTINGS) -> dict | None:
     f = folder / meta["file"]
     if not meta.get("pass"):
         raise RuntimeError(f"{f}: its record does not say it passed its checks")
+    if owner_acceptance(meta):
+        raise RuntimeError(f"{f}: its record lacks {owner_acceptance(meta)}")
     if hashlib.sha256(f.read_bytes()).hexdigest() != meta["sha256"]:
         raise RuntimeError(f"{f}: not the file its record names (sha256)")
     a = np.asarray(Image.open(f).convert("RGBA"))

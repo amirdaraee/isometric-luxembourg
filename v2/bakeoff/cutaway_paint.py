@@ -7,12 +7,14 @@ local, $0. The job itself is K1 in jobs.py.
     compose()           a painting cut to the opening mask over the cut render (rule 2: the painting never covers the
                         outside of the building or the map round it)
     check_candidate()   K1-K3 on one painting with the gate's own functions and thresholds (cutaway_checks.py,
-                        params.json g3 cutaway_*), light across each kind of face, the interior's lines, and whether
-                        an interior was painted at all
+                        params.json g3 cutaway_*), the interior's lines, whether an interior was painted at all, and
+                        light across each kind of face (a reported number with its limit, not a gate: see below)
     check()             every candidate of a job, K4 (the detector, vehicles and people) on inputs, paintings and
                         composites, the sheets for v2/docs/img, the numbers for v2/docs/results
-    adopt()             the best passing candidate, cut to the mask, into v2/data/structures/cutaway_paintings: the
-                        build's cutaway layer then draws it in place of the placeholder (layers/cutaways.py)
+    adopt()             the candidate the owner accepted by eye (K7, recorded per landmark in
+                        v2/data/structures/cutaway_acceptances.json), if it passes every gate, cut to the mask, into
+                        v2/data/structures/cutaway_paintings: the build's cutaway layer then draws it in place of the
+                        placeholder (layers/cutaways.py)
 
 Two kinds of candidate, two seeds each (four seeds in all: in the first run the same seed gave nearly the same
 painting from both kinds, so the kinds no longer share their seeds):
@@ -44,12 +46,22 @@ The owner's rule for both (13 Nov 2026, "Correct both, free"), in place before t
     lines the gate is the cut's outline: the section's lines (K1's subject) at the gate's own share. The
           placeholder's own construction lines are reported, not gated.
 
+The owner's rule for the light check (13 Nov 2026, "Take it on my eye"), after it was looked into and corrected:
+    light across a face is a reported number on a painted cutaway: still measured, still written to the results
+          with its limit, no longer part of the verdict. On cathedral-open_1 it reads 6-10% against 5% from stone
+          detail drawn in several tones, where the plain wall's real shading is 2-4%.
+    K7    the owner's eye is the gate in its place, recorded per landmark with the owner's words and date
+          (ACCEPTANCES): which candidate of which run, and that file's hash. adopt() takes no painting without
+          one, and none that fails a gate (K1, K2, K3 on the stone, the section's lines, K4, painted at all).
+    This is of painted cutaway interiors only: the no-baked-shadow rule of every other layer is as it was.
+
 K5 and K6 are of the geometry (depth, ids, the toggle): a painting changes colour only, inside the mask, so they
 hold as built; they run again as gates when a painting is composed into the layer.
 """
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 from pathlib import Path
 
@@ -60,6 +72,7 @@ from v2.bakeoff.prompts import C_TARGET_PROMPT
 from v2.config import V2, params, v2_data
 
 AREA = "test"
+ACCEPTANCES = V2 / "data" / "structures" / "cutaway_acceptances.json"   # K7: the owner's eye, per landmark
 KINDS = ("", "-open")
 SEEDS = (1867, 1868)                      # pod/run.sh K1: the first kind's; the second kind's are these + SEED_STEP
 SEED_STEP = 2                             # pod/paint.py --seed-step
@@ -474,7 +487,9 @@ def check_candidate(painting, d: dict, P: dict, sun=None, model=None) -> dict:
                                                  / max(int((d["outline"] & ~mask).sum()), 1)), 4),
         "raw_drawn_outside_outline_px": int((covered(painting, ~d["outline"], d["outline"])).sum()),
     }
-    res["light_across_ok"] = bool(res["light_across_worst"] <= P["cutaway_shadow_lum_tol"])
+    # reported, not a gate (owner, 13 Nov 2026): the number, its limit and whether it is within it
+    res["light_across_limit"] = P["cutaway_shadow_lum_tol"]
+    res["light_across_within_limit"] = bool(res["light_across_worst"] <= P["cutaway_shadow_lum_tol"])
     # the gate is the cut's outline: the section's lines. The placeholder's own lines are reported (interior_lines)
     res["lines_kept_ok"] = bool(res["interior_lines"]["section_kept"] >= P["cutaway_line_share"])
     if model is not None:
@@ -483,10 +498,31 @@ def check_candidate(painting, d: dict, P: dict, sun=None, model=None) -> dict:
     return res
 
 
+GATES = ("K1_ok", "K2_ok", "K3_ok", "lines_kept_ok", "K4_ok", "interior_painted")
+
+
 def verdict(r: dict) -> bool:
-    """A candidate may replace the placeholder: every check passes and an interior was painted."""
-    return bool(r.get("K1_ok", True) and r["K2_ok"] and r["K3_ok"] and r["light_across_ok"] and r["lines_kept_ok"]
+    """A candidate passes its gates: K1, K2, K3 (on the stone), the section's lines, K4, and an interior was
+    painted. Light across a face is reported beside them, not part of this. Passing the gates does not put a
+    painting into the map: that also takes the owner's eye (K7, adopt)."""
+    return bool(r.get("K1_ok", True) and r["K2_ok"] and r["K3_ok"] and r["lines_kept_ok"]
                 and r.get("K4_ok", True) and r["interior_painted"])
+
+
+def acceptance(name: str, path: Path | None = None) -> dict | None:
+    """K7 for one landmark: the owner's recorded acceptance of one painting (ACCEPTANCES), or None. A record names
+    the job, the run, the candidate, the hash of that candidate's file as the run returned it, and the owner's
+    words and date."""
+    path = Path(path) if path else ACCEPTANCES
+    if not path.exists():
+        return None
+    k7 = json.loads(path.read_text()).get("landmarks", {}).get(name)
+    if k7 is None:
+        return None
+    missing = [k for k in ("job", "run", "candidate", "painting_sha256", "asked", "owner_words", "date") if not k7.get(k)]
+    if missing:
+        raise SystemExit(f"{path.name}: the acceptance of {name} lacks {', '.join(missing)}")
+    return k7
 
 
 # ------------------------------------------------------------------------------------------------ a job's results
@@ -582,7 +618,8 @@ def sheets(name: str, d: dict, inputs: Path, cands: list, img: Path, run: str = 
         top = _row([_label(half(c["raw"]), c["label"]) for c in cands])
         w = (top.width - 8 * (len(cands) - 1)) // len(cands)
         fit = lambda a: (lambda z: z.resize((w, round(z.height * w / z.width)), Image.LANCZOS))(zoom(a))       # noqa: E731
-        bot = _row([_label(fit(c["comp"]), ("PASS" if c["pass"] else "fail") + ": cut to the mask, in the render") for c in cands])
+        bot = _row([_label(fit(c["comp"]), ("K7 ACCEPTED, gates pass" if c.get("K7_owner_accepted") else "gates pass" if c["pass"] else "fail")
+                         + f": light {c['light_across_worst']:.1%} (reported)") for c in cands])
         out["candidates"] = _save(_stack([top, bot]), img / f"test_cutaway_{name}_candidates{tag}.jpg").name
     return out
 
@@ -617,7 +654,8 @@ def check(job: str = "K1", name: str = "cathedral", painted: Path | None = None,
             label = f"{name}{kind}_{k}"
             files[f"painting {label}"] = p
             files[f"composite {label}"] = out / f"{label}.composite.png"
-            cands.append({"label": label, "file": p.name, "input": name + kind, "seed": seed, "raw": raw, "comp": comp,
+            cands.append({"label": label, "file": p.name, "file_sha256": hashlib.sha256(p.read_bytes()).hexdigest(),
+                          "input": name + kind, "seed": seed, "raw": raw, "comp": comp,
                           **check_candidate(raw, d, P, sun, model)})
     det = detector(files, out)
     for c in cands:
@@ -625,12 +663,20 @@ def check(job: str = "K1", name: str = "cathedral", painted: Path | None = None,
         c.update(K4_vehicles=hits["vehicles"], K4_people=hits["people"], K4_ok=not any(hits.values()))
         c["pass"] = verdict(c)
     passing = [c for c in cands if c["pass"]]
-    best = max(passing, key=lambda c: (c["detail_share"], -c["K3_worst"]))["label"] if passing else None
+    k7 = None if run else acceptance(name)                        # the owner's eye: of the current run's paintings
+    accepted = next((c["label"] for c in passing if k7 and k7["job"] == job and k7["candidate"] == c["label"]
+                     and k7["painting_sha256"] == c["file_sha256"]), None)
+    for c in cands:
+        c["K7_owner_accepted"] = c["label"] == accepted
     timing = json.loads((painted / "timing.json").read_text()) if (painted / "timing.json").exists() else {}
     res = {"job": job, "run": run or "current", "landmark": name, "source": str(src), "frame_px": d["meta"]["frame_px"],
            "opening_px": int(d["mask"].sum()),
            "prompt": PROMPT_RUN1 if run == "run1" else PROMPTS[name], "thresholds": {k: P[k] for k in ("cutaway_mask_cover", "cutaway_shadow_lum_tol", "cutaway_shadow_min_px",
                                                                      "cutaway_line_px", "cutaway_line_share", "cutaway_line_min_step")},
+           "gates": list(GATES) + ["K7_owner_accepted (to be put into the map)"],
+           "light_across": {"status": "reported, not a gate (owner, 13 Nov 2026); its limit is shown",
+                            "limit": P["cutaway_shadow_lum_tol"],
+                            "worst": {c["label"]: c["light_across_worst"] for c in cands}},
            "own_tolerances": {"paper_rgb": PAPER_TOL, "blank_patch_px": BLANK_MIN_PX, "changed_lum": CHANGE_LUM,
                               "interior_painted": "changed_share >= 0.25 and detail_share >= 0.05",
                               "light_block_px": LIGHT_BLOCK, "light_block_step_px": LIGHT_STEP, "light_same_material_chroma": LIGHT_CHROMA,
@@ -649,7 +695,7 @@ def check(job: str = "K1", name: str = "cathedral", painted: Path | None = None,
            "K4": {t: {"images": det[t]["images"], "max_score": det[t]["max_score"], "detections": det[t]["detections"]} for t in ("vehicles", "people")},
            "K4_inputs_ok": not any(v for lab, hit in det["by_image"].items() if lab.startswith("input") for v in hit.values()),
            "candidates": [{k: v for k, v in c.items() if k not in ("raw", "comp")} for c in cands],
-           "passing": [c["label"] for c in passing], "best": best, "timing": timing}
+           "passing": [c["label"] for c in passing], "K7": k7, "accepted": accepted, "timing": timing}
     (out / f"{job}.json").write_text(json.dumps(res, indent=1))
     if write_docs:
         res["images"] = sheets(name, d, inputs, cands, V2 / "docs" / "img", run)
@@ -657,23 +703,43 @@ def check(job: str = "K1", name: str = "cathedral", painted: Path | None = None,
     return res
 
 
-def adopt(job: str = "K1", name: str = "cathedral", label: str | None = None, dst: Path | None = None) -> dict:
-    """Hand a candidate that passed to the cutaway layer: the painting cut to the opening mask, with its checks,
+def adopt(job: str = "K1", name: str = "cathedral", label: str | None = None, dst: Path | None = None,
+          accepted: Path | None = None) -> dict:
+    """Hand a painting to the cutaway layer: cut to the opening mask, with its checks and the owner's acceptance,
     into v2/data/structures/cutaway_paintings (layers/cutaways.py reads it at the next build of layer_cutaways, whose
-    gates K1-K6 then run on the painted tiles). Refused unless the job's last check lists the candidate as passing:
-    the placeholder stays until a painting passes."""
+    gates K1-K6 then run on the painted tiles). It takes two things, and the placeholder stays without both:
+        the gates   the job's last check lists the candidate as passing (verdict)
+        K7          the owner's acceptance of that very painting is recorded (ACCEPTANCES): the same job and
+                    candidate, and the hash of the candidate's file
+    Without a label the candidate is the one the owner accepted. The light-across-a-face number goes into the record
+    with its limit; it does not decide."""
     from v2.layers import cutaways as cw
     f = base() / "checks" / f"{job}.json"
     if not f.exists():
         raise SystemExit(f"{job}: not checked yet (python -m v2.bakeoff check {job})")
     res = json.loads(f.read_text())
-    label = label or res["best"]
-    if label is None or label not in res["passing"]:
-        raise SystemExit(f"{job}: {label or 'no candidate'} did not pass its checks; the placeholder stays "
+    k7 = acceptance(name, accepted)
+    label = label or (k7 or {}).get("candidate")
+    if label is None:
+        raise SystemExit(f"{job}: no owner acceptance (K7) is recorded for {name}, and no candidate is named; the "
+                         "placeholder stays")
+    if label not in res["passing"]:
+        raise SystemExit(f"{job}: {label} did not pass its gates; the placeholder stays "
                          f"(passing: {res['passing'] or 'none'})")
     c = next(c for c in res["candidates"] if c["label"] == label)
+    src = base() / "painted" / c["file"]
+    sha = hashlib.sha256(src.read_bytes()).hexdigest()
+    if k7 is None or k7["job"] != job or k7["candidate"] != label or k7["painting_sha256"] != sha:
+        raise SystemExit(f"{job}: {label} passed its gates, but no owner acceptance (K7) of this painting is recorded "
+                         f"({(accepted or ACCEPTANCES).name}: the job, the candidate and the file's hash {sha[:12]}); "
+                         "the placeholder stays")
     d = load(Path(res["source"]), name)
-    raw = np.asarray(Image.open(base() / "painted" / c["file"]).convert("RGB"))
+    raw = np.asarray(Image.open(src).convert("RGB"))
+    light = {"status": "reported, not a gate", "limit": c.get("light_across_limit"), "worst": c.get("light_across_worst"),
+             "by_kind": c.get("light_across_kind"), "within_limit": c.get("light_across_within_limit")}
     return cw.write_painting(Path(dst) if dst else cw.PAINTINGS, name, raw, d["mask"], d["meta"]["frame_px"],
-                             {"job": job, "candidate": label, "seed": c["seed"], "input": c["input"], "pass": c["pass"],
-                              "checks": {k: v for k, v in c.items() if k not in ("label", "file", "input", "seed", "pass")}})
+                             {"job": job, "run": k7["run"], "candidate": label, "seed": c["seed"], "input": c["input"],
+                              "painting_sha256": sha, "pass": c["pass"],
+                              "gates": {g: c.get(g) for g in GATES}, "light_across": light,
+                              "K7": {k: k7[k] for k in ("asked", "owner_words", "date", "candidate", "painting_sha256")},
+                              "checks": {k: v for k, v in c.items() if k not in ("label", "file", "file_sha256", "input", "seed", "pass")}})

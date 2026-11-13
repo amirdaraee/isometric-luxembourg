@@ -506,8 +506,9 @@ def check_cutaways(ctx):
         # ---------------------------------------------------------------- K2
         placeholder = np.isin(px["ids"] & 255, list(index["classes"].values()))   # the interior that is drawn
         out_px, cover = interior_in_mask(placeholder, opening)
-        rep.at_most(f"K2a-{name}", f"{lm['name']}: placeholder interior pixels outside the opening mask (the k tile: "
-                    f"{int(opening.sum())} px)", out_px, 0)
+        painted = (built.get("interior") or {}).get("kind") == "painted"
+        rep.at_most(f"K2a-{name}", f"{lm['name']}: {'painted' if painted else 'placeholder'} interior pixels outside the "
+                    f"opening mask (the k tile: {int(opening.sum())} px)", out_px, 0)
         rep.at_least(f"K2b-{name}", f"{lm['name']}: share of the opening mask covered by the interior",
                      round(cover, 5), P["cutaway_mask_cover"])
         possible, sure = M.opening(px["px"], px["py"], px["depth"], surf, nrm, near)
@@ -537,7 +538,6 @@ def check_cutaways(ctx):
             r, c = np.nonzero(np.isfinite(t["depth"]))
             edge[px["tile"] == ti] = edges_of(t)[r, c]
         kinds = np.where(opening, k, 0)
-        painted = (built.get("interior") or {}).get("kind") == "painted"
         stone = None
         if painted:                                                   # a painting: the faces' own material only
             drawn = np.zeros(len(k), bool)
