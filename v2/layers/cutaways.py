@@ -25,7 +25,14 @@ A wall that stands on a lower roof (a tower's side above a nave) keeps ACT's sin
     other          another building where it is nearer than the cut model, or seen through the slice (layer 5 holds
                    only the nearest building per pixel, so the cutaway brings what its landmark hid)
 The cut and inside faces are a **code placeholder interior**: one flat palette colour per kind (palette cutaway.*)
-and ink where surfaces meet. The painted interior replaces their colour later, inside the same mask.
+and ink where surfaces meet.
+
+**A painted interior** replaces the placeholder's colour inside the same mask, and nothing else (depth, normals,
+ids and k stay the model's): v2/data/structures/cutaway_paintings/<name>.png, a painting in the landmark's paint
+frame cut to the opening mask, with <name>.json (its frame, its checks, the file's hash). It is put there by
+`python -m v2.bakeoff adopt` from a candidate that passed its checks (bakeoff/cutaway_paint.py); a painting whose
+record does not say it passed, or whose file is not the recorded one, stops the build. Without one the placeholder
+is drawn.
 
 Every pixel lies inside the whole landmark's own silhouette, with exact depth and normals. Classes of the cut and
 inside faces are this module's own (CUT_CLASS, above common.CLASS's ids), written with the tiles' index.
@@ -46,6 +53,7 @@ from v2.layers import geometry as G
 from v2.layers.common import TILE, VIEW, Scene, Tile, pal, project, write_tile
 
 CUTS = REPO / "v2" / "data" / "structures" / "cutaways.json"
+PAINTINGS = REPO / "v2" / "data" / "structures" / "cutaway_paintings"
 # classes of the cut and inside faces in the cutaway's id tiles (id << 8 | class); common.CLASS ends at 30
 CUT_CLASS = {"cut": 40, "inside_wall": 41, "inside_roof": 42, "floor": 43, "slab": 44}
 # the k tile: what each pixel is. The opening mask is OPENING (the section and the inside faces)
@@ -59,6 +67,59 @@ EPS = 1e-7
 
 def load_cuts(path: Path = CUTS) -> dict:
     return json.loads(Path(path).read_text())
+
+
+def write_painting(folder: Path, name: str, rgb, mask, frame_px, record: dict) -> dict:
+    """A landmark's painted interior as the layer reads it: the painting cut to the opening mask (RGBA, alpha = the
+    mask) and its record. `frame_px`: the paint frame (x0, y0, width, height in map pixels); `record`: where it came
+    from and its checks, with "pass" true."""
+    import hashlib
+    from PIL import Image
+    rgb, mask = np.asarray(rgb, np.uint8), np.asarray(mask, bool)
+    if not record.get("pass"):
+        raise ValueError(f"{name}: only a painting that passed its checks is handed to the layer")
+    if rgb.shape[:2] != mask.shape or list(mask.shape) != [int(frame_px[3]), int(frame_px[2])]:
+        raise ValueError(f"{name}: painting {rgb.shape}, mask {mask.shape}, frame {list(frame_px)}")
+    folder.mkdir(parents=True, exist_ok=True)
+    rgba = np.dstack([np.where(mask[..., None], rgb, 0), (mask * 255).astype(np.uint8)])
+    Image.fromarray(rgba, "RGBA").save(folder / f"{name}.png", optimize=True)
+    meta = {"landmark": name, "frame_px": [int(v) for v in frame_px], "opening_px": int(mask.sum()),
+            "file": f"{name}.png", "sha256": hashlib.sha256((folder / f"{name}.png").read_bytes()).hexdigest(), **record}
+    (folder / f"{name}.json").write_text(json.dumps(meta, indent=1))
+    return meta
+
+
+def load_painting(name: str, folder: Path | None = PAINTINGS) -> dict | None:
+    """The painted interior of a landmark, or None if there is none: {"rgb", "on" (bool: where it is painted),
+    "frame_px", "meta"}."""
+    import hashlib
+    from PIL import Image
+    if folder is None or not (folder / f"{name}.json").exists():
+        return None
+    meta = json.loads((folder / f"{name}.json").read_text())
+    f = folder / meta["file"]
+    if not meta.get("pass"):
+        raise RuntimeError(f"{f}: its record does not say it passed its checks")
+    if hashlib.sha256(f.read_bytes()).hexdigest() != meta["sha256"]:
+        raise RuntimeError(f"{f}: not the file its record names (sha256)")
+    a = np.asarray(Image.open(f).convert("RGBA"))
+    if list(a.shape[:2]) != [meta["frame_px"][3], meta["frame_px"][2]]:
+        raise RuntimeError(f"{f}: {a.shape[:2]} px, its frame is {meta['frame_px']}")
+    return {"rgb": a[..., :3], "on": a[..., 3] > 127, "frame_px": meta["frame_px"], "meta": meta}
+
+
+def paint_into(c: dict, frame, painting: dict) -> np.ndarray:
+    """A painted interior into a drawn frame of the cut landmark (Cutaways.cut's dict), in place: the opening's
+    pixels (k in OPENING) take the painting's colour at their map pixel; everything else, and depth, normals, ids
+    and k, stay. Returns where it painted (bool, the frame's shape)."""
+    fx, fy, fw, fh = painting["frame_px"]
+    cols = np.floor(frame.centres[0]).astype(int) - fx
+    rows = np.floor(frame.centres[1]).astype(int) - fy
+    inside = ((rows >= 0) & (rows < fh))[:, None] & ((cols >= 0) & (cols < fw))[None, :]
+    r, q = np.clip(rows, 0, fh - 1)[:, None], np.clip(cols, 0, fw - 1)[None, :]
+    on = np.isin(c["k"], OPENING) & inside & painting["on"][r, q]
+    c["rgb"] = np.where(on[..., None], painting["rgb"][r, q], c["rgb"]).astype(np.uint8)
+    return on
 
 
 def cut_params(P: dict | None = None) -> dict:
@@ -613,11 +674,13 @@ def place_buildings(scene, slug, max_dist):
 class Cutaways:
     """The cutaways of one scene: their models and their drawings."""
 
-    def __init__(self, scene: Scene, P: dict | None = None, cuts: dict | None = None):
+    def __init__(self, scene: Scene, P: dict | None = None, cuts: dict | None = None, paintings: Path | None = PAINTINGS):
         from v2.layers.render import Renderer
         self.scene = scene
         self.P = cut_params(P)
         self.cuts = cuts or load_cuts()
+        self.paintings = paintings                                # the folder of painted interiors (None: placeholders)
+        self._painting = {}
         self.R = Renderer(scene, art="a")                         # the outside by method A's materials
         self._models = {}
 
@@ -671,9 +734,23 @@ class Cutaways:
         w = self.model(name)["whole"]
         return draw(w, frame, shader=self._shader([w[0]["parent"], w[1]["parent"]]), outline=outline)
 
-    def cut(self, name, frame, others=True):
+    def painting(self, name):
+        if name not in self._painting:
+            self._painting[name] = load_painting(name, self.paintings)
+        return self._painting[name]
+
+    def cut(self, name, frame, others=True, painted=True):
         """The cut landmark in a frame: dict rgb, depth, normal, ids, k (KIND), outline (the whole landmark's own
-        silhouette); nothing outside that silhouette. others=False draws the landmark alone."""
+        silhouette); nothing outside that silhouette. others=False draws the landmark alone. The interior is the
+        landmark's painting if it has one (and `painted`), else the placeholder; with a painting the dict also has
+        "painted": where it was drawn."""
+        c = self._cut(name, frame, others)
+        p = self.painting(name) if painted else None
+        if p is not None:
+            c["painted"] = paint_into(c, frame, p)
+        return c
+
+    def _cut(self, name, frame, others):
         m = self.model(name)
         shell, opn = m["scene"] if others else (m["shell"], m["openings"])
         faces = m["faces"]
@@ -713,7 +790,7 @@ def write_paint_inputs(C: Cutaways, name, folder: Path):
     from PIL import Image
     folder.mkdir(parents=True, exist_ok=True)
     f = C.paint_frame(name)
-    c = C.cut(name, f, others=False)
+    c = C.cut(name, f, others=False, painted=False)               # the painter's input is always the placeholder
     drawn = np.isfinite(c["depth"])
     mask = np.isin(c["k"], OPENING)
     Image.fromarray(on_paper(c["rgb"], drawn)).save(folder / f"{name}.unlit.png")
@@ -768,14 +845,20 @@ def layer_cutaways(ctx):
     levels = levels_for(sc.tiles)
     index = {"layer": "cutaways", "tile_px": TILE, "files": ["c.webp", "g.bin", "k.bin", "i.bin"], "k": KIND,
              "opening_k": list(OPENING), "classes": CUT_CLASS, "above_layer": "buildings", "params": C.P,
-             "note": "the cut and inside faces are a code placeholder interior (flat palette colours)", "landmarks": {}}
+             "note": "the cut and inside faces are a code placeholder interior (flat palette colours), or the "
+                     "landmark's painted interior where \"interior\" says so", "landmarks": {}}
     summary = {}
     for name, lm in C.cuts["landmarks"].items():
         m = C.model(name)
         folder = ctx.out / "tiles" / name
         idx0, px = {}, {k: 0 for k in KIND}
+        got = [0, 0]
         for t in C.tiles(name):
             c = C.cut(name, t)
+            if "painted" in c:
+                on = np.isin(t.crop(c["k"]), OPENING)
+                got[0] += int(on.sum())
+                got[1] += int((on & ~t.crop(c["painted"])).sum())
             depth = t.crop(c["depth"])
             if not np.isfinite(depth).any():
                 continue
@@ -784,6 +867,9 @@ def layer_cutaways(ctx):
                                       k=k, ids=t.crop(c["ids"]), q=101)
             for kn, kv in KIND.items():
                 px[kn] += int((k == kv).sum())
+        if got[1]:
+            raise RuntimeError(f"{name}: the painting leaves {got[1]} of the tiles' {got[0]} opening pixels unpainted "
+                               f"(it was made for another cut or frame)")
         idx = pyramid(folder, idx0, levels, lossless=True, has_k=True, has_ids=True)
         paint = write_paint_inputs(C, name, ctx.out / "paint")
         prev = write_preview(C, name, ctx.out / "previews" / f"{ctx.area}_cutaway_{name}_placeholder.jpg")
@@ -791,9 +877,13 @@ def layer_cutaways(ctx):
             "name": lm["name"], "slug": lm["slug"], "replaces": lm["buildings"], "replaces_index": m["own"],
             "planes": lm["planes"], "floor_z": lm["floor_z"], "bbox_px": m["bbox_px"], "levels": max(idx),
             "tiles": {str(z): v for z, v in idx.items()}, "pixels": px,
+            "interior": ({"kind": "painted", "pixels": got[0], **{k: v for k, v in C.painting(name)["meta"].items()
+                                                                  if k in ("job", "candidate", "seed", "sha256")}}
+                         if C.painting(name) else {"kind": "placeholder"}),
             "paint": {"frame_px": paint["frame_px"], "files": paint["files"], "opening_px": paint["opening_px"]},
             "preview": prev["file"], "model": {str(k): v for k, v in m["stats"].items()}}
-        summary[name] = {"tiles_z0": len(idx0), "pixels": px, "paint_frame_px": paint["frame_px"][2:],
+        summary[name] = {"tiles_z0": len(idx0), "pixels": px, "interior": index["landmarks"][name]["interior"]["kind"],
+                         "paint_frame_px": paint["frame_px"][2:],
                          "preview_bytes": prev["bytes"]}
         ctx.log(name, summary[name])
     ctx.write_json("tiles/index.json", index)

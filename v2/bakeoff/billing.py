@@ -11,7 +11,7 @@ import json
 import urllib.request
 
 from v2.bakeoff import runner
-from v2.bakeoff.jobs import GOAL
+from v2.bakeoff.jobs import BY_ID
 from v2.ledger.ledger import Ledger
 
 
@@ -42,8 +42,9 @@ def reconcile(record=False) -> int:
         total += b[s["pod_id"]]
         print(f"pod {s['pod_id']} ({s['name']}): billed ${b[s['pod_id']]:.4f}, ledger ${led:.4f}  jobs "
               + ", ".join(f"{h['id']} ${h['usd']:.2f}" for h in s.get("history", [])))
-    ledger_usd = round(sum(e["usd"] for e in L.events if e["type"] == "spend" and e["provider"] == "runpod" and e["goal"] == GOAL), 4)
-    print(f"RunPod billed ${total:.4f} for these pods; the ledger has ${ledger_usd:.4f} for {GOAL}")
+    goals = sorted({j.goal for j in BY_ID.values()})           # every budget line the runner's jobs are paid from
+    ledger_usd = round(sum(e["usd"] for e in L.events if e["type"] == "spend" and e["provider"] == "runpod" and e["goal"] in goals), 4)
+    print(f"RunPod billed ${total:.4f} for these pods; the ledger has ${ledger_usd:.4f} for {', '.join(goals)}")
     how = "billing lines per pod"
     # RunPod publishes a pod's billing lines over some hours after it ends (9 Nov 2026: 1,685 of a pod's 2,145
     # seconds were listed an hour after it was terminated, while the balance already held the whole charge). Its

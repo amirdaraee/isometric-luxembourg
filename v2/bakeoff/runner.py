@@ -40,7 +40,7 @@ import tomllib
 import urllib.request
 from pathlib import Path
 
-from v2.bakeoff.jobs import BY_ID, GOAL, Job
+from v2.bakeoff.jobs import BY_ID, JOBS, Job
 from v2.config import v2_data
 from v2.ledger.ledger import Ledger, LedgerRefusal
 
@@ -52,6 +52,7 @@ GPU_IDS = {"H100 SXM": "NVIDIA H100 80GB HBM3", "H100 PCIe": "NVIDIA H100 PCIe",
 # price is not above the quoted one (owner, 10 Nov 2026: "a cheaper same-chip listing (H100 NVL, or SXM) at or below
 # the quoted hourly price is fine"). The time caps stay, so no quote's worst case can be passed.
 SAME_CHIP = {"H100 SXM": ("H100 SXM", "H100 NVL")}
+PRICE_FIELD = {"community": "communityPrice", "secure": "securePrice"}
 HOLD_S = 420                              # how long a pod is held for a restart after a job failed with nothing made
 DISK_GB = 150
 DISK_USD_GB_H = 0.10 / 730                # RunPod: $0.10 per GB a month for a running pod's disk
@@ -69,7 +70,7 @@ def state_dir() -> Path:
 def quote_of(job: Job, ledger: Ledger | None = None) -> str | None:
     """The ledger quote id recorded for this job (the latest one), or None."""
     L = ledger or Ledger()
-    qs = [e for e in L.events if e["type"] == "quote" and e["goal"] == GOAL and e["job"] == job.ledger_job()]
+    qs = [e for e in L.events if e["type"] == "quote" and e["goal"] == job.goal and e["job"] == job.ledger_job()]
     return qs[-1]["id"] if qs else None
 
 
@@ -77,9 +78,9 @@ def record_quotes(ledger: Ledger | None = None) -> list:
     """Record every job's quote in the ledger, once (quote events only: approving is the owner's)."""
     L = ledger or Ledger()
     out = []
-    for j in BY_ID.values():
+    for j in JOBS:
         if quote_of(j, L) is None:
-            out.append(L.quote(GOAL, j.provider, j.ledger_job(), j.worst_usd, j.ledger_note()))
+            out.append(L.quote(j.goal, j.provider, j.ledger_job(), j.worst_usd, j.ledger_note()))
     return out
 
 
@@ -92,7 +93,7 @@ def requote(job: Job, ledger: Ledger | None = None):
     q = quote_of(job, L)
     if q is not None and q not in L.released() and not any(e["type"] == "spend" and e["quote"] == q for e in L.events):
         raise LedgerRefusal(f"{job.id}: its quote {q} is not used yet")
-    return L.quote(GOAL, job.provider, job.ledger_job(), job.worst_usd, job.ledger_note())
+    return L.quote(job.goal, job.provider, job.ledger_job(), job.worst_usd, job.ledger_note())
 
 
 def spent(job: Job, ledger: Ledger | None = None) -> bool:
@@ -122,12 +123,12 @@ def _gql(query: str, variables=None) -> dict:
 
 
 def live_price(job: Job) -> float:
-    """The community on-demand price of the job's GPU now (read-only)."""
-    d = _gql("query { gpuTypes { id communityPrice } }")
+    """The on-demand price of the job's GPU on the job's cloud now (read-only)."""
+    d = _gql("query { gpuTypes { id communityPrice securePrice } }")
     gid = GPU_IDS[job.gpu]
     for g in d["gpuTypes"]:
         if g["id"] == gid:
-            return float(g["communityPrice"])
+            return float(g[PRICE_FIELD[job.cloud]])
     raise RuntimeError(f"no price for {gid}")
 
 
@@ -175,7 +176,7 @@ def pod_spec(job: Job, country: str | None = None, gpu: str | None = None) -> di
     wd = base64.b64encode((POD / "watchdog.sh").read_bytes()).decode()
     pub = (Path.home() / ".ssh" / "id_ed25519.pub").read_text().strip()
     spec = {"name": f"isolux-v2-{job.id.lower()}", "imageName": IMAGE, "gpuTypeId": GPU_IDS[gpu or job.gpu], "gpuCount": 1,
-            "cloudType": "COMMUNITY", "containerDiskInGb": DISK_GB, "volumeInGb": 0, "volumeMountPath": "/workspace",
+            "cloudType": job.cloud.upper(), "containerDiskInGb": DISK_GB, "volumeInGb": 0, "volumeMountPath": "/workspace",
             "dockerArgs": f"bash -c 'echo {wd} | base64 -d > /watchdog.sh; exec bash /watchdog.sh'",
             "ports": "22/tcp", "supportPublicIp": True, "startSsh": True,
             "env": [{"key": "ISOLUX_JOB", "value": job.id}, {"key": "ISOLUX_CAP_S", "value": str(cap_seconds(job))},
@@ -305,7 +306,8 @@ def _create(job: Job, name: str, wait_min: float = 0) -> Session:
     tries = 0
     balance = balance_now()                      # RunPod's own figure before this pod, for the reconciliation
     while pod is None:
-        prices = {g["id"]: g["communityPrice"] for g in _gql("query { gpuTypes { id communityPrice } }")["gpuTypes"]}
+        f = PRICE_FIELD[job.cloud]
+        prices = {g["id"]: g[f] for g in _gql("query { gpuTypes { id communityPrice securePrice } }")["gpuTypes"]}
         for gpu in sorted(SAME_CHIP.get(job.gpu, (job.gpu,)), key=lambda g: float(prices.get(GPU_IDS[g]) or 1e9)):
             pr = prices.get(GPU_IDS[gpu])
             if pr is None or float(pr) > job.price_h + 1e-9:
@@ -330,7 +332,7 @@ def _create(job: Job, name: str, wait_min: float = 0) -> Session:
             print(f"{job.id}: no free machine yet ({time.strftime('%H:%M')}); trying again every 45 s", flush=True)
         time.sleep(45)
     if not pod:
-        raise LedgerRefusal(f"{job.id}: no {job.gpu} on RunPod's community cloud right now ({str(last)[:300]}); nothing was started")
+        raise LedgerRefusal(f"{job.id}: no {job.gpu} on RunPod's {job.cloud} cloud right now ({str(last)[:300]}); nothing was started")
     t0 = time.time()
     s = Session(name)
     s.d = {"name": spec["name"], "pod_id": pod["id"], "cost_h": float(pod["costPerHr"]), "created": t0, "gpu": gpu,

@@ -1,0 +1,295 @@
+{
+ "job": "K1",
+ "run": "run1",
+ "landmark": "cathedral",
+ "source": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/layer_cutaways/b63d9c92da04/paint",
+ "frame_px": [
+  59709,
+  32471,
+  1024,
+  1024
+ ],
+ "opening_px": 35545,
+ "prompt": "Fill in the outlined section with the missing pixels corresponding to the <isometric luxembourg ink> style, removing the border and exactly following the shape/style/structure of the surrounding image (if present). Evenly lit with flat light: no shadows, no shading from one side, nothing that moves. The building is cut open like an architectural model. Inside the opening draw the interior of a gothic cathedral: the nave with a chequered stone floor, rows of sandstone columns, pointed arches, a ribbed vault, tall stained-glass windows and wooden pews. No people.",
+ "thresholds": {
+  "cutaway_mask_cover": 0.995,
+  "cutaway_shadow_lum_tol": 0.05,
+  "cutaway_shadow_min_px": 150,
+  "cutaway_line_px": 1.0,
+  "cutaway_line_share": 0.95,
+  "cutaway_line_min_step": 12
+ },
+ "own_tolerances": {
+  "paper_rgb": 8,
+  "blank_patch_px": 7,
+  "changed_lum": 12,
+  "interior_painted": "changed_share >= 0.25 and detail_share >= 0.05",
+  "light_block_px": 16,
+  "light_block_step_px": 4,
+  "light_same_material_chroma": 0.03,
+  "light_block_material_share": 0.4,
+  "light_lit_level_percentile": 90
+ },
+ "K1a_of_the_render_as_built": {
+  "seen": 257,
+  "share": 0.9922
+ },
+ "K4": {
+  "vehicles": {
+   "images": 8,
+   "max_score": 0.0141,
+   "detections": []
+  },
+  "people": {
+   "images": 8,
+   "max_score": 0.0142,
+   "detections": []
+  }
+ },
+ "K4_inputs_ok": true,
+ "candidates": [
+  {
+   "label": "cathedral_0",
+   "file": "cathedral_0.png",
+   "input": "cathedral",
+   "seed": 1867,
+   "K2a_interior_px_outside_mask": 0,
+   "K2b_mask_covered": 0.99997,
+   "K2_ok": true,
+   "K3_worst": 0.1815,
+   "K3_ok": false,
+   "K3_by_kind": {
+    "cut": {
+     "sides": 0,
+     "worst": 0.0,
+     "sun": null
+    },
+    "inside_wall": {
+     "sides": 3,
+     "worst": 0.1815,
+     "sun": null
+    },
+    "inside_roof": {
+     "sides": 1,
+     "worst": 0.0,
+     "sun": null
+    },
+    "floor": {
+     "sides": 1,
+     "worst": 0.0,
+     "sun": null
+    }
+   },
+   "light_across_kind": {
+    "inside_wall": 0.3189,
+    "inside_roof": 0.1489,
+    "floor": 0.1136
+   },
+   "light_across_worst": 0.3189,
+   "interior_lines": {
+    "line_px": 3095,
+    "kept": 0.9176,
+    "section_px": 1453,
+    "section_kept": 0.9993,
+    "placeholder_px": 1642,
+    "placeholder_kept": 0.8453,
+    "placeholder_by_junction": {
+     "floor_wall": {
+      "px": 347,
+      "kept": 0.6715
+     },
+     "roof_wall": {
+      "px": 250,
+      "kept": 0.92
+     },
+     "wall_wall": {
+      "px": 907,
+      "kept": 0.8721
+     }
+    }
+   },
+   "changed_share": 0.9189,
+   "detail_share": 0.7124,
+   "placeholder_detail_share": 0.0,
+   "pixels": 27820,
+   "interior_painted": true,
+   "raw_outside_changed_share": 0.2847,
+   "raw_drawn_outside_outline_px": 2918,
+   "light_across_ok": false,
+   "lines_kept_ok": false,
+   "K1a_section_line_share": 0.9883,
+   "K1a_seen": 257,
+   "K1_ok": true,
+   "K4_vehicles": 0,
+   "K4_people": 0,
+   "K4_ok": true,
+   "pass": false
+  },
+  {
+   "label": "cathedral_1",
+   "file": "cathedral_1.png",
+   "input": "cathedral",
+   "seed": 1868,
+   "K2a_interior_px_outside_mask": 0,
+   "K2b_mask_covered": 1.0,
+   "K2_ok": true,
+   "K3_worst": 0.3456,
+   "K3_ok": false,
+   "K3_by_kind": {
+    "cut": {
+     "sides": 0,
+     "worst": 0.0,
+     "sun": null
+    },
+    "inside_wall": {
+     "sides": 3,
+     "worst": 0.3456,
+     "sun": null
+    },
+    "inside_roof": {
+     "sides": 1,
+     "worst": 0.0,
+     "sun": null
+    },
+    "floor": {
+     "sides": 1,
+     "worst": 0.0,
+     "sun": null
+    }
+   },
+   "light_across_kind": {
+    "inside_wall": 0.2802,
+    "inside_roof": 0.2002,
+    "floor": 0.0569
+   },
+   "light_across_worst": 0.2802,
+   "interior_lines": {
+    "line_px": 3095,
+    "kept": 0.9302,
+    "section_px": 1453,
+    "section_kept": 0.9862,
+    "placeholder_px": 1642,
+    "placeholder_kept": 0.8806,
+    "placeholder_by_junction": {
+     "floor_wall": {
+      "px": 347,
+      "kept": 0.6945
+     },
+     "roof_wall": {
+      "px": 250,
+      "kept": 0.824
+     },
+     "wall_wall": {
+      "px": 907,
+      "kept": 0.968
+     }
+    }
+   },
+   "changed_share": 0.9121,
+   "detail_share": 0.6087,
+   "placeholder_detail_share": 0.0,
+   "pixels": 27820,
+   "interior_painted": true,
+   "raw_outside_changed_share": 0.2417,
+   "raw_drawn_outside_outline_px": 2314,
+   "light_across_ok": false,
+   "lines_kept_ok": false,
+   "K1a_section_line_share": 0.9844,
+   "K1a_seen": 257,
+   "K1_ok": true,
+   "K4_vehicles": 0,
+   "K4_people": 0,
+   "K4_ok": true,
+   "pass": false
+  },
+  {
+   "label": "cathedral-open_0",
+   "file": "cathedral-open_0.png",
+   "input": "cathedral-open",
+   "seed": 1867,
+   "K2a_interior_px_outside_mask": 0,
+   "K2b_mask_covered": 0.99972,
+   "K2_ok": true,
+   "K3_worst": 0.1946,
+   "K3_ok": false,
+   "K3_by_kind": {
+    "cut": {
+     "sides": 0,
+     "worst": 0.0,
+     "sun": null
+    },
+    "inside_wall": {
+     "sides": 3,
+     "worst": 0.1946,
+     "sun": null
+    },
+    "inside_roof": {
+     "sides": 1,
+     "worst": 0.0,
+     "sun": null
+    },
+    "floor": {
+     "sides": 1,
+     "worst": 0.0,
+     "sun": null
+    }
+   },
+   "light_across_kind": {
+    "inside_wall": 0.3613,
+    "inside_roof": 0.1789,
+    "floor": 0.1309
+   },
+   "light_across_worst": 0.3613,
+   "interior_lines": {
+    "line_px": 3095,
+    "kept": 0.9137,
+    "section_px": 1453,
+    "section_kept": 0.9732,
+    "placeholder_px": 1642,
+    "placeholder_kept": 0.8611,
+    "placeholder_by_junction": {
+     "floor_wall": {
+      "px": 347,
+      "kept": 0.6599
+     },
+     "roof_wall": {
+      "px": 250,
+      "kept": 0.84
+     },
+     "wall_wall": {
+      "px": 907,
+      "kept": 0.9305
+     }
+    }
+   },
+   "changed_share": 0.9363,
+   "detail_share": 0.6953,
+   "placeholder_detail_share": 0.0,
+   "pixels": 27820,
+   "interior_painted": true,
+   "raw_outside_changed_share": 0.2852,
+   "raw_drawn_outside_outline_px": 2950,
+   "light_across_ok": false,
+   "lines_kept_ok": false,
+   "K1a_section_line_share": 0.9922,
+   "K1a_seen": 257,
+   "K1_ok": true,
+   "K4_vehicles": 0,
+   "K4_people": 0,
+   "K4_ok": true,
+   "pass": false
+  }
+ ],
+ "passing": [],
+ "best": null,
+ "timing": {
+  "done": 3,
+  "of": 4,
+  "s_per_painting": 22.75,
+  "load_s": 267
+ },
+ "images": {
+  "input": "test_cutaway_cathedral_paint_input.jpg",
+  "candidates": "test_cutaway_cathedral_candidates.jpg"
+ }
+}

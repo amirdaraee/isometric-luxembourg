@@ -16,6 +16,8 @@
   in place in the viewer with a placeholder interior (`?cutaway`). The Bock casemates' cutaway is not built.
 - **Two quotes are in the ledger, not approved:** q0012 (cathedral, at most $0.54) and q0013 (the other three, at
   most $0.90).
+- **Added 13 November:** the cathedral's painting was tried once, for $0.43. The interior style works; no painting
+  passed the checks. Section 9 has the run, the free fixes and the new quote q0015 (not approved).
 - `data/v2/test/release/current.json` points at the final A build (`619f7c040341`).
 
 ## 2. What changed in the look
@@ -202,3 +204,140 @@ export ISOLUX_DATA=/Users/amirdaraee/00/projects/isometric-luxembourg/data
 .venv/bin/python -m v2.view test          # http://localhost:5174/   (Ctrl-C stops it)
 # add ?xray for the tunnel view, ?cutaway for the cutaways, ?hour=21.3 or ?hour=23.25 for golden hour and night
 ```
+
+## 9. The cathedral cutaway: first painting test (10 November), free fixes (13 November)
+
+Branch `v2-phase3-cathedral`, into `v2`. **Spent: $0.4256** (the first run). The fixes cost $0.
+
+### The first run
+
+- **Quotes.** q0012 (an H100, community cloud) was approved, but no H100 was free. Asked which GPU to use, the
+  owner answered "A100 SXM, secure (Recommended)". q0012 was released unspent. q0014 replaced it: A100 SXM, secure
+  cloud, $1.79/h, cap 0.25 h, worst case $0.45. The owner approved it.
+- **Pod** `0r548l7stsvho6`, terminated. Ledger spend **$0.4256** (846 s). RunPod's balance fell by about $0.38; its
+  billing line was not yet published, so the run is not reconciled yet.
+- **Times, measured:** ssh after 128 s; setup done 497 s after the pod was created (the 56 GB model download is
+  most of it); model loaded in 267 s; 23 s per painting.
+- **The pod reached its time cap after 3 of 4 paintings.** `cathedral-open_1` was never painted. The quote had
+  assumed Phase 2's 4 minutes of setup, measured on a pod that already held the model.
+- Paintings: `<data>/v2/test/bakeoff/cutaways/painted_run1/`. Numbers: `v2/docs/results/cutaway_K1_run1.json`.
+  Sheets: `v2/docs/img/test_cutaway_cathedral_candidates.jpg` (the three candidates) and
+  `test_cutaway_cathedral_paint_input.jpg` (what the painter was given).
+
+### What came back
+
+- **The model paints a real interior** in the ink style: Gothic arches, stained glass, pews, a chequered floor. The
+  Phase 2 risk (it returns the flat render as given) did not happen.
+- The owner looked at the candidates on 13 November 2026 and said the interior style "looks good".
+- **No candidate passes.** The table gives each check as first measured and as measured after the fixes below.
+
+| Check (limit) | cathedral_0 | cathedral_1 | cathedral-open_0 |
+|---|---|---|---|
+| K1 section outline within 1 px (≥ 95%) | 98.8% | 98.4% | 99.2% |
+| K2 interior pixels outside the mask (0) | 0 | 0 | 0 |
+| K2 mask covered (≥ 99.5%), first measure | 97.5% | 99.7% | 95.8% |
+| K2 mask covered, corrected measure | **99.997%** | **100%** | **99.97%** |
+| K3 faces of one kind, turned different ways (≤ 5%) | 18.2% | 34.6% | 19.5% |
+| Light across a face (≤ 5%), first measure | 96% | 213% | 281% |
+| Light across a face, corrected: walls / roof / floor | 32% / 15% / 11% | 28% / 20% / 6% | 36% / 18% / 13% |
+| Lines kept (≥ 95%; not in the spec) | 91.8% | 93.0% | 91.4% |
+| of these, the section's lines | 99.9% | 98.6% | 97.3% |
+| of these, the placeholder's own lines | 84.5% | 88.1% | 86.1% |
+| K4 cars or people | 0 | 0 | 0 |
+
+### What failed, why, and what was changed
+
+1. **Coverage (K2).** The reported cause, unpainted strips at the opening's edge, was wrong. I measured where the
+   "uncovered" pixels are: in `cathedral_0`, 819 of 900 are on the floor, half of them more than 23 px from the
+   edge, and 10 are within 3 px of it. They are the **light squares of the chequered floor**, whose colour is within
+   the tolerance of paper. The check called a pale floor slab unpainted.
+   - Fix: a blank is a patch, not a pixel. A mask pixel is unpainted if it has the colour of paper, or of the
+     painting's own background (two of the three paintings came back on white, not on paper), and lies in such a
+     patch that holds a 7 × 7 px square (0.9 m). Pixels outside the mask count as blank for the patch, so a blank
+     strip along the edge is found at any width.
+   - The 99.5% limit is unchanged. All three paintings now pass K2.
+   - One input was also changed: the "opening cleared" input now keeps the section (the cut faces), so the
+     opening's rim is given to the painter. In `cathedral-open_0`, 99 section pixels had been left pale.
+   - New tolerance: the 7 px patch. A pale slab lying on the very edge of the opening still counts as blank
+     (0.2% in the unit test's worst case).
+2. **Light across a face.** The old check fitted a plane to a face's luminance. A chequered floor, pews on one
+   side or a window read as light.
+   - Fix: light is measured on one material. The face's material is the colour of its light pixels, brightness
+     set aside. In every 16 px square (2 m, every 4 px) that is at least two fifths that material, the lit level is
+     the 90th percentile of the material's luminance. The result is the largest fall of that level between two
+     squares. The limit stays 5%, K3's own.
+   - Proved on synthetic images (`test_light_across_a_face_measures_light_not_what_is_drawn_on_it`): a flat face,
+     a chequer, a navy chequer, lozenges, joints and a soft-edged chequer measure under 1%, also with pews
+     standing on them. Every one of them fails with a gradient (40% and 10% from side to side) and with a cast
+     shadow (6.5 m and 3.5 m across).
+   - On the three real paintings it still fails all three. `cathedral_1` fails on the floor (5.7%), the roof
+     (20%) and the walls (28%).
+   - **Limits, stated in the code:** a shadow narrower than about 2.5 m is not measured (a thin shadow beside a
+     pew). A shadow drawn in another colour than its surface (blue on cream stone) counts as another material.
+     In `cathedral_1` the dark floor is navy, so this check does not catch it as shade; the prompt now forbids it.
+   - The floors of `cathedral_0` and `cathedral-open_0` look evenly lit and still measure 11% and 13%. In
+     `cathedral_0`, nine tenths of the floor's squares lie within 3.5% of each other. The extremes are where the
+     painter drew the foot of the wall on what the model calls floor (a darker stone of the same colour), and
+     beside pews. So this check can still fail an evenly lit floor for what is drawn at its edges.
+   - The walls measure 28–36%. I did not look into each wall square; the painter draws arches and vaults in
+     several tones of stone.
+   - New tolerances: the 16 px square, the 4 px step, chroma within 0.03, the two-fifths share, the 90th
+     percentile. No painting's verdict depends on them: all three fail at every setting I tried.
+3. **K3** (unchanged, not loosened). It compares the median luminance of the inside walls turned different ways.
+   In these paintings the median wall pixel is dark (about 90 of 255; the stone is about 210): more than half of
+   each wall is window or ink. So K3 measures how much glass each wall has. The prompt now asks for narrow
+   windows and the same pale sandstone on every wall.
+4. **The prompt** (`v2/bakeoff/cutaway_paint.py`). It now asks for the interior "as a flat colour drawing", "lit
+   evenly from every side, like a diagram", a pale floor "from edge to edge, also under and beside the pews and
+   the columns", and "No cast shadows, no dark floor, no dark corners, no beams of light". Its effect is not known
+   until a run.
+5. **Lines kept.** This check is not in the spec. The lines that go missing are not the section's (97–100% kept;
+   K1 covers them and passes). They are the placeholder's own construction lines: the floor against the wall
+   (66–69% kept, the pews stand in front of it), wall corners (87–97%), the roof against the wall (82–92%). The
+   placeholder is a hollow shell with nominal walls, so a painted interior legitimately covers these.
+   - Not changed. The rule still fails all three. The numbers are now reported apart. See open question 13.
+6. **Time.** The job is planned again from the measured times: 128 s to ssh, 62 s preflight and uploads, 307 s
+   more of setup, 289 s model load, 4 × 23 s painting, 30 s to bring the results back and terminate: **908 s
+   (15.1 min)**. The new cap is 0.45 h (27 min), 75% over that.
+   - Still four candidates: two inputs × two seeds. In the first run the same seed gave nearly the same painting
+     from both inputs, so the four now have four different seeds (1867–1870).
+7. **The compose step.** `python -m v2.bakeoff adopt K1` puts the best passing candidate, cut to the mask, into
+   `v2/data/structures/cutaway_paintings/`. The cutaway layer then draws it in place of the placeholder at the
+   next build, and gates K1–K6 run on the painted tiles.
+   - Refused while no candidate passes, so the placeholder stays today.
+   - Only colour inside the opening changes. Depth, normals, ids and the mask stay the model's.
+   - Tested with a synthetic painting on the real cathedral: 33,325 of 33,325 opening pixels painted, each from
+     its own map pixel; 0 pixels changed outside the opening; 0 changes to depth, normals, ids or kinds; the
+     painter's input stays the placeholder. Not looked at in the browser.
+
+### The new quote (not approved, nothing run)
+
+| Quote | Job | Expected | Worst case |
+|---|---|---|---|
+| q0015 | Cathedral interior, second run: 1 view × 4 candidates, A100 SXM, secure cloud | $0.57 | **$0.99** |
+
+- The A100 SXM's secure price is **$2.19/h** today (read 13 November; it was $1.79 on 10 November).
+- Expected: 0.26 h. Worst case: the 0.45 h cap.
+- Phase 3 line: $8 cap, $0.4256 spent, q0013 ($0.90) and q0015 quoted and not approved.
+- **A risk to weigh:** the walls failed K3 and the light check by a wide margin, and the only lever tried is the
+  prompt. A second run may bring better candidates and still no pass.
+
+### Gates after the change
+
+The cutaway layer's code changed, so its stage and everything after it were built again on the test area:
+see `v2/docs/results/g3_test.json`. The tiles are identical to the build before (only `index.json` gained a field).
+
+### Open questions added
+
+13. **Lines kept:** make the gate "the section's lines" (K1, the spec's own check) and only report the
+    placeholder's lines? Today's rule would fail any interior with pews or columns in front of a wall.
+14. **K3 on a painted wall** compares medians, so it measures window area. Keep it as it is and ask the painter
+    for less glass (done in the prompt), or define K3's "material" for paintings as the stone?
+15. **The light check's limits:** it misses thin shadows and shadows drawn in another colour, and it can fail an
+    evenly lit floor for a wall's foot or a pew drawn at its edge. Accept it as a gate with K7 (your eye) as the
+    last check, or make it a reported number?
+16. **GPU for the second run:** the secure A100 SXM is now $2.19/h. The community A100 SXM is $1.39/h (worst case
+    about $0.63) if one is free. Quote q0015 is for the secure one, as last time.
+17. **The chequered floor and the pews** are the painter's invention from my prompt, not from a reference of the
+    real cathedral. Keep them?
+

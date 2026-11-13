@@ -12,6 +12,8 @@
   C3   all windows with buildings                                         -> c/painted/<window>.png
   C4   the trial buildings' facades, front-on                             -> c/facades/<facade>_<k>.png
        (painted with v1's style model unless C's unshadowed one exists)
+  K1   the cathedral's cut render, as built and with its opening cleared  -> cutaways/painted/<input>_<k>.png
+       (Phase 3, cutaway_paint.py; v1's style model)
 """
 from __future__ import annotations
 
@@ -23,9 +25,10 @@ from pathlib import Path
 from v2.config import v1_work, v2_data
 
 AREA = "test"
-SETUP = {"B1": "t2i", "B2": "paint", "C1p": "paint", "C1": "paint", "C2p": "train", "C2": "train", "C3": "paint", "C4": "paint"}
+SETUP = {"B1": "t2i", "B2": "paint", "C1p": "paint", "C1": "paint", "C2p": "train", "C2": "train", "C3": "paint", "C4": "paint",
+         "K1": "paint"}
 OUT = {"B1": "b/materials", "B2": "b/landmarks", "C1p": "c/targets", "C1": "c/targets", "C2p": "c/train_pilot",
-       "C2": "c/train", "C3": "c/painted", "C4": "c/facades"}
+       "C2": "c/train", "C3": "c/painted", "C4": "c/facades", "K1": "cutaways/painted"}
 # the training job keeps a checkpoint every 200 steps (295 MB each): only two of them, the final LoRA and the
 # optimizer state come back
 PULL_FILTER = {"C2p": ("--include=*_000000200.safetensors", "--exclude=*_0000*.safetensors"),
@@ -106,6 +109,14 @@ def build(job: str) -> Path:
             raise SystemExit("C4: no facade inputs (python -m v2.bakeoff inputs facades)")
         _windows(d, names, src)
         (d / "prompt.txt").write_text(P.C_FACADE_PROMPT if new_lora().exists() else P.C_FACADE_PROMPT_V1)
+    elif job == "K1":
+        from v2.bakeoff import cutaway_paint as CP
+        src = base() / "cutaways" / "inputs"
+        names = CP.input_names("cathedral")
+        if not all((src / f"{n}.{ext}").exists() for n in names for ext in ("unlit.png", "layout.png")):
+            raise SystemExit("K1: no cutaway inputs (python -m v2.bakeoff inputs cutaway)")
+        _windows(d, names, src)
+        (d / "prompt.txt").write_text(CP.PROMPTS["cathedral"])
     (d / "job.json").write_text(json.dumps({"job": job}))
     return d
 
@@ -115,7 +126,7 @@ def uploads(job: str, bdir: Path) -> list:
     has them (the session's earlier jobs) nothing is sent."""
     ups = [(str(bdir) + "/", f"/workspace/job/{job}/", ("-c",))]
     big = ("--size-only",)
-    if job in ("C1p", "C1") or (job in ("B2", "C4") and not new_lora().exists()):
+    if job in ("C1p", "C1", "K1") or (job in ("B2", "C4") and not new_lora().exists()):
         ups.append((str(v1_work() / V1_LORA), "/workspace/lora/", big))
     if job == "C3" or (job in ("B2", "C4") and new_lora().exists()):
         ups.append((str(new_lora()), "/workspace/lora/", big))

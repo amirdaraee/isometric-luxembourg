@@ -6,8 +6,9 @@ for one window: control image 1 is the unlit render outlined in red all round (2
 example of the style LoRA), control image 2 the layout map (black outlines, dark windows, on white).
 
     paint.py --inputs DIR --out DIR --prompt-file F --lora STYLE.safetensors --lightning L.safetensors
-             [--seeds 1867,1868] [--steps 8]
+             [--seeds 1867,1868] [--seed-step 0] [--steps 8]
 Inputs: DIR/<name>.unlit.png and DIR/<name>.layout.png. Output: OUT/<name>.png (one seed) or OUT/<name>_<k>.png.
+With --seed-step N the i-th input (in name order) is painted with seeds + i x N, so no two inputs share a seed.
 Existing outputs are skipped (resume). Prints the seconds per painting.
 """
 import argparse
@@ -27,6 +28,7 @@ ap.add_argument("--prompt-file", required=True)
 ap.add_argument("--lora", required=True)
 ap.add_argument("--lightning", required=True)
 ap.add_argument("--seeds", default="1867")
+ap.add_argument("--seed-step", type=int, default=0)
 ap.add_argument("--steps", type=int, default=8)
 a = ap.parse_args()
 WIN = 1024
@@ -102,7 +104,7 @@ def paint(name, seed):
 t1 = time.time()
 for j, (name, k) in enumerate(todo):
     p = out_path(name, k)
-    paint(name, seeds[k]).save(p + ".tmp.png")
+    paint(name, seeds[k] + names.index(name) * a.seed_step).save(p + ".tmp.png")
     os.replace(p + ".tmp.png", p)
     per = (time.time() - t1) / (j + 1)
     print(f"{j + 1}/{len(todo)} {os.path.basename(p)} {per:.1f} s per painting", flush=True)

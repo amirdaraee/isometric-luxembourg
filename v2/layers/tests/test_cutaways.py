@@ -214,3 +214,55 @@ def test_the_stages_are_in_the_graph():
     g = graph()
     assert g.stages["check_cutaways"].kind == "check" and "layer_cutaways" in g.stages["check_cutaways"].deps
     assert "layer_cutaways" in g.order(["check_cutaways"])
+
+
+# ------------------------------------------------------------------ a painted interior in place of the placeholder
+def test_a_painting_that_passed_replaces_the_placeholder_inside_the_opening_and_nothing_else(tmp_path):
+    m, shell, _, _ = model(floors=True)
+    f = frame_of(shell)
+    L, k = drawn(m, f)
+    mask = np.isin(k, cw.OPENING)
+    rng = np.random.default_rng(3)
+    art = rng.integers(0, 255, (f.size, f.size, 3)).astype(np.uint8)          # "a painting": drawn all over its frame
+    frame_px = [f.px0, f.py0, f.size, f.size]
+    with pytest.raises(ValueError, match="passed"):
+        cw.write_painting(tmp_path, "house", art, mask, frame_px, {"pass": False})
+    assert cw.load_painting("house", tmp_path) is None                         # none yet: the placeholder is drawn
+    meta = cw.write_painting(tmp_path, "house", art, mask, frame_px, {"pass": True, "candidate": "house_0"})
+    p = cw.load_painting("house", tmp_path)
+    assert meta["opening_px"] == mask.sum() and (p["on"] == mask).all() and (p["rgb"][mask] == art[mask]).all()
+    assert not p["rgb"][~mask].any()                                           # what it drew outside the mask is gone
+    # in tiles (with and without an apron) and in the frame: the opening is the painting, the rest is untouched
+    px, py, _ = project(shell["V"][:, 0], shell["V"][:, 1], shell["V"][:, 2])
+    frames = [f] + [Tile(tx, ty, apron=a) for a in (0, 8) for ty in range(int(py.min()) // TILE, int(py.max()) // TILE + 1)
+                    for tx in range(int(px.min()) // TILE, int(px.max()) // TILE + 1)]
+    seen = 0
+    for fr in frames:
+        Lf, kf = drawn(m, fr)
+        c = {"rgb": Lf.rgb.copy(), "k": kf, "depth": Lf.depth.copy()}
+        on = cw.paint_into(c, fr, p)
+        opening = np.isin(kf, cw.OPENING)
+        assert (on == opening).all()                                           # all of the opening, only the opening
+        assert (c["rgb"][~on] == Lf.rgb[~on]).all() and (c["depth"] == Lf.depth).all()
+        r, q = np.nonzero(on)
+        gx, gy = np.floor(fr.centres[0]).astype(int)[q] - f.px0, np.floor(fr.centres[1]).astype(int)[r] - f.py0
+        assert (c["rgb"][r, q] == art[gy, gx]).all()                           # each pixel from its own map pixel
+        seen += len(r)
+    assert seen > 3 * mask.sum() * 0.99
+    # a record that does not say "passed", or a file that is not the recorded one, stops the build
+    rec = tmp_path / "house.json"
+    rec.write_text(rec.read_text().replace('"pass": true', '"pass": false'))
+    with pytest.raises(RuntimeError, match="passed"):
+        cw.load_painting("house", tmp_path)
+    rec.write_text(rec.read_text().replace('"pass": false', '"pass": true'))
+    from PIL import Image
+    Image.fromarray(np.dstack([art, np.full(art.shape[:2], 255, np.uint8)]), "RGBA").save(tmp_path / "house.png")
+    with pytest.raises(RuntimeError, match="sha256"):
+        cw.load_painting("house", tmp_path)
+
+
+def test_no_painting_is_in_the_repo_until_one_passes_and_the_stage_would_see_it():
+    from v2.build.stages import graph
+    assert not cw.PAINTINGS.is_dir() or all(cw.load_painting(p.stem) for p in cw.PAINTINGS.glob("*.json"))
+    raw = graph().stages["layer_cutaways"].raw("test")
+    assert cw.CUTS in raw and all(p in raw for p in (cw.PAINTINGS.iterdir() if cw.PAINTINGS.is_dir() else []))
