@@ -29,6 +29,8 @@
   "light_same_material_chroma": 0.03,
   "light_block_material_share": 0.4,
   "light_lit_level_percentile": 90,
+  "light_tone_common_share": 0.5,
+  "light_measured_on": "the face's material as K3's, not ink; the surface tone is the luminance whose band of +- cutaway_shadow_lum_tol holds the most of it (of two tones of a pattern, the lighter); in a square with a tenth of its material at that tone, what is lighter than the band is drawn detail; a square at a neighbouring face's tone that joins it is measured with that face",
   "K3_measured_on": "each face's own material: chroma within 0.03 of the face's light pixels, not ink (darker than a neighbour by cutaway_line_min_step)",
   "lines_kept_gate": "the section's lines (interior_lines.section_kept); the placeholder's are reported"
  },
@@ -95,11 +97,33 @@
     }
    },
    "light_across_kind": {
-    "inside_wall": 0.4008,
-    "inside_roof": 0.1151,
-    "floor": 0.1074
+    "inside_wall": 0.3642,
+    "inside_roof": 0.0636,
+    "floor": 0.0902
    },
-   "light_across_worst": 0.4008,
+   "light_across_worst": 0.3642,
+   "light_surface_tone": {
+    "inside_wall": 212.0,
+    "inside_roof": 211.0,
+    "floor": 236.0
+   },
+   "light_squares": {
+    "inside_wall": {
+     "surface": 436,
+     "other": 78,
+     "moved": 0
+    },
+    "inside_roof": {
+     "surface": 107,
+     "other": 0,
+     "moved": 0
+    },
+    "floor": {
+     "surface": 503,
+     "other": 0,
+     "moved": 49
+    }
+   },
    "interior_lines": {
     "line_px": 3095,
     "kept": 0.9141,
@@ -184,11 +208,33 @@
     }
    },
    "light_across_kind": {
-    "inside_wall": 0.235,
-    "inside_roof": 0.2051,
-    "floor": 0.0791
+    "inside_wall": 0.2338,
+    "inside_roof": 0.2161,
+    "floor": 0.0794
    },
-   "light_across_worst": 0.235,
+   "light_across_worst": 0.2338,
+   "light_surface_tone": {
+    "inside_wall": 196.0,
+    "inside_roof": 198.0,
+    "floor": 243.0
+   },
+   "light_squares": {
+    "inside_wall": {
+     "surface": 511,
+     "other": 52,
+     "moved": 0
+    },
+    "inside_roof": {
+     "surface": 102,
+     "other": 25,
+     "moved": 0
+    },
+    "floor": {
+     "surface": 311,
+     "other": 0,
+     "moved": 2
+    }
+   },
    "interior_lines": {
     "line_px": 3095,
     "kept": 0.8885,
@@ -273,11 +319,33 @@
     }
    },
    "light_across_kind": {
-    "inside_wall": 0.4549,
-    "inside_roof": 0.4025,
-    "floor": 0.1218
+    "inside_wall": 0.476,
+    "inside_roof": 0.0915,
+    "floor": 0.0902
    },
-   "light_across_worst": 0.4549,
+   "light_across_worst": 0.476,
+   "light_surface_tone": {
+    "inside_wall": 130.0,
+    "inside_roof": 200.0,
+    "floor": 228.5
+   },
+   "light_squares": {
+    "inside_wall": {
+     "surface": 446,
+     "other": 216,
+     "moved": 2
+    },
+    "inside_roof": {
+     "surface": 116,
+     "other": 9,
+     "moved": 0
+    },
+    "floor": {
+     "surface": 533,
+     "other": 0,
+     "moved": 0
+    }
+   },
    "interior_lines": {
     "line_px": 3095,
     "kept": 0.9722,
@@ -362,11 +430,33 @@
     }
    },
    "light_across_kind": {
-    "inside_wall": 0.1578,
-    "inside_roof": 0.132,
-    "floor": 0.1768
+    "inside_wall": 0.0849,
+    "inside_roof": 0.0599,
+    "floor": 0.0991
    },
-   "light_across_worst": 0.1768,
+   "light_across_worst": 0.0991,
+   "light_surface_tone": {
+    "inside_wall": 212.5,
+    "inside_roof": 202.0,
+    "floor": 238.0
+   },
+   "light_squares": {
+    "inside_wall": {
+     "surface": 593,
+     "other": 0,
+     "moved": 17
+    },
+    "inside_roof": {
+     "surface": 127,
+     "other": 0,
+     "moved": 0
+    },
+    "floor": {
+     "surface": 417,
+     "other": 1,
+     "moved": 0
+    }
+   },
    "interior_lines": {
     "line_px": 3095,
     "kept": 0.9331,

@@ -28,6 +28,10 @@ What the first run (10 Nov 2026, three paintings) taught the checks, each measur
           as blank too (two of the three paintings came back on white, not on paper).
     light the plane fitted to a face's luminance read a chequered floor, pews on one side and windows as light.
           Light is now measured on one material (light_across).
+          The second run (13 Nov 2026) showed the same of what is drawn lighter than the surface: on
+          cathedral-open_1 the lightest squares of the walls held a white window sill, of the vault its pale ribs,
+          and the darkest squares of the floor were the wall, drawn below the model's line. Lighter detail on a
+          surface that shows its tone, and a neighbour's surface across the junction, are no longer read as light.
     lines the lines that went missing are the placeholder's own (the floor against the wall behind the pews, wall
           corners behind columns), not the section's: reported apart (interior_lines).
     K3    the median luminance of a painted wall is its windows' (over half of each wall was glass or ink; the
@@ -70,6 +74,10 @@ LIGHT_CHROMA = 0.03                       # the same material: r and g shares of
                                           # (K3's own is the same number: cutaway_checks.MATERIAL_CHROMA)
 LIGHT_SHARE = 0.4                         # a block is measured if this share of its face pixels are that material
 LIGHT_PCT = 90                            # the material's lit level in a block: this percentile of its luminance
+                                          # (its lightest tenth); the surface shows in a block if the same tenth of
+                                          # its material is at the face's surface tone
+LIGHT_COMMON = 0.5                        # a tone at least this common, against the most common one, is the
+                                          # surface's or its pattern's, not a detail on it (surface_tone)
 CHANGE_LUM = 12                           # "changed": the build's own line step (params g3 cutaway_line_min_step)
 PROMPTS = {
     "cathedral": C_TARGET_PROMPT + (
@@ -238,37 +246,131 @@ def chroma(rgb) -> np.ndarray:
     return c(rgb)
 
 
-def light_across(rgb, material, ok, min_px) -> dict:
-    """Light and shade inside one kind of face, apart from what is drawn on it. K3's own notion ("sides of the same
-    material"), within a face: the face's material is the colour of its light pixels (chroma of those between the
-    75th and 97th percentile of its luminance); in every LIGHT_BLOCK square that holds enough of that material, the
-    material's lit level is the LIGHT_PCT percentile of its luminance there; the result is the largest fall of that
-    level between two blocks, as a share. A pattern (a chequer, tiles, joints) shows the material at its lit level
-    in every block, so it measures 0; a gradient or a cast shadow darkens the material itself and is measured.
-    Another material (a pew, a window, a slab of another stone) is not compared with it: K3 and the eye judge those.
-    Its limits: a shade is seen once it darkens nine tenths of the material in one block, so surely when it holds a
-    square of LIGHT_BLOCK + LIGHT_STEP px (2.5 m; a round one 3.5 m across), not when it is a thin line beside a
-    pew; a shade drawn in another colour than the material's (a blue shadow on cream stone) is another material."""
+def surface_tone(L, tol) -> float:
+    """The tone a material's surface is drawn in. A tone is a luminance g whose band g (1 +- tol) holds more of the
+    values L than any other within tol of it. The surface's is the most common one; on a pattern of two tones (a
+    chequer) the lighter, as a pattern shows its lit tone in every square: the lightest tone at least LIGHT_COMMON as
+    common as the most common. Where a run of g do equally (one flat tone), its middle."""
+    v = np.sort(np.asarray(L, float))
+    g = np.arange(1.0, 256.0)
+    lo, hi = g * (1 - tol), g * (1 + tol)
+    n = np.searchsorted(v, hi, "right") - np.searchsorted(v, lo, "left")
+    a, b = np.searchsorted(g, lo, "left"), np.searchsorted(g, hi, "right")
+    top = np.flatnonzero((n >= np.array([n[i:j].max() for i, j in zip(a, b)])) & (n >= LIGHT_COMMON * n.max()))
+    run = top[top >= top[np.flatnonzero(np.diff(top, prepend=top[0] - 2) > 1)[-1]]]
+    return float(g[run].mean())
+
+
+def light_squares(rgb, material, ok, min_px, tol) -> dict:
+    """Every measured square of light_across, per kind of face: {kind: {"tone": the face's surface tone, "squares":
+    [(y, x, level, how)]}}; how: "surface" (the square holds the face's surface tone), "other" (it does not),
+    "moved" (it lies in another face's region and shows the surface of the face it is listed under)."""
+    from scipy import ndimage
+    from v2.checks.cutaway_checks import ink
     L = lum(rgb)
     ch = chroma(rgb)
-    out = {}
+    fill = ~ink(rgb, CHANGE_LUM)
+    tenth = 1 - LIGHT_PCT / 100
+    face = {}
     for m in np.unique(material[ok & (material > 0)]):
         sel = ok & (material == m)
         if sel.sum() < 4 * min_px:
             continue
         lo, hi = np.percentile(L[sel], (75, 97))
         ref = np.median(ch[sel & (L >= lo) & (L <= hi)], axis=0)
-        same = sel & (np.abs(ch - ref).max(-1) <= LIGHT_CHROMA)
-        yy, xx = np.nonzero(sel)
-        lit = []
+        mat = sel & fill & (np.abs(ch - ref).max(-1) <= LIGHT_CHROMA)
+        if mat.any():
+            face[int(m)] = {"sel": sel, "ref": ref, "tone": surface_tone(L[mat], tol), "squares": [], "other": []}
+    at = lambda f, v: np.abs(v - f["tone"]) <= tol * f["tone"]                                                # noqa: E731
+    lit = lambda f, v: float(np.percentile(v[v <= f["tone"] * (1 + tol)], LIGHT_PCT))                         # noqa: E731
+
+    def part(f, g, w):
+        """Of square w of face f: the luminance of its pixels of face g's material (None if they are under
+        LIGHT_SHARE of the square's pixels of the face), away from drawn edges."""
+        q = f["sel"][w] & (np.abs(ch[w] - g["ref"]).max(-1) <= LIGHT_CHROMA)
+        return L[w][q & fill[w]] if q.sum() >= LIGHT_SHARE * f["sel"][w].sum() and (q & fill[w]).any() else None
+
+    for m, f in face.items():
+        yy, xx = np.nonzero(f["sel"])
         for y in range(yy.min() // LIGHT_STEP * LIGHT_STEP, yy.max() + 1, LIGHT_STEP):
             for x in range(xx.min() // LIGHT_STEP * LIGHT_STEP, xx.max() + 1, LIGHT_STEP):
                 w = (slice(y, y + LIGHT_BLOCK), slice(x, x + LIGHT_BLOCK))
-                n, q = int(sel[w].sum()), same[w]
-                if n >= LIGHT_BLOCK * LIGHT_BLOCK // 2 and q.sum() >= LIGHT_SHARE * n:
-                    lit.append(float(np.percentile(L[w][q], LIGHT_PCT)))
-        out[int(m)] = float((max(lit) - min(lit)) / max(max(lit), 1e-6)) if len(lit) > 1 else 0.0
-    return out
+                if f["sel"][w].sum() < LIGHT_BLOCK * LIGHT_BLOCK // 2:
+                    continue
+                v = part(f, f, w)
+                if v is not None and at(f, v).sum() >= tenth * len(v):
+                    f["squares"].append((y, x, lit(f, v), "surface"))
+                else:
+                    f["other"].append((y, x, v))
+    # a square of a face's material that does not hold its surface tone, and is at a neighbouring face's: the
+    # painter's wall need not meet the floor on the model's line. It is that face's, if it joins it
+    for m, f in face.items():
+        left = list(f["other"])
+        for k, g in face.items():
+            if k == m or not left:
+                continue
+            cand = []
+            for y, x, own in left:
+                v = part(f, g, (slice(y, y + LIGHT_BLOCK), slice(x, x + LIGHT_BLOCK))) if own is not None else None
+                if v is not None and at(g, np.percentile(v, LIGHT_PCT)) and at(g, v).sum() >= tenth * len(v):
+                    cand.append((y, x, lit(g, v)))
+            reach = ndimage.binary_dilation(material == k, iterations=LIGHT_STEP)
+            grew = True
+            while grew and cand:
+                grew = False
+                for c in list(cand):
+                    w = (slice(c[0], c[0] + LIGHT_BLOCK), slice(c[1], c[1] + LIGHT_BLOCK))
+                    if reach[w].any():
+                        reach[w] = True
+                        g["squares"].append(c + ("moved",))
+                        cand.remove(c)
+                        left = [s for s in left if s[:2] != c[:2]]
+                        grew = True
+        f["squares"] += [(y, x, float(np.percentile(v, LIGHT_PCT)), "other") for y, x, v in left if v is not None]
+    return {m: {"tone": f["tone"], "squares": f["squares"]} for m, f in face.items()}
+
+
+def light_across(rgb, material, ok, min_px, tol=0.05) -> dict:
+    """Light and shade inside one kind of face, apart from what is drawn on it. Light changes the tone of a surface
+    over an area; a drawing changes it at a thing (a sill, a moulding, a rib, a tile, a joint). So light is measured
+    on the face's surface:
+
+    the material     K3's own (cutaway_checks.face_material): the colour of the face's light pixels (the chroma of
+                     those between the 75th and 97th percentile of its luminance), on pixels that are not ink (not
+                     darker than a neighbour by the build's line step). Another material (a pew, a window) is not
+                     compared
+    the surface tone the luminance most of that material is drawn in: the g whose band g (1 +- tol) holds the most
+                     of it; on a pattern of two tones the lighter, if it is at least LIGHT_COMMON as common
+                     (surface_tone). tol is the limit itself: on a face that passes, every square's surface is in
+                     that band
+    a square         LIGHT_BLOCK px, every LIGHT_STEP, at least LIGHT_SHARE of it the material's colour. Its level
+                     is its lightest tenth (the LIGHT_PCT percentile): a pattern (a chequer, joints) shows the
+                     surface at its lit level in every square. If a tenth of the square's material is at the surface
+                     tone, the surface shows there, and what is lighter than that band is a thing drawn on it (a
+                     white sill, a pale moulding or rib): the level is the lightest tenth of the rest
+    moved            the painter's wall may meet the floor off the model's line. A square of its face's material
+                     that does not hold its surface tone, is at a neighbouring face's in that face's material (its
+                     lightest tenth, and a tenth of it), and joins that face's region (through such squares), is
+                     measured with that face
+    the result       the largest fall of the level between two squares of a face, as a share
+
+    So a gradient, a cast shadow, a dark corner or a wall in a darker tone is measured as before: none leaves the
+    surface tone in the square. Its limits: a shade is seen once it darkens nine tenths of the material in a
+    square, a lighter patch once it leaves under a tenth of the square at the surface tone: surely when they hold a
+    square of LIGHT_BLOCK + LIGHT_STEP px (2.5 m), not when they are a thin line beside a pew; one drawn in another
+    colour than the material's is another material; a thing drawn in a tone within tol of the surface's (a pilaster
+    4% paler than its wall) is not told from the surface, and counts; a square at the junction of two faces that
+    holds a little of its own surface tone among the other face's is not moved, and counts; on a pattern of two
+    tones, a shade exactly as deep as the pattern's contrast (within tol) that covers so much of the face that the
+    lit light tone is under LIGHT_COMMON as common as the darker (about two fifths of a chequer) reads as the
+    pattern."""
+    return {m: fall(f["squares"]) for m, f in light_squares(rgb, material, ok, min_px, tol).items()}
+
+
+def fall(squares) -> float:
+    """The largest fall of the level between two squares, as a share."""
+    lev = [s[2] for s in squares]
+    return float((max(lev) - min(lev)) / max(max(lev), 1e-6)) if lev else 0.0
 
 
 def painted_at_all(painting, d: dict) -> dict:
@@ -352,7 +454,8 @@ def check_candidate(painting, d: dict, P: dict, sun=None, model=None) -> dict:
     k3, unmeasured = worst(fl), sum(v["unmeasured"] for v in fl.values())
     share = {names[int(m)]: round(float((stone & (kinds == m)).sum() / max(int((mask & ~edge & (kinds == m)).sum()), 1)), 4)
              for m in np.unique(kinds[mask & ~edge])}
-    across = light_across(comp, kinds, mask & ~edge, P["cutaway_shadow_min_px"])
+    squares = light_squares(comp, kinds, mask & ~edge, P["cutaway_shadow_min_px"], P["cutaway_shadow_lum_tol"])
+    across = {m: fall(f["squares"]) for m, f in squares.items()}
     res = {
         "K2a_interior_px_outside_mask": out_px, "K2b_mask_covered": round(cover, 5),
         "K2_ok": bool(out_px == 0 and cover >= P["cutaway_mask_cover"]),
@@ -362,6 +465,9 @@ def check_candidate(painting, d: dict, P: dict, sun=None, model=None) -> dict:
         "K3_by_kind": {names[m]: {a: (round(b, 4) if isinstance(b, float) else b) for a, b in v.items()} for m, v in fl.items()},
         "light_across_kind": {names[m]: round(v, 4) for m, v in across.items()},
         "light_across_worst": round(max(across.values() or [0.0]), 4),
+        "light_surface_tone": {names[m]: round(f["tone"], 1) for m, f in squares.items()},
+        "light_squares": {names[m]: {h: sum(s[3] == h for s in f["squares"]) for h in ("surface", "other", "moved")}
+                          for m, f in squares.items()},
         "interior_lines": interior_lines(painting, d), **painted_at_all(painting, d),
         # how the model treated what it was not asked to change (the composite does not use it)
         "raw_outside_changed_share": round(float(((np.abs(lum(painting) - lum(d["unlit"])) >= CHANGE_LUM) & d["outline"] & ~mask).sum()
@@ -529,6 +635,13 @@ def check(job: str = "K1", name: str = "cathedral", painted: Path | None = None,
                               "interior_painted": "changed_share >= 0.25 and detail_share >= 0.05",
                               "light_block_px": LIGHT_BLOCK, "light_block_step_px": LIGHT_STEP, "light_same_material_chroma": LIGHT_CHROMA,
                               "light_block_material_share": LIGHT_SHARE, "light_lit_level_percentile": LIGHT_PCT,
+                              "light_tone_common_share": LIGHT_COMMON,
+                              "light_measured_on": "the face's material as K3's, not ink; the surface tone is the luminance "
+                                                   "whose band of +- cutaway_shadow_lum_tol holds the most of it (of two tones "
+                                                   "of a pattern, the lighter); in a square "
+                                                   "with a tenth of its material at that tone, what is lighter than the band "
+                                                   "is drawn detail; a square at a neighbouring face's tone that joins it is "
+                                                   "measured with that face",
                               "K3_measured_on": "each face's own material: chroma within 0.03 of the face's light pixels, "
                                                 "not ink (darker than a neighbour by cutaway_line_min_step)",
                               "lines_kept_gate": "the section's lines (interior_lines.section_kept); the placeholder's are reported"},

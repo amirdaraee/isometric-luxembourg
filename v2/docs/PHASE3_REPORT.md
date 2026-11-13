@@ -18,6 +18,8 @@
   most $0.90).
 - **Added 13 November:** the cathedral's painting was tried once, for $0.43. The interior style works; no painting
   passed the checks. Section 9 has the run, the free fixes and the new quote q0015 (not approved).
+- **Added later on 13 November:** q0015 ran ($0.47, four paintings, none passes). The light check was then looked
+  into at $0 and corrected; the best painting still fails it. The placeholder stays (section 9).
 - `data/v2/test/release/current.json` points at the final A build (`619f7c040341`).
 
 ## 2. What changed in the look
@@ -205,10 +207,10 @@ export ISOLUX_DATA=/Users/amirdaraee/00/projects/isometric-luxembourg/data
 # add ?xray for the tunnel view, ?cutaway for the cutaways, ?hour=21.3 or ?hour=23.25 for golden hour and night
 ```
 
-## 9. The cathedral cutaway: first painting test (10 November), free fixes and second run (13 November)
+## 9. The cathedral cutaway: first painting test (10 November), free fixes, second run and the light check (13 November)
 
 Branches `v2-phase3-cathedral` and `v2-phase3-cathedral2`, into `v2`. **Spent: $0.4256** (the first run) **and $0.4672** (the second). The fixes cost $0. **No painting passes yet; the placeholder stays in the map.** The second
-run is at the end of this section.
+run and the look into the light check (branch `v2-phase3-cathedral3`, $0) are at the end of this section.
 
 ### The first run
 
@@ -458,3 +460,129 @@ definition was fixed before the run. Its known limits are in question 15, which 
     asks for first (rule 6).
 20. **A third cathedral run** is not quoted. It makes sense only after question 18 is settled: the prompt has
     done what it can for floors and shadows, and two of four candidates already pass K3.
+
+### The light check looked into (13 November, $0)
+
+Branch `v2-phase3-cathedral3`. **Spent: $0.** No pod, no quote. **The painting is not in the map.**
+
+The owner's choice on 13 November 2026, asked what should happen next: "Investigate the check, free
+(Recommended)", described as "I measure where the light check differs on this painting. If it is drawn detail, I
+fix the check at its cause and put the painting in the map; if it is real shading, I report back."
+
+**The short answer.** On `cathedral-open_1` the light check was reacting to drawn detail and to one misplaced
+region, not to light. I fixed the check at those causes. The corrected check still fails the painting (walls
+8.5%, vault 6.0%, floor 9.9%; limit 5%), so it is not adopted. What is left is mostly detail the check still
+cannot tell from the surface, plus a small real shade on one wall that is under the limit by itself.
+
+**What the old numbers were** (`v2/docs/img/test_cutaway_cathedral_light_open1.jpg`, left panel; levels are
+luminance, 0 to 255):
+
+| Face | Old result | Darkest squares | Lightest squares | Kind |
+|---|---|---|---|---|
+| Walls | 15.8% | 203: the plain panel of the short wall | 242 and 238: squares that hold a white window sill | drawn detail |
+| Vault | 13.2% | 200 to 202: plain webs | 231 and 223: squares that hold the pale ribs | drawn detail |
+| Floor | 17.7% | 206: the wall under the left window, drawn about 20 px (2.5 m) below the model's floor line | 250: a highlight at a pew's edge | misplaced region, drawn detail |
+
+- The old check took the lightest tenth of each square as the surface's lit level. That is right for a pattern
+  (a chequer shows its light tile in every square). It is wrong where something lighter than the surface is drawn
+  on it in some squares only: a sill, a moulding, a rib.
+- On the floor, 88% of the squares were already within 5% of the lightest one. The chequer itself is even.
+
+**What I measured apart from the check**, on plain wall only (pixels inside a fill, away from every line):
+
+| Place | Luminance |
+|---|---|
+| Short wall between the two shafts, top | 203 |
+| Short wall, middle | 206 |
+| Short wall, foot | 207 |
+| Long wall, first bay and the band under the windows | 211 (208 to 212) |
+
+- **This is real shading, and it is small.** The short wall is 2% darker than the long wall (K3 measured 2.1%),
+  and it darkens by 2% from its foot to its top. Its darkest patch against the long wall is 3.9%. All under 5%.
+- I found no cast shadow, no dark corner and no dark floor.
+
+**The check, corrected** (`light_across` in `v2/bakeoff/cutaway_paint.py`; the limit is still 5%):
+
+- **The surface tone.** Per face, the luminance that most of its material is drawn in (within 5%). On a
+  two-tone pattern it is the lighter tone, if that is at least half as common as the darker.
+- **Lighter detail.** In a square where at least a tenth of the material is at the surface tone, what is lighter
+  than that tone's band is a thing drawn on the surface. The square's level is the lightest tenth of the rest.
+- **A square without the surface tone** is measured as before, by its lightest tenth. So a gradient, a cast
+  shadow, a dark corner or a wall in a darker tone is measured as before.
+- **A wall drawn past the model's line.** A square that does not hold its own face's tone, is at the
+  neighbouring face's tone, and joins that face, is measured with that face.
+- **Ink is left out**, as in K3: a pixel darker than a neighbour by a line step.
+- New tolerances: the tone band is the limit itself (5%); "a tenth" is the same tenth as the lit level's; "half
+  as common" for the lighter tone of a pattern.
+
+**Its power, on synthetic images** (`v2/bakeoff/tests/test_bakeoff.py`):
+
+- All earlier cases hold: six patterns evenly lit measure under 1%; each fails with a gradient of 40% or 10% and
+  with cast shadows 6.5 m and 3.5 m across.
+- New, passing: a wall with pale shafts, a white sill and a darker plinth band; a vault with pale ribs; a wall
+  drawn 0.75 m and 2.5 m below the model's line. The old measure reads over 5% on the first two.
+- New, failing: each of those with a gradient (40%, 10%, across or down), a cast shadow, half the wall 12%
+  darker, a beam of light; the wall's foot strip darker than the wall (7%, 15%, 30%); the wall's tone on the floor
+  away from the wall; a floor fading to the wall's tone at its foot (a dark corner).
+- **Limits, stated in the code and tested:**
+  - A thing drawn in a tone within 5% of the surface's (a pilaster 4% paler than its wall) is not told from the
+    surface, and counts.
+  - On a pattern, a shade exactly as deep as the pattern's contrast (within 5%) is measured while it covers the
+    lesser part of the face. It reads as the pattern when it covers most of it (four fifths in the test).
+  - As before: a shade narrower than 2.5 m, and a shade in another colour, are not measured.
+
+**All seven paintings, old and corrected** (walls / vault / floor; limit 5%):
+
+| Painting | Old | Corrected | Light check | Other failing checks | Verdict |
+|---|---|---|---|---|---|
+| Run 1 `cathedral_0` | 32% / 15% / 11% | 27.6% / 21.9% / 7.6% | fails | K3 12.2% | fail |
+| Run 1 `cathedral_1` | 28% / 20% / 6% | 27.6% / 24.5% / 3.9% | fails | K3 13.8% | fail |
+| Run 1 `cathedral-open_0` | 36% / 18% / 13% | 29.5% / 22.2% / 8.3% | fails | K3 10.7% | fail |
+| Run 2 `cathedral_0` | 40.1% / 11.5% / 10.7% | 36.4% / 6.4% / 9.0% | fails | K3 11.9% | fail |
+| Run 2 `cathedral_1` | 23.5% / 20.5% / 7.9% | 23.4% / 21.6% / 7.9% | fails | none | fail |
+| Run 2 `cathedral-open_0` | 45.5% / 40.3% / 12.2% | 47.6% / 9.1% / 9.0% | fails | K3 24.8% | fail |
+| Run 2 `cathedral-open_1` | 15.8% / 13.2% / 17.7% | **8.5% / 6.0% / 9.9%** | fails | none | fail |
+
+- **No verdict moved.** The visibly shaded paintings fail as before, on their walls, by 23% to 48%.
+- Two single faces moved a lot, and I checked why:
+  - Run 1 `cathedral_1`, floor, 6% to 3.9%: the old excess was a highlight. Its dark floor is navy, another
+    colour, which this check never measured (a known limit). Its walls and vault still fail, and K3 fails.
+  - Run 2 `cathedral-open_0`, vault, 40.3% to 9.1%: the dark ochre squares in the vault's region are now
+    measured with the walls, whose surface tone in that painting is that ochre. The walls measure 47.6%.
+
+**What still fails `cathedral-open_1`** (the right panel of the image):
+
+| Face | Corrected | Darkest | Lightest | What it is |
+|---|---|---|---|---|
+| Walls | 8.5% | 204: the short wall's panel | 222 to 223: shafts and jambs drawn 4% to 5% paler than the wall | detail within 5% of the wall's tone (the first limit above), on top of the short wall's real 2% to 4% |
+| Vault | 6.0% | 199: two webs | 211 to 212: other webs, next to the ribs | webs drawn in slightly different tones |
+| Floor | 9.9% | 223 to 231: a handful of squares at the foot of the left wall that mix wall, pew and a little floor | 247: the lightest tiles | the misplaced wall again, where a square holds a little floor; 90% of the floor's squares are within 3.5% |
+
+- I stopped here. Passing this painting would need one more rule (a thing narrower than a square is detail even
+  when its tone is near the surface's). I could not define that rule without also weakening the check on
+  chequers, whose tiles are as narrow as a shaft. Adding it only to pass this painting would be tuning.
+- Seventeen squares in the floor's region are now measured with the wall, as intended (green in the image).
+
+**Nothing else changed.** No painting was adopted (`python -m v2.bakeoff adopt K1` still refuses). The cutaway
+layer was not rebuilt. No viewer screenshot was taken. `release/current.json` is the A build `e1f764e945d7`.
+Results: `v2/docs/results/cutaway_K1.json` and `cutaway_K1_run1.json` (both measured again with the corrected
+check).
+
+**Still not verified for a painted cutaway:** the compose step in the browser, night windows on the cut
+building, and the interior under the viewer's light. They need a painting in the layer.
+
+**The painter's inventions in `cathedral-open_1`**, not in the model: a red door in the long wall, two blocks of
+pews, the chequered floor, shafts and capitals, stained glass.
+
+### Open questions after the light check
+
+15, 16 and 17 stay open. 18 is now this:
+
+21. **`cathedral-open_1`:** by direct measure its plain walls differ by 2% to 4%, under the limit. The corrected
+    check still reads 6% to 10%, from pale shafts, webs and a handful of squares at a wall's foot. Three ways on:
+    - keep the check as the gate and paint again (a third run is not quoted; the prompt could ask for shafts and
+      walls in one tone);
+    - make the light check a reported number for this landmark and gate on K3 (2.1%) and your eye (K7);
+    - have me try the width rule, with the risk named above.
+22. **The short wall's shade** (2% darker, 4% at its top): acceptable in the map if the painting is taken?
+
