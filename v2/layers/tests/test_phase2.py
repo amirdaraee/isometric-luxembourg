@@ -114,8 +114,106 @@ def test_crown_lobes_stay_inside_the_measured_crown():
 def test_a_well_known_building_gets_its_own_materials():
     from v2.layers.art_a import landmark_styles
     known = landmark_styles()
-    assert known and all(set(v) <= {"name", "stone", "facade", "roof"} for v in known.values())
+    assert known and all(set(v) <= {"name", "stone", "facade", "roof", "kind", "windows"} for v in known.values())
+    assert all(v.get("kind", "place_of_worship") == "place_of_worship" and v.get("windows", "round") in ("round", "pointed")
+               for v in known.values())
+    assert landmark_styles("kinds")["place_of_worship"]["stone"] is True
     for bid, k in known.items():
         st = Style(bid, "gable", k)
         assert st.roof_name == k["roof"] and st.stone == bool(k.get("stone"))
         assert "facade" not in k or (st.facade == k["facade"] and k["facade"] in FACADES)
+
+
+# ------------------------------------------------------------------------------------------------ places of worship
+def _scene(walls, worship=None, n_buildings=3):
+    """The least of a scene the art needs: buildings by id and the facade layout."""
+    from types import SimpleNamespace
+    return SimpleNamespace(buildings=[{"id": f"B{i}", "roof_shape": "gable"} for i in range(n_buildings)],
+                           facades={"walls": walls, "worship": worship or {}})
+
+
+def _wall(b, e0, windows, doors=(), **more):
+    w = {"building": f"B{b}", "wall": f"w{e0}", "base": [[e0, 0.0, 300.0], [e0 + 12.0, 0.0, 300.0]], "normal": [0.0, -1.0],
+         "length": 12.0, "height": 12.0, "outline": [[0, 0], [12, 0], [12, 12], [0, 12], [0, 0]], "floors": 3,
+         "windows": [list(x) for x in windows], "doors": [list(x) for x in doors], "shopfronts": []}
+    w.update(more)
+    return w
+
+
+def _art(scene):
+    from v2.layers.art_a import ArtA
+    empty = {"V": np.zeros((0, 3)), "T": np.zeros((0, 3), np.int64), "kind": np.zeros(0, np.int64), "obj": np.zeros(0, np.int64)}
+    return ArtA(scene, empty)
+
+
+def test_an_arched_window_is_the_layouts_rectangle_with_a_round_or_a_pointed_head():
+    from shapely.geometry import Polygon
+    from v2.layers.art_a import POINTED, arch_outline, head_height
+    for pointed in (False, True):
+        pts = arch_outline(2.0, 3.0, 3.3, 10.0, pointed)
+        poly = Polygon(pts)
+        assert poly.is_valid and poly.exterior.is_ccw and abs(poly.convex_hull.area - poly.area) < 1e-9    # convex: a fan
+        x0, y0, x1, y1 = poly.bounds
+        assert (round(x0, 6), round(y0, 6), round(x1, 6), round(y1, 6)) == (2.0, 3.0, 3.3, 10.0)       # never outside it
+        assert abs(head_height(1.3, pointed) - (1.3 * POINTED if pointed else 0.65)) < 1e-12
+        top = [p for p in pts if abs(p[1] - 10.0) < 1e-9]
+        assert len(top) == 1 and abs(top[0][0] - 2.65) < 1e-9                                         # one apex, in the middle
+    assert Polygon(arch_outline(0, 0, 1.3, 9, True)).area < Polygon(arch_outline(0, 0, 1.3, 9, False)).area
+
+
+def test_a_church_has_arched_windows_no_shutters_and_keeps_every_other_walls_window_numbers():
+    from v2.layers.art_a import OPEN_KIND
+    house = [(1.0, 0.9, 2.1, 2.35), (4.0, 0.9, 5.1, 2.35), (7.0, 0.9, 8.1, 2.35)]
+    door = [(9.5, 0.0, 10.7, 2.3, "rule:street door", "door")]
+    before = _art(_scene([_wall(0, 0, house, door), _wall(1, 20, house, door), _wall(2, 40, house, door)])).openings_mesh()
+    # building 1 becomes a church: its wall keeps what the house rule had as a count, and gets one tall window
+    church = _wall(1, 20, [(5.35, 2.6, 6.65, 11.0)], door, worship="pointed",
+                   house_rule={"windows": [list(x) for x in house], "doors": 1, "shopfronts": 0})
+    A = _art(_scene([_wall(0, 0, house, door), church, _wall(2, 40, house, door)],
+                    {"B1": {"source": "osm:way/1", "name": "x", "share": 1.0, "walls": 1}}))
+    after = A.openings_mesh()
+
+    def numbers(M, b):
+        on = M["open_bld"] == b
+        return sorted(set(zip(M["open_kind"][on].tolist(), M["tone"][on].tolist())))
+    assert numbers(after, 0) == numbers(before, 0) and numbers(after, 2) == numbers(before, 2)
+    assert before["tone"].tolist() == (np.arange(len(before["T"])) // 2).tolist()      # the numbers the art always used
+    k1 = after["open_kind"][after["open_bld"] == 1]
+    assert set(k1.tolist()) == {OPEN_KIND["church"], OPEN_KIND["portal"]}             # no house window, no shutter
+    assert (after["tone"][after["open_bld"] == 1] < 0).all()
+    assert (after["head"][after["open_kind"] == OPEN_KIND["church"]] == 2).all()
+    assert A.styles[1].church and A.styles[1].stone and not A.styles[1].rustic
+    # the arched window's triangles stay inside the layout's rectangle and reach its top and bottom
+    V = after["V"][after["T"][after["open_kind"] == OPEN_KIND["church"]]].reshape(-1, 3)
+    assert V[:, 0].min() >= 25.35 - 1e-9 and V[:, 0].max() <= 26.65 + 1e-9
+    assert abs(V[:, 2].min() - 302.6) < 1e-9 and abs(V[:, 2].max() - 311.0) < 1e-9
+
+
+def test_church_glass_and_doors_are_their_own_materials_without_light():
+    from v2.layers.art_a import OPEN_KIND
+    from v2.layers.common import CLASS, pal
+    church = _wall(1, 20, [(5.35, 2.6, 6.65, 11.0)], [(9.5, 0.0, 10.7, 2.3, "rule:street door", "door")], worship="round",
+                   house_rule={"windows": [], "doors": 1, "shopfronts": 0})
+    A = _art(_scene([church], {"B1": {"source": "osm:way/1", "name": "x", "share": 1.0, "walls": 1}}))
+    O = A.openings_mesh()
+    for kind, lo, hi in (("church", (25.35, 302.6), (26.65, 311.0)), ("portal", (29.5, 300.0), (30.7, 302.3))):
+        ti = np.flatnonzero(O["open_kind"] == OPEN_KIND[kind])
+        xs, zs = np.meshgrid(np.linspace(lo[0] + 0.01, hi[0] - 0.01, 60), np.linspace(lo[1] + 0.01, hi[1] - 0.01, 200))
+        P = np.column_stack([xs.ravel(), np.full(xs.size, -0.05), zs.ravel()])
+        rgb, cls = A.openings_rgb(O, np.full(len(P), ti[0]), P, np.full(len(P), 1))
+        names = {int(c) for c in set(cls.tolist())}
+        if kind == "church":
+            assert names == {CLASS["window"], CLASS["trim"]}
+            glass = rgb[cls == CLASS["window"]]
+            house = pal("buildings", "window")
+            assert np.abs(glass - house).max(1).min() > 8                       # nowhere the house window's glass
+            assert len(np.unique(np.round(glass), axis=0)) >= 4                 # leaded panes in several colours
+            lum = glass @ np.array([0.2126, 0.7152, 0.0722])
+            panes = lum > 0.8 * lum.max()                                       # the panes, without the lead lines
+            assert panes.mean() > 0.7 and np.ptp(lum[panes]) < 0.02 * lum.max()  # every pane as light as the next
+            assert (cls.reshape(xs.shape)[:2] == CLASS["trim"]).all()           # a stone sill at its foot
+        else:
+            assert names == {CLASS["door"], CLASS["trim"]} and CLASS["window"] not in names     # no fanlight
+        # the same picture whatever the wall's direction: nothing here knows a sun
+        rgb2, cls2 = A.openings_rgb(O, np.full(len(P), ti[0]), P, np.full(len(P), 1))
+        assert (rgb == rgb2).all() and (cls == cls2).all()

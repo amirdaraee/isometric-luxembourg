@@ -25,6 +25,14 @@ height and colour; the viewer draws them with glow.
    - lit windows glow: each has a warm halo on its wall (`window_halo`, the rectangle grown by 1.4 times its size,
      fading out); lamps are larger and stronger (`lamp_radius_px` 44, `lamp_gain` 1.5).
 
+5. **Places of worship** (owner, 13 Nov 2026): a church's arched windows are not lit like a flat's. A church is
+   lit or dark as a whole building, as often as a home's window at that hour. Lit, each window shows a dim glow of
+   stained glass inside its arch: panes in the palette's four stained colours (`buildings.stained_*`), dark lead
+   lines between them, at `night.church_glow` (0.42) of a house window's strength, with no halo on the wall. Dark,
+   nothing is drawn. A church's doors are not lit. In `windows.bin` a church window has kind 8 (round) or 9
+   (pointed); kind 16 is a row that is never lit (it keeps the place of a window the house rule had on a church
+   wall, so every other window's seed, its row number, stays the same).
+
 **Checks.**
 - L10.1 (gate) Every lit window lies on a window rectangle of the facade layout (straight rows by construction).
 - L10.2 (gate) No light drawn at sun elevation > 0°.

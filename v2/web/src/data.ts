@@ -33,7 +33,10 @@ export interface LightConfig {
     night_tint: number[]; night_level: number; night_desaturate: number; moon_az_el_deg: [number, number];
     moon_tint: number[]; moon_direct: number; moon_shadow: number };
   night: { window_lit_share_evening: number; window_lit_share_late: number; lamp_height_m: number; lamp_radius_px: number;
-    depth_eps_m: number; window_gain: number; window_halo: number; window_halo_grow: number; lamp_gain: number };
+    depth_eps_m: number; window_gain: number; window_halo: number; window_halo_grow: number; lamp_gain: number;
+    church_glow?: number };
+  /** The sky's light on a cutaway's opening: its level by day, at golden hour and at night (releases before it: none). */
+  cutaway?: { sky_day: number; sky_golden: number; sky_night: number };
   seasons: Record<string, { tree: number[]; green: number[]; sat: number }> & { snow_cos: number };
   look: { sat_max: number; lum_min: number; lum_max: number; ink_depth_m: number; ink_normal_cos: number };
   vehicles: Record<string, number | number[]> & { depth_eps_m: number };

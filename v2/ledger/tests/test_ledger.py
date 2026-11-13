@@ -90,10 +90,26 @@ def test_a_released_quote_is_no_longer_committed_and_cannot_run(L):
     assert Ledger(L.folder).validate() == []
 
 
-def test_only_an_approved_unspent_quote_can_be_released(L):
+def test_a_quote_dropped_before_approval_can_no_longer_be_approved_or_run(L):
+    q = L.quote("phase3_lock_look", "runpod", "palace and abbey", 0.9)
+    with pytest.raises(LedgerRefusal, match="owner"):
+        L.release(q["id"], by="agent")
+    L.release(q["id"], by="owner", note="dropped, requote later")
+    assert L.committed() == 0 and L.status()["goals"]["phase3_lock_look"]["left_usd"] == 8.0
+    with pytest.raises(LedgerRefusal, match="released"):
+        L.approve(q["id"], by="owner")
+    with pytest.raises(LedgerRefusal):
+        L.authorise(q["id"])
+    with pytest.raises(LedgerRefusal):
+        L.record_spend(q["id"], 0.1)
+    assert Ledger(L.folder).validate() == []
+    # an approval written by hand after the release is a file problem
+    L.path.write_text(L.path.read_text() + json.dumps({"type": "approve", "quote": q["id"], "by": "owner"}) + "\n")
+    assert any("released" in e for e in Ledger(L.folder).validate())
+
+
+def test_only_an_unspent_quote_can_be_released(L):
     q = L.quote("phase2_bakeoff", "runpod", "x", 1.0)
-    with pytest.raises(LedgerRefusal, match="never approved"):
-        L.release(q["id"], by="owner")
     L.approve(q["id"], by="owner")
     L.record_spend(q["id"], 0.4)
     with pytest.raises(LedgerRefusal, match="already spent"):

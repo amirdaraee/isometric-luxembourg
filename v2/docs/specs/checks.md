@@ -34,7 +34,7 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | **Facades** | | |
 | F1 | yes | Every window inside its wall outline |
 | F2 | yes | Windows in a row ≥ 0.3 m apart |
-| F3 | yes | Every window row on a floor line (straight rows) |
+| F3 | yes | Every window row on a floor line (straight rows); on a church's wall, one row with every sill on one line and every top on one line |
 | F4 | yes | No windows on party walls |
 | F5 | yes | Floor count fits the eave height |
 | F6 | yes | ≥ 90% of buildings ≥ 5 m tall and ≥ 40 m² have a window |
@@ -47,6 +47,11 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | F13 | yes | No window overlaps a door or a shop front (rows stay straight: F3) |
 | F14 | yes | ≥ 90% of OSM entrances at a building placed as doors |
 | F15 | report | Doors and shop fronts by source (OSM or rule) |
+| F16 | yes | Every window on a church wall is the church rule's (its width) |
+| F17 | yes | No church window lower than the rule's least height, none reaching into the eave |
+| F18 | yes | No shop front on a church wall |
+| F19 | yes | Every church wall belongs to a listed place of worship; every listed place of worship has a church wall |
+| F20 | report | Places of worship by source; church walls, church windows, house windows they replaced |
 | **Trees** | | |
 | TE1 | yes | No tree standing inside a building |
 | TE2 | yes | No tree standing in water |
@@ -145,4 +150,9 @@ mask and the mask against the model (K2), flat light (K3), no cars or people (K4
 `python -m v2.build test check_cutaways_view` (`v2/checks/cutaway_view_checks.py`, `v2/web/scripts/cutaway_checks.mjs`;
 thresholds `cutview_*`): the cutaways in the viewer. Off means off (0 pixels differ, day and night, with the tunnel
 view, at the far zoom); the frame is the tiles' with the cutaway in place (layer, class and colour, every pixel);
-probe vehicles and label points against the cut building's depth.
+probe vehicles and label points against the cut building's depth. The opening's light (K3v-sky, the owner's decision
+of 13 Nov 2026): every opening pixel is its unlit colour times the one sky light, at 13:00, golden hour and night,
+and the rule changes 0 pixels outside the opening; the interior's lit level beside the outside stone's is reported.
+
+`check_lines` also holds L5.7 (layer-05-buildings.md): no shutter, shop front or house window glass pixel on a
+building that is a church all over.

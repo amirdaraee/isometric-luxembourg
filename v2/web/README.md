@@ -16,7 +16,7 @@ python -m v2.view test              # serve it: http://localhost:5174/  (install
 | File | What |
 |---|---|
 | `src/main.ts` | navigation (drag, wheel, pinch), the clock, the panel, labels and hover, test hooks (`window.__v2`) |
-| `src/gl/compositor.ts`, `src/gl/shaders.ts` | the passes: G-buffer of the layers by depth, vehicles, light (sun, cast shadows, sky grade, seasons, snow), night lights, look (grade, ink); with the tunnel view on, the city faded and the tunnels over it; with a cutaway on, layer 5 without the replaced building and the cutaway's tiles in its place |
+| `src/gl/compositor.ts`, `src/gl/shaders.ts` | the passes: G-buffer of the layers by depth, vehicles, light (sun, cast shadows, sky grade, seasons, snow), night lights, look (grade, ink); with the tunnel view on, the city faded and the tunnels over it; with a cutaway on, layer 5 without the replaced building and the cutaway's tiles in its place, its opening lit by the sky only |
 | `src/tunnels.ts` | tunnel view (`v2/docs/specs/tunnel-view.md`): the tubes of `tunnels.json` as a mesh, and which vehicles are in a tunnel |
 | `src/cutaways.ts` | landmark cutaways (`v2/docs/specs/landmark-cutaways.md`): which are on, the tiles they meet, the slice's planes, the depth labels meet |
 | `src/data.ts` | the release index and the tile codings (`v2/layers/common.py`) |
@@ -35,7 +35,8 @@ python -m v2.view test              # serve it: http://localhost:5174/  (install
 `?x=&y=&z=` the view (v2 map pixels, scale) · `?v1x=&v1y=` a v1 link · `?debug=albedo|layer|shadow|depth|normal` ·
 `?nosim` still vehicles · `?seed=` the traffic seed · `?noui` no panel · `?xray` the tunnel view on (also the panel's
 button, or X held down); `?off=casemates` leaves the Bock casemates out of it; `?debug=xid|xdepth` its checks' frames ·
-`?cutaway` the landmark cutaways on (also the panel's button), `?cutaway=cathedral,palace` those named.
+`?cutaway` the landmark cutaways on (also the panel's button), `?cutaway=cathedral,palace` those named;
+`?off=cutlight` lights a cutaway's opening as any building, not by the sky only (for the checks).
 
 ## Tests
 

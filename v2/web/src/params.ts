@@ -5,7 +5,8 @@
 //   ?season=winter         spring, summer, autumn or winter (default: from the date)
 //   ?snow                  snow on up-facing surfaces (layer 11)
 //   ?off=trees,buildings   layers switched off (compositor.md design 5): ground, relief, water, transport,
-//                          buildings, structures, trees, light, night, seasons, vehicles, look, labels
+//                          buildings, structures, trees, light, night, seasons, vehicles, look, labels;
+//                          cutlight: a cutaway's opening lit as any building, not by the sky only (for the checks)
 //   ?seed=42               the traffic seed
 //   ?x=61000&y=33500&z=1   the view: centre in v2 map pixels (zoom 0) and the scale (screen px per map px)
 //   ?v1x=&v1y=             a v1 link's centre (v1 map pixels), converted exactly (camera.md)

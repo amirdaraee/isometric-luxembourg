@@ -113,6 +113,18 @@ for (const [name, L] of Object.entries(J.landmarks)) {
       r.xray_then_off_differs_px = differ(before, await grab());
     }
   }
+  // K3: the opening is lit by the sky only. Frames without the look pass, the night lights and the labels, so that
+  // a pixel is its colour times its light: with the rule, with the opening lit as any building (?off=cutlight),
+  // and what light the viewer says it gave the opening
+  r.sky = {};
+  for (const hour of J.sky_hours) {
+    await go(`hour=${hour}&date=${J.sky_date}&x=${view[0]}&y=${view[1]}&z=1`);
+    await set({ view, cut: [name], off: ["labels", "vehicles", "look", "night"], debug: "" });
+    save(`${name}_sky_${hour}_lit`, await grab());
+    r.sky[hour] = await page.evaluate(() => window.__v2.openLight());
+    await set({ off: ["labels", "vehicles", "look", "night", "cutlight"] });
+    save(`${name}_sky_${hour}_plain`, await grab());
+  }
   res.landmarks[name] = r;
 }
 // far zoom: the merged far set is left while a cutaway is on, and comes back

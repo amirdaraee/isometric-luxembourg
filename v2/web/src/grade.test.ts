@@ -37,8 +37,24 @@ test("night is a deep blue, not black, and the moon gives the shapes", () => {
   assert.equal(nightFactor(cfg, -6), 1);
 });
 
+test("a cutaway's opening gets the sky's light only: day as bright as lit stone, warm at golden hour, blue at night", () => {
+  const K = cfg.cutaway!, a = cfg.sun.ambient;
+  const open = (el: number) => grade(cfg, el).open.map((v) => v * a);
+  for (const el of [6, 20, 63]) assert.deepEqual(grade(cfg, el).open, [K.sky_day, K.sky_day, K.sky_day]);
+  // by day about the level of the kept outside stone (0.85), well over the shade the opening stood in before (0.48)
+  assert.ok(Math.abs(lum(open(40)) - 0.85) < 0.01, `day ${lum(open(40)).toFixed(3)}`);
+  const g = open(2), n = open(-20);
+  assert.ok(g[0] > g[1] && g[1] > g[2] && Math.abs(lum(g) - 0.84) < 0.02, `golden hour, warm: ${g.map((v) => v.toFixed(2))}`);
+  assert.ok(n[2] > 1.8 * n[0] && n[2] > n[1] && Math.abs(lum(n) - 0.31) < 0.02, `night, blue: ${n.map((v) => v.toFixed(2))}`);
+  // it is the hour's sky colour at one level: no channel of it is set apart
+  for (const el of [40, 5, 2, -2, -4, -20]) {
+    const G = grade(cfg, el), r = G.open.map((v, i) => v / G.amb[i]);
+    assert.ok(Math.abs(r[0] - r[1]) < 1e-9 && Math.abs(r[1] - r[2]) < 1e-9);
+  }
+});
+
 test("nothing jumps between day, golden hour, the blue hour and night", () => {
-  const key = (el: number) => { const g = grade(cfg, el); return [...g.sun, ...g.amb, g.fill, g.soft, g.moon, g.desat]; };
+  const key = (el: number) => { const g = grade(cfg, el); return [...g.sun, ...g.amb, g.fill, g.soft, g.moon, g.desat, ...g.open]; };
   for (let el = 8; el > -9; el -= 0.01) {
     const a = key(el), b = key(el - 0.01);
     a.forEach((v, i) => assert.ok(Math.abs(v - b[i]) < 0.012, `value ${i} jumps by ${Math.abs(v - b[i]).toFixed(3)} at ${el.toFixed(2)} deg`));

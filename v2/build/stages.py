@@ -33,6 +33,7 @@ def _with(base, *keys):
 
 def graph() -> Graph:
     from v2.data.scene import buildings, entrances, facades, places, structures, terrain, transit, transport, trees, water, scene
+    from v2.data.fetch import worship as fetch_worship
     from v2.checks import data_checks as dc, repo_checks as rc
     from v2.build import report
 
@@ -48,6 +49,9 @@ def graph() -> Graph:
         Stage("fetch_osm_pois", entrances.fetch_osm_pois, params=fetch.extent_params,
               code=GEO + ("v2.data.fetch.overpass", "v2.data.fetch.http"), kind="fetch", shared=True,
               doc="OSM entrances, shops, crafts and amenities (Overpass)"),
+        Stage("fetch_osm_worship", fetch_worship.fetch_osm_worship, params=fetch.extent_params,
+              code=GEO + ("v2.data.fetch.overpass", "v2.data.fetch.http"), kind="fetch", shared=True,
+              doc="OSM places of worship with their outlines (Overpass)"),
         Stage("fetch_lidar", fetch.fetch_lidar, params=fetch.lidar_params, code=GEO + ("v2.data.fetch.cog", "v2.data.fetch.http"),
               kind="fetch", doc="ACT LiDAR 2024 MNT and MNS over the area (COG windows)"),
     ]
@@ -59,8 +63,11 @@ def graph() -> Graph:
         Stage("scene_water", water.build, deps=("fetch_osm_ground",), code=GEO, doc="water polygons and river lines"),
         Stage("scene_buildings", buildings.build, deps=("scene_terrain",), params=_p("buildings"), raw=bati, code=GEO,
               doc="ACT LoD2 buildings: id, roof shape, heights, footprint, walls, mesh"),
-        Stage("scene_facades", facades.build, deps=("scene_buildings", "scene_transport", "fetch_osm_pois"), params=_p("facades"),
-              code=GEO + ("v2.data.scene.entrances",), doc="facade layout per wall: floors, windows, doors and shop fronts"),
+        Stage("scene_facades", facades.build, deps=("scene_buildings", "scene_transport", "fetch_osm_pois", "fetch_osm_worship",
+                                                     "scene_places"), params=_p("facades"),
+              code=GEO + ("v2.data.scene.entrances", "v2.data.scene.worship"),
+              raw=lambda area: [REPO / "v2/data/structures/landmark_styles.json"],
+              doc="facade layout per wall: floors, windows, doors and shop fronts; the church rule on places of worship"),
         Stage("scene_trees", trees.build, deps=("fetch_trees", "scene_buildings", "scene_water", "scene_terrain"),
               params=_p("trees"), code=GEO, doc="LiDAR trees, thinned over water and buildings"),
         Stage("scene_places", places.build, deps=("scene_terrain",), code=GEO + CAM,

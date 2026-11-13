@@ -10,8 +10,8 @@ v1 spent ~$130–150 against plans of ~$10–60, most of it unlogged). Code: `v2
   other $12 needs a new line from the owner.
 - `spend.jsonl`: append-only events — `quote` (goal, provider, job, worst case), `approve` (by the owner only),
   `spend` (measured cost against an approved quote), `reconcile` (provider's billing vs the ledger),
-  `release` (the owner gives up an approved quote that was never spent: it stops counting as committed and can no
-  longer run; a later run needs a new quote).
+  `release` (the owner gives up a quote that was never spent, approved or not: it stops counting as committed and
+  can no longer be approved or run; a later run needs a new quote).
 
 **Rules** (`Ledger.authorise(quote)`, called before any paid run):
 1. The run has a quote and the quote has the owner's approval.

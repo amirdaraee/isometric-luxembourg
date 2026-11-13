@@ -8,9 +8,10 @@ Files (in git, small):
                 approve    {quote, by, note}                 only the owner approves; recorded with their words
                 spend      {quote, goal, provider, job, usd, measured_by}
                 reconcile  {provider, period, billed_usd, ledger_usd, ok}
-                release    {quote, by, note}                 the owner gives up an approved quote that was never
-                                                             spent: it no longer counts as committed and can no
-                                                             longer be authorised (a later run needs a new quote)
+                release    {quote, by, note}                 the owner gives up a quote that was never spent,
+                                                             approved or not: it no longer counts as committed
+                                                             and can no longer be approved or authorised (a later
+                                                             run needs a new quote)
 
 Rules enforced by `authorise()` (call it before any paid run):
   1. the run has a quote, and the quote has an approval;
@@ -100,6 +101,8 @@ class Ledger:
                 errs.append(f"event {i}: missing {sorted(miss)}")
             if t == "approve" and e.get("by") != "owner":
                 errs.append(f"event {i}: approvals are the owner's only")
+            if t == "approve" and e.get("quote") in gone:
+                errs.append(f"event {i}: approval of a released quote")
             if t == "spend" and e.get("quote") not in ap:
                 errs.append(f"event {i}: spend without an approved quote")
             if t == "spend" and e.get("quote") in gone:
@@ -107,8 +110,8 @@ class Ledger:
             if t == "release":
                 if e.get("by") != "owner":
                     errs.append(f"event {i}: releases are the owner's only")
-                if e.get("quote") not in ap:
-                    errs.append(f"event {i}: release of a quote that was never approved")
+                if e.get("quote") not in self.quotes():
+                    errs.append(f"event {i}: release of a quote that does not exist")
                 if any(x["type"] == "spend" and x.get("quote") == e.get("quote") for x in self.events[:i]):
                     errs.append(f"event {i}: release of a quote that is already spent")
                 gone.add(e.get("quote"))
@@ -140,16 +143,17 @@ class Ledger:
             raise LedgerRefusal("only the owner approves a quote")
         if quote_id not in self.quotes():
             raise LedgerRefusal(f"no quote {quote_id}")
+        if quote_id in self.released():
+            raise LedgerRefusal(f"quote {quote_id} was released by the owner: quote again")
         return self._append({"type": "approve", "quote": quote_id, "by": by, "note": note})
 
     def release(self, quote_id, by, note=""):
-        """The owner gives up an approved, unspent quote: its worst case stops counting as committed."""
+        """The owner gives up an unspent quote. Approved: its worst case stops counting as committed. Not yet
+        approved: it is dropped, and can no longer be approved. Either way a later run needs a new quote."""
         if by != "owner":
             raise LedgerRefusal("only the owner releases a quote")
         if quote_id not in self.quotes():
             raise LedgerRefusal(f"no quote {quote_id}")
-        if quote_id not in self.approved():
-            raise LedgerRefusal(f"quote {quote_id} was never approved: there is nothing to release")
         if any(e["type"] == "spend" and e["quote"] == quote_id for e in self.events):
             raise LedgerRefusal(f"quote {quote_id} is already spent")
         if quote_id in self.released():

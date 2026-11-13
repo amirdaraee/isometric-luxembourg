@@ -12,13 +12,15 @@
 //     then the tunnels' tubes are drawn unlit with their own depth, and the vehicles inside them against that depth.
 //  Landmark cutaways (?cutaway, landmark-cutaways.md), only while one is on: layer 5 is drawn without the pixels of
 //     the buildings the cutaway replaces (by id), then the cutaway's own tiles as layer 5, at their own depth; so the
-//     light, the night, the look, the vehicles and the tunnel view treat the cut building as any building.
+//     night, the look, the vehicles and the tunnel view treat the cut building as any building. The light does too,
+//     but for the opening itself (the cut and the inside faces), which gets the sky's light only (LIGHT_CUT_FS;
+//     ?off=cutlight lights it as any building, for the checks).
 // Any layer can be switched off (?off=...): it is then neither drawn nor casting shadows.
 
 import type { LightConfig, ReleaseIndex } from "../data.ts";
 import { fetchBin, fetchImage } from "../data.ts";
 import { grade, litShare, nightFactor } from "./grade.ts";
-import { CUT_LAYER_FS, FULL_VS, GROUND_FS, LAMP_FS, LAMP_VS, LAYER_FS, LIGHT_FS, LOOK_FADE_FS, LOOK_FS, TILE_VS, TUN_FS, TUN_VS, VEH_FS,
+import { CUT_LAYER_FS, FULL_VS, GROUND_FS, LAMP_FS, LAMP_VS, LAYER_FS, LIGHT_CUT_FS, LIGHT_FS, LOOK_FADE_FS, LOOK_FS, TILE_VS, TUN_FS, TUN_VS, VEH_FS,
   VEH_VS, WIN_CUT_VS, WIN_FS, WIN_VS, XVEH_FS } from "./shaders.ts";
 import { sliceHalfPlanes, tileMeets, type CutLandmark } from "../cutaways.ts";
 import { tubeMesh, VERTEX_FLOATS, type TunnelsData } from "../tunnels.ts";
@@ -99,7 +101,7 @@ export class Compositor {
   private tun: { buf: WebGLBuffer; vertices: number; graphVertices: number; range: [number, number] } | null = null;
   private xInst = new Float32Array(4 * 4096); private xSize = new Float32Array(4 * 4096);
   // cutaways: their programs exist once enableCutaways() has run; layer 5's id tiles are loaded only under a cutaway
-  private cutProg: { layer: Prog; win: Prog } | null = null;
+  private cutProg: { layer: Prog; win: Prog; light: Prog } | null = null;
   private idTiles = new Map<string, { tex?: WebGLTexture; ready: boolean; used: number }>();
   pending = 0;
   onTile: () => void = () => {};
@@ -324,7 +326,8 @@ export class Compositor {
   enableCutaways() {
     if (this.cutProg || !this.idx.cutaways) return;
     const gl = this.gl;
-    this.cutProg = { layer: new Prog(gl, compile(gl, TILE_VS, CUT_LAYER_FS)), win: new Prog(gl, compile(gl, WIN_CUT_VS, WIN_FS)) };
+    this.cutProg = { layer: new Prog(gl, compile(gl, TILE_VS, CUT_LAYER_FS)), win: new Prog(gl, compile(gl, WIN_CUT_VS, WIN_FS)),
+      light: new Prog(gl, compile(gl, FULL_VS, LIGHT_CUT_FS)) };
   }
 
   /** The cutaways drawn in a state: those asked for that the release has, none while layer 5 is off. */
@@ -677,7 +680,9 @@ export class Compositor {
     gl.disable(gl.DEPTH_TEST);
     gl.depthMask(false);
     {
-      const p = this.progLight;
+      // a cutaway on: its opening is lit by the sky only (the same pass with one more rule; off, the plain pass)
+      const skyLit = cuts.length > 0 && !st.off.has("cutlight");
+      const p = skyLit ? this.cutProg!.light : this.progLight;
       gl.useProgram(p.p);
       this.setView(p, view); this.setCam(p);
       this.bindQuad(p);
@@ -699,6 +704,10 @@ export class Compositor {
         shadowsReady && !(st.off.has("structures") && st.off.has("transport")) ? 1 : 0);
       p.f("uLightK", cfg.sun.wrap, cfg.sun.ambient, cfg.sun.direct, cfg.sun.shadow_keep);
       const g = grade(cfg, st.el);
+      if (skyLit) {
+        p.i("uOpenMask", this.idx.cutaways!.opening_k.reduce((m, k) => m | (1 << k), 0));
+        p.f("uOpen", g.open[0] * cfg.sun.ambient, g.open[1] * cfg.sun.ambient, g.open[2] * cfg.sun.ambient);
+      }
       p.f("uSunTint", ...g.sun);
       p.f("uAmbTint", ...g.amb);
       p.f("uMoon", ...g.moonDir, g.moon);
@@ -763,6 +772,9 @@ export class Compositor {
         p.f("uWarm", warm[0], warm[1], warm[2]);
         p.f("uNight", night * cfg.night.window_gain);
         p.f("uHalo", cfg.night.window_halo);
+        p.f("uChurch", cfg.night.church_glow ?? 0);
+        gl.uniform3fv(p.u("uStained"), new Float32Array(["stained_blue", "stained_red", "stained_amber", "stained_green"]
+          .flatMap((n) => (pal.buildings[n]?.rgb ?? [0, 0, 0]).map((v) => v / 255))));
         const a = this.bindQuad(p);
         void a;
         const aA = gl.getAttribLocation(p.p, "aA"), aB = gl.getAttribLocation(p.p, "aB");

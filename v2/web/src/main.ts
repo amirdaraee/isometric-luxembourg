@@ -2,7 +2,7 @@
 // Test hooks for the headless checks live on window.__v2 (scripts/viewer_checks.mjs).
 
 import { BASE, fetchBin, fetchBytes, fetchJSON, inflate, undelta, type ReleaseIndex } from "./data.ts";
-import { Compositor, DEBUG_XDEPTH, DEBUG_XID, LAYER_ID, type LightState, type View } from "./gl/compositor.ts";
+import { Compositor, DEBUG_XDEPTH, DEBUG_XID, LAYER_ID, grade, type LightState, type View } from "./gl/compositor.ts";
 import { BUILDING_CLASSES, cutawayParam, depthWithCutaways, parseCutaway, tileMeets } from "./cutaways.ts";
 import { declutter, type Label } from "./labels.ts";
 import { luxDate, params, seasonOf, today, type Season } from "./params.ts";
@@ -91,6 +91,8 @@ async function main() {
   hooks.setDebug = (d: string) => { st.debug = DEBUG[d] ?? 0; dirty = true; };
   hooks.missing = () => comp.missing(view, off, cutOn) + comp.pending;
   hooks.renderNow = () => { draw(); };
+  // the light a cutaway's opening is given now (the checks compare the frame with it)
+  hooks.openLight = () => { const g = grade(idx.config, st.el); return { light: g.open.map((v) => v * idx.config.sun.ambient), desat: g.moon > 0 ? g.desat : 0, el: st.el }; };
   // the checks' probe vehicles (boxes at given places), drawn in place of the simulation's while set
   let probes: { count: number; inst: Float32Array; size: Float32Array } | null = null;
   hooks.setProbes = (inst: number[] | null, size: number[] = []) => {

@@ -17,7 +17,13 @@ K5    depth: probe vehicles (cars on a grid at the floor's level, through and ro
       where their boxes are not behind the expected nearest surface (the viewer's rule: depth - eps <= the surface;
       pixels on a silhouette, within 1 px of a depth step or of the box's outline, are counted apart, as C4 does); label
       points on and 3 m behind the cutaway's surfaces are hidden or shown as that surface says
-The opening's own cast shadow (K3's ?hour part) is not built: the shadow height map still holds the whole building.
+K3    the opening is lit by the sky only (rule 3, the owner's decision of 13 Nov 2026): at 13:00, golden hour and
+      night, with the look pass and the night lights off (so a pixel is its colour times its light), every opening
+      pixel is its unlit colour times the one sky light the viewer gave the opening (within a rounding step): the
+      same light on every face, no cast shadow, no sun by direction; and the rule changes 0 pixels outside the
+      opening (the same frame with ?off=cutlight, the opening lit as any building). Reported: the interior's lit
+      level beside the kept outside stone's, with the rule and without
+The opening's own cast shadow (K3's ?hour part) is not built, and no longer wanted: the opening casts and takes none.
 """
 from __future__ import annotations
 
@@ -36,8 +42,11 @@ from v2.layers.common import TILE, read_tile
 VIEW_W, VIEW_H = 1600, 1200
 DATE = "2026-06-21"
 HOURS = (13, 23)
+SKY_DATE = "2026-06-24"                       # the report's views: 13:00, golden hour (21:18), night (23:15)
+SKY_HOURS = (13, 21.3, 23.25)
 LAYER_ID = {"ground": 1, "relief": 2, "water": 3, "transport": 4, "buildings": 5, "structures": 6, "trees": 7}
 CAR = (4.4, 1.8, 1.45)
+LUM = np.array([0.2126, 0.7152, 0.0722])
 
 
 def frame(folder: Path, name: str, W=VIEW_W, H=VIEW_H):
@@ -127,7 +136,8 @@ def check_cutaways_view(ctx):
     eps = float(idx["config"]["vehicles"]["depth_eps_m"])
     opening_k = idx["cutaways"]["opening_k"]
     out = ctx.out
-    jobs = {"size": [VIEW_W, VIEW_H], "date": DATE, "hours": list(HOURS), "landmarks": {}}
+    jobs = {"size": [VIEW_W, VIEW_H], "date": DATE, "hours": list(HOURS), "landmarks": {}, "sky_date": SKY_DATE,
+            "sky_hours": list(SKY_HOURS)}
     ex0, ey0, ex1, ey1 = idx["extent_px"]
     jobs["whole"] = [(ex0 + ex1) // 2, (ey0 + ey1) // 2, round(min(VIEW_W / (ex1 - ex0), VIEW_H / (ey1 - ey0)) * 0.95, 4)]
     work = {}
@@ -241,9 +251,34 @@ def check_cutaways_view(ctx):
                     f"the viewer hides or shows against what the tiles say ({int(truth.sum())} hidden)", int(bad.sum()),
                     P["cutview_label_points"], [{"px": L[i, :2].tolist(), "viewer": int(got[i]), "tiles": bool(truth[i])}
                                                  for i in np.flatnonzero(bad)[:8]])
+        # ---------------------------------------------------------------- K3: the opening is lit by the sky only
+        stone_out = exp["from_cut"] & (exp["k"] == idx["cutaways"]["k"]["outside"])
+        alb = A.astype(float) / 255
+        la = alb @ LUM
+        pale = la > 0.6                                             # stone and plaster, not glass, slate or ink
+        levels = {}
+        for hour in SKY_HOURS:
+            lit, plain = frame(out, f"{name}_sky_{hour}_lit"), frame(out, f"{name}_sky_{hour}_plain")
+            sky = V["sky"][str(hour)]
+            c = alb * (1 - sky["desat"]) + la[..., None] * sky["desat"]
+            want = np.clip(np.round(c * np.array(sky["light"]) * 255), 0, 255)
+            off_by = np.abs(lit.astype(float) - want).max(-1)
+            rep.at_most(f"K3v-sky-even-{name}-{hour}", f"{nm}, {hour}: opening pixels (of {int(mask.sum())} seen) that are not "
+                        f"their unlit colour times the one sky light {[round(v, 3) for v in sky['light']]} (by more than "
+                        f"{P['cutview_sky_levels']} of 255): a shadow, or light by the face's direction",
+                        int((mask & (off_by > P["cutview_sky_levels"])).sum()), P["cutview_sky_px"])
+            changed = (lit != plain).any(-1)
+            rep.at_most(f"K3v-sky-outside-{name}-{hour}", f"{nm}, {hour}: pixels the sky light rule changes outside the opening "
+                        f"(it changes {int((changed & mask).sum())} in it)", int((changed & ~mask).sum()), P["cutview_sky_px"])
+            lv = lambda f, m: round(float(np.median((f[m].astype(float) / 255 @ LUM) / la[m])), 3) if m.any() else None  # noqa: E731
+            levels[str(hour)] = {"interior": lv(lit, mask & pale), "interior_lit_as_a_building": lv(plain, mask & pale),
+                                 "kept_outside_stone": lv(lit, stone_out & pale)}
+        rep.info(f"K3v-sky-levels-{name}", f"{nm}: lit level (lit over unlit luminance, pale surfaces, median) of the "
+                 "interior with the sky light, of the interior lit as any building, and of the kept outside stone, at "
+                 "13:00, 21:18 and 23:15", levels)
     rep.at_most("K6v-far-off", "far zoom (the whole area): pixels that differ after the cutaways are on and off again",
                 R["far"]["off_differs_px"], P["cutview_off_differs_px"])
     rep.at_least("K6v-far-on", "far zoom: pixels the cutaways change when on", R["far"]["on_differs_px"], 1)
-    rep.info("K3v", "the opening's own cast shadow moving with ?hour: not built (the shadow height map holds the whole "
-             "building, so the opening is lit as if roofed)", "not done")
+    rep.info("K3v", "the opening's own cast shadow moving with ?hour: not built, and not wanted since 13 Nov 2026 (the "
+             "opening is lit by the sky only: it takes no cast shadow)", "not done")
     return rep.result()

@@ -1,7 +1,9 @@
 """The viewer's non-tile data for layers 10 (night), 12 (vehicles) and 15 (labels).
 
 night.bin      windows, doors and shop fronts facing the camera (float32 x 8 each: x, y, z of the lower-left
-               corner relative to the camera origin, the along-wall vector (ux, uy), height, building index, kind)
+               corner relative to the camera origin, the along-wall vector (ux, uy), height, building index, kind:
+               0 window, 1 door, 2 shop front, + 4 in a building with a shop; 8 and 9 an arched window of a place
+               of worship, round and pointed (stained glass, layer-10 rule 5); 16 a row that is never lit)
 lamps.bin      OSM street lamps (float32 x 3: x, y, z of the lamp head)
 vehicles.json  the drivable roads in the v1 simulation's input form (RoadLine, units of 0.25 m in the plan,
                y = -north) and every edge's height profile; transit.json in v1's TransitData form, on the matched
@@ -26,6 +28,8 @@ from v2.layers.common import R2, project
 from v2.layers.light import LIGHT
 
 UNIT = 0.25            # simulation units: v1's map pixel was 0.25 m
+NIGHT_CHURCH = {"round": 8, "pointed": 9}
+NIGHT_DARK = 16
 
 
 def cam_origin():
@@ -43,9 +47,9 @@ def night_data(R):
     bidx = {b["id"]: i for i, b in enumerate(sc.buildings)}
     shops = defaultdict(bool)
     for w in sc.facades["walls"]:
-        if w["shopfronts"]:
+        if w["shopfronts"] or (w.get("house_rule") or {}).get("shopfronts"):
             shops[w["building"]] = True
-    rows = []
+    rows, church = [], []
     tc = np.array([R2, -R2])                      # horizontal direction towards the camera (south-east)
     for w in sc.facades["walls"]:
         nx, ny = w["normal"]
@@ -57,13 +61,24 @@ def night_data(R):
         (e0, n0, z0), (e1, n1, _) = w["base"]
         L = w["length"] or 1.0
         ux, uy = (e1 - e0) / L, (n1 - n0) / L
+        if w.get("worship"):
+            # a church's wall: its arched windows go to the end of the list, and its doors are dark. The rows the
+            # house rule had here stay as rows that are never lit: a window's seed in the viewer is its row number,
+            # so every other window is lit or dark as it was
+            hr = w["house_rule"]
+            rows += [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, bi, NIGHT_DARK]] * (len(hr["windows"]) + hr["doors"] + hr["shopfronts"])
+            for r in w["windows"]:
+                u0, v0, u1, v1 = (float(x) for x in r[:4])
+                church.append([e0 + ux * u0 + nx * 0.06 - oe, n0 + uy * u0 + ny * 0.06 - on, z0 + v0, ux * (u1 - u0),
+                               uy * (u1 - u0), v1 - v0, bi, NIGHT_CHURCH[w["worship"]]])
+            continue
         for kind, rects in ((0, w["windows"]), (1, w["doors"]), (2, w["shopfronts"])):
             for r in rects:
                 u0, v0, u1, v1 = (float(x) for x in r[:4])
                 ex, ny_ = e0 + ux * u0 + nx * 0.06, n0 + uy * u0 + ny * 0.06
                 code = kind + (4 if shops[w["building"]] else 0)
                 rows.append([ex - oe, ny_ - on, z0 + v0, ux * (u1 - u0), uy * (u1 - u0), v1 - v0, bi, code])
-    win = np.array(rows, np.float32).reshape(-1, 8)
+    win = np.array(rows + church, np.float32).reshape(-1, 8)
     lamps = []
     g = json.loads(R.ground_osm_path.read_text()) if R.ground_osm_path else {"elements": []}
     from v2.data.geo import lonlat_to_en
