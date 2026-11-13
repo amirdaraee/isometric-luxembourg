@@ -2108,7 +2108,7 @@
      "id": "L2",
      "title": "total spent + committed (USD)",
      "passed": true,
-     "value": 4.14,
+     "value": 4.61,
      "threshold": "<= 100.0",
      "severity": "gate",
      "examples": []

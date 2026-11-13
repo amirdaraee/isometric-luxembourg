@@ -205,9 +205,10 @@ export ISOLUX_DATA=/Users/amirdaraee/00/projects/isometric-luxembourg/data
 # add ?xray for the tunnel view, ?cutaway for the cutaways, ?hour=21.3 or ?hour=23.25 for golden hour and night
 ```
 
-## 9. The cathedral cutaway: first painting test (10 November), free fixes (13 November)
+## 9. The cathedral cutaway: first painting test (10 November), free fixes and second run (13 November)
 
-Branch `v2-phase3-cathedral`, into `v2`. **Spent: $0.4256** (the first run). The fixes cost $0.
+Branches `v2-phase3-cathedral` and `v2-phase3-cathedral2`, into `v2`. **Spent: $0.4256** (the first run) **and $0.4672** (the second). The fixes cost $0. **No painting passes yet; the placeholder stays in the map.** The second
+run is at the end of this section.
 
 ### The first run
 
@@ -310,7 +311,7 @@ Branch `v2-phase3-cathedral`, into `v2`. **Spent: $0.4256** (the first run). The
      its own map pixel; 0 pixels changed outside the opening; 0 changes to depth, normals, ids or kinds; the
      painter's input stays the placeholder. Not looked at in the browser.
 
-### The new quote (not approved, nothing run)
+### The new quote (approved and run on 13 November: see "The second run")
 
 | Quote | Job | Expected | Worst case |
 |---|---|---|---|
@@ -376,3 +377,84 @@ The three paintings of the first run, measured again (`v2/docs/results/cutaway_K
   other two walls' (about 175 to 180 of 255 against 185 to 200). That is a painted tone difference between walls, which
   is what K3 is for.
 - So no first-run painting passes with the corrected checks: K3 and the light check both fail.
+
+### The second run (13 November)
+
+- **Approval.** Asked "Quote q0015: second cathedral cutaway run on RunPod, A100 SXM secure, 4 candidates, expected
+  $0.57, worst case $0.99 (Phase 3 has $7.57 of $8 left). Approve it?", the owner answered on 13 November 2026:
+  "Approve, run after the check fixes (Recommended)". q0013 is not approved.
+- **Before the pod:** the check fixes were committed (`9d01ea9`); the live price was $2.19/h, as quoted; the cap was
+  1,592 s, which at $2.2105/h (GPU and disk) is $0.98.
+- **Pod** `1zj2z6jzs0dz39`, terminated. It ran once, finished, and made all four paintings.
+- **Spend: $0.4672** (761 s), against $0.57 expected and $0.99 worst case.
+- **Reconciled.** RunPod's line for the first run is now published: $0.4258 billed, $0.4256 in the ledger. The
+  second run's line is not published yet; RunPod's balance fell by $0.4663 for it. All pods together: $4.6062 by
+  the balance, $4.6088 in the ledger. Recorded in the ledger.
+- **Times, measured:** ssh after 23 s (128 s last time); model loaded in 279 s; 21.8 s per painting; 12.7 minutes
+  in all (15.1 planned).
+- Paintings: `<data>/v2/test/bakeoff/cutaways/painted/`. Numbers: `v2/docs/results/cutaway_K1.json`. Sheets:
+  `v2/docs/img/test_cutaway_cathedral_candidates.jpg` (the four candidates) and
+  `test_cutaway_cathedral_paint_input.jpg`.
+
+**No candidate passes.** All four fail the light-across-a-face check; two also fail K3.
+
+| Check (limit) | cathedral_0 | cathedral_1 | cathedral-open_0 | cathedral-open_1 |
+|---|---|---|---|---|
+| Seed | 1867 | 1868 | 1869 | 1870 |
+| K1 section outline within 1 px (≥ 95%) | 99.2% | 98.8% | 99.2% | 97.7% |
+| K2 interior pixels outside the mask (0) | 0 | 0 | 0 | 0 |
+| K2 mask covered (≥ 99.5%) | 100% | 99.997% | 100% | 100% |
+| K3, the stone only (≤ 5%) | **11.9%** | 3.5% | **24.8%** | 2.1% |
+| K3, every pixel (the old measure, reported) | 27.6% | 33.9% | 3.5% | 45.1% |
+| Light across a face, walls (≤ 5%) | **40.1%** | **23.5%** | **45.5%** | **15.8%** |
+| Light across a face, roof (≤ 5%) | **11.5%** | **20.5%** | **40.3%** | **13.2%** |
+| Light across a face, floor (≤ 5%) | **10.7%** | **7.9%** | **12.2%** | **17.7%** |
+| Lines kept, the section's (≥ 95%) | 97.5% | 97.5% | 99.5% | 99.9% |
+| Lines kept, the placeholder's (reported) | 86.1% | 81.2% | 95.2% | 87.5% |
+| K4 cars or people (0) | 0 | 0 | 0 | 0 |
+| An interior was painted | yes | yes | yes | yes |
+| Verdict | fail | fail | fail | fail |
+
+- The two check corrections did what they were for. The lines gate passes on all four. K3 passes on two, and on
+  those two the old measure would have said 34% and 45%.
+- What stops every candidate is the light check, by a factor of 1.6 to 9 over its limit.
+
+**What I see in each** (looked at one by one, at four times the size):
+
+- `cathedral_0`: pointed arches, tall blue windows with plain panes, a pale chequered floor, two blocks of
+  brown pews. The arches are drawn in two tones of stone. No cast shadows on the floor, no dark floor, no people.
+  The pews at the lower edge are cut through by the opening's edge.
+- `cathedral_1`: the weakest. The walls are shaded: a darker ochre inside each arch and under the vault. There is
+  a dark arched doorway. The pews are a jumble of dark red blocks with near-black gaps, and the floor is broken
+  paving, not a chequer. No people.
+- `cathedral-open_0`: bright stained glass in red, cyan and orange, a clean pale chequer, few pews. The left wall
+  is a visibly darker yellow than the right one, which is what K3 measures (24.8%). No people.
+- `cathedral-open_1`: the cleanest. Even cream walls and vault drawn in line, navy windows with coloured panes, a
+  red door, two blocks of pews, a regular pale chequer from edge to edge. I see no cast shadow, no dark corner
+  and no shading from one side. A slightly darker band runs along the foot of the walls. No people.
+- No painting has a dark floor, a beam of light, a person or a vehicle. The new prompt removed the navy floor of
+  the first run. Odd objects: the dark doorway in `cathedral_1`, the red door in `cathedral-open_1` (neither is in
+  the model).
+- Outside the opening the painter again drew what it was not asked for (pews spilling past the wall in
+  `cathedral_0`, a beige ground slab in `cathedral_1`). The mask cuts all of it away.
+
+**Not in the map.** `python -m v2.bakeoff adopt K1` refuses ("the placeholder stays"). Nothing was rebuilt, and no
+viewer screenshot was taken, because there is nothing new to show. `release/current.json` is the A build
+`e1f764e945d7`, unchanged.
+
+**The light check is now the open point.** `cathedral-open_1` passes every other check and looks evenly lit to
+me, yet measures 13% to 18%. I did not look into where its squares differ, and did not change the check: its
+definition was fixed before the run. Its known limits are in question 15, which is still open.
+
+### Open questions after the second run
+
+13 and 14 are answered (the corrections above). 15, 16 and 17 stay open. New:
+
+18. **The light check** (question 15 again, now the only thing between `cathedral-open_1` and the map): look at
+    `cathedral-open_1` yourself. If it is evenly lit to your eye, should the light check become a reported number,
+    with K3 and your eye (K7) as the gates? I would first measure, at $0, where it differs on this painting.
+19. **q0013** (palace, abbey, casemates, $0.90 worst case): I recommend not approving it yet. Its quote is for an
+    H100 on the community cloud at Phase 2's times, and no painting has passed for the cathedral, which the spec
+    asks for first (rule 6).
+20. **A third cathedral run** is not quoted. It makes sense only after question 18 is settled: the prompt has
+    done what it can for floors and shadows, and two of four candidates already pass K3.

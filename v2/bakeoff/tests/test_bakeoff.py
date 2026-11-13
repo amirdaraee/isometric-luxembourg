@@ -322,7 +322,11 @@ def test_the_cutaway_job_is_the_ledgers_quote_and_cannot_pass_its_worst_case():
     # q0012 (an H100) was released unspent, q0014 paid for the first run; q0015 is the second run's
     assert q == "q0015" and real.quotes()[q]["worst_usd"] == j.worst_usd == 0.99
     assert any(e["type"] == "spend" and e["quote"] == "q0014" for e in real.events)
-    assert not any(e["type"] == "spend" and e["quote"] == q for e in real.events)
+    # the second run (13 Nov 2026): approved by the owner, run once, within its worst case; q0013 is not approved
+    paid = [e for e in real.events if e["type"] == "spend" and e["quote"] == q]
+    assert len(paid) == 1 and float(paid[0]["usd"]) <= j.worst_usd
+    assert any(e["type"] == "approve" and e["quote"] == q and e["by"] == "owner" for e in real.events)
+    assert not any(e["type"] == "approve" and e["quote"] == "q0013" for e in real.events)
     assert j.cloud == "secure" and j.price_h == 2.19
     assert j.goal == "phase3_lock_look" and j not in J.JOBS            # not part of the bake-off's total
     for cost_h in (j.price_h, 2.59, 1.0):

@@ -5,7 +5,7 @@ slice geometry from the 3D model, a small layer of tiles with a **code placehold
 later painting, the viewer's toggle, and checks K0-K6 (stages `layer_cutaways`, `check_cutaways`,
 `check_cutaways_view`). Not built: the painted interiors (paid from the Phase 3 line, $8 cap, quoted in the ledger
 and approved by the owner before any spend); the opening's own cast shadow (see "In the viewer"); the Bock casemates.
-The cathedral's painting was tried once (10 Nov 2026): no candidate passed, so the placeholder stays. The checks of
+The cathedral's painting was tried twice (10 and 13 Nov 2026): no candidate passed, so the placeholder stays. The checks of
 a painting and the step that puts one into the layer are built: see "The painted step".
 
 **Purpose.** Famous buildings shown cut open in place on the map, not in a modal: the visitor sees a slice taken out
@@ -120,7 +120,7 @@ functions); K7.
 ## The painted step
 
 Code: `v2/bakeoff/cutaway_paint.py` (inputs, checks, `adopt`), `v2/layers/cutaways.py` (`write_painting`,
-`load_painting`, `paint_into`). Job K1 in `v2/bakeoff/jobs.py`. First run: `v2/docs/PHASE3_REPORT.md` section 9.
+`load_painting`, `paint_into`). Job K1 in `v2/bakeoff/jobs.py`. Both runs: `v2/docs/PHASE3_REPORT.md` section 9.
 
 **Candidates.** Four per landmark: the cut render as built and the same render with its inside faces cleared to
 paper (ink lines and the section kept), two seeds each, four seeds in all. The painter draws the whole frame; the
