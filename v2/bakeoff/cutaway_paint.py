@@ -29,7 +29,16 @@ What the first run (10 Nov 2026, three paintings) taught the checks, each measur
     light the plane fitted to a face's luminance read a chequered floor, pews on one side and windows as light.
           Light is now measured on one material (light_across).
     lines the lines that went missing are the placeholder's own (the floor against the wall behind the pews, wall
-          corners behind columns), not the section's: reported apart (interior_lines); the rule is the owner's.
+          corners behind columns), not the section's: reported apart (interior_lines).
+    K3    the median luminance of a painted wall is its windows' (over half of each wall was glass or ink; the
+          median pixel was about 90 of 255, the stone about 200), so K3 compared how much glass each wall had.
+
+The owner's rule for both (13 Nov 2026, "Correct both, free"), in place before the second run:
+    K3    on a painting is measured on each face's own material only (the stone of a wall: cutaway_checks.
+          face_material), not its glass and not its ink. The 5% limit is K3's own, unchanged. A side with too little
+          stone to measure fails.
+    lines the gate is the cut's outline: the section's lines (K1's subject) at the gate's own share. The
+          placeholder's own construction lines are reported, not gated.
 
 K5 and K6 are of the geometry (depth, ids, the toggle): a painting changes colour only, inside the mask, so they
 hold as built; they run again as gates when a painting is composed into the layer.
@@ -58,6 +67,7 @@ BLANK_MIN_PX = 7                          # K2b: ... and is, if a 7 x 7 px squar
 LIGHT_BLOCK = 16                          # px (2 m): larger than a floor pattern's repeat
 LIGHT_STEP = 4                            # px between blocks: a shade that holds a 20 px square (2.5 m) holds a block
 LIGHT_CHROMA = 0.03                       # the same material: r and g shares of r + g + b within this of the face's
+                                          # (K3's own is the same number: cutaway_checks.MATERIAL_CHROMA)
 LIGHT_SHARE = 0.4                         # a block is measured if this share of its face pixels are that material
 LIGHT_PCT = 90                            # the material's lit level in a block: this percentile of its luminance
 CHANGE_LUM = 12                           # "changed": the build's own line step (params g3 cutaway_line_min_step)
@@ -223,9 +233,9 @@ def steps(rgb) -> np.ndarray:
 
 
 def chroma(rgb) -> np.ndarray:
-    """A colour without its brightness: the shares of red and green in r + g + b. Light and shade keep it."""
-    a = np.asarray(rgb, float) + 1.0
-    return a[..., :2] / a.sum(-1, keepdims=True)
+    """A colour without its brightness (cutaway_checks.chroma)."""
+    from v2.checks.cutaway_checks import chroma as c
+    return c(rgb)
 
 
 def light_across(rgb, material, ok, min_px) -> dict:
@@ -276,8 +286,9 @@ def painted_at_all(painting, d: dict) -> dict:
 
 def interior_lines(painting, d: dict) -> dict:
     """The model's own lines inside the opening (where faces meet): the share with a drawn step within 1 px. Apart:
-    the section's lines (a cut face on either side: the opening's rim, K1's subject) and the placeholder's (where
-    two inside faces of the nominal shell meet: a painted interior may stand a pew or a column in front of them)."""
+    the section's lines (a cut face on either side: the opening's rim, K1's subject), which are the gate, and the
+    placeholder's (where two inside faces of the nominal shell meet: a painted interior may stand a pew or a column
+    in front of them), which are reported."""
     from scipy import ndimage
     from v2.layers.cutaways import KIND
     line = d["mask"] & geometry_edges(d)
@@ -319,7 +330,7 @@ def section_score(rgb, d: dict, model, P) -> dict:
 
 def check_candidate(painting, d: dict, P: dict, sun=None, model=None) -> dict:
     """One painting against K1-K3 and the rest. `d`: load(); P: cutaways.cut_params()."""
-    from v2.checks.cutaway_checks import flat_interior, interior_in_mask
+    from v2.checks.cutaway_checks import face_material, flat_interior, ink, interior_in_mask
     from v2.layers.cutaways import KIND
     painting = np.asarray(painting, np.uint8)
     mask = d["mask"]
@@ -329,15 +340,25 @@ def check_candidate(painting, d: dict, P: dict, sun=None, model=None) -> dict:
     interior = (comp != d["unlit"]).any(-1) | mask
     out_px, _ = interior_in_mask(interior, mask)
     _, cover = interior_in_mask(covered(painting, mask, d["outline"]), mask)
-    # K3: the gate's shadow detector on the painted interior
+    # K3: the gate's shadow detector on the painted interior, on each face's own material (a wall's stone, not its
+    # glass or ink); the same over every pixel of the face is kept as a reported number (the first run's measure)
     edge = geometry_edges(d, reach=2)
-    fl = flat_interior(comp[mask], np.where(mask, d["k"], 0)[mask], d["normal"][mask], sun, P["cutaway_shadow_min_px"], edge[mask])
-    k3 = max([max(v["worst"], v["sun"] or 0.0) for v in fl.values()] or [0.0])
-    across = light_across(comp, np.where(mask, d["k"], 0), mask & ~edge, P["cutaway_shadow_min_px"])
+    kinds = np.where(mask, d["k"], 0)
+    stone = face_material(comp, kinds, mask & ~edge, ink(comp, P["cutaway_line_min_step"]))
+    flat = lambda only: flat_interior(comp[mask], kinds[mask], d["normal"][mask], sun, P["cutaway_shadow_min_px"],   # noqa: E731
+                                      edge[mask], None if only is None else only[mask])
+    worst = lambda f: max([max(v["worst"], v["sun"] or 0.0) for v in f.values()] or [0.0])                   # noqa: E731
+    fl, fl_all = flat(stone), flat(None)
+    k3, unmeasured = worst(fl), sum(v["unmeasured"] for v in fl.values())
+    share = {names[int(m)]: round(float((stone & (kinds == m)).sum() / max(int((mask & ~edge & (kinds == m)).sum()), 1)), 4)
+             for m in np.unique(kinds[mask & ~edge])}
+    across = light_across(comp, kinds, mask & ~edge, P["cutaway_shadow_min_px"])
     res = {
         "K2a_interior_px_outside_mask": out_px, "K2b_mask_covered": round(cover, 5),
         "K2_ok": bool(out_px == 0 and cover >= P["cutaway_mask_cover"]),
-        "K3_worst": round(float(k3), 4), "K3_ok": bool(k3 <= P["cutaway_shadow_lum_tol"]),
+        "K3_worst": round(float(k3), 4), "K3_unmeasured_sides": int(unmeasured),
+        "K3_ok": bool(k3 <= P["cutaway_shadow_lum_tol"] and unmeasured == 0),
+        "K3_material_share": share, "K3_every_pixel_worst": round(float(worst(fl_all)), 4),
         "K3_by_kind": {names[m]: {a: (round(b, 4) if isinstance(b, float) else b) for a, b in v.items()} for m, v in fl.items()},
         "light_across_kind": {names[m]: round(v, 4) for m, v in across.items()},
         "light_across_worst": round(max(across.values() or [0.0]), 4),
@@ -348,7 +369,8 @@ def check_candidate(painting, d: dict, P: dict, sun=None, model=None) -> dict:
         "raw_drawn_outside_outline_px": int((covered(painting, ~d["outline"], d["outline"])).sum()),
     }
     res["light_across_ok"] = bool(res["light_across_worst"] <= P["cutaway_shadow_lum_tol"])
-    res["lines_kept_ok"] = bool(res["interior_lines"]["kept"] >= P["cutaway_line_share"])
+    # the gate is the cut's outline: the section's lines. The placeholder's own lines are reported (interior_lines)
+    res["lines_kept_ok"] = bool(res["interior_lines"]["section_kept"] >= P["cutaway_line_share"])
     if model is not None:
         s = section_score(comp, d, model, P)
         res.update(K1a_section_line_share=s["share"], K1a_seen=s["seen"], K1_ok=bool(s["share"] >= P["cutaway_line_share"]))
@@ -434,9 +456,11 @@ def _save(im: Image.Image, dst: Path, max_bytes=950_000):
     return dst
 
 
-def sheets(name: str, d: dict, inputs: Path, cands: list, img: Path) -> dict:
+def sheets(name: str, d: dict, inputs: Path, cands: list, img: Path, run: str = "") -> dict:
     """The input sheet (both control images, the layout, the mask) and the candidates side by side: each whole
-    painting as the model returned it, and under it the opening at twice the size, cut to the mask over the render."""
+    painting as the model returned it, and under it the opening at twice the size, cut to the mask over the render.
+    An earlier run's sheets carry its name (..._run1.jpg)."""
+    tag = f"_{run}" if run else ""
     box = crop_box(d)
     half = lambda a: Image.fromarray(a).resize((512, 512), Image.LANCZOS)                                    # noqa: E731
     zoom = lambda a: Image.fromarray(a).crop(box).resize(((box[2] - box[0]) * 2, (box[3] - box[1]) * 2), Image.LANCZOS)  # noqa: E731
@@ -447,13 +471,13 @@ def sheets(name: str, d: dict, inputs: Path, cands: list, img: Path) -> dict:
               _label(half(np.repeat((d["mask"] * 255).astype(np.uint8)[..., None], 3, -1)), "opening mask")])
     b = _row([_label(zoom(rd(f"{name}.unlit.png")), "the opening, as built (2x)"),
               _label(zoom(rd(f"{name}-open.unlit.png")), "the opening, cleared (2x)")])
-    out = {"input": _save(_stack([a, b]), img / f"test_cutaway_{name}_paint_input.jpg").name}
+    out = {"input": _save(_stack([a, b]), img / f"test_cutaway_{name}_paint_input{tag}.jpg").name}
     if cands:
         top = _row([_label(half(c["raw"]), c["label"]) for c in cands])
         w = (top.width - 8 * (len(cands) - 1)) // len(cands)
         fit = lambda a: (lambda z: z.resize((w, round(z.height * w / z.width)), Image.LANCZOS))(zoom(a))       # noqa: E731
         bot = _row([_label(fit(c["comp"]), ("PASS" if c["pass"] else "fail") + ": cut to the mask, in the render") for c in cands])
-        out["candidates"] = _save(_stack([top, bot]), img / f"test_cutaway_{name}_candidates.jpg").name
+        out["candidates"] = _save(_stack([top, bot]), img / f"test_cutaway_{name}_candidates{tag}.jpg").name
     return out
 
 
@@ -504,7 +528,10 @@ def check(job: str = "K1", name: str = "cathedral", painted: Path | None = None,
            "own_tolerances": {"paper_rgb": PAPER_TOL, "blank_patch_px": BLANK_MIN_PX, "changed_lum": CHANGE_LUM,
                               "interior_painted": "changed_share >= 0.25 and detail_share >= 0.05",
                               "light_block_px": LIGHT_BLOCK, "light_block_step_px": LIGHT_STEP, "light_same_material_chroma": LIGHT_CHROMA,
-                              "light_block_material_share": LIGHT_SHARE, "light_lit_level_percentile": LIGHT_PCT},
+                              "light_block_material_share": LIGHT_SHARE, "light_lit_level_percentile": LIGHT_PCT,
+                              "K3_measured_on": "each face's own material: chroma within 0.03 of the face's light pixels, "
+                                                "not ink (darker than a neighbour by cutaway_line_min_step)",
+                              "lines_kept_gate": "the section's lines (interior_lines.section_kept); the placeholder's are reported"},
            "K1a_of_the_render_as_built": base_line,
            "K4": {t: {"images": det[t]["images"], "max_score": det[t]["max_score"], "detections": det[t]["detections"]} for t in ("vehicles", "people")},
            "K4_inputs_ok": not any(v for lab, hit in det["by_image"].items() if lab.startswith("input") for v in hit.values()),
@@ -512,7 +539,7 @@ def check(job: str = "K1", name: str = "cathedral", painted: Path | None = None,
            "passing": [c["label"] for c in passing], "best": best, "timing": timing}
     (out / f"{job}.json").write_text(json.dumps(res, indent=1))
     if write_docs:
-        res["images"] = sheets(name, d, inputs, cands, V2 / "docs" / "img")
+        res["images"] = sheets(name, d, inputs, cands, V2 / "docs" / "img", run)
         (V2 / "docs" / "results" / f"cutaway_{tag}.json").write_text(json.dumps(res, indent=1))
     return res
 
