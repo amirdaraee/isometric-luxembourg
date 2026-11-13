@@ -221,8 +221,8 @@ Branch `v2-phase3-cathedral`, into `v2`. **Spent: $0.4256** (the first run). The
 - **The pod reached its time cap after 3 of 4 paintings.** `cathedral-open_1` was never painted. The quote had
   assumed Phase 2's 4 minutes of setup, measured on a pod that already held the model.
 - Paintings: `<data>/v2/test/bakeoff/cutaways/painted_run1/`. Numbers: `v2/docs/results/cutaway_K1_run1.json`.
-  Sheets: `v2/docs/img/test_cutaway_cathedral_candidates.jpg` (the three candidates) and
-  `test_cutaway_cathedral_paint_input.jpg` (what the painter was given).
+  Sheets: `v2/docs/img/test_cutaway_cathedral_candidates_run1.jpg` (the three candidates) and
+  `test_cutaway_cathedral_paint_input_run1.jpg` (what the painter was given).
 
 ### What came back
 
@@ -341,3 +341,38 @@ see `v2/docs/results/g3_test.json`. The tiles are identical to the build before 
 17. **The chequered floor and the pews** are the painter's invention from my prompt, not from a reference of the
     real cathedral. Keep them?
 
+### The two checks corrected (13 November, $0, before the second run)
+
+The owner's answer to questions 13 and 14, on 13 November 2026: "Correct both, free (Recommended)". Both were
+changed and committed before the second run, so the run is judged by definitions fixed in advance.
+
+- **K3 on a painting measures the wall's stone only.** The material of a face is the colour of its light pixels,
+  brightness set aside. Glass is another colour and is left out. Ink is left out: a pixel darker than one of its
+  eight neighbours by a line step (12). Stone in shade keeps its colour and stays in. The limit is still 5%.
+  - A side of a wall with under 150 px of stone to measure fails, so a wall cannot escape by having no stone.
+  - Proved on synthetic walls (`test_k3_on_a_painting_measures_the_stone_not_the_glass_or_the_ink`): one wall 70%
+    glass, the other 20%, the stone evenly lit: the old measure gives over 15%, the new one under 1%, a pass. The
+    stone of one wall darker by 10%, 20% or 40%: fails, at that number. A whole wall in shade: fails. 3%: passes.
+  - Limit: a shade drawn in another colour than the stone's is another material and is not measured here.
+  - The built gate (`check_cutaways`, K3) uses the same measure on a landmark whose interior is painted. On the
+    placeholders it is unchanged; all three still measure 0%.
+- **Lines kept gates the cut's outline.** The gate is the share of the section's lines with a drawn step within
+  1 px, at 95%. The placeholder's own lines (floor against wall, wall corners, roof against wall) are reported.
+- Not changed: the light-across-a-face check, K1, K2, K4, the no-baked-light rule.
+
+The three paintings of the first run, measured again (`v2/docs/results/cutaway_K1_run1.json`):
+
+| Check (limit) | cathedral_0 | cathedral_1 | cathedral-open_0 |
+|---|---|---|---|
+| K3, every pixel of the wall (the old measure) | 18.2% | 34.6% | 19.5% |
+| K3, the stone only (≤ 5%) | **12.2%** | **13.8%** | **10.7%** |
+| Share of the wall that is stone | 21% | 27% | 21% |
+| Lines kept, the section's (≥ 95%) | 99.9% | 98.6% | 97.3% |
+| Lines kept, the placeholder's (reported) | 84.5% | 88.1% | 86.1% |
+| Light across a face: walls / roof / floor (≤ 5%) | 32% / 15% / 11% | 28% / 20% / 6% | 36% / 18% / 13% |
+
+- The lines gate now passes on all three.
+- K3 still fails on all three, by less. The stone of the short wall that faces south-east is darker than the
+  other two walls' (about 175 to 180 of 255 against 185 to 200). That is a painted tone difference between walls, which
+  is what K3 is for.
+- So no first-run painting passes with the corrected checks: K3 and the light check both fail.

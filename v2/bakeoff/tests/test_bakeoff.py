@@ -484,7 +484,79 @@ def test_lost_lines_are_told_apart_the_sections_and_the_placeholders():
     over[inner] = (200, 190, 170)
     r = CP.interior_lines(over, d)
     assert r["section_kept"] > 0.95 and r["placeholder_by_junction"]["floor_wall"]["kept"] < 0.2
-    assert CP.check_candidate(over, d, dict(cut_params(), cutaway_shadow_min_px=20))["lines_kept_ok"] is False   # the rule stands
+    # the gate is the cut's outline (owner, 13 Nov 2026): the placeholder's lost lines are reported, not gated
+    P = dict(cut_params(), cutaway_shadow_min_px=20)
+    c = CP.check_candidate(over, d, P)
+    assert c["lines_kept_ok"] is True and c["interior_lines"]["placeholder_kept"] < 0.95 and c["interior_lines"]["kept"] < 0.95
+    lost = over.copy()                                                 # ... and a painting that draws over the section fails
+    lost[d["mask"]] = (200, 190, 170)
+    lost[24:30, 24:72] = (200, 190, 170)
+    c = CP.check_candidate(lost, d, P)
+    assert c["interior_lines"]["section_kept"] < 0.95 and c["lines_kept_ok"] is False and not CP.verdict(c)
+
+
+def _two_walls(n=160):
+    """A frame whose opening is two inside walls turned different ways (east and south), and a painter for it:
+    each wall in stone with a share of its width in stained glass behind inked mullions."""
+    from v2.layers.cutaways import KIND
+    k = np.zeros((n, n), np.uint8)
+    k[8:152, 8:152] = KIND["outside"]
+    k[30:130, 20:80] = KIND["inside_wall"]
+    k[30:130, 80:140] = KIND["inside_wall"]
+    normal = np.zeros((n, n, 3)); normal[..., 2] = 1.0
+    normal[30:130, 20:80] = (1.0, 0.0, 0.0)
+    normal[30:130, 80:140] = (0.0, -1.0, 0.0)
+    unlit = np.full((n, n, 3), 239, np.uint8)
+    unlit[k == KIND["outside"]] = (120, 110, 90)
+    unlit[k == KIND["inside_wall"]] = (234, 224, 204)
+    d = {"unlit": unlit, "mask": k == KIND["inside_wall"], "outline": k > 0, "k": k,
+         "ids": (k.astype(np.uint32) << 8) | k, "normal": normal, "depth": np.where(k > 0, 10.0, np.inf),
+         "meta": {"frame_px": [0, 0, n, n], "opening_bbox": [20, 30, 140, 130]}}
+
+    def paint(glass=(0.7, 0.2), stone=(1.0, 1.0), shade=(1.0, 1.0)):
+        img = unlit.astype(float)
+        for (x0, x1), g, st, sh in zip(((20, 80), (80, 140)), glass, stone, shade):
+            wall = np.empty((100, x1 - x0, 3)); wall[:] = (226, 208, 172)             # sandstone
+            wall[::9] = (70, 60, 50)                                                  # its joints, in ink
+            wall *= st
+            w = int(round(g * (x1 - x0)))
+            pane = np.empty((84, w, 3)); pane[:] = (40, 80, 170)                      # stained glass
+            pane[:, ::6] = (30, 26, 24); pane[::10] = (30, 26, 24)                    # mullions, in ink
+            wall[8:92, 4:4 + w] = pane
+            img[30:130, x0:x1] = wall * sh
+        return np.clip(img, 0, 255).astype(np.uint8)
+    return d, paint
+
+
+def test_k3_on_a_painting_measures_the_stone_not_the_glass_or_the_ink():
+    """The first cathedral run: over half of each painted wall was window or ink, so K3's median was the glass's."""
+    from v2.bakeoff import cutaway_paint as CP
+    from v2.layers.cutaways import cut_params
+    P = cut_params()
+    TOL = P["cutaway_shadow_lum_tol"]
+    assert TOL == 0.05                                                 # K3's own limit, unchanged
+    d, paint = _two_walls()
+    even = CP.check_candidate(paint(), d, P)                           # much glass on one wall, little on the other
+    assert even["K3_every_pixel_worst"] > 3 * TOL                      # the first measure: the window area
+    assert even["K3_ok"] and even["K3_worst"] <= 0.01 and even["K3_unmeasured_sides"] == 0
+    assert even["K3_by_kind"]["inside_wall"]["sides"] == 2
+    assert 0.1 < even["K3_material_share"]["inside_wall"] < 0.6       # the stone, without the glass and the ink
+    for f in (0.9, 0.8, 0.6):                                          # the stone of one wall darker: baked light
+        for stone in ((f, 1.0), (1.0, f)):
+            r = CP.check_candidate(paint(stone=stone), d, P)
+            assert not r["K3_ok"] and r["K3_worst"] == pytest.approx(1 - f, abs=0.02) and not CP.verdict(r), (f, stone)
+        r = CP.check_candidate(paint(shade=(f, 1.0)), d, P)            # a whole wall in shade, glass and all
+        assert not r["K3_ok"] and r["K3_worst"] > TOL
+    same_glass = CP.check_candidate(paint(glass=(0.4, 0.4), stone=(0.9, 1.0)), d, P)   # ... also with equal windows
+    assert not same_glass["K3_ok"] and same_glass["K3_every_pixel_worst"] > TOL
+    ok = CP.check_candidate(paint(stone=(0.97, 1.0)), d, P)            # within the limit: 3%
+    assert ok["K3_ok"] and 0.02 < ok["K3_worst"] <= TOL
+    hidden = paint()                                                   # a wall with no stone left to measure fails
+    hidden[30:130, 20:80] = (40, 80, 170)
+    r = CP.check_candidate(hidden, d, P)
+    assert r["K3_unmeasured_sides"] == 1 and not r["K3_ok"]
+    flat = CP.check_candidate(d["unlit"], d, P)                        # the placeholder: both measures are the same
+    assert flat["K3_worst"] == flat["K3_every_pixel_worst"] == 0 and flat["K3_ok"]
 
 
 def test_only_a_candidate_that_passed_is_handed_to_the_layer(tmp_path, monkeypatch):

@@ -43,7 +43,9 @@ casemates, Notre-Dame Cathedral, the Grand Ducal Palace and Neumünster Abbey (a
 - **K2** The interior stays inside the cut: 0 interior pixels outside the opening's mask; ≥ 99.5% of the mask
   covered.
 - **K3** No baked shadows: the shadow detector of brief 5 on the interior (sunlit vs shadowed sides of the same
-  material within 5%), and the opening's shadow moves with `?hour` (L9.1 on the cut).
+  material within 5%), and the opening's shadow moves with `?hour` (L9.1 on the cut). On a painted interior "the
+  same material" is the face's own: the stone of a wall, not its windows' glass and not the ink drawn on it
+  (owner, 13 Nov 2026; see "The painted step").
 - **K4** No cars or people: the vehicle detector (OWLv2, as #9) on every input, reference and output at
   threshold 0.1, plus a person query ("a person", "people"): 0 detections.
 - **K5** Depth: the cutaway's depth equals the model's (cut faces and inside walls) per pixel (≤ 1 cm); vehicles and
@@ -103,7 +105,7 @@ and a JSON with the frame.
 | K2a, K2b | Interior pixels outside the opening mask: 0; mask covered >= 99.5% (the placeholder today, a painting later) | 0; 100% |
 | K2c, K2d | The mask against the model worked out a second time, per pixel: mask pixels that are not an inside face or a section within 1 cm: 0; the model's own opening in the mask >= 99.5% | 0; 100%, 99.99%, 99.93% |
 | K2e | Opening pixels of the tiles missing from the paint input's mask, or at another depth: 0 | 0, 0, 0 |
-| K3 | Shadow detector on the interior: median luminance of one kind of face turned different ways, and to and away from the photo's sun, within 5% | 0% (flat colours) |
+| K3 | Shadow detector on the interior: median luminance of one kind of face turned different ways, and to and away from the photo's sun, within 5%. A painted interior: on each face's own material only, and no side without enough of it to measure | 0% (flat colours) |
 | K4 | OWLv2 on the paint inputs and the cutaway tiles: vehicles, then "a person", "people": 0 at 0.1 | 0; highest score 0.012 |
 | K5a | Cut pixels: distance of the depth from the slice's faces <= 1 cm | 0.5 cm (the tiles store whole cm) |
 | K5b | Cut and inside pixels not on the model's surface within 1 cm: 0 | 0, 0, 0 |
@@ -131,13 +133,26 @@ painting is cut to the opening mask (rule 2).
 | K1 | Line score of the model's section on the painting cut into the render | >= 95% |
 | K2a | Interior pixels outside the opening mask | 0 |
 | K2b | Share of the mask the painter drew on. Unpainted: a pixel of paper's colour, or of the painting's own background, in a patch that holds a 7 x 7 px square | >= 99.5% |
-| K3 | The gate's shadow detector on the painted interior | <= 5% |
+| K3 | The gate's shadow detector on the painted interior, on each face's own material (a wall's stone, not its glass or ink). A side of a face with under 150 px of its material to measure fails | <= 5%; 0 sides |
 | Light across a face | Per kind of face, on one material: the largest fall of the material's lit level between two 16 px squares | <= 5% |
-| Lines kept (not a rule of this spec; an open question) | The model's lines inside the opening with a drawn step within 1 px; the section's and the placeholder's reported apart | >= 95% |
+| Lines kept | The cut's outline: the section's lines inside the opening (a cut face on either side) with a drawn step within 1 px. The placeholder's own construction lines (floor against wall, wall corners, roof against wall) are reported, not gated: a painted interior may stand a pew or a column in front of them | >= 95% of the section's |
 | K4 | OWLv2 on the inputs, the paintings and the composites: vehicles, then people | 0 |
 | Painted at all | The interior moved from the placeholder (share changed >= 25%, drawn detail >= 5%) | both |
 
+**K3 and the lines, corrected on 13 Nov 2026** (the owner's choice, "Correct both, free", made before the second
+run; the limits are unchanged):
+- K3 took the median of every pixel of a wall. Over half of each painted wall is window or ink, so it compared
+  how much glass each wall has. It now measures the wall's material: the colour of the face's light pixels
+  (brightness set aside), on pixels that are not ink (not darker than a neighbour by a line step). Stone in shade
+  keeps its colour and stays in the measure, so a wall whose stone is darker than another's still fails. The
+  every-pixel number is still reported.
+- Lines kept gated every model line inside the opening, and so failed any interior with pews or columns in front
+  of the shell's corners. The gate is now the cut's outline, K1's subject.
+
 Tolerances of these checks (none loosens a limit above):
+- K3 on a painting: "the same material" is chroma within 0.03 of the face's light pixels (the light check's own
+  number); ink is a pixel darker than one of its eight neighbours by 12 (the build's line step). Limit: a shade
+  drawn in another colour than the stone's is another material and is not measured; the light check and K7 remain.
 - K2b: colour within 8 (RGB) of paper or of the painting's background; a patch narrower than 7 px (0.9 m) is a
   detail of the drawing, not a hole. Pixels outside the mask count as blank for the patch.
 - Light: squares of 16 px every 4 px; "the same material" is chroma within 0.03 of the face's light pixels; a

@@ -18,7 +18,10 @@ K2    the interior stays inside the cut: 0 interior pixels outside the opening m
       is asked for). The paint input's mask holds every opening pixel of the tiles, at the same depth
 K3    no baked shadows in the interior: per kind of face, the median luminance of faces turned different ways,
       and of faces turned to and away from the photo's sun, within 5% (`flat_interior`, as the bake-off's
-      flat-light check). The opening's own cast shadow moving with ?hour belongs to the viewer step
+      flat-light check). On a painted interior the luminance is the face's own material's (the stone of a wall,
+      `face_material`): not its windows' glass and not the ink drawn on it, which say how much is drawn on a wall,
+      not how it is lit. The limit is the same. The opening's own cast shadow moving with ?hour belongs to the
+      viewer step
 K4    no cars or people: the OWLv2 detector (owl_detect.py, run as check_no_cars runs it: its own environment, the
       local model, offline, $0) on every paint input and on every landmark's cutaway tiles put together, once for
       vehicles and once for "a person", "people": 0 detections at 0.1. About 20 s for the three landmarks, so it
@@ -316,24 +319,65 @@ def interior_in_mask(interior, mask):
     return int((interior & ~mask).sum()), float((interior & mask).sum() / max(int(mask.sum()), 1))
 
 
-def flat_interior(rgb, material, normal, sun=None, min_px=150, edge=None):
+MATERIAL_CHROMA = 0.03                    # the same material: r and g shares of r + g + b within this of the face's
+
+
+def chroma(rgb) -> np.ndarray:
+    """A colour without its brightness: the shares of red and green in r + g + b. Light and shade keep it."""
+    a = np.asarray(rgb, float) + 1.0
+    return a[..., :2] / a.sum(-1, keepdims=True)
+
+
+def ink(rgb, step) -> np.ndarray:
+    """Pixels of an image (h, w, 3) that are drawn on a surface, not the surface: darker than one of their eight
+    neighbours by a line step or more (a line, its soft edge, the dark side of any drawn edge). The inside of an
+    evenly toned patch is not ink, however dark: a shaded wall stays in the measure."""
+    from scipy import ndimage
+    L = lum(np.asarray(rgb, float))
+    return L <= ndimage.maximum_filter(L, size=3) - step
+
+
+def face_material(rgb, material, ok, drawn=None) -> np.ndarray:
+    """Per kind of face, the pixels that show the face's own material (a wall's stone), for K3 on a painting: a
+    painted wall also holds windows and ink, and their share differs from wall to wall. The material is the colour
+    of the face's light pixels (the chroma of those between the 75th and 97th percentile of its luminance); a pixel
+    shows it if its chroma is within MATERIAL_CHROMA of that and it is not `drawn` (`ink`). Brightness is not asked:
+    stone in shade is still stone, and is measured. rgb (..., 3), material, ok and drawn of the same shape.
+    Its limit: a shade drawn in another colour than the stone's is another material, and is not in the measure;
+    a side left with too little material is reported by flat_interior as unmeasured."""
+    L = lum(np.asarray(rgb, float))
+    ch = chroma(rgb)
+    out = np.zeros(L.shape, bool)
+    for m in np.unique(material[ok & (material > 0)]):
+        sel = ok & (material == m)
+        lo, hi = np.percentile(L[sel], (75, 97))
+        ref = np.median(ch[sel & (L >= lo) & (L <= hi)], axis=0)
+        out |= sel & (np.abs(ch - ref).max(-1) <= MATERIAL_CHROMA)
+    return out if drawn is None else out & ~drawn
+
+
+def flat_interior(rgb, material, normal, sun=None, min_px=150, edge=None, only=None):
     """K3's shadow detector on an interior. rgb (n, 3), material (n,) (a kind of face; 0 = not interior), normal
     (n, 3), all for pixels away from edges (`edge` (n,) bool marks pixels to leave out: ink lines are the drawing,
     not light). Per material: the median luminance of its faces turned different ways (octants of the normal's
     compass direction, and up) may differ by a share `worst`; with a sun vector, also sunlit against turned away.
-    Returns {material: {"sides": k, "worst": share, "sun": share or None}}."""
+    `only` (n,) bool: the pixels whose luminance is measured (a painting: `face_material`); a side is still one that
+    has min_px pixels of the face, and one with fewer than min_px of them to measure is counted in "unmeasured".
+    Returns {material: {"sides": k, "worst": share, "sun": share or None, "unmeasured": sides}}."""
     L = lum(np.asarray(rgb, float))
     ok = (material > 0) if edge is None else (material > 0) & ~edge
+    use = ok if only is None else ok & only
     h = np.hypot(normal[:, 0], normal[:, 1])
     side = np.where(h < 0.3, 8, (np.round(np.degrees(np.arctan2(normal[:, 0], normal[:, 1])) / 45) % 8)).astype(int)
     out = {}
     for m in np.unique(material[ok]):
-        mm = ok & (material == m)
-        meds = [float(np.median(L[mm & (side == s)])) for s in range(9) if (mm & (side == s)).sum() >= min_px]
-        r = {"sides": len(meds), "worst": (max(meds) - min(meds)) / max(max(meds), 1e-6) if len(meds) > 1 else 0.0,
-             "sun": None}
+        mm, mu = ok & (material == m), use & (material == m)
+        sides = [s for s in range(9) if (mm & (side == s)).sum() >= min_px]
+        meds = [float(np.median(L[mu & (side == s)])) for s in sides if (mu & (side == s)).sum() >= min_px]
+        r = {"sides": len(sides), "worst": (max(meds) - min(meds)) / max(max(meds), 1e-6) if len(meds) > 1 else 0.0,
+             "sun": None, "unmeasured": len(sides) - len(meds)}
         if sun is not None:
-            lit, away = mm & (normal @ sun > 0.05), mm & (normal @ sun < -0.05)
+            lit, away = mu & (normal @ sun > 0.05), mu & (normal @ sun < -0.05)
             if lit.sum() >= min_px and away.sum() >= min_px:
                 r["sun"] = abs(float(np.median(L[away])) / max(float(np.median(L[lit])), 1e-6) - 1)
         out[int(m)] = r
@@ -492,13 +536,28 @@ def check_cutaways(ctx):
             t = tiles.get(tx, ty)
             r, c = np.nonzero(np.isfinite(t["depth"]))
             edge[px["tile"] == ti] = edges_of(t)[r, c]
-        fl = flat_interior(px["rgb"], np.where(opening, k, 0), px["normal"], sun, P["cutaway_shadow_min_px"], edge)
+        kinds = np.where(opening, k, 0)
+        painted = (built.get("interior") or {}).get("kind") == "painted"
+        stone = None
+        if painted:                                                   # a painting: the faces' own material only
+            drawn = np.zeros(len(k), bool)
+            for ti, tname in enumerate(sorted(built["tiles"]["0"])):
+                tx, ty = (int(v) for v in tname.split("_"))
+                t = tiles.get(tx, ty)
+                r, c = np.nonzero(np.isfinite(t["depth"]))
+                drawn[px["tile"] == ti] = ink(t["rgb"], P["cutaway_line_min_step"])[r, c]
+            stone = face_material(px["rgb"], kinds, opening & ~edge, drawn)
+        fl = flat_interior(px["rgb"], kinds, px["normal"], sun, P["cutaway_shadow_min_px"], edge, stone)
         names = {v: kk for kk, v in K.items()}
         worst = max([max(v["worst"], v["sun"] or 0.0) for v in fl.values()] or [0.0])
-        rep.at_most(f"K3-{name}", f"{lm['name']}: placeholder interior, largest difference in median luminance between "
+        what = "painted interior, on each face's own material (not its glass or ink)" if painted else "placeholder interior"
+        rep.at_most(f"K3-{name}", f"{lm['name']}: {what}, largest difference in median luminance between "
                     f"faces of one kind turned different ways, or to and away from the photo's sun "
                     f"({g1['shadow_photo_sun']})", round(worst, 4), P["cutaway_shadow_lum_tol"],
                     [{names[m]: {a: (round(b, 4) if isinstance(b, float) else b) for a, b in v.items()}} for m, v in fl.items()])
+        if painted:
+            rep.at_most(f"K3-measured-{name}", f"{lm['name']}: painted interior, sides of a face with too little of its "
+                        f"material to measure (under {P['cutaway_shadow_min_px']} px)", sum(v["unmeasured"] for v in fl.values()), 0)
         # ---------------------------------------------------------------- K5
         cutpx = k == K["cut"]
         err = M.face_depth_error(px["px"][cutpx], px["py"][cutpx], px["depth"][cutpx]) if cutpx.any() else np.zeros(1)

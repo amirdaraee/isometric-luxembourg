@@ -197,6 +197,32 @@ def test_flat_interior_finds_a_darker_side():
     assert cc.flat_interior(rgb, material, np.r_[np.tile([0, 1.0, 0], (n, 1)), normal[n:]], sun, 150)[3]["sun"] > 0.05
 
 
+def test_flat_interior_on_a_painting_measures_the_material_only():
+    n = 400
+    normal = np.r_[np.tile([1.0, 0, 0], (n, 1)), np.tile([0, -1.0, 0], (n, 1))]
+    material = np.full(2 * n, 3)
+    rgb = np.tile([226.0, 208.0, 172.0], (2 * n, 1))                         # stone
+    rgb[:300] = (40, 80, 170)                                                # three quarters of one side is glass
+    rgb[n:n + 60] = (40, 80, 170)
+    ok = np.ones(2 * n, bool)
+    assert cc.flat_interior(rgb, material, normal, None, 150)[3]["worst"] > 0.5        # every pixel: the glass
+    stone = cc.face_material(rgb, material, ok)
+    assert stone[:300].sum() == 0 and stone[300:n].all() and stone[n + 60:].all()
+    r = cc.flat_interior(rgb, material, normal, None, 80, only=stone)[3]
+    assert r["sides"] == 2 and r["worst"] == 0 and r["unmeasured"] == 0
+    rgb[300:n] *= 0.9                                                        # that side's stone in shade: still stone
+    stone = cc.face_material(rgb, material, ok)
+    assert stone[300:n].all()
+    assert cc.flat_interior(rgb, material, normal, None, 80, only=stone)[3]["worst"] == pytest.approx(0.1, abs=0.005)
+    r = cc.flat_interior(rgb, material, normal, None, 150, only=stone)[3]    # too little stone on a side: said so
+    assert r["sides"] == 2 and r["unmeasured"] == 1
+    img = np.full((9, 9, 3), 200.0)                                          # ink: darker than a neighbour by a step
+    img[4] = 60
+    img[:, 6:] *= 0.7                                                        # a shaded patch is not ink inside
+    k = cc.ink(img, 12)
+    assert k[4].all() and not k[:4, :6].any() and not k[5:, 7:].any() and k[0, 6]
+
+
 def test_the_cuts_file_is_well_formed():
     cuts = cw.load_cuts()
     assert set(cuts["landmarks"]) == {"cathedral", "palace", "abbey"}

@@ -28,7 +28,9 @@
   "light_block_step_px": 4,
   "light_same_material_chroma": 0.03,
   "light_block_material_share": 0.4,
-  "light_lit_level_percentile": 90
+  "light_lit_level_percentile": 90,
+  "K3_measured_on": "each face's own material: chroma within 0.03 of the face's light pixels, not ink (darker than a neighbour by cutaway_line_min_step)",
+  "lines_kept_gate": "the section's lines (interior_lines.section_kept); the placeholder's are reported"
  },
  "K1a_of_the_render_as_built": {
   "seen": 257,
@@ -56,28 +58,40 @@
    "K2a_interior_px_outside_mask": 0,
    "K2b_mask_covered": 0.99997,
    "K2_ok": true,
-   "K3_worst": 0.1815,
+   "K3_worst": 0.1222,
+   "K3_unmeasured_sides": 0,
    "K3_ok": false,
+   "K3_material_share": {
+    "cut": 0.3529,
+    "inside_wall": 0.2077,
+    "inside_roof": 0.2728,
+    "floor": 0.2886
+   },
+   "K3_every_pixel_worst": 0.1815,
    "K3_by_kind": {
     "cut": {
      "sides": 0,
      "worst": 0.0,
-     "sun": null
+     "sun": null,
+     "unmeasured": 0
     },
     "inside_wall": {
      "sides": 3,
-     "worst": 0.1815,
-     "sun": null
+     "worst": 0.1222,
+     "sun": null,
+     "unmeasured": 0
     },
     "inside_roof": {
      "sides": 1,
      "worst": 0.0,
-     "sun": null
+     "sun": null,
+     "unmeasured": 0
     },
     "floor": {
      "sides": 1,
      "worst": 0.0,
-     "sun": null
+     "sun": null,
+     "unmeasured": 0
     }
    },
    "light_across_kind": {
@@ -116,7 +130,7 @@
    "raw_outside_changed_share": 0.2847,
    "raw_drawn_outside_outline_px": 2918,
    "light_across_ok": false,
-   "lines_kept_ok": false,
+   "lines_kept_ok": true,
    "K1a_section_line_share": 0.9883,
    "K1a_seen": 257,
    "K1_ok": true,
@@ -133,28 +147,40 @@
    "K2a_interior_px_outside_mask": 0,
    "K2b_mask_covered": 1.0,
    "K2_ok": true,
-   "K3_worst": 0.3456,
+   "K3_worst": 0.1375,
+   "K3_unmeasured_sides": 0,
    "K3_ok": false,
+   "K3_material_share": {
+    "cut": 0.3529,
+    "inside_wall": 0.269,
+    "inside_roof": 0.5224,
+    "floor": 0.1064
+   },
+   "K3_every_pixel_worst": 0.3456,
    "K3_by_kind": {
     "cut": {
      "sides": 0,
      "worst": 0.0,
-     "sun": null
+     "sun": null,
+     "unmeasured": 0
     },
     "inside_wall": {
      "sides": 3,
-     "worst": 0.3456,
-     "sun": null
+     "worst": 0.1375,
+     "sun": null,
+     "unmeasured": 0
     },
     "inside_roof": {
      "sides": 1,
      "worst": 0.0,
-     "sun": null
+     "sun": null,
+     "unmeasured": 0
     },
     "floor": {
      "sides": 1,
      "worst": 0.0,
-     "sun": null
+     "sun": null,
+     "unmeasured": 0
     }
    },
    "light_across_kind": {
@@ -193,7 +219,7 @@
    "raw_outside_changed_share": 0.2417,
    "raw_drawn_outside_outline_px": 2314,
    "light_across_ok": false,
-   "lines_kept_ok": false,
+   "lines_kept_ok": true,
    "K1a_section_line_share": 0.9844,
    "K1a_seen": 257,
    "K1_ok": true,
@@ -210,28 +236,40 @@
    "K2a_interior_px_outside_mask": 0,
    "K2b_mask_covered": 0.99972,
    "K2_ok": true,
-   "K3_worst": 0.1946,
+   "K3_worst": 0.1069,
+   "K3_unmeasured_sides": 0,
    "K3_ok": false,
+   "K3_material_share": {
+    "cut": 0.7059,
+    "inside_wall": 0.2132,
+    "inside_roof": 0.2737,
+    "floor": 0.3219
+   },
+   "K3_every_pixel_worst": 0.1946,
    "K3_by_kind": {
     "cut": {
      "sides": 0,
      "worst": 0.0,
-     "sun": null
+     "sun": null,
+     "unmeasured": 0
     },
     "inside_wall": {
      "sides": 3,
-     "worst": 0.1946,
-     "sun": null
+     "worst": 0.1069,
+     "sun": null,
+     "unmeasured": 0
     },
     "inside_roof": {
      "sides": 1,
      "worst": 0.0,
-     "sun": null
+     "sun": null,
+     "unmeasured": 0
     },
     "floor": {
      "sides": 1,
      "worst": 0.0,
-     "sun": null
+     "sun": null,
+     "unmeasured": 0
     }
    },
    "light_across_kind": {
@@ -270,7 +308,7 @@
    "raw_outside_changed_share": 0.2852,
    "raw_drawn_outside_outline_px": 2950,
    "light_across_ok": false,
-   "lines_kept_ok": false,
+   "lines_kept_ok": true,
    "K1a_section_line_share": 0.9922,
    "K1a_seen": 257,
    "K1_ok": true,
@@ -289,7 +327,7 @@
   "load_s": 267
  },
  "images": {
-  "input": "test_cutaway_cathedral_paint_input.jpg",
-  "candidates": "test_cutaway_cathedral_candidates.jpg"
+  "input": "test_cutaway_cathedral_paint_input_run1.jpg",
+  "candidates": "test_cutaway_cathedral_candidates_run1.jpg"
  }
 }
