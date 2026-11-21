@@ -1209,3 +1209,184 @@ New:
     such wall's windows would move once.
 39. **One pattern for every church:** the same tracery, rose and portal everywhere, round heads everywhere but
     the cathedral. Give more churches their own entry (pointed heads, a bigger rose), or leave it?
+
+## 12. The paint trial is prepared: detail transfer, and what v1's own art gives for free (21 November, $0)
+
+Branch `v2-phase3-detail`. **The preparation spent $0** and started no pod. One quote was recorded, q0016; the
+owner approved it on 21 November after seeing this section's results ("Approve q0016"). Its run is section 13.
+
+The owner asked whether v2 can reach v1's art style, and on 13 November chose "Prepare it, then quote" for a
+small paint trial. This section is the preparation. Question 35 is closed: "Keep it" (decisions log).
+
+### 12.1 What was found first
+
+- **Why the bake-off's paintings were plain.** v1's style model was trained on v1's capture: ACT's
+  photo-textured buildings on the aerial photo, with a line guide. The bake-off gave it the flat code render
+  instead, and it handed that back nearly unchanged (C1p, C4). Its input was the difference, not the model.
+- **v1's captures and paintings lie on v2's map.** v2 kept v1's camera at twice the scale. Measured on the
+  cathedral block: the code art and v1's capture agree to the pixel (shift 0, 0).
+- **v1's paintings do not lie on their own capture.** They drift from it by a median of 10 to 26 v2 pixels
+  (1.3 to 3.3 m) per block, and by up to 67 for single buildings. That is v1's wavy look, measured.
+- **v1's art is coarser than v2's map.** v1 was painted at 0.293 m per pixel; v2's map pixel is 0.125 m.
+
+### 12.2 Detail transfer (`v2/bakeoff/detail.py`)
+
+A painting is never shown as it is. Building by building it gives two things to the code art:
+
+- **Colour:** one colour for the building's walls and one for its roofs, read from the painting (walls from
+  the lit side, so a painted shadow does not darken it).
+- **Texture:** the painting's fine brightness changes inside each face, clipped, fading to nothing at the
+  code art's own edges.
+
+Everything else stays the code's: shape, ink lines, windows, doors, shutters, trim, ground, roads, rails,
+water, trees, light and shadow. Each building's painting is first shifted to where its edges meet the code
+art's; a building whose own shift is unsure takes its neighbours'.
+
+### 12.3 The free version: v1's finished art as the painting
+
+`python -m v2.bakeoff detail` on six blocks of 256 m (cathedral, palace, Grund and the abbey, the Bock,
+Pfaffenthal, Clausen), each also at its central 128 m. Numbers: `<data>/v2/test/bakeoff/detail/checks/free.json`.
+
+| | Result |
+|---|---|
+| Painted light across one building's walls (spread of its faces' brightness, median per block) | v1's art: 29% to 66%. After the transfer: 0.6% to 2.0%. The code art: 0.3% to 1.6%. |
+| Code ink pixels changed | 0 in every block |
+| Building parts given a colour (both scales counted) | 1,687 of 1,906 (219 hidden by a painted tree or all edge) |
+| Buildings placed by their own shift / by their neighbours' | 454 / 619 of 1,073 |
+
+Sheets (code art, transfer, the painting; the first two under a plain preview sun, not the viewer's light):
+`v2/docs/img/test_detail_v1art_blocks.jpg`, `test_detail_v1art_close_1.jpg`, `test_detail_v1art_close_2.jpg`.
+
+**How it looks, plainly.** It is not better than the code art.
+
+- Roof and wall colours follow v1's palette: slate roofs, sand walls. That is truer to the aerial photo than
+  the code's rule (which gave red tiles to roofs that are slate), and it is also greyer and less varied.
+- The texture is smeared up close. v1's art is 2.3 times coarser than the map and more than half the buildings
+  could not be placed by their own edges.
+- It does not read as v1. v1's look is mostly its ink weight, its lit and shaded sides, its trees and rock:
+  the things this method leaves to the code on purpose.
+
+So the free version shows the method works mechanically (even light, lines untouched) and that v1's finished
+art is too coarse and too loose to be the source.
+
+### 12.4 The paid trial, quoted: T1
+
+The same six blocks painted again by v1's style model from what it was trained on, v1's capture, with v2's
+own line layout as the guide. Two scales, two candidates each: 24 paintings.
+
+- **p250:** 0.25 m per model pixel, v1's scale, one painting per block.
+- **p125:** 0.125 m, v2's scale, the block's central 128 m. The capture is enlarged two times for it, which
+  the model has not seen in training.
+
+| Quote | GPU | Expected | Worst case | Phase 3 after it, worst case |
+|---|---|---|---|---|
+| q0016 | RunPod A100 SXM, secure, $2.19/h (read 21 Nov) | $0.74 (20 min) | $1.09 (30 min cap) | $6.02 of $8 left |
+
+Inputs are made (`python -m v2.bakeoff inputs detail`), the job is `T1` in `jobs.py`, and
+`python -m v2.bakeoff detail --source T1` runs the transfer and the sheets on what comes back.
+
+**What it can and cannot show.** It shows whether fresh paintings at v2's scale follow v2's lines closely
+enough to give sharp texture, and how straight the model paints when its guide is exact. It will not by
+itself make v2 look like v1: for that the paintings would have to be used more directly, which brings back
+the questions of baked light and line straightness. The 24 paintings are the evidence for that choice too.
+
+### 12.5 How long the build takes (for the question of a server)
+
+From the stage manifests of the last full build of the test area (two workers, this laptop): **66 minutes of
+stage time, 59 stages**. About two thirds is checks (the five longest: layer checks 7.9 min, seams 7.7, no
+cars 7.2, independence 4.7, vehicles 3.9); the layers themselves are about 16 minutes. The commune is about
+33 times the test area. At the same rate that is about 36 hours here, most of it work that splits by tile, so
+a machine with many cores would cut it to a few hours. That is an estimate from area, not a measurement.
+
+### 12.6 Not verified
+
+- The full build and its gates were not run for this branch: it adds a tool and a job and changes no layer,
+  check or threshold. The tool's tests and the ledger's pass (46 of 46). CI has not run.
+- The transfer has only been seen on sheets, not in the viewer under its own light, and not at night.
+- Nothing was tried on tiles: this is a trial on windows, not a layer.
+- The aerial photo's licence for use as a painting input beyond v1's is not checked.
+
+### 12.7 Open questions
+
+40. ~~Approve q0016 (T1, expected $0.74, worst case $1.09)?~~ Approved on 21 November.
+41. **If the fresh paintings are sharp but the result still does not read as v1:** try them used more
+    directly (their own lines and tone, with light removed by rule), or stop the paint route and spend the
+    effort on the code art's ink, trees and rock?
+42. **Roof and wall colours from the photo.** The code's rule gives red tiles where the photo shows slate.
+    Should building colours follow the aerial photo (through a painting or straight from the capture),
+    whatever happens to the texture?
+
+## 13. The paint trial ran: T1 (21 November, $0.71)
+
+Branch `v2-phase3-detail`. The owner approved q0016 on 21 November ("Approve q0016").
+
+| | |
+|---|---|
+| Spent | **$0.7078** (quote: expected $0.74, worst case $1.09). Pod `sk3bylykkbwscf`, A100 SXM, secure cloud, $2.19/h, 19.2 minutes, finished, terminated. |
+| Made | 24 of 24 paintings, 20.9 s each; model load 269 s |
+| Phase 3 | $1.6006 of $8 spent, $6.3994 left, nothing committed |
+| Reconciled | By account balance: RunPod's fell by $5.3124 since before the first v2 pod, the ledger has $5.3166. The per-pod billing lines could not be read today. |
+| Pods | None of ours left (`python -m v2.bakeoff pods`); `luxembourgish-asr-pilot` not touched |
+
+### 13.1 The paintings themselves
+
+Given what it was trained on (v1's capture and a line guide), v1's style model paints v1's look, and at v2's
+scale it is sharp. That is the trial's main result, and it changes what Phase 2 found: the bake-off's paintings
+were plain because of their input, not because of the model.
+
+- **Placement.** v1's capture lies on v2's code art to the pixel in all six blocks. Each new painting sits
+  0 to 2 px across and 0 to 12 px down from its capture (up to 1.5 m), nearly the same over a whole window.
+- **Lines** (gate #6: the model's building edges and window rows found within 1 px; limit 95%), the six
+  p125 windows pooled, 141,412 edge samples and 10,831 window samples:
+
+| | Building edges | Window rows |
+|---|---|---|
+| Code art | 95.8% | 99.9% |
+| Paintings as painted (two candidates) | 87.9%, 86.2% | 89.1%, 87.7% |
+| Paintings after per-building placement | 92.0%, 91.0% | 86.0%, 85.3% |
+
+  The paintings put most windows where v2's layout has them, and still miss the gate by 3 to 10 points.
+- **Light.** Painted, as v1's: the spread of brightness across one building's walls is 23% to 68% (median per
+  window). The limit for baked light is 5%.
+- **Cars.** By eye, at least one painting has parked cars (the Grund car park). Not measured.
+
+### 13.2 Three ways of using a painting
+
+Sheets, four columns (code art, light transfer, painting with its light removed, painting as painted):
+`v2/docs/img/test_detail_t1_levels_1.jpg`, `test_detail_t1_levels_2.jpg`. Whole blocks and close views of the
+light transfer: `test_detail_t1_blocks.jpg`, `test_detail_t1_close_1.jpg`, `test_detail_t1_close_2.jpg`.
+Numbers: `<data>/v2/test/bakeoff/detail/checks/T1.json`.
+
+| | Even light (limit 5%) | Lines | How it looks |
+|---|---|---|---|
+| **Light transfer** (section 12.2) | 0.5% to 1.6% | The code's, untouched | Truer colours, a little roof texture. Still reads as the code art, and duller than it. Not worth its cost. |
+| **Painting with its light removed** (`detail.delit`, a first rough version) | 2.0% to 14.4%; worst single building 37% | The painting's own inside each face, the code's on the borders | Keeps the painted windows, dormers and stone. Pale, and messy where small houses crowd and placement is unsure. |
+| **Painting as painted** | 23% to 68% | 86% to 89% | By far the best looking. Fails both rules it would have to pass. |
+
+### 13.3 What this means
+
+- The transfer I proposed, colour and fine texture only, does what it was built to do and is not the answer:
+  what makes the painting good is exactly what it leaves out.
+- The paint route is open again on better evidence than Phase 2 had. The gap is now specific: remove the
+  painted light, and close 3 to 10 points of line score.
+- Gate G2 stands as decided (method A). Nothing here changes a layer.
+
+### 13.4 Not verified
+
+- No car detection was run on the 24 paintings.
+- Nothing was seen in the viewer, at night, or on tiles. Seams between neighbouring paintings (the Bock
+  overlaps the abbey's block) were not measured.
+- Whether the model paints evenly lit when asked, from this input, is untested: these were painted with v1's
+  own prompt. The pilot of Phase 2 asked for even light but from the wrong input.
+- The full build and its gates were not run; no layer, check or threshold changed.
+
+### 13.5 Open questions
+
+41 is half answered: fresh paintings are sharp, and the light transfer of them does not read as v1.
+
+43. **Next step on the paint route.** (a) Paint the same six blocks once more asking for even light, about
+    $0.70, to learn whether the model can leave the light out itself; (b) work on removing the light and on
+    placement in code, free; (c) stop here and put the effort into the code art. (a) and (b) can go together.
+44. **If paintings are used, G2 is reopened** (method A was chosen when the paintings were plain). That is the
+    owner's decision, after a result that passes the light and line rules on these six blocks.
+

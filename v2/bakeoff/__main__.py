@@ -11,6 +11,12 @@
     python -m v2.bakeoff inputs facades         C4: ten buildings' camera-facing walls drawn front-on
     python -m v2.bakeoff inputs cutaway         K1 (Phase 3): the cathedral's cut render as the painter's two control
                                                 images, as built and with its opening cleared (cutaway_paint.py)
+    python -m v2.bakeoff inputs detail          T1 (Phase 3): six blocks' control images at two scales, v1's capture
+                                                and v2's line layout (detail.py)
+    python -m v2.bakeoff detail [--source free|T1]
+                                                detail transfer on the six blocks: a painting's colour and fine
+                                                texture onto the code art, the numbers and the sheets. free = from
+                                                v1's finished art ($0); T1 = from T1's paintings
     python -m v2.bakeoff trial [--no-build]     C4's result: on the ten trial buildings, method A against the facades
                                                 painted front-on and projected onto their walls (line score, flat
                                                 light, cars), a preview sheet, and the small C4 build registered as
@@ -113,7 +119,21 @@ def cmd_quote(a):
         print("recorded", e["id"], e["job"], e["worst_usd"], f"(live price ${p}/h)")
 
 
+def cmd_detail(a):
+    from v2.bakeoff import detail as D
+    res = D.run(a.source)
+    for k, v in res["inputs"].items():
+        print(k, json.dumps(v))
+    if "lines" in res:
+        print("lines", json.dumps(res["lines"]["pooled"]))
+    return 0 if res["inputs"] else 1
+
+
 def cmd_inputs(a):
+    if a.method == "detail":
+        from v2.bakeoff import detail as D
+        print(json.dumps(D.make_inputs(), indent=1))
+        return 0
     if a.method == "cutaway":
         from v2.bakeoff import cutaway_paint as CP
         print(json.dumps(CP.make_inputs(), indent=1))
@@ -343,7 +363,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status")
     q = sub.add_parser("quote"); q.add_argument("--record", action="store_true"); q.add_argument("--again", metavar="JOB")
-    i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c", "facades", "cutaway"]); i.add_argument("--limit", type=int, default=0)
+    i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c", "facades", "cutaway", "detail"]); i.add_argument("--limit", type=int, default=0)
     i.add_argument("--crops", action="store_true", help="b: also each landmark's unlit crop")
     i.add_argument("--release", help="c: the built release whose layers 1-4 are used (default: this checkout's)")
     s = sub.add_parser("smoke"); s.add_argument("method", choices=["c"])
@@ -363,6 +383,7 @@ def main(argv=None):
     pt = sub.add_parser("painted"); pt.add_argument("method", choices=["b", "c"])
     tr = sub.add_parser("trial"); tr.add_argument("--no-build", action="store_true", help="measure only, no C4 build")
     sub.add_parser("pilot-gates")
+    dt_ = sub.add_parser("detail"); dt_.add_argument("--source", choices=["free", "T1"], default="free")
     pv = sub.add_parser("previews"); pv.add_argument("--url", default="http://localhost:5175/")
     pv.add_argument("--before", help="a folder with the earlier test_a_grund_golden_hour.jpg and test_a_grund_night.jpg: "
                                      "also writes the lighting before/after sheet")
@@ -371,7 +392,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     return {"status": cmd_status, "quote": cmd_quote, "inputs": cmd_inputs, "smoke": cmd_smoke, "run": cmd_run,
             "register": cmd_register, "end": cmd_end, "pods": cmd_pods, "reconcile": cmd_reconcile, "check": cmd_check, "adopt": cmd_adopt,
-            "pick": cmd_pick, "painted": cmd_painted, "trial": cmd_trial, "previews": cmd_previews,
+            "pick": cmd_pick, "detail": cmd_detail, "painted": cmd_painted, "trial": cmd_trial, "previews": cmd_previews,
             "pilot-gates": lambda a: __import__("v2.bakeoff.results", fromlist=["x"]).pilot_gates()}[a.cmd](a) or 0
 
 
