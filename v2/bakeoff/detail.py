@@ -347,7 +347,82 @@ def transfer(code, painting, g: dict, have=None, p: dict = P):
     return np.clip(np.round(out), 0, 255).astype(np.uint8), st
 
 
+def delit(code, painting, g: dict, sigma=24.0, clip=(-1.1, 0.5), p: dict = P):
+    """The painting used more directly (a first, rough version, for the trial's sheet): inside each face the
+    (registered) painting keeps all its own drawing, its windows, dormers and joints, and half its own colour
+    changes; only the face's light is replaced, its brightness taken against its own mean over `sigma` px and set
+    on one colour per building part. The code art keeps the ground, the trees and the ink on the borders between
+    faces and buildings; its own windows are not drawn. A cast shadow wider than sigma survives in part."""
+    from scipy import ndimage as ndi
+    code = code.astype(float); src = painting.astype(float) + 1.0
+    bid, cls, face, _seg = segments(g)
+    on = np.isin(g["which"], PAINT_LAYERS)
+    roof = np.isin(cls, (ROOF,)).astype(np.int64)
+    out = code.copy()
+    tree = greenish(src)
+    seg2 = (bid * 2 + roof) * 8000 + face + g["which"].astype(np.int64) * (1 << 50)
+    e = np.zeros(seg2.shape, bool)
+    e[:, 1:] |= seg2[:, 1:] != seg2[:, :-1]; e[1:, :] |= seg2[1:, :] != seg2[:-1, :]
+    border = ndi.binary_dilation(e, iterations=1)
+    ly = np.log(lum(src))
+    chroma = src / lum(src)[..., None]
+    H, W = on.shape; pad = int(2.5 * sigma)
+    for b in np.unique(bid[on]):
+        mb = on & (bid == b)
+        for kind in (0, 1):
+            m = mb & (roof == kind)
+            if m.sum() < p["min_px"]:
+                continue
+            good = m & ~tree & ~border & np.isin(cls, (WALL, PART, ROOF))
+            if good.sum() < p["min_px"] * 0.5:
+                continue
+            target = band_colour(src[good] - 1.0, p["band_roof" if kind else "band_wall"])
+            tl = lum(target)
+            rows = np.flatnonzero(m.any(1)); cols = np.flatnonzero(m.any(0))
+            r0, c0 = max(rows[0] - pad, 0), max(cols[0] - pad, 0)
+            r1, c1 = min(rows[-1] + 1 + pad, H), min(cols[-1] + 1 + pad, W)
+            sl = (slice(r0, r1), slice(c0, c1))
+            for f in np.unique(face[sl][m[sl]]):
+                mf = m[sl] & (face[sl] == f) & ~tree[sl]
+                w = mf.astype(float)
+                if w.sum() < 40:
+                    continue
+                mean = ndi.gaussian_filter(ly[sl] * w, sigma) / np.maximum(ndi.gaussian_filter(w, sigma), 1e-3)
+                d = np.clip(ly[sl] - mean, *clip)
+                val = tl * np.exp(d)[..., None] * (0.5 * chroma[sl] + 0.5 * (target / tl)[None, None, :])
+                sub = out[sl]; sub[mf] = val[mf]; out[sl] = sub
+    ink = (lum(code) + 1.0 < p["ink"]) & border & on
+    out[ink] = code[ink]
+    return np.clip(np.round(out), 0, 255).astype(np.uint8)
+
+
 # ------------------------------------------------------------------------------------------------ the numbers
+def line_scores(source: str = "T1", scene_folder=None) -> dict:
+    """Gate #6's line score (the model's building edges and window rows found within 1 px, paintcheck.line_score)
+    on each p125 window: the code art, each painting as painted, and each painting registered. Pooled per kind."""
+    from v2.bakeoff import paintcheck as PC
+    if scene_folder is None:
+        from v2.build.stages import graph
+        scene_folder = graph().folder("scene", AREA)
+    out, pool = {}, {}
+    for b in BLOCKS:
+        name = f"{b}_p125"
+        code, g, meta = load_input(name)
+        rows = {"code": PC.line_score(scene_folder, meta["x0"], meta["y0"], code, g)}
+        for k in ((0,) if source == "free" else range(len(SEEDS))):
+            painting, _have = painting_for(name, source, k)
+            if painting is None:
+                continue
+            rows[f"painting_{k}"] = PC.line_score(scene_folder, meta["x0"], meta["y0"], painting, g)
+            rows[f"registered_{k}"] = PC.line_score(scene_folder, meta["x0"], meta["y0"], register(code, painting, g)[0], g)
+        out[name] = rows
+        for key, r in rows.items():
+            for kind, (seen, hit) in r.items():
+                a = pool.setdefault(key, {}).setdefault(kind, [0, 0]); a[0] += seen; a[1] += hit
+    return {"windows": out, "pooled": {k: {kind: {"seen": v[0], "share": round(v[1] / max(v[0], 1), 4)} for kind, v in r.items()}
+                                       for k, r in pool.items()}}
+
+
 def flat_by_part(rgb, g: dict, min_px=600) -> dict:
     """How even the result is across each building's walls: the spread of the faces' median luminance round the
     building's own (the code art's is 0 by construction where one material covers the walls). A painted shadow or a
@@ -508,7 +583,7 @@ def run(source: str = "free", img: Path | None = None, write=True) -> dict:
     """Every input through register and transfer; the numbers (checks/<source>.json) and two sheets per source:
     whole windows, and each p125 window's central 64 m at full size."""
     img = img or V2 / "docs" / "img"
-    res, rows, zooms = {}, [], []
+    res, rows, zooms, levels = {}, [], [], []
     cands = (0,) if source == "free" else tuple(range(len(SEEDS)))
     for name in input_names():
         for k in cands:
@@ -523,7 +598,21 @@ def run(source: str = "free", img: Path | None = None, write=True) -> dict:
                     rows.append(sheet_row(r, shown=400))
                 else:
                     zooms.append(sheet_row(r, crop=(slice(256, 768), slice(256, 768))))
+                    if source != "free":                 # four ways: code, transfer, painting without its light, painting
+                        c = (slice(256, 768), slice(256, 768))
+                        dl = delit(r["code"], r["registered"], r["g"])
+                        res[key]["flat_delit"] = flat_by_part(dl, r["g"])
+                        t = r["g"].get("trees")
+
+                        def shown(rgb, r=r, t=t, c=c):
+                            im = lit(rgb, r["g"])
+                            return (np.where(t[..., 3:] > 0, t[..., :3], im) if t is not None else im)[c]
+                        ims = [_label(shown(r["code"]), "code art"), _label(shown(r["out"]), "light transfer"),
+                               _label(shown(dl), "painting, light removed"), _label(painting[c], "painting as painted")]
+                        levels.append(_row([np.asarray(Image.fromarray(i).resize((448, 448), Image.LANCZOS)) for i in ims]))
     out = {"source": source, "params": P, "inputs": res}
+    if source != "free" and res:
+        out["lines"] = line_scores(source)
     if write and res:
         (base() / "checks").mkdir(parents=True, exist_ok=True)
         (base() / "checks" / f"{source}.json").write_text(json.dumps(out, indent=1))
@@ -531,6 +620,9 @@ def run(source: str = "free", img: Path | None = None, write=True) -> dict:
         if rows:
             _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in rows]),
                   img / f"test_detail_{tag}_blocks.jpg")
+        for i in range(0, len(levels), 3):
+            _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in levels[i:i + 3]]),
+                  img / f"test_detail_{tag}_levels_{i // 3 + 1}.jpg")
         if zooms:
             for i in range(0, len(zooms), 3):
                 _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in zooms[i:i + 3]]),

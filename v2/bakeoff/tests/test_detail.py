@@ -139,3 +139,18 @@ def test_the_trial_job_cannot_run_without_its_own_approval(tmp_path):
     with pytest.raises(LedgerRefusal):
         runner.authorise(j, L, price_now=j.price_h + 0.5)              # dearer than quoted
     assert runner.authorise(j, L, price_now=j.price_h)["id"] == q["id"]
+
+
+def test_delit_keeps_the_paintings_own_drawing_and_the_codes_border_ink():
+    code, g = scene()
+    painting = painting_of(code, g)
+    cls = g["ids"] & 255
+    out = D.delit(code, painting, g, sigma=8.0)
+    # the painted window (dark on the wall) is still there, where the light transfer keeps the code's
+    win = cls == 12; wall = (cls == 11) & (D.lum(code.astype(float)) > 100)
+    assert D.lum(out[win].astype(float)).mean() < 0.5 * D.lum(out[wall].astype(float)).mean()
+    assert not (out[win] == code[win]).all()
+    # the eaves line the code inked between roof and wall stays the code's; the ground is untouched
+    for r0, c0 in ((40, 30), (120, 130)):
+        assert (out[r0 + 30, c0 + 2:c0 + 68] == code[r0 + 30, c0 + 2:c0 + 68]).all()
+    assert (out[g["which"] == 1] == code[g["which"] == 1]).all()

@@ -1316,3 +1316,77 @@ a machine with many cores would cut it to a few hours. That is an estimate from 
     Should building colours follow the aerial photo (through a painting or straight from the capture),
     whatever happens to the texture?
 
+## 13. The paint trial ran: T1 (21 November, $0.71)
+
+Branch `v2-phase3-detail`. The owner approved q0016 on 21 November ("Approve q0016").
+
+| | |
+|---|---|
+| Spent | **$0.7078** (quote: expected $0.74, worst case $1.09). Pod `sk3bylykkbwscf`, A100 SXM, secure cloud, $2.19/h, 19.2 minutes, finished, terminated. |
+| Made | 24 of 24 paintings, 20.9 s each; model load 269 s |
+| Phase 3 | $1.6006 of $8 spent, $6.3994 left, nothing committed |
+| Reconciled | By account balance: RunPod's fell by $5.3124 since before the first v2 pod, the ledger has $5.3166. The per-pod billing lines could not be read today. |
+| Pods | None of ours left (`python -m v2.bakeoff pods`); `luxembourgish-asr-pilot` not touched |
+
+### 13.1 The paintings themselves
+
+Given what it was trained on (v1's capture and a line guide), v1's style model paints v1's look, and at v2's
+scale it is sharp. That is the trial's main result, and it changes what Phase 2 found: the bake-off's paintings
+were plain because of their input, not because of the model.
+
+- **Placement.** v1's capture lies on v2's code art to the pixel in all six blocks. Each new painting sits
+  0 to 2 px across and 0 to 12 px down from its capture (up to 1.5 m), nearly the same over a whole window.
+- **Lines** (gate #6: the model's building edges and window rows found within 1 px; limit 95%), the six
+  p125 windows pooled, 141,412 edge samples and 10,831 window samples:
+
+| | Building edges | Window rows |
+|---|---|---|
+| Code art | 95.8% | 99.9% |
+| Paintings as painted (two candidates) | 87.9%, 86.2% | 89.1%, 87.7% |
+| Paintings after per-building placement | 92.0%, 91.0% | 86.0%, 85.3% |
+
+  The paintings put most windows where v2's layout has them, and still miss the gate by 3 to 10 points.
+- **Light.** Painted, as v1's: the spread of brightness across one building's walls is 23% to 68% (median per
+  window). The limit for baked light is 5%.
+- **Cars.** By eye, at least one painting has parked cars (the Grund car park). Not measured.
+
+### 13.2 Three ways of using a painting
+
+Sheets, four columns (code art, light transfer, painting with its light removed, painting as painted):
+`v2/docs/img/test_detail_t1_levels_1.jpg`, `test_detail_t1_levels_2.jpg`. Whole blocks and close views of the
+light transfer: `test_detail_t1_blocks.jpg`, `test_detail_t1_close_1.jpg`, `test_detail_t1_close_2.jpg`.
+Numbers: `<data>/v2/test/bakeoff/detail/checks/T1.json`.
+
+| | Even light (limit 5%) | Lines | How it looks |
+|---|---|---|---|
+| **Light transfer** (section 12.2) | 0.5% to 1.6% | The code's, untouched | Truer colours, a little roof texture. Still reads as the code art, and duller than it. Not worth its cost. |
+| **Painting with its light removed** (`detail.delit`, a first rough version) | 2.0% to 14.4%; worst single building 37% | The painting's own inside each face, the code's on the borders | Keeps the painted windows, dormers and stone. Pale, and messy where small houses crowd and placement is unsure. |
+| **Painting as painted** | 23% to 68% | 86% to 89% | By far the best looking. Fails both rules it would have to pass. |
+
+### 13.3 What this means
+
+- The transfer I proposed, colour and fine texture only, does what it was built to do and is not the answer:
+  what makes the painting good is exactly what it leaves out.
+- The paint route is open again on better evidence than Phase 2 had. The gap is now specific: remove the
+  painted light, and close 3 to 10 points of line score.
+- Gate G2 stands as decided (method A). Nothing here changes a layer.
+
+### 13.4 Not verified
+
+- No car detection was run on the 24 paintings.
+- Nothing was seen in the viewer, at night, or on tiles. Seams between neighbouring paintings (the Bock
+  overlaps the abbey's block) were not measured.
+- Whether the model paints evenly lit when asked, from this input, is untested: these were painted with v1's
+  own prompt. The pilot of Phase 2 asked for even light but from the wrong input.
+- The full build and its gates were not run; no layer, check or threshold changed.
+
+### 13.5 Open questions
+
+41 is half answered: fresh paintings are sharp, and the light transfer of them does not read as v1.
+
+43. **Next step on the paint route.** (a) Paint the same six blocks once more asking for even light, about
+    $0.70, to learn whether the model can leave the light out itself; (b) work on removing the light and on
+    placement in code, free; (c) stop here and put the effort into the code art. (a) and (b) can go together.
+44. **If paintings are used, G2 is reopened** (method A was chosen when the paintings were plain). That is the
+    owner's decision, after a result that passes the light and line rules on these six blocks.
+

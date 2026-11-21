@@ -124,6 +124,8 @@ def cmd_detail(a):
     res = D.run(a.source)
     for k, v in res["inputs"].items():
         print(k, json.dumps(v))
+    if "lines" in res:
+        print("lines", json.dumps(res["lines"]["pooled"]))
     return 0 if res["inputs"] else 1
 
 
