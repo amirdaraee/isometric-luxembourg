@@ -50,6 +50,7 @@ case "$JOB" in
   C3)  paint "$NEW" 1867 ;;
   C4)  if [ -f "$NEW" ]; then paint "$NEW" 1867,1868; else paint "$V1" 1867,1868; fi ;;
   K1)  paint "$V1" 1867,1868 2 ;;
+  T1)  paint "$V1" 1867,1868 ;;
   *) echo "unknown job $JOB"; false ;;
 esac
 RC=$?

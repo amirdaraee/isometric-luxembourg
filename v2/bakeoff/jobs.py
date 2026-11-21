@@ -180,7 +180,31 @@ CUTAWAY_JOBS = [
                "patches. Not approved; needs the owner's OK"]),
 ]
 
-BY_ID = {j.id: j for j in JOBS + CUTAWAY_JOBS}
+# Phase 3, the detail-transfer trial (detail.py): six blocks painted again by v1's style model from what it was
+# trained on (v1's photo-textured capture and a line guide, here v2's own), at v1's scale and at v2's. Paid from the
+# Phase 3 line. Times are K1's second run's (q0015, pod 1zj2z6jzs0dz39, the same GPU and cloud): 761 s in all for 4
+# paintings at 23 s, so 639 s of start, setup, model load and return.
+T1_PAINTINGS = 24
+T1_PLAN_S = {"pod start, setup, model load, results back and terminate (K1's second run: 761 s less its 4 paintings)": 669,
+             "24 paintings x 23 s": 552}                                  # 1,221 s = 20.4 min
+TRIAL_JOBS = [
+    Job("T1", "detail", "detail-transfer trial: six blocks of the test area painted from v1's capture and v2's line "
+        "layout, at 0.25 m and at 0.125 m per model pixel, 2 candidates each", "runpod", "A100 SXM",
+        est_h=0.34, cap_h=0.5, price_read="2026-11-21", goal=CUTAWAY_GOAL, cloud="secure",
+        work="6 blocks x 2 scales x 2 candidates = 24 paintings, 1024 x 1024, 8 steps (Lightning)",
+        model=f"{QWEN_EDIT} + {LIGHTNING} + {INK_V1}",
+        inputs="python -m v2.bakeoff inputs detail: control 1 = v1's capture (photo-textured buildings on the "
+               "orthophoto), control 2 = v2's line layout; v1's own prompt, as trained",
+        outputs="<data>/v2/test/bakeoff/detail/painted/<block>_<scale>_<k>.png -> python -m v2.bakeoff detail --source T1",
+        notes=["a painting is never shown as it is: detail.py takes each building's wall and roof colour and its "
+               "fine texture from it and keeps the code art's shape, lines, windows and evenness",
+               "the same steps ran at 0 USD on v1's finished art (python -m v2.bakeoff detail): PHASE3_REPORT.md section 12",
+               "the same GPU and cloud as K1's two runs; time plan from the second: 669 s around the painting + 24 x "
+               "23 s = 1,221 s (20.4 min), est 0.34 h; the cap of 0.5 h (30 min) leaves 9.6 min for a slower "
+               "download or model load"]),
+]
+
+BY_ID = {j.id: j for j in JOBS + CUTAWAY_JOBS + TRIAL_JOBS}
 
 # Phase 2's estimate of all four cutaways together (PHASE2_QUOTE.md); the quotes that followed are CUTAWAY_JOBS
 PHASE3_CUTAWAYS = Job("P3-K", "c", "landmark cutaways: cathedral, palace, abbey, casemates (Phase 3)", "runpod", "H100 SXM",
