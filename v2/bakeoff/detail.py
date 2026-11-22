@@ -673,3 +673,50 @@ def run(source: str = "free", img: Path | None = None, write=True) -> dict:
                 _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in zooms[i:i + 3]]),
                       img / f"test_detail_{tag}_close_{i // 3 + 1}.jpg")
     return out
+
+
+def pairs(a: str = "T1", b: str = "T2", img: Path | None = None, write=True) -> dict:
+    """Two paid runs that differ by their prompt alone, painting by painting (same input, same seed): how even
+    each is across a building's walls as painted (flat_by_part of the registered painting), and sheets of the
+    first candidate: each p125 window's central 64 m (a, b, b with its light removed, the code art; the last two
+    under the preview sun) and each whole block (a, b)."""
+    img = img or V2 / "docs" / "img"
+    res, close, blocks = {}, [], []
+    for name in input_names():
+        code, g, meta = load_input(name)
+        for k in range(len(SEEDS)):
+            pa, pb = painting_for(name, a, k)[0], painting_for(name, b, k)[0]
+            if pa is None or pb is None:
+                continue
+            ra, rb = register(code, pa, g)[0], register(code, pb, g)[0]
+            fa, fb = flat_by_part(ra, g), flat_by_part(rb, g)
+            ya, yb = lum(pa.astype(float)), lum(pb.astype(float))
+            on = np.isin(g["which"], PAINT_LAYERS)
+            res[f"{name}_{k}"] = {a: fa, b: fb, "luminance": {a: round(float(ya[on].mean()), 1), b: round(float(yb[on].mean()), 1)},
+                                  "differ_mean": round(float(np.abs(pa.astype(float) - pb.astype(float)).mean()), 2)}
+            if k:
+                continue
+            if name.endswith("p250"):
+                blocks.append(_row([np.asarray(Image.fromarray(_label(i, t)).resize((640, 640), Image.LANCZOS))
+                                    for i, t in ((pa, f"{a}: as v1 painted"), (pb, f"{b}: even light asked"))]))
+            else:
+                c = (slice(256, 768), slice(256, 768))
+                dl = delit(code, rb, g, photo_shadow(g, meta))
+                t = g.get("trees")
+
+                def shown(rgb, g=g, t=t, c=c):
+                    im = lit(rgb, g)
+                    return (np.where(t[..., 3:] > 0, t[..., :3], im) if t is not None else im)[c]
+                ims = [_label(pa[c], f"{a}: as v1 painted"), _label(pb[c], f"{b}: even light asked"),
+                       _label(shown(dl), f"{b}, light removed"), _label(shown(code), "code art")]
+                close.append(_row([np.asarray(Image.fromarray(i).resize((448, 448), Image.LANCZOS)) for i in ims]))
+    out = {"a": a, "b": b, "inputs": res}
+    if write and res:
+        (base() / "checks").mkdir(parents=True, exist_ok=True)
+        (base() / "checks" / f"pairs_{a}_{b}.json").write_text(json.dumps(out, indent=1))
+        tag = f"{a}_{b}".lower()
+        for kind, rows, per in (("close", close, 3), ("blocks", blocks, 2)):
+            for i in range(0, len(rows), per):
+                _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in rows[i:i + per]]),
+                      img / f"test_detail_{tag}_{kind}_{i // per + 1}.jpg")
+    return out

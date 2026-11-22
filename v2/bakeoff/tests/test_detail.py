@@ -193,3 +193,28 @@ def test_delit_gives_a_shaded_wall_its_lit_neighbours_colour():
         front, shaded = D.lum(out[w & ~side].astype(float)), D.lum(out[w & side].astype(float))
         assert abs(np.median(shaded) / np.median(front) - 1) < 0.03
     assert D.flat_by_part(out, g, min_px=200)["worst"] < 0.03 < D.flat_by_part(painting, g, min_px=200)["worst"]
+
+
+def test_pairs_set_two_runs_side_by_side_painting_by_painting(tmp_path, monkeypatch):
+    from PIL import Image
+    code, g = scene()
+    n = code.shape[0]
+    monkeypatch.setattr(D, "base", lambda: tmp_path)
+    monkeypatch.setattr(D, "WIN", n)
+    monkeypatch.setattr(D, "input_names", lambda: ["x_p125"])
+    monkeypatch.setattr(D, "window_of", lambda name: (0, 0, n, 1))
+    monkeypatch.setattr(D, "photo_shadow", lambda g, meta, rel=None: None)
+    src = tmp_path / "inputs"; src.mkdir()
+    Image.fromarray(code).save(src / "x_p125.code.png")
+    np.savez_compressed(src / "x_p125.geom.npz", **g)
+    (src / "x_p125.json").write_text(json.dumps({"x0": 0, "y0": 0}))
+    for run, shade in (("T1", True), ("T2", False)):
+        d = tmp_path / D.PAINTED[run]; d.mkdir()
+        for k in range(len(D.SEEDS)):
+            Image.fromarray(painting_of(code, g, shade=shade)).save(d / f"x_p125_{k}.png")
+    out = D.pairs("T1", "T2", img=tmp_path / "img")
+    assert set(out["inputs"]) == {"x_p125_0", "x_p125_1"}
+    for v in out["inputs"].values():
+        assert v["differ_mean"] > 0 and v["luminance"]["T2"] > v["luminance"]["T1"]
+    assert json.loads((tmp_path / "checks" / "pairs_T1_T2.json").read_text())["inputs"] == out["inputs"]
+    assert (tmp_path / "img" / "test_detail_t1_t2_close_1.jpg").exists()

@@ -126,6 +126,9 @@ def cmd_detail(a):
         print(k, json.dumps(v))
     if "lines" in res:
         print("lines", json.dumps(res["lines"]["pooled"]))
+    if a.source == "T2":                                   # T2 is T1 with another prompt: pair by pair
+        for k, v in D.pairs("T1", "T2")["inputs"].items():
+            print("pair", k, json.dumps(v))
     return 0 if res["inputs"] else 1
 
 
