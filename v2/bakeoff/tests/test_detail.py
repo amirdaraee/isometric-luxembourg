@@ -116,7 +116,7 @@ def test_the_trial_job_is_quoted_from_the_last_runs_times_and_fits_the_phase():
     assert j.est_usd <= j.worst_usd <= 1.10
     budget = json.loads((HERE / "budget.json").read_text())
     assert j.worst_usd <= budget["goals"][j.goal]["cap_usd"]
-    assert 'T1|T2)  paint "$V1" 1867,1868 ;;' in (runner.POD / "run.sh").read_text()
+    assert 'T1|T2|T3)  paint "$V1" 1867,1868 ;;' in (runner.POD / "run.sh").read_text()
     assert B.SETUP["T1"] == "paint" and B.OUT["T1"] == "detail/painted"
     assert any(str(u[0]).endswith(B.V1_LORA) for u in B.uploads("T1", HERE))
 
@@ -127,7 +127,7 @@ def test_the_even_light_repaint_differs_from_t1_by_its_prompt_only(tmp_path, mon
     assert (t2.gpu, t2.cloud, t2.goal, t2.work, t2.model) == (t1.gpu, t1.cloud, t1.goal, t1.work, t1.model)
     assert J.T1_MEASURED_S <= t2.est_h * 3600 <= J.T1_MEASURED_S + 60 and t2.worst_usd <= 1.10
     assert runner.cap_seconds(t2) - 45 >= 1.4 * J.T1_MEASURED_S
-    assert B.OUT["T2"] == "detail/painted_even" != B.OUT["T1"] and D.PAINTED == {"T1": "painted", "T2": "painted_even"}
+    assert B.OUT["T2"] == "detail/painted_even" != B.OUT["T1"] and D.PAINTED["T2"] == "painted_even"
     # the bundles: the same control images, the prompts apart by the even-light sentence alone
     monkeypatch.setattr(B, "base", lambda: tmp_path)
     monkeypatch.setattr(D, "base", lambda: tmp_path / "detail")
@@ -218,3 +218,71 @@ def test_pairs_set_two_runs_side_by_side_painting_by_painting(tmp_path, monkeypa
         assert v["differ_mean"] > 0 and v["luminance"]["T2"] > v["luminance"]["T1"]
     assert json.loads((tmp_path / "checks" / "pairs_T1_T2.json").read_text())["inputs"] == out["inputs"]
     assert (tmp_path / "img" / "test_detail_t1_t2_close_1.jpg").exists()
+
+
+SUN = np.array([0.2, 0.36, 0.91])                                       # behind the viewer, to the right, as the photo's
+
+
+def two_faced(g):
+    """The scene's walls with a second face each: the right 30 columns turn the corner, away from SUN."""
+    cls = g["ids"] & 255; cc = np.indices(cls.shape)[1]
+    side = np.zeros(cls.shape, bool)
+    for b, c0 in ((1, 30), (2, 130)):
+        side |= np.isin(cls, (11, 12)) & ((g["ids"] >> 8) == b) & (cc >= c0 + 40)
+    g["normal"][side] = (-0.6, 0.0, 0.8)
+    return side
+
+
+def test_the_evened_capture_raises_a_face_the_sun_left_and_leaves_a_dark_material_alone():
+    code, g = scene()
+    side = two_faced(g)
+    cls = g["ids"] & 255; bid = g["ids"] >> 8
+    photo = painting_of(code, g).astype(float)
+    photo[side & (bid == 1)] *= 0.7                                     # building 1: the far face in shade
+    front2 = (cls == 11) & (bid == 2) & ~side
+    photo[front2] *= 0.5                                                # building 2: a dark front, facing the sun
+    photo = photo.astype(np.uint8)
+    out, st = D.even_capture(photo, g, None, SUN)
+    y0, y1 = D.lum(photo.astype(float)), D.lum(out.astype(float))
+    w1 = (cls == 11) & (bid == 1)
+    assert np.median(y0[w1 & side]) / np.median(y0[w1 & ~side]) < 0.75
+    assert abs(np.median(y1[w1 & side]) / np.median(y1[w1 & ~side]) - 1) < 0.03
+    assert (out[bid == 2] == photo[bid == 2]).all()                     # nothing the sun explains: left as it is
+    assert (y1 + 1 >= y0).all()                                         # nothing is ever darkened
+    assert (out[g["which"] == 1] == photo[g["which"] == 1]).all() and st["raised"] == 1
+
+
+def test_the_evened_capture_lifts_a_ground_shadow_to_the_ground_beside_it():
+    code, g = scene()
+    photo = painting_of(code, g).astype(float)
+    cast = np.zeros(g["which"].shape, bool); cast[195:225, 20:100] = True      # on bare ground
+    photo[cast] *= (0.45, 0.5, 0.6)                                             # dark and blue
+    photo = photo.astype(np.uint8)
+    out, st = D.even_capture(photo, g, cast, SUN)
+    inner = np.zeros_like(cast); inner[199:221, 24:96] = True
+    assert np.abs(np.median(out[inner], axis=0) - 150).max() <= 4 and st["ground_patches"] == 1
+    far = np.zeros_like(cast); far[230:, :] = True
+    assert (out[far] == photo[far]).all()
+
+
+def test_t3_differs_from_t2_by_its_first_control_image_only(tmp_path, monkeypatch):
+    t2, t3 = J.BY_ID["T2"], J.BY_ID["T3"]
+    assert (t3.gpu, t3.cloud, t3.goal, t3.work, t3.model) == (t2.gpu, t2.cloud, t2.goal, t2.work, t2.model)
+    assert J.T2_MEASURED_S <= t3.est_h * 3600 <= J.T2_MEASURED_S + 60 and t3.worst_usd <= 1.10
+    assert runner.cap_seconds(t3) - 45 >= 1.4 * J.T2_MEASURED_S
+    assert B.OUT["T3"] == "detail/painted_evenin" and D.PAINTED["T3"] == "painted_evenin" and B.SETUP["T3"] == "paint"
+    assert any(str(u[0]).endswith(B.V1_LORA) for u in B.uploads("T3", HERE))
+    monkeypatch.setattr(B, "base", lambda: tmp_path)
+    monkeypatch.setattr(D, "base", lambda: tmp_path / "detail")
+    src = tmp_path / "detail" / "inputs"; src.mkdir(parents=True)
+    even = tmp_path / "detail" / "inputs_even"; even.mkdir()
+    for n in D.input_names():
+        for ext in ("unlit.png", "layout.png"):
+            (src / f"{n}.{ext}").write_bytes(f"{n}.{ext}".encode())
+        (even / f"{n}.unlit.png").write_bytes(f"{n}.evened".encode())
+    b2, b3 = B.build("T2"), B.build("T3")
+    files = lambda d: {p.name: p.read_bytes() for p in (d / "inputs").iterdir()}          # noqa: E731
+    f2, f3 = files(b2), files(b3)
+    assert set(f2) == set(f3) and len(f3) == 24
+    assert all((f2[k] == f3[k]) == k.endswith("layout.png") for k in f2)
+    assert (b2 / "prompt.txt").read_text() == (b3 / "prompt.txt").read_text()

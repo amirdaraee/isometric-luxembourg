@@ -13,7 +13,8 @@
                                                 images, as built and with its opening cleared (cutaway_paint.py)
     python -m v2.bakeoff inputs detail          T1 (Phase 3): six blocks' control images at two scales, v1's capture
                                                 and v2's line layout (detail.py)
-    python -m v2.bakeoff detail [--source free|T1|T2]
+    python -m v2.bakeoff inputs even            T3: the same captures with the photo's light taken down
+    python -m v2.bakeoff detail [--source free|T1|T2|T3]
                                                 detail transfer on the six blocks: a painting's colour and fine
                                                 texture onto the code art, the numbers and the sheets. free = from
                                                 v1's finished art ($0); T1, T2 = from that job's paintings
@@ -126,8 +127,9 @@ def cmd_detail(a):
         print(k, json.dumps(v))
     if "lines" in res:
         print("lines", json.dumps(res["lines"]["pooled"]))
-    if a.source == "T2":                                   # T2 is T1 with another prompt: pair by pair
-        for k, v in D.pairs("T1", "T2")["inputs"].items():
+    before = {"T2": "T1", "T3": "T2"}.get(a.source)         # the run it differs from by one thing: pair by pair
+    if before:
+        for k, v in D.pairs(before, a.source)["inputs"].items():
             print("pair", k, json.dumps(v))
     return 0 if res["inputs"] else 1
 
@@ -136,6 +138,10 @@ def cmd_inputs(a):
     if a.method == "detail":
         from v2.bakeoff import detail as D
         print(json.dumps(D.make_inputs(), indent=1))
+        return 0
+    if a.method == "even":
+        from v2.bakeoff import detail as D
+        print(json.dumps(D.make_even_inputs(), indent=1))
         return 0
     if a.method == "cutaway":
         from v2.bakeoff import cutaway_paint as CP
@@ -366,7 +372,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status")
     q = sub.add_parser("quote"); q.add_argument("--record", action="store_true"); q.add_argument("--again", metavar="JOB")
-    i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c", "facades", "cutaway", "detail"]); i.add_argument("--limit", type=int, default=0)
+    i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c", "facades", "cutaway", "detail", "even"]); i.add_argument("--limit", type=int, default=0)
     i.add_argument("--crops", action="store_true", help="b: also each landmark's unlit crop")
     i.add_argument("--release", help="c: the built release whose layers 1-4 are used (default: this checkout's)")
     s = sub.add_parser("smoke"); s.add_argument("method", choices=["c"])
@@ -386,7 +392,7 @@ def main(argv=None):
     pt = sub.add_parser("painted"); pt.add_argument("method", choices=["b", "c"])
     tr = sub.add_parser("trial"); tr.add_argument("--no-build", action="store_true", help="measure only, no C4 build")
     sub.add_parser("pilot-gates")
-    dt_ = sub.add_parser("detail"); dt_.add_argument("--source", choices=["free", "T1", "T2"], default="free")
+    dt_ = sub.add_parser("detail"); dt_.add_argument("--source", choices=["free", "T1", "T2", "T3"], default="free")
     pv = sub.add_parser("previews"); pv.add_argument("--url", default="http://localhost:5175/")
     pv.add_argument("--before", help="a folder with the earlier test_a_grund_golden_hour.jpg and test_a_grund_night.jpg: "
                                      "also writes the lighting before/after sheet")

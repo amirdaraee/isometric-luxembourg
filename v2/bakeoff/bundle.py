@@ -17,6 +17,7 @@
   T1   six blocks at two scales: v1's capture and v2's line layout        -> detail/painted/<block>_<scale>_<k>.png
        (Phase 3, detail.py; v1's style model and v1's own prompt)
   T2   T1's inputs and seeds, the prompt asking for even light            -> detail/painted_even/<block>_<scale>_<k>.png
+  T3   T2 with the capture's own light taken down (detail.even_capture)   -> detail/painted_evenin/<block>_<scale>_<k>.png
 """
 from __future__ import annotations
 
@@ -29,9 +30,10 @@ from v2.config import v1_work, v2_data
 
 AREA = "test"
 SETUP = {"B1": "t2i", "B2": "paint", "C1p": "paint", "C1": "paint", "C2p": "train", "C2": "train", "C3": "paint", "C4": "paint",
-         "K1": "paint", "T1": "paint", "T2": "paint"}
+         "K1": "paint", "T1": "paint", "T2": "paint", "T3": "paint"}
 OUT = {"B1": "b/materials", "B2": "b/landmarks", "C1p": "c/targets", "C1": "c/targets", "C2p": "c/train_pilot",
-       "C2": "c/train", "C3": "c/painted", "C4": "c/facades", "K1": "cutaways/painted", "T1": "detail/painted", "T2": "detail/painted_even"}
+       "C2": "c/train", "C3": "c/painted", "C4": "c/facades", "K1": "cutaways/painted", "T1": "detail/painted", "T2": "detail/painted_even",
+       "T3": "detail/painted_evenin"}
 # the training job keeps a checkpoint every 200 steps (295 MB each): only two of them, the final LoRA and the
 # optimizer state come back
 PULL_FILTER = {"C2p": ("--include=*_000000200.safetensors", "--exclude=*_0000*.safetensors"),
@@ -120,14 +122,20 @@ def build(job: str) -> Path:
             raise SystemExit("K1: no cutaway inputs (python -m v2.bakeoff inputs cutaway)")
         _windows(d, names, src)
         (d / "prompt.txt").write_text(CP.PROMPTS["cathedral"])
-    elif job in ("T1", "T2"):
+    elif job in ("T1", "T2", "T3"):
         from v2.bakeoff import detail as DT
         src = DT.base() / "inputs"
         names = DT.input_names()
         if not all((src / f"{n}.{ext}").exists() for n in names for ext in ("unlit.png", "layout.png")):
             raise SystemExit(f"{job}: no inputs (python -m v2.bakeoff inputs detail)")
         _windows(d, names, src)
-        # T1: as v1's model was trained and as v1 painted. T2: the same with the even-light sentence
+        if job == "T3":                                    # the first control image is the evened capture
+            even = DT.base() / "inputs_even"
+            if not all((even / f"{n}.unlit.png").exists() for n in names):
+                raise SystemExit("T3: no evened inputs (python -m v2.bakeoff inputs even)")
+            for n in names:
+                _link(even / f"{n}.unlit.png", d / "inputs" / f"{n}.unlit.png")
+        # T1: as v1's model was trained and as v1 painted. T2, T3: the same with the even-light sentence
         (d / "prompt.txt").write_text(P.V1_CAPTION if job == "T1" else P.C_TARGET_PROMPT)
     (d / "job.json").write_text(json.dumps({"job": job}))
     return d
@@ -138,7 +146,7 @@ def uploads(job: str, bdir: Path) -> list:
     has them (the session's earlier jobs) nothing is sent."""
     ups = [(str(bdir) + "/", f"/workspace/job/{job}/", ("-c",))]
     big = ("--size-only",)
-    if job in ("C1p", "C1", "K1", "T1", "T2") or (job in ("B2", "C4") and not new_lora().exists()):
+    if job in ("C1p", "C1", "K1", "T1", "T2", "T3") or (job in ("B2", "C4") and not new_lora().exists()):
         ups.append((str(v1_work() / V1_LORA), "/workspace/lora/", big))
     if job == "C3" or (job in ("B2", "C4") and new_lora().exists()):
         ups.append((str(new_lora()), "/workspace/lora/", big))

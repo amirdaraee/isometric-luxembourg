@@ -1515,4 +1515,156 @@ the pair comparison is `detail.pairs`).
 44 and 46 stand.
 
 47. **What next on the paint route?** Even the input and paint once more (about $0.70), stop the paint route
-    and stay with code art, or something else?
+    and stay with code art, or something else? (Answered on 22 November: "Even the input, then quote",
+    section 16.)
+
+## 16. The input evened, and the next repaint quoted: T3 (22 November, $0)
+
+Branch `v2-phase3-eveninput`. **Spent: $0.** No pod. One quote recorded, q0018, **not approved**. PR #16 was
+merged first, on the owner's "Merge once CI passes" (CI green on both commits).
+
+The owner's decision on question 47: "Even the input, then quote".
+
+### 16.1 A correction to section 15
+
+Section 15 said the light is in the input. Measured, that is half of it. By the same measure as the
+paintings (the spread of a building's wall faces, median per window), over the same 12 inputs:
+
+| | Spread of wall faces |
+|---|---|
+| v1's capture, the model's input | 13% to 43%, mean 24% |
+| T1's paintings of it | 23% to 68%, mean 46% |
+
+So the photo carries the light, mildly, and the style model about doubles it. v1's style model learned that
+from v1's own pictures, which were painted with strong light. Evening the input removes what the model
+starts from; it does not remove the habit.
+
+### 16.2 The evened capture (`detail.even_capture`)
+
+Nothing is redrawn. A piece of the capture is made brighter as a whole and keeps its own texture.
+
+- **Buildings.** On each building the wall faces, and separately the roof faces, are compared with the
+  faces the photo's sun lit most. A face is raised to their tone, but by no more than the sun's direction
+  explains (with a fixed allowance): a face turned from the sun, or one the 3D model puts in cast shadow for
+  that sun. A dark face that faced the sun is left dark, since that is its material. Nothing is darkened.
+- **Ground.** Where the 3D model expects a shadow and the photo is darker than the open ground beside it,
+  the patch takes that ground's colour and keeps its own detail, softened.
+- **Not touched:** trees, the cliffs, water. They are not in the painted layers of this trial.
+
+| Over the 12 inputs | |
+|---|---|
+| Faces raised | 2,188 of 6,488 |
+| Ground shadow patches lifted | 2,547 (1.8% to 7.0% of a window) |
+| Spread of wall faces, capture | 13% to 43%, mean 23.7% |
+| Spread of wall faces, evened capture | 6% to 31%, mean 13.1% |
+
+It is roughly halved, not gone. What is left, as far as I can tell from the sheets: faces of different
+materials on one building, which the measure counts and which should stay; faces the sun model does not
+explain; and two windows that hardly moved (the cathedral close up at 31%, Clausen close up at 19%).
+
+Faults seen on the sheets: the lifted ground patches are flatter and greyer than the ground beside them, a
+few with a visible outline; one dark glass building in the Grund came out pale (the model has it in cast
+shadow); some wall faces with a tree photographed on them stay as they were.
+
+Sheets, each whole block, the capture beside the evened capture: `v2/docs/img/test_detail_evenin_inputs_1.jpg`
+to `_3.jpg`. Numbers: `<data>/v2/test/bakeoff/detail/inputs_even.json` (`python -m v2.bakeoff inputs even`).
+
+### 16.3 The repaint, quoted: T3
+
+T2 again with one thing changed: the first control image is the evened capture. The line layout, the prompt
+(with the even-light sentence) and the seeds are T2's, so each painting has T2's as its pair.
+
+| Quote | GPU | Expected | Worst case | Phase 3 after it, worst case |
+|---|---|---|---|---|
+| q0018 | RunPod A100 SXM, secure, $2.19/h (read 22 Nov) | $0.68 (T2 took 18.1 min) | $1.09 (30 min cap) | $4.64 of $8 left |
+
+What it answers: whether the model paints less light when it is given less. If the paintings come out near
+the input's 13%, the input is the lever and can be worked on further for free. If they come out near T2's
+45% again, the habit is in the style model, and the paint route needs a model trained on evenly lit
+pictures or ends here.
+
+### 16.4 Not verified
+
+- The full build and its gates were not run; no layer, check or threshold changed. The tool's and the
+  ledger's tests pass (53).
+- Whether the model accepts the evened capture as it does the capture: the lifted patches look less like a
+  photo, and it was trained on photos. Only the run shows that.
+- The evening's settings were chosen on two blocks (cathedral and Grund) by eye and by the measure above,
+  then applied to all six unchanged.
+
+### 16.5 Open questions
+
+44 and 46 stand.
+
+48. **Approve q0018** (T3, expected $0.68, worst case $1.09)? (Answered on 22 November: approved; it ran,
+    section 17.)
+
+## 17. The repaint from the evened input ran: T3 (22 November, $0.72)
+
+Branch `v2-phase3-eveninput`. The owner approved q0018 on 22 November 2026 ("Approve q0018"). **Spent:
+$0.7196** (worst case $1.09). Pod `qi53z00a2kt5yf`, A100 SXM secure at $2.19/h, 19.5 minutes, 24 of 24
+paintings at 21.7 s each, terminated; the account lists no pod of ours (`luxembourgish-asr-pilot` untouched).
+
+| | |
+|---|---|
+| Phase 3 | $2.9875 of $8 spent, $5.0125 left, nothing committed |
+| Reconciled | by account balance: $6.6981 billed in all against $6.7035 in the ledger (the billing lines could not be read, as before) |
+
+**The answer is no again.** Given an input with half the light, the model paints as much light as before.
+
+| Measure (T2 from the capture, T3 from the evened capture; same layout, prompt and seed) | T2 | T3 |
+|---|---|---|
+| The input: spread of a building's wall faces, mean of the 12 | 23.7% | 13.1% |
+| The paintings: the same, median per painting, range over the 24 | 12% to 82% | 25% to 90% |
+| The paintings: mean of the 24 | 44.6% | 47.6% |
+| Paintings where T3 is the more even of the pair | | 10 of 24 |
+| Mean difference between the two paintings of a pair (of 255) | | 13 to 30 |
+| Lines as painted: building edges, the two candidates (limit 95%) | 87.5%, 85.6% | 89.1%, 86.8% |
+| Lines as painted: window rows | 88.8%, 87.5% | 88.8%, 88.5% |
+| Lines after placement per building: building edges | 89.7%, 91.3% | 91.4%, 90.4% |
+| Lines after placement per building: window rows | 85.0%, 84.3% | 86.3%, 84.5% |
+| Light removed in code (`detail.delit`), median per window, six windows (limit 5%) | 7% to 18% | 5% to 19% |
+
+The paintings did change with the input (a pair differs by 13 to 30 of 255, against 5 to 14 when only the
+prompt changed), so the model reads the input. What it does not take from it is the light: the cast shadows
+on the ground and the shaded sides of the buildings are there in both runs, in the same direction. With
+section 16.1 this settles where the light comes from: v1's style model paints it, because the pictures it
+learned from have it.
+
+Sheets: `v2/docs/img/test_detail_t2_t3_close_1.jpg`, `_close_2.jpg` (four columns: T2 as painted, T3 as
+painted, T3 with its light removed in code, the code art; the last two under a preview sun),
+`test_detail_t2_t3_blocks_1.jpg` to `_3.jpg` (the six whole blocks, T2 beside T3), and T3's own
+`test_detail_t3_blocks.jpg`, `_close_N.jpg`, `_levels_N.jpg`. Numbers:
+`<data>/v2/test/bakeoff/detail/checks/T3.json`, `pairs_T2_T3.json` (`python -m v2.bakeoff detail --source T3`).
+
+### 17.1 Where the paint trial stands after three runs ($2.09 in all: T1, T2, T3)
+
+- **What works:** given v1's capture and v2's lines, v1's style model paints v2's scale sharply and in v1's
+  look.
+- **What does not:** its light. The prompt does not move it (T2), the input does not move it (T3), and
+  removing it in code reaches 5% to 19% against the 5% limit. After placement the lines reach 84% to 92% against 95%.
+- **What is left to try on this route** is a style model that never learned the light: trained on evenly
+  lit pictures. Phase 2 quoted that at about $10 (jobs C1 to C3, stopped); Phase 3 has $5.01 left, so it
+  needs the owner's word on the budget, and it needs evenly lit pictures as rich as v1's to learn from,
+  which do not exist yet. The nearest thing to them is these paintings with their light removed in code,
+  which do not pass the checks themselves.
+- **The other route** is the one gate G2 chose: code art, made richer in code. That work is paused on the
+  owner's word.
+
+### 17.2 Not verified
+
+- The full build and its gates were not run; no layer, check or threshold changed. The tool's and the
+  ledger's tests pass (53).
+- No car detection on T3's paintings; nothing seen in the viewer, at night or on tiles; seams between
+  neighbouring paintings not measured; the build's own shadow gate not run on a painting.
+- The spread figures are my own measure (`detail.flat_by_part`); the same on every run, so the comparisons
+  hold, the level does not stand for the gate's.
+- One pair moved a great deal (Pfaffenthal close up, second candidate: 12% in T2, 78% in T3). I did not
+  look into why; it is one of 24 and is in the figures above.
+
+### 17.3 Open questions
+
+44 and 46 stand.
+
+49. **What now for the paint route?** Stop it and stay with code art; or look at what training a style
+    model on evenly lit pictures would take (a plan and a quote first, nothing paid); or something else?
