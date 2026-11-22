@@ -177,6 +177,30 @@ Each phase ends at a gate: the owner reviews and approves before the next phase 
 **Budget:** total ≤ $100 (owner's cap); planned ≈ $35–85 depending on the winner. Each paid step is quoted, capped
 in code and reconciled. If a step would need more than its line, it stops and asks.
 
+### 10.1 After v2: other viewing angles (owner, 22 Nov 2026)
+
+The owner's words: "later when we are finished with v2 I want to add the other angles". So that a visitor can
+turn the map. It is **not part of v2**: it starts after gate G5, has no line in v2's budget and changes none of
+v2's gates. It gets its own plan, quote and gates then.
+
+What is known now, so nothing in v2 gets in its way:
+
+- **v2 has one viewing direction.** The camera looks north-west from 30° up (`v2/config/camera.json`), the same
+  as v1's. Every tile is drawn for that direction, so the browser has nothing to turn.
+- **How others do it.** tinyrj.com (Rio) draws its whole map once per direction, 8 directions 45° apart, each a
+  set of tiles of its own, and swaps sets when the visitor turns. (Read from its page on 22 Nov 2026.)
+- **What a direction costs here.** One more full build and one more set of tiles per direction. The 3D scene,
+  the transport graph, the sun and the shadow height map are in world coordinates and are shared. Estimate
+  for the whole commune: about 36 laptop hours per direction, from area, not measured; a few hours on a
+  many-core server.
+- **Code art against paintings.** With code art (gate G2, method A) a new direction is machine time. Art made
+  from paintings would have to be painted, checked and paid for again per direction, and the paint trial's
+  input (v1's capture of the aerial photo on the 3D buildings) exists for this one direction only.
+- **To decide then:** how many directions (4 or 8), the viewer's turn control and its transition, storage and
+  transfer for several sets of tiles, and which checks run per direction.
+- **Until then:** new v2 code takes the direction from the camera config, not from constants of its own.
+  Whether all of today's code does has not been checked; that audit is the first step of the later work.
+
 ## 11. What carries over from v1, and what is left behind
 
 **Kept (reviewed before reuse):** the viewer shell, feature switches, frame clock, test parameters and screenshot
