@@ -56,7 +56,8 @@ BLOCKS = {
 }
 SCALES = {"p250": 2, "p125": 1}               # v2 map pixels per model pixel
 SEEDS = (1867, 1868)                          # pod/run.sh T1, T2
-PAINTED = {"T1": "painted", "T2": "painted_even"}   # where each paid job's paintings are (bundle.OUT)
+PAINTED = {"T1": "painted", "T2": "painted_even", "T3": "painted_evenin"}   # each paid job's paintings (bundle.OUT)
+LABEL = {"T1": "T1: as v1 painted", "T2": "T2: even light asked", "T3": "T3: evened input"}
 WALL, PART, ROOF = 11, 22, 23                 # layers/common.py CLASS: what a painting may colour
 PAINT_LAYERS = (5, 6)                         # which: buildings, structures
 P = {
@@ -676,7 +677,8 @@ def run(source: str = "free", img: Path | None = None, write=True) -> dict:
 
 
 def pairs(a: str = "T1", b: str = "T2", img: Path | None = None, write=True) -> dict:
-    """Two paid runs that differ by their prompt alone, painting by painting (same input, same seed): how even
+    """Two paid runs that differ by one thing (T1 and T2 by the prompt, T2 and T3 by the first control image),
+    painting by painting (same block, scale and seed): how even
     each is across a building's walls as painted (flat_by_part of the registered painting), and sheets of the
     first candidate: each p125 window's central 64 m (a, b, b with its light removed, the code art; the last two
     under the preview sun) and each whole block (a, b)."""
@@ -698,7 +700,7 @@ def pairs(a: str = "T1", b: str = "T2", img: Path | None = None, write=True) -> 
                 continue
             if name.endswith("p250"):
                 blocks.append(_row([np.asarray(Image.fromarray(_label(i, t)).resize((640, 640), Image.LANCZOS))
-                                    for i, t in ((pa, f"{a}: as v1 painted"), (pb, f"{b}: even light asked"))]))
+                                    for i, t in ((pa, LABEL[a]), (pb, LABEL[b]))]))
             else:
                 c = (slice(256, 768), slice(256, 768))
                 dl = delit(code, rb, g, photo_shadow(g, meta))
@@ -707,7 +709,7 @@ def pairs(a: str = "T1", b: str = "T2", img: Path | None = None, write=True) -> 
                 def shown(rgb, g=g, t=t, c=c):
                     im = lit(rgb, g)
                     return (np.where(t[..., 3:] > 0, t[..., :3], im) if t is not None else im)[c]
-                ims = [_label(pa[c], f"{a}: as v1 painted"), _label(pb[c], f"{b}: even light asked"),
+                ims = [_label(pa[c], LABEL[a]), _label(pb[c], LABEL[b]),
                        _label(shown(dl), f"{b}, light removed"), _label(shown(code), "code art")]
                 close.append(_row([np.asarray(Image.fromarray(i).resize((448, 448), Image.LANCZOS)) for i in ims]))
     out = {"a": a, "b": b, "inputs": res}
@@ -719,4 +721,168 @@ def pairs(a: str = "T1", b: str = "T2", img: Path | None = None, write=True) -> 
             for i in range(0, len(rows), per):
                 _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in rows[i:i + per]]),
                       img / f"test_detail_{tag}_{kind}_{i // per + 1}.jpg")
+    return out
+
+
+# ------------------------------------------------------------------------------------------------ T3's inputs
+EVEN = {"min_face": 150, "top": 0.15, "ambient": 0.3, "explain": (1.6, 0.08), "gain": (0.0, 0.8), "dark": 0.5, "split": 0.15, "soften": 0.45,
+        "reach": 24, "sigma": 32.0, "ground_dark": 0.22, "ground_gain": 0.9, "ring": 10, "min_region": 60}
+
+
+def _tone(lys, m, dark):
+    """A face's tone: the median brightness (logarithm) of its pixels, leaving out those far darker than the face
+    (the windows on it)."""
+    v = lys[m]
+    med = np.median(v)
+    keep = v > med - dark
+    return float(np.median(v[keep])) if keep.any() else float(med)
+
+
+def photo_sun_screen():
+    """The aerial photo's sun (params g1.shadow_photo_sun) as a direction in the frame of a window's normals."""
+    from v2.checks.g1_checks import _when
+    from v2.config import params
+    from v2.config.sun import direction_screen
+    return np.asarray(direction_screen(_when(params()["g1"]["shadow_photo_sun"])), float)
+
+
+def even_capture(cap, g: dict, cast=None, sun=None, p: dict = EVEN):
+    """v1's capture with the aerial photo's light taken down, as an input for the painter (T3). Nothing is
+    redrawn: a piece is made brighter as a whole, and keeps its own texture.
+
+    Buildings: on each building, its wall faces, and separately its roof faces, are compared with the faces the
+    photo's sun (`sun`, photo_sun_screen) lit most. A face is raised to their tone, but never by more than the
+    sun's direction explains, with the allowance `explain` (a face turned from the sun, or one the model puts in
+    cast shadow for that sun, `cast` from photo_shadow; a face partly in it is split there). So a dark face that faced the sun stays dark:
+    that is its material. A raised face takes the lit faces' tint for the blue of its shade, and its contrast is
+    softened (`soften`), since a shaded part of a photo is noisy.
+    Ground and everything else: where a shadow is expected (cast, grown by `reach`) and the photo is darker than
+    the open ground around it, each connected patch takes the colour of the ground just outside it, keeping its
+    own (softened) brightness detail.
+    Returns (rgb, {"faces", "raised", "ground_patches", "ground_share"})."""
+    from scipy import ndimage as ndi
+    src = cap.astype(float) + 1.0
+    bid, cls, face, _seg = segments(g)
+    on = np.isin(g["which"], PAINT_LAYERS)
+    roof = np.isin(cls, (ROOF,)).astype(np.int64)
+    ysrc = lum(src); ly = np.log(ysrc)
+    lsrc = np.log(src)
+    tree = greenish(src)
+    side = np.zeros(on.shape, np.int64) if cast is None else cast.astype(np.int64)
+    nrm = np.asarray(g["normal"], float)
+    facing = np.clip(nrm @ sun, 0, 1) if sun is not None else np.ones(on.shape)
+    out = src.copy()
+    st = {"faces": 0, "raised": 0, "ground_patches": 0, "ground_share": 0.0}
+    key = (bid * 2 + roof) * 8000 + face
+    amb = p["ambient"]
+    for b in np.unique(bid[on]):
+        mb = on & (bid == b)
+        rows = np.flatnonzero(mb.any(1)); cols = np.flatnonzero(mb.any(0))
+        sl = (slice(rows[0], rows[-1] + 1), slice(cols[0], cols[-1] + 1))
+        mbs, lys, ks, sds, trs = mb[sl], ly[sl], key[sl], side[sl], tree[sl]
+        sub = out[sl]
+        for kind in (0, 1):
+            mk = mbs & (roof[sl] == kind)
+            pieces = []
+            for f in np.unique(ks[mk]):
+                whole = mk & (ks == f)
+                parts = [(whole & (sds == k), k) for k in (0, 1)]
+                if min(x.sum() for x, _k in parts) < p["split"] * whole.sum():
+                    parts = [(whole, int(sds[whole].mean() > 0.5))]
+                for mf, shaded in parts:
+                    use = mf & ~trs
+                    if use.sum() < p["min_face"]:
+                        continue
+                    e = amb + (1 - amb) * (0.0 if shaded else float(np.median(facing[sl][use])))
+                    pieces.append((mf, use, _tone(lys, use, p["dark"]), int(use.sum()), e))
+            if len(pieces) < 2:
+                continue
+            emax = max(x[4] for x in pieces)
+            top = [x for x in pieces if x[4] >= emax - p["top"]]
+            wts = np.array([x[3] for x in top], float)
+            ref = float(np.sum([x[2] * x[3] for x in top]) / wts.sum())
+            eref = float(np.sum([x[4] * x[3] for x in top]) / wts.sum())
+            tint = np.sum([np.median(lsrc[sl][x[1]], axis=0) * x[3] for x in top], axis=0) / wts.sum()
+            tint = tint - tint.mean()                                  # the lit faces' colour, brightness apart
+            for mf, use, t, _n, e in pieces:
+                k = float(np.clip(min(ref - t, p["explain"][0] * np.log(eref / e) + p["explain"][1]), *p["gain"]))
+                st["faces"] += 1
+                if k <= 0.02:
+                    continue
+                a = k / p["gain"][1]                                   # how much of a shaded face this is
+                med = np.median(lsrc[sl][use], axis=0)
+                own = med - med.mean()
+                keep = 1.0 - p["soften"] * a
+                val = (med.mean() + k) + (1 - a) * own + a * tint + (lsrc[sl] - med) * keep
+                sub[mf] = np.exp(val)[mf]
+                st["raised"] += 1
+        out[sl] = sub
+    # the ground
+    off = ~on
+    if cast is not None and cast.any():
+        near = ndi.binary_dilation(cast, iterations=p["reach"]) & off
+        w = (off & ~near & ~tree).astype(float)
+        den = ndi.gaussian_filter(w, p["sigma"])
+        wide = ndi.gaussian_filter(ly * w, p["sigma"] * 4) / np.maximum(ndi.gaussian_filter(w, p["sigma"] * 4), 1e-3)
+        tone = np.where(den > 0.02, ndi.gaussian_filter(ly * w, p["sigma"]) / np.maximum(den, 1e-3), wide)
+        sh = ndi.binary_opening(near & (ly < tone - p["ground_dark"]) & ~tree, iterations=1)
+        lab, _n = ndi.label(sh)
+        new = np.zeros(src.shape); did = np.zeros(on.shape, bool)
+        keep = 1.0 - p["soften"]
+        for i, bx in enumerate(ndi.find_objects(lab), start=1):
+            r = p["ring"] + 2
+            sl = (slice(max(bx[0].start - r, 0), bx[0].stop + r), slice(max(bx[1].start - r, 0), bx[1].stop + r))
+            m = lab[sl] == i
+            if m.sum() < p["min_region"]:
+                continue
+            ring = ndi.binary_dilation(m, iterations=p["ring"]) & ~ndi.binary_dilation(m, iterations=2)
+            ring &= off[sl] & ~sh[sl] & ~tree[sl]
+            if ring.sum() < 30:
+                continue
+            colour = np.median(lsrc[sl][ring], axis=0)                 # the ground just outside, per channel
+            outside = float(np.log(lum(np.exp(colour))))
+            mine = float(np.median(ly[sl][m]))
+            lift = min(outside - mine, p["ground_gain"])
+            if lift <= 0.02:
+                continue
+            c0 = colour - outside                                      # its tint
+            val = (mine + lift) + c0[None, None, :] + ((ly[sl] - mine) * keep)[..., None]
+            nw = new[sl]; nw[m] = np.exp(val)[m]; new[sl] = nw
+            dd = did[sl]; dd[m] = True; did[sl] = dd
+            st["ground_patches"] += 1
+        out = np.where(did[..., None], new, out)
+        st["ground_share"] = round(float(did.mean()), 4)
+    return np.clip(np.round(out - 1.0), 0, 255).astype(np.uint8), st
+
+
+def make_even_inputs(dst: Path | None = None, img: Path | None = None) -> dict:
+    """T3's first control image: T1's capture with the photo's light taken down (even_capture), at the same place
+    and size (<data>/.../detail/inputs_even/<name>.unlit.png; the line layout stays T1's). Worked out at v2's
+    pixels, where the geometry is, and applied to the capture as T1 had it, so nothing else about it changes.
+    Also the numbers (inputs_even.json) and sheets of each whole block, capture beside evened capture."""
+    dst = dst or base() / "inputs_even"
+    dst.mkdir(parents=True, exist_ok=True)
+    img = img or V2 / "docs" / "img"
+    sun = photo_sun_screen()
+    out, rows = {}, []
+    for name in input_names():
+        x0, y0, size, step = window_of(name)
+        _code, g, meta = load_input(name)
+        cap = v1_capture(x0, y0, size, size)
+        ev, st = even_capture(cap, g, photo_shadow(g, meta), sun)
+        was = np.asarray(Image.open(base() / "inputs" / f"{name}.unlit.png").convert("RGB")).astype(float)
+        k = (ev.astype(float) + 1.0) / (cap.astype(float) + 1.0)
+        if step > 1:
+            k = k.reshape(WIN, step, WIN, step, 3).mean(axis=(1, 3))
+        new = np.clip(np.round((was + 1.0) * k - 1.0), 0, 255).astype(np.uint8)
+        Image.fromarray(new).save(dst / f"{name}.unlit.png")
+        out[name] = {**st, "flat_capture": flat_by_part(cap, g), "flat_evened": flat_by_part(ev, g),
+                     "changed": round(float((np.abs(new.astype(int) - was.astype(int)).sum(-1) > 6).mean()), 4)}
+        if step > 1:
+            rows.append(_row([np.asarray(Image.fromarray(_label(i, t)).resize((640, 640), Image.LANCZOS))
+                              for i, t in ((was.astype(np.uint8), f"{name}: capture (T1, T2)"), (new, "evened (T3)"))]))
+    (dst.parent / "inputs_even.json").write_text(json.dumps({"params": EVEN, "inputs": out}, indent=1))
+    for i in range(0, len(rows), 2):
+        _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in rows[i:i + 2]]),
+              img / f"test_detail_evenin_inputs_{i // 2 + 1}.jpg")
     return out
