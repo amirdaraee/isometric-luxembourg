@@ -13,10 +13,10 @@
                                                 images, as built and with its opening cleared (cutaway_paint.py)
     python -m v2.bakeoff inputs detail          T1 (Phase 3): six blocks' control images at two scales, v1's capture
                                                 and v2's line layout (detail.py)
-    python -m v2.bakeoff detail [--source free|T1]
+    python -m v2.bakeoff detail [--source free|T1|T2]
                                                 detail transfer on the six blocks: a painting's colour and fine
                                                 texture onto the code art, the numbers and the sheets. free = from
-                                                v1's finished art ($0); T1 = from T1's paintings
+                                                v1's finished art ($0); T1, T2 = from that job's paintings
     python -m v2.bakeoff trial [--no-build]     C4's result: on the ten trial buildings, method A against the facades
                                                 painted front-on and projected onto their walls (line score, flat
                                                 light, cars), a preview sheet, and the small C4 build registered as
@@ -383,7 +383,7 @@ def main(argv=None):
     pt = sub.add_parser("painted"); pt.add_argument("method", choices=["b", "c"])
     tr = sub.add_parser("trial"); tr.add_argument("--no-build", action="store_true", help="measure only, no C4 build")
     sub.add_parser("pilot-gates")
-    dt_ = sub.add_parser("detail"); dt_.add_argument("--source", choices=["free", "T1"], default="free")
+    dt_ = sub.add_parser("detail"); dt_.add_argument("--source", choices=["free", "T1", "T2"], default="free")
     pv = sub.add_parser("previews"); pv.add_argument("--url", default="http://localhost:5175/")
     pv.add_argument("--before", help="a folder with the earlier test_a_grund_golden_hour.jpg and test_a_grund_night.jpg: "
                                      "also writes the lighting before/after sheet")
