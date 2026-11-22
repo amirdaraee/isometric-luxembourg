@@ -296,7 +296,12 @@ def band_colour(px, band):
 
 def transfer(code, painting, g: dict, have=None, p: dict = P, colours=None):
     """The code art with each building's wall and roof colour and fine texture taken from the (registered)
-    painting. Returns (rgb, {"parts", "skipped", "changed": share of the window's pixels})."""
+    painting. Returns (rgb, {"parts", "skipped", "changed": share of the window's pixels}).
+
+    With p["obj"] (SURFACE): the painting gives its surface only. Whatever it drew as a thing of its own on a
+    face (a window, a dormer, a skylight, a shadow's edge: where the face, blurred over obj_blur px, is brighter
+    or darker than its own tone over obj_sigma px by more than obj) is left out with a margin, softly, so no
+    outline of it stays. Every window, dormer and line is then the code art's."""
     from scipy import ndimage as ndi
     code = code.astype(float); src = painting.astype(float)
     bid, cls, face, seg = segments(g)
@@ -334,15 +339,23 @@ def transfer(code, painting, g: dict, have=None, p: dict = P, colours=None):
             r0, c0 = max(rows[0] - pad, 0), max(cols[0] - pad, 0)
             r1, c1 = min(rows[-1] + 1 + pad, H), min(cols[-1] + 1 + pad, W)
             sl = (slice(r0, r1), slice(c0, c1))
-            D = np.zeros((r1 - r0, c1 - c0))
+            D = np.zeros((r1 - r0, c1 - c0)); thing = np.zeros(D.shape, bool)
             for f in np.unique(face[sl][m[sl]]):
                 mf = (m[sl] & (face[sl] == f) & ~tree[sl]).astype(float)
                 if mf.sum() < 40:
                     continue
                 num = ndi.gaussian_filter(lys[sl] * mf, p["sigma"]); den = ndi.gaussian_filter(mf, p["sigma"])
                 D += np.where(mf > 0, lys[sl] - num / np.maximum(den, 1e-3), 0)
+                if p.get("obj"):
+                    near_ = ndi.gaussian_filter(lys[sl] * mf, p["obj_blur"]) / np.maximum(ndi.gaussian_filter(mf, p["obj_blur"]), 1e-3)
+                    tone = ndi.gaussian_filter(lys[sl] * mf, p["obj_sigma"]) / np.maximum(ndi.gaussian_filter(mf, p["obj_sigma"]), 1e-3)
+                    thing |= (mf > 0) & (np.abs(near_ - tone) > p["obj"])
             lo, hi = p["clip_" + kind]
             D = np.clip(D * p["k_" + kind], lo, hi) * fade[sl]
+            if p.get("obj"):
+                thing = ndi.binary_dilation(thing | (tree[sl] & m[sl]), iterations=p["obj_grow"])
+                D *= 1.0 - np.clip(ndi.gaussian_filter(thing.astype(float), p["obj_soft"]) * 1.6, 0, 1)
+                st["things_px"] = st.get("things_px", 0) + int((thing & m[sl]).sum()); st["px"] = st.get("px", 0) + int(m[sl].sum())
             mod = np.clip(yc[sl] / (lum(base_c) + 1.0), *p["code_mod"])
             val = target[None, None, :] * (mod * np.exp(D))[..., None]
             w = m[sl] & ~ink[sl]
@@ -1005,18 +1018,33 @@ def one_colour(tables: dict) -> dict:
 
 
 TWO_TONE = 0.25                                  # delit's two_tone for a target
+# the painting's surface only (owner, 22 Nov 2026: "Model's details, painted surfaces"): transfer's settings
+SURFACE = dict(P, k_wall=1.0, clip_wall=(-0.16, 0.10), k_roof=1.0, clip_roof=(-0.22, 0.14),
+               obj=0.22, obj_blur=2.5, obj_sigma=24.0, obj_grow=3, obj_soft=2.0)
 
 
-def target(code, painting, g: dict, meta: dict, colours=None, reg=None, two_tone=TWO_TONE) -> dict:
+def target(code, painting, g: dict, meta: dict, colours=None, reg=None, two_tone=TWO_TONE, mode="surface") -> dict:
     """A painting made into a picture the build's checks of a painting can pass: placed per building (register),
     its light removed (delit), each building's sides levelled (level), and the code art's own windows drawn in
     (the painting's windows drift from the model's, so they are left out). Where the painting cannot be used (its
     own windows, a tree it painted in front of a wall) the code art shows in the painting's colours (transfer).
     With `colours` (one_colour) each building takes its one colour, whichever painting this is. `reg`: the
-    painting already placed. Returns every stage."""
+    painting already placed. Returns every stage.
+
+    mode "surface" (the owner's choice of 22 Nov 2026): the painting gives each building its colour and the fine
+    texture of its plain surfaces, nothing it drew as a thing (transfer with SURFACE); every window, dormer,
+    roof fitting and line is the code art's. mode "drawing": as described above (sections 19 and 20 of the
+    report)."""
     from scipy import ndimage as ndi
     if reg is None:
         reg = register(code, painting, g)[0]
+    if mode == "surface":                               # the model's details, the painting's surfaces
+        sf, st = transfer(code, reg, g, p=SURFACE, colours=colours)
+        lv = level(sf, g, colours=colours)
+        ink = lum(code.astype(float)) + 1.0 < P["ink"]   # levelling scales a side whole: the code's ink stays its own
+        lv[ink] = code[ink]
+        return {"registered": reg, "delit": sf, "levelled": lv, "target": lv,
+                "faces": {"px": st.get("px", 0), "left_out_px": st.get("things_px", 0), "faces": st["parts"]}}
     under = transfer(code, reg, g, colours=colours)[0]  # the code art in the painting's colours: what shows where
     st = {}
     dl = delit(code, reg, g, photo_shadow(g, meta), base=under, own_windows=False, colours=colours,    # it is not used
@@ -1042,7 +1070,7 @@ def painting_checks(rgb, g: dict, meta: dict, scene_folder) -> dict:
     return r
 
 
-def targets(source: str = "T1", img: Path | None = None, write=True, one=True) -> dict:
+def targets(source: str = "T1", img: Path | None = None, write=True, one=True, mode="surface") -> dict:
     """Every painting of a paid run as painted (placed), with its light removed, levelled, and as a target: the
     build's checks on each (checks/targets_<source>.json), and sheets of the first candidate of each p125 window
     (as painted, levelled, target, code art; none lit). `one`: each building takes one colour for all the
@@ -1061,8 +1089,13 @@ def targets(source: str = "T1", img: Path | None = None, write=True, one=True) -
             painting = painting_for(name, source, k)[0]
             if painting is None:
                 continue
-            reg = register(code, painting, g)[0]
-            Image.fromarray(reg).save(rdir / f"{name}_{k}.png")
+            rf = rdir / f"{name}_{k}.png"                  # placing is the slow step: kept, and made again only
+            pf = base() / PAINTED[source] / f"{name}_{k}.png"   # when the painting is newer
+            if rf.exists() and rf.stat().st_mtime >= pf.stat().st_mtime:
+                reg = np.asarray(Image.open(rf).convert("RGB"))
+            else:
+                reg = register(code, painting, g)[0]
+                Image.fromarray(reg).save(rf)
             tables[f"{name}_{k}"] = part_colours(reg, g)
     colours = one_colour(tables) if one else None
     for name in input_names():
@@ -1071,7 +1104,7 @@ def targets(source: str = "T1", img: Path | None = None, write=True, one=True) -
             if f"{name}_{k}" not in tables:
                 continue
             reg = np.asarray(Image.open(rdir / f"{name}_{k}.png").convert("RGB"))
-            t = target(code, None, g, meta, colours=colours, reg=reg)
+            t = target(code, None, g, meta, colours=colours, reg=reg, mode=mode)
             res[f"{name}_{k}"] = {s: painting_checks(t[s], g, meta, scene_folder) for s in t if s != "faces"}
             res[f"{name}_{k}"]["faces"] = t["faces"]
             if write:                                      # kept for the detector, the seams and the viewer
@@ -1079,10 +1112,11 @@ def targets(source: str = "T1", img: Path | None = None, write=True, one=True) -
                 Image.fromarray(t["target"]).save(base() / "targets" / source / f"{name}_{k}.png")
             if k == 0 and name.endswith("p125"):
                 c = (slice(256, 768), slice(256, 768))
-                ims = [_label(t["registered"][c], f"{source}: as painted"), _label(t["levelled"][c], "light removed, levelled"),
-                       _label(t["target"][c], "with the code's windows"), _label(code[c], "code art")]
+                mid = ("painted surface, before levelling", "the picture") if mode == "surface" else ("light removed, levelled", "with the code's windows")
+                ims = [_label(t["registered"][c], f"{source}: as painted"), _label(t["delit" if mode == "surface" else "levelled"][c], mid[0]),
+                       _label(t["target"][c], mid[1]), _label(code[c], "code art")]
                 rows.append(_row([np.asarray(Image.fromarray(i).resize((448, 448), Image.LANCZOS)) for i in ims]))
-    out = {"source": source, "one_colour": bool(one), "building_parts_coloured": len(colours or {}), "inputs": res}
+    out = {"source": source, "mode": mode, "one_colour": bool(one), "building_parts_coloured": len(colours or {}), "inputs": res}
     if write and res:
         (base() / "checks").mkdir(parents=True, exist_ok=True)
         (base() / "checks" / f"targets_{source}.json").write_text(json.dumps(out, indent=1))

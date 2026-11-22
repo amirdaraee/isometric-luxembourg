@@ -509,3 +509,27 @@ def test_where_two_blocks_overlap_a_building_comes_from_the_block_that_shows_the
         got[ty * TILE:(ty + 1) * TILE, tx * TILE:(tx + 1) * TILE] = read_tile(out / "buildings" / "0", nm, tiles["0"][nm])["rgb"]
     assert (got[(ids >> 8) == 1] == 200).all()                          # a shows all of it, b a quarter: all from a
     assert (got[(ids >> 8) == 2] == 90).all()                           # b shows all of it: all from b, also inside a
+
+
+def test_surface_mode_takes_the_paintings_colour_and_plain_texture_and_none_of_its_things(monkeypatch):
+    code, g = scene()
+    cls = g["ids"] & 255; bid = g["ids"] >> 8
+    rr, cc = np.indices(cls.shape)
+    painting = painting_of(code, g).astype(float)                       # roofs hatched; a painted window on each wall
+    wall1 = (cls == 11) & (bid == 1)
+    thing = wall1 & (rr >= 78) & (rr < 100) & (cc >= 60) & (cc < 84)    # a window of the painting's own, elsewhere
+    painting[thing] = (30, 40, 70)
+    painting = painting.astype(np.uint8)
+    monkeypatch.setattr(D, "photo_shadow", lambda g, meta, rel=None: None)
+    t = D.target(code, None, g, {}, reg=painting, mode="surface")["target"]
+    inner = wall1 & (D.lum(code.astype(float)) > 100)
+    assert np.abs(np.median(t[inner], axis=0) - (240, 210, 150)).max() <= 8          # the painting's wall colour
+    core = np.zeros_like(thing); core[82:96, 64:80] = True
+    plain = np.zeros_like(thing); plain[82:96, 34:44] = True
+    a, b = D.lum(t[core].astype(float)).mean(), D.lum(t[plain & inner].astype(float)).mean()
+    assert abs(a / b - 1) < 0.03                                         # its own window: gone, no patch, no outline
+    assert (t[cls == 12] == code[cls == 12]).all() and D.ink_changed(code, t) == 0    # the code's windows and ink
+    roof_in = np.zeros(cls.shape, bool); roof_in[48:62, 40:90] = True
+    assert t[roof_in].std() > code[roof_in].std() + 1                    # the roof's hatch: a plain surface, kept
+    d = D.target(code, None, g, {}, reg=painting, mode="drawing")["target"]
+    assert not (d[cls == 11] == t[cls == 11]).all()
