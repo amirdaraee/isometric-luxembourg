@@ -14,6 +14,9 @@
     python -m v2.bakeoff inputs detail          T1 (Phase 3): six blocks' control images at two scales, v1's capture
                                                 and v2's line layout (detail.py)
     python -m v2.bakeoff inputs even            T3: the same captures with the photo's light taken down
+    python -m v2.bakeoff targets [--source T1|T2|T3]
+                                                a run's paintings with their light removed and levelled and the
+                                                code's windows drawn in, under the build's checks of a painting ($0)
     python -m v2.bakeoff detail [--source free|T1|T2|T3]
                                                 detail transfer on the six blocks: a painting's colour and fine
                                                 texture onto the code art, the numbers and the sheets. free = from
@@ -131,6 +134,14 @@ def cmd_detail(a):
     if before:
         for k, v in D.pairs(before, a.source)["inputs"].items():
             print("pair", k, json.dumps(v))
+    return 0 if res["inputs"] else 1
+
+
+def cmd_targets(a):
+    from v2.bakeoff import detail as D
+    res = D.targets(a.source)
+    for k, v in res["inputs"].items():
+        print(k, json.dumps(v))
     return 0 if res["inputs"] else 1
 
 
@@ -392,6 +403,7 @@ def main(argv=None):
     pt = sub.add_parser("painted"); pt.add_argument("method", choices=["b", "c"])
     tr = sub.add_parser("trial"); tr.add_argument("--no-build", action="store_true", help="measure only, no C4 build")
     sub.add_parser("pilot-gates")
+    tg = sub.add_parser("targets"); tg.add_argument("--source", choices=["T1", "T2", "T3"], default="T1")
     dt_ = sub.add_parser("detail"); dt_.add_argument("--source", choices=["free", "T1", "T2", "T3"], default="free")
     pv = sub.add_parser("previews"); pv.add_argument("--url", default="http://localhost:5175/")
     pv.add_argument("--before", help="a folder with the earlier test_a_grund_golden_hour.jpg and test_a_grund_night.jpg: "
@@ -401,7 +413,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     return {"status": cmd_status, "quote": cmd_quote, "inputs": cmd_inputs, "smoke": cmd_smoke, "run": cmd_run,
             "register": cmd_register, "end": cmd_end, "pods": cmd_pods, "reconcile": cmd_reconcile, "check": cmd_check, "adopt": cmd_adopt,
-            "pick": cmd_pick, "detail": cmd_detail, "painted": cmd_painted, "trial": cmd_trial, "previews": cmd_previews,
+            "pick": cmd_pick, "detail": cmd_detail, "targets": cmd_targets, "painted": cmd_painted, "trial": cmd_trial, "previews": cmd_previews,
             "pilot-gates": lambda a: __import__("v2.bakeoff.results", fromlist=["x"]).pilot_gates()}[a.cmd](a) or 0
 
 

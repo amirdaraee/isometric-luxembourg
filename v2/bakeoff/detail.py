@@ -494,8 +494,8 @@ def ink_changed(code, out, p: dict = P) -> int:
 def lit(rgb, g: dict, when=dt.datetime(2026, 6, 24, 11, 0, tzinfo=dt.timezone.utc)):
     """A preview only: the art under the day's sun on each face (no cast shadows), to set an unlit result beside
     v1's painted light. The viewer's own light pass is the real one."""
-    from v2.config.sun import direction_screen
-    s = direction_screen(when)
+    from v2.config.sun import direction_en
+    s = np.asarray(direction_en(when), float)                # east, north, up: the normals' frame
     n = np.asarray(g["normal"], float)
     k = np.clip(n @ s, 0, 1)
     k = np.where(np.linalg.norm(n, axis=-1) > 0.5, 0.62 + 0.55 * k, 1.0)
@@ -738,12 +738,14 @@ def _tone(lys, m, dark):
     return float(np.median(v[keep])) if keep.any() else float(med)
 
 
-def photo_sun_screen():
-    """The aerial photo's sun (params g1.shadow_photo_sun) as a direction in the frame of a window's normals."""
+def photo_sun():
+    """The aerial photo's sun (params g1.shadow_photo_sun) as a unit vector (east, north, up): the frame a
+    window's normals are in. (T3's inputs were made with the camera-frame vector by mistake: PHASE3_REPORT.md
+    section 18.1.)"""
     from v2.checks.g1_checks import _when
     from v2.config import params
-    from v2.config.sun import direction_screen
-    return np.asarray(direction_screen(_when(params()["g1"]["shadow_photo_sun"])), float)
+    from v2.layers.light import sun_vector
+    return np.asarray(sun_vector(_when(params()["g1"]["shadow_photo_sun"]))[2], float)
 
 
 def even_capture(cap, g: dict, cast=None, sun=None, p: dict = EVEN):
@@ -751,7 +753,7 @@ def even_capture(cap, g: dict, cast=None, sun=None, p: dict = EVEN):
     redrawn: a piece is made brighter as a whole, and keeps its own texture.
 
     Buildings: on each building, its wall faces, and separately its roof faces, are compared with the faces the
-    photo's sun (`sun`, photo_sun_screen) lit most. A face is raised to their tone, but never by more than the
+    photo's sun (`sun`, photo_sun) lit most. A face is raised to their tone, but never by more than the
     sun's direction explains, with the allowance `explain` (a face turned from the sun, or one the model puts in
     cast shadow for that sun, `cast` from photo_shadow; a face partly in it is split there). So a dark face that faced the sun stays dark:
     that is its material. A raised face takes the lit faces' tint for the blue of its shade, and its contrast is
@@ -863,7 +865,7 @@ def make_even_inputs(dst: Path | None = None, img: Path | None = None) -> dict:
     dst = dst or base() / "inputs_even"
     dst.mkdir(parents=True, exist_ok=True)
     img = img or V2 / "docs" / "img"
-    sun = photo_sun_screen()
+    sun = photo_sun()
     out, rows = {}, []
     for name in input_names():
         x0, y0, size, step = window_of(name)
@@ -885,4 +887,98 @@ def make_even_inputs(dst: Path | None = None, img: Path | None = None) -> dict:
     for i in range(0, len(rows), 2):
         _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in rows[i:i + 2]]),
               img / f"test_detail_evenin_inputs_{i // 2 + 1}.jpg")
+    return out
+
+
+# ------------------------------------------------------------------------------------------------ training pictures
+def level(rgb, g: dict, min_px=150):
+    """Each building's walls, and its roofs, brought to one median brightness over the four ways its faces turn
+    (each side multiplied by one factor; the largest side is the reference). The sides and the pixels are the
+    ones the build's own check of a painting measures (dataset.flat_light), so this passes it by construction: it
+    says nothing about light left inside a side."""
+    from scipy import ndimage as ndi
+
+    from v2.layers.common import VIEW
+    out = rgb.astype(float)
+    L = lum(out)
+    ids = np.where(np.isin(g["which"], PAINT_LAYERS), g["ids"], 0)
+    normal = np.asarray(g["normal"], float)
+    cls = ids & 255; obj = ids >> 8
+    h = np.hypot(normal[..., 0], normal[..., 1])
+    quad = (((np.degrees(np.arctan2(normal[..., 0], normal[..., 1])) % 360 + 45) % 360) // 90).astype(int)
+    key = ids.astype(np.int64) * 4 + quad
+    edge = np.zeros(key.shape, bool)
+    edge[:, 1:] |= key[:, 1:] != key[:, :-1]; edge[:, :-1] |= key[:, 1:] != key[:, :-1]
+    edge[1:, :] |= key[1:, :] != key[:-1, :]; edge[:-1, :] |= key[1:, :] != key[:-1, :]
+    inner = ~ndi.binary_dilation(edge, iterations=2) & (-(normal @ VIEW) > 0.3)
+    for c in (WALL, ROOF):
+        m = (cls == c) & (h > (0.7 if c == WALL else 0.1))
+        for o in np.unique(obj[m & inner]):
+            mo = m & (obj == o)
+            sides = [(q, mo & inner & (quad == q)) for q in range(4)]
+            qs = [(q, np.median(L[sel]), int(sel.sum())) for q, sel in sides if sel.sum() >= min_px]
+            if len(qs) < 2:
+                continue
+            ref = max(qs, key=lambda x: x[2])[1]
+            for q, med, _n in qs:
+                out[mo & (quad == q)] *= ref / max(med, 1e-6)
+    return np.clip(np.round(out), 0, 255).astype(np.uint8)
+
+
+def target(code, painting, g: dict, meta: dict) -> dict:
+    """A painting made into a picture the build's checks of a painting can pass: placed per building (register),
+    its light removed (delit), each building's sides levelled (level), and the code art's own windows drawn in
+    (the painting's windows drift from the model's). Returns every stage."""
+    from scipy import ndimage as ndi
+    reg = register(code, painting, g)[0]
+    dl = delit(code, reg, g, photo_shadow(g, meta))
+    lv = level(dl, g)
+    on = np.isin(g["which"], PAINT_LAYERS)
+    win = ndi.binary_dilation(np.isin(g["ids"] & 255, (12, 13, 14)) & on, iterations=1) & on
+    out = lv.copy(); out[win] = code[win]
+    return {"registered": reg, "delit": dl, "levelled": lv, "target": out}
+
+
+def painting_checks(rgb, g: dict, meta: dict, scene_folder) -> dict:
+    """The build's own checks of a painting that need no detector (paintcheck): flat light per building (5%), and
+    on a window at v2's scale the line score (95% of building edges and of window rows)."""
+    from v2.bakeoff import paintcheck as PC
+    from v2.bakeoff.dataset import flat_light
+    ids = np.where(g["which"] == PC.B_LAYER, g["ids"], 0)
+    worst, bad = flat_light(rgb, ids, g["normal"])
+    r = {"flat_worst": worst, "flat_failing": len(bad), "buildings": int(len(np.unique((ids >> 8)[ids > 0])))}
+    if rgb.shape[0] == WIN:
+        for k, (seen, hit) in PC.line_score(scene_folder, meta["x0"], meta["y0"], rgb, g).items():
+            r[k] = round(hit / seen, 4) if seen else None
+    return r
+
+
+def targets(source: str = "T1", img: Path | None = None, write=True) -> dict:
+    """Every painting of a paid run as painted (placed), with its light removed, levelled, and as a target: the
+    build's checks on each (checks/targets_<source>.json), and sheets of the first candidate of each p125 window
+    (as painted, levelled, target, code art; none lit)."""
+    from v2.build.stages import graph
+    img = img or V2 / "docs" / "img"
+    scene_folder = graph().folder("scene", AREA)
+    res, rows = {}, []
+    for name in input_names():
+        code, g, meta = load_input(name)
+        for k in range(len(SEEDS)):
+            painting = painting_for(name, source, k)[0]
+            if painting is None:
+                continue
+            t = target(code, painting, g, meta)
+            res[f"{name}_{k}"] = {s: painting_checks(t[s], g, meta, scene_folder) for s in t}
+            if k == 0 and name.endswith("p125"):
+                c = (slice(256, 768), slice(256, 768))
+                ims = [_label(t["registered"][c], f"{source}: as painted"), _label(t["levelled"][c], "light removed, levelled"),
+                       _label(t["target"][c], "with the code's windows"), _label(code[c], "code art")]
+                rows.append(_row([np.asarray(Image.fromarray(i).resize((448, 448), Image.LANCZOS)) for i in ims]))
+    out = {"source": source, "inputs": res}
+    if write and res:
+        (base() / "checks").mkdir(parents=True, exist_ok=True)
+        (base() / "checks" / f"targets_{source}.json").write_text(json.dumps(out, indent=1))
+        for i in range(0, len(rows), 3):
+            _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in rows[i:i + 3]]),
+                  img / f"test_detail_targets_{source.lower()}_{i // 3 + 1}.jpg")
     return out

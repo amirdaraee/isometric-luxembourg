@@ -286,3 +286,27 @@ def test_t3_differs_from_t2_by_its_first_control_image_only(tmp_path, monkeypatc
     assert set(f2) == set(f3) and len(f3) == 24
     assert all((f2[k] == f3[k]) == k.endswith("layout.png") for k in f2)
     assert (b2 / "prompt.txt").read_text() == (b3 / "prompt.txt").read_text()
+
+
+def test_level_brings_a_buildings_sides_to_one_brightness_and_the_target_has_the_codes_windows(monkeypatch):
+    from v2.bakeoff.dataset import flat_light
+    code, g = scene()
+    side = np.zeros(g["ids"].shape, bool)
+    cls = g["ids"] & 255; cc = np.indices(cls.shape)[1]
+    for b, c0 in ((1, 30), (2, 130)):
+        side |= np.isin(cls, (11, 12)) & ((g["ids"] >> 8) == b) & (cc >= c0 + 40)
+    g["normal"][np.isin(cls, (11, 12))] = (1.0, 0.0, 0.0)               # walls face east ...
+    g["normal"][side] = (0.0, -1.0, 0.0)                                # ... and the far 30 columns south
+    painting = painting_of(code, g).astype(float)
+    painting[side] *= 0.6
+    painting = painting.astype(np.uint8)
+    ids = np.where(g["which"] == 5, g["ids"], 0)
+    assert flat_light(painting, ids, g["normal"])[1]                    # the check fails it as painted
+    lv = D.level(painting, g)
+    worst, bad = flat_light(lv, ids, g["normal"])
+    assert not bad and worst < 0.02
+    assert (lv[g["which"] == 1] == painting[g["which"] == 1]).all()     # the ground is not touched
+    monkeypatch.setattr(D, "photo_shadow", lambda g, meta, rel=None: None)
+    t = D.target(code, painting, g, {})
+    assert (t["target"][cls == 12] == code[cls == 12]).all()
+    assert not flat_light(t["target"], ids, g["normal"])[1]

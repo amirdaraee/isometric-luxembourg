@@ -1667,4 +1667,104 @@ painted, T3 with its light removed in code, the code art; the last two under a p
 44 and 46 stand.
 
 49. **What now for the paint route?** Stop it and stay with code art; or look at what training a style
-    model on evenly lit pictures would take (a plan and a quote first, nothing paid); or something else?
+    model on evenly lit pictures would take (a plan and a quote first, nothing paid); or something else? (Answered on
+    22 November: "Plan the training route", section 18.)
+
+## 18. The training route, planned; and a free finding that comes before it (22 November, $0)
+
+Branch `v2-phase3-trainplan`. **Spent: $0.** No pod, no quote. PR #17 was merged first, on the owner's "Merge
+once CI passes" (CI green on both commits). The owner's decision on question 49: "Plan the training route".
+
+### 18.1 A mistake in T3's inputs, found while planning
+
+`detail.even_capture` limits how far a face is raised by what the photo's sun explains. I gave it the sun in
+the camera's frame; a window's normals are east, north, up. So the limit was worked out with a wrong sun.
+
+- What it changed, measured by making the inputs again with the right sun (in a scratch folder; the inputs
+  T3 used are kept as they were): the spread of wall faces would have been 14.8% on average instead of the
+  13.1% T3 was given; the two sets differ by 2.2 of 255 on average, on 14% of the pixels.
+- What stands: section 17's figures were measured on the inputs actually used, and those were, if anything,
+  slightly more even than the correct ones. T3's answer does not change.
+- What was wrong in the text: section 16.2's "by no more than the sun's direction explains" was true only of
+  that wrong sun.
+- The same slip is in `detail.lit`, the preview sun of the sheets since section 12: it lit the art from a
+  direction no June sun has. It is a preview on sheets only; no number uses it.
+- Both are fixed (`detail.photo_sun`, `detail.lit`). Sheets made before the fix were not made again.
+
+### 18.2 The finding: the paintings we have can pass the build's checks of a painting
+
+Until now I measured the paintings' light with my own figure. The build has its own filter for a painting,
+from Phase 2 (`paintcheck`: on every building, faces turned different ways within 5% of each other; 95% of
+building edges and of window rows on a drawn line). I ran it, at $0, on T1's 24 paintings in four states
+(`python -m v2.bakeoff targets`, `detail.target`):
+
+| State of the painting | Even light: paintings with no failing building | Buildings failing | Lines: windows passing both, of 12 close ups |
+|---|---|---|---|
+| As painted, placed per building | 0 of 24 | 1,149 of 2,114 | 0 (edges 83% to 95%, window rows 78% to 98%) |
+| Light removed in code (`detail.delit`) | 0 of 24 | 772 | 1 (edges 96% to 99%, window rows 78% to 96%) |
+| And each building's sides levelled (`detail.level`) | 23 of 24 | 1 | 1 |
+| And the code art's own windows drawn in | 23 of 24 | 1 | **12 of 12** (edges 96% to 99%, window rows 97% to 99%) |
+
+What it means and what it does not:
+
+- **Levelling passes the even-light check by construction.** It multiplies each side of a building by one
+  factor so the sides' medians agree, on the very pixels the check measures. It says nothing about light
+  left inside a side (the foot of a wall darker than its top, the edge of a painted shadow). The eye and the
+  viewer's moving light have to judge that; neither has yet.
+- **Edges pass because the code's ink is on the borders, window rows because the code's windows are drawn
+  in.** The painting supplies what is between: stone, slate, dormers, colour.
+- **Faults seen on the sheets:** the painting's own windows still show beside the code's (doubled windows,
+  clearest on the cathedral); trees the model painted in front of a wall stay on it as pale lace; some
+  patches are washed out; dense old-town roofs are untidy where painting and model disagree.
+- **Not checked:** cars (the detector), seams between neighbouring paintings, the build's own gates, the
+  viewer, night.
+
+Sheets (as painted, levelled, with the code's windows, code art; none of them lit):
+`v2/docs/img/test_detail_targets_t1_1.jpg`, `_2.jpg`. Numbers:
+`<data>/v2/test/bakeoff/detail/checks/targets_T1.json`.
+
+### 18.3 The plan
+
+Training a style model needs evenly lit pictures to learn from. Section 18.2 is where they would come from,
+so the first step is the same whether a model is trained or not.
+
+| Step | What | Cost |
+|---|---|---|
+| 1 | **Finish the picture in code.** Take out the painting's own windows where the code's are drawn, take the painted trees off the walls, run the car detector, measure seams, put the six blocks in the viewer under the moving light, by day and at night. | $0 |
+| 2 | **The owner looks.** If the six blocks look right and pass, the paintings are usable as they are, with no training: go to step 5. | $0 |
+| 3 | **Training pictures.** Phase 2 set at least 60 pairs; there are 12 places now. Paint Phase 2's 80 training crops from v1's capture, two candidates each (160 paintings at about 20 s), and run step 1 on them. | about $2.40, worst case about $2.90 |
+| 4 | **Train and try.** Rank 16, 2,000 steps (Phase 2's jobs C2p and C2 at their quotes: $5.62, worst case $6.19), then the six blocks painted with the new model ($0.70, worst case $1.09). | about $6.30, worst case about $7.30 |
+| 5 | **The test area.** All 107 windows painted (Phase 2's job C3: $1.61, worst case $2.15, with either model), through step 1, built and gated. | about $1.60, worst case $2.15 |
+
+- **Training route in all (steps 3 and 4): about $8.70, worst case about $10.20.** Phase 3 has $5.01 left.
+  Phase 2's line, where this training was first planned, has $13.28 unspent of its $17. Moving money between
+  lines is the owner's decision.
+- **These are estimates from earlier runs' times and prices**, not quotes. Each paid step would get its own
+  quote at the live price before it runs.
+- **What training would add, and what it would not.** A model that learned from evenly lit pictures should
+  need less correction in code, and should not paint shadow edges inside a wall. It would still need the
+  code's lines and windows, and its pictures would still go through step 1. Phase 2's pilot is the only
+  evidence on a painter asked for even light: 2 of 16 paintings passed. I cannot put a number on the odds.
+- **My recommendation: step 1, then step 2, before any money.** It is free, the training needs it anyway,
+  and it may show that no training is needed.
+
+### 18.4 What using paintings would mean
+
+- Gate G2 chose method A, all code art, for the whole city. Art made from paintings is not method A, so it
+  would reopen G2 (question 44). Nothing here changes G2.
+- The paintings are made from the aerial photo. Whether its licence covers this use has not been checked.
+- The cliffs and the trees stay code art in all of this (question 46).
+
+### 18.5 Not verified
+
+- The full build and its gates were not run; no layer, check or threshold changed. The tool's and the
+  ledger's tests pass (54).
+- T2's and T3's paintings were not put through section 18.2's check, only T1's.
+- The times in the plan are from T1 to T3 (A100) and from v1's own training (H100); the two were not
+  measured on the same machine.
+
+### 18.6 Open questions
+
+44 and 46 stand.
+
+50. **Step 1 (free): finish the picture in code and show the six blocks in the viewer?**
