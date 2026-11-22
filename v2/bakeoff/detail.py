@@ -19,12 +19,13 @@ edges best meet the code art's.
 
 Two sources of paintings:
   free   v1's finished day art, as it is on disk (v1 painted at 0.293 m/px; v2's map pixel is 0.125 m)
+  T2     T1 again, inputs and seeds, with the prompt asking for even light (jobs.py T2)
   T1     new paintings of the same blocks by v1's style model from v1's capture and v2's own line layout, at two
          scales: p250 (one model pixel = 0.25 m, the scale v1 was painted at, one painting per 256 m block) and
          p125 (0.125 m, v2's own scale, the block's central 128 m). Paid: jobs.py T1, quoted, the owner's to approve.
 
     python -m v2.bakeoff inputs detail      T1's control images for the six blocks, both scales ($0)
-    python -m v2.bakeoff detail [--source free|T1]
+    python -m v2.bakeoff detail [--source free|T1|T2]
                                             register + transfer on the six blocks, the numbers and the sheets
 """
 from __future__ import annotations
@@ -54,7 +55,8 @@ BLOCKS = {
     "clausen": (65552, 33776),
 }
 SCALES = {"p250": 2, "p125": 1}               # v2 map pixels per model pixel
-SEEDS = (1867, 1868)                          # pod/run.sh T1
+SEEDS = (1867, 1868)                          # pod/run.sh T1, T2
+PAINTED = {"T1": "painted", "T2": "painted_even"}   # where each paid job's paintings are (bundle.OUT)
 WALL, PART, ROOF = 11, 22, 23                 # layers/common.py CLASS: what a painting may colour
 PAINT_LAYERS = (5, 6)                         # which: buildings, structures
 P = {
@@ -347,12 +349,44 @@ def transfer(code, painting, g: dict, have=None, p: dict = P):
     return np.clip(np.round(out), 0, 255).astype(np.uint8), st
 
 
-def delit(code, painting, g: dict, sigma=24.0, clip=(-1.1, 0.5), p: dict = P):
-    """The painting used more directly (a first, rough version, for the trial's sheet): inside each face the
-    (registered) painting keeps all its own drawing, its windows, dormers and joints, and half its own colour
-    changes; only the face's light is replaced, its brightness taken against its own mean over `sigma` px and set
-    on one colour per building part. The code art keeps the ground, the trees and the ink on the borders between
-    faces and buildings; its own windows are not drawn. A cast shadow wider than sigma survives in part."""
+def photo_shadow(g: dict, meta: dict, rel: Path | None = None) -> np.ndarray:
+    """Where the 3D model puts a cast shadow for the aerial photo's sun (params g1.shadow_photo_sun, the sun the
+    paintings' input was photographed under), per pixel of a window: layers/light.py's reference on the release's
+    own shadow height map."""
+    from v2.checks.g1_checks import _when
+    from v2.config import params
+    from v2.layers.common import unpack_bin, unproject
+    from v2.layers.light import HeightMap, shadow_ref, sun_vector
+    rel = rel or release()
+    li = json.loads((rel / "light.json").read_text())
+    shape = (li["height"], li["width"], 4)
+    hm = HeightMap.decode(unpack_bin((rel / "shadow_a.bin").read_bytes(), shape, np.uint8),
+                          unpack_bin((rel / "shadow_b.bin").read_bytes(), shape, np.uint8),
+                          li["e0"], li["n0"], li["step"], li["zbase"])
+    az, el, _sv = sun_vector(_when(params()["g1"]["shadow_photo_sun"]))
+    n = g["which"].shape[0]; step = meta["size"] / n
+    PX, PY = np.meshgrid(meta["x0"] + (np.arange(n) + 0.5) * step, meta["y0"] + (np.arange(n) + 0.5) * step)
+    ok = g["depth"] < 1e8
+    cast = np.zeros(ok.shape, bool)
+    e, nn, z = unproject(PX[ok], PY[ok], g["depth"][ok])
+    cast[ok] = shadow_ref(hm, e, nn, z, az, el) > 0
+    return cast
+
+
+def delit(code, painting, g: dict, cast=None, sigma=24.0, clip=(-1.1, 0.5), dark=0.6, p: dict = P):
+    """The painting used more directly: inside each face the (registered) painting keeps all its own drawing, its
+    windows, dormers and joints, and its colour changes; only the face's light is replaced.
+
+    A face's light is its own tone near each pixel: the mean brightness (of the logarithm) over `sigma` px of the
+    face's pixels, leaving out those far darker than their surroundings (by `dark`, about half as bright: the
+    windows drawn on it, which would otherwise make a windowed wall come out brighter than a plain one). Beside it
+    the surface's own tint, the median over the face's brighter 60%. A tighter `dark` (0.25) measured less even on
+    the paintings: on a wall drawn in several tones it follows the highlights, not the surface. Every pixel keeps its brightness and its
+    tint relative to those, set on one colour per building part (the walls' from the lit side). So a wall the
+    painting shaded comes out as its lit neighbour, its windows still dark and blue, and a shadow cast across a
+    face fades out over about sigma. Where `cast` (the model's cast shadow for the photo's sun, photo_shadow) is
+    given, the two sides of its edge are levelled apart, so the edge does not smear. The code art keeps the
+    ground, the trees and the ink on the borders between faces and buildings; its own windows are not drawn."""
     from scipy import ndimage as ndi
     code = code.astype(float); src = painting.astype(float) + 1.0
     bid, cls, face, _seg = segments(g)
@@ -366,6 +400,7 @@ def delit(code, painting, g: dict, sigma=24.0, clip=(-1.1, 0.5), p: dict = P):
     border = ndi.binary_dilation(e, iterations=1)
     ly = np.log(lum(src))
     chroma = src / lum(src)[..., None]
+    side = np.zeros(on.shape, np.int64) if cast is None else cast.astype(np.int64)
     H, W = on.shape; pad = int(2.5 * sigma)
     for b in np.unique(bid[on]):
         mb = on & (bid == b)
@@ -377,20 +412,30 @@ def delit(code, painting, g: dict, sigma=24.0, clip=(-1.1, 0.5), p: dict = P):
             if good.sum() < p["min_px"] * 0.5:
                 continue
             target = band_colour(src[good] - 1.0, p["band_roof" if kind else "band_wall"])
-            tl = lum(target)
             rows = np.flatnonzero(m.any(1)); cols = np.flatnonzero(m.any(0))
             r0, c0 = max(rows[0] - pad, 0), max(cols[0] - pad, 0)
             r1, c1 = min(rows[-1] + 1 + pad, H), min(cols[-1] + 1 + pad, W)
             sl = (slice(r0, r1), slice(c0, c1))
+            lys, chs = ly[sl], chroma[sl]
             for f in np.unique(face[sl][m[sl]]):
-                mf = m[sl] & (face[sl] == f) & ~tree[sl]
-                w = mf.astype(float)
-                if w.sum() < 40:
+                whole = m[sl] & (face[sl] == f) & ~tree[sl]
+                if whole.sum() < 40:
                     continue
-                mean = ndi.gaussian_filter(ly[sl] * w, sigma) / np.maximum(ndi.gaussian_filter(w, sigma), 1e-3)
-                d = np.clip(ly[sl] - mean, *clip)
-                val = tl * np.exp(d)[..., None] * (0.5 * chroma[sl] + 0.5 * (target / tl)[None, None, :])
-                sub = out[sl]; sub[mf] = val[mf]; out[sl] = sub
+                v = lys[whole]
+                tint = np.median(chs[whole & (lys >= np.quantile(v, 0.4))], axis=0)
+                parts = [whole & (side[sl] == k) for k in (0, 1)]
+                if min(x.sum() for x in parts) < 0.15 * whole.sum():
+                    parts = [whole]                         # no real shadow edge on this face
+                for mf in parts:
+                    w = mf.astype(float)
+                    m1 = ndi.gaussian_filter(lys * w, sigma) / np.maximum(ndi.gaussian_filter(w, sigma), 1e-3)
+                    w2 = w * (lys > m1 - dark)
+                    den = ndi.gaussian_filter(w2, sigma)
+                    tone = np.where(den > 0.02, ndi.gaussian_filter(lys * w2, sigma) / np.maximum(den, 1e-3), m1)
+                    d = np.clip(lys - tone, *clip)
+                    crel = np.clip(chs / tint[None, None, :], 0.6, 1.6) ** 0.8
+                    val = target[None, None, :] * np.exp(d)[..., None] * crel
+                    sub = out[sl]; sub[mf] = val[mf]; out[sl] = sub
     ink = (lum(code) + 1.0 < p["ink"]) & border & on
     out[ink] = code[ink]
     return np.clip(np.round(out), 0, 255).astype(np.uint8)
@@ -529,7 +574,7 @@ def painting_for(name: str, source: str, k: int = 0):
     x0, y0, size, step = window_of(name)
     if source == "free":
         return v1_painted(x0, y0, size)
-    f = base() / "painted" / f"{name}_{k}.png"
+    f = base() / PAINTED[source] / f"{name}_{k}.png"
     if not f.exists():
         return None, None
     im = Image.open(f).convert("RGB")
@@ -600,7 +645,7 @@ def run(source: str = "free", img: Path | None = None, write=True) -> dict:
                     zooms.append(sheet_row(r, crop=(slice(256, 768), slice(256, 768))))
                     if source != "free":                 # four ways: code, transfer, painting without its light, painting
                         c = (slice(256, 768), slice(256, 768))
-                        dl = delit(r["code"], r["registered"], r["g"])
+                        dl = delit(r["code"], r["registered"], r["g"], photo_shadow(r["g"], r["meta"]))
                         res[key]["flat_delit"] = flat_by_part(dl, r["g"])
                         t = r["g"].get("trees")
 
@@ -627,4 +672,51 @@ def run(source: str = "free", img: Path | None = None, write=True) -> dict:
             for i in range(0, len(zooms), 3):
                 _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in zooms[i:i + 3]]),
                       img / f"test_detail_{tag}_close_{i // 3 + 1}.jpg")
+    return out
+
+
+def pairs(a: str = "T1", b: str = "T2", img: Path | None = None, write=True) -> dict:
+    """Two paid runs that differ by their prompt alone, painting by painting (same input, same seed): how even
+    each is across a building's walls as painted (flat_by_part of the registered painting), and sheets of the
+    first candidate: each p125 window's central 64 m (a, b, b with its light removed, the code art; the last two
+    under the preview sun) and each whole block (a, b)."""
+    img = img or V2 / "docs" / "img"
+    res, close, blocks = {}, [], []
+    for name in input_names():
+        code, g, meta = load_input(name)
+        for k in range(len(SEEDS)):
+            pa, pb = painting_for(name, a, k)[0], painting_for(name, b, k)[0]
+            if pa is None or pb is None:
+                continue
+            ra, rb = register(code, pa, g)[0], register(code, pb, g)[0]
+            fa, fb = flat_by_part(ra, g), flat_by_part(rb, g)
+            ya, yb = lum(pa.astype(float)), lum(pb.astype(float))
+            on = np.isin(g["which"], PAINT_LAYERS)
+            res[f"{name}_{k}"] = {a: fa, b: fb, "luminance": {a: round(float(ya[on].mean()), 1), b: round(float(yb[on].mean()), 1)},
+                                  "differ_mean": round(float(np.abs(pa.astype(float) - pb.astype(float)).mean()), 2)}
+            if k:
+                continue
+            if name.endswith("p250"):
+                blocks.append(_row([np.asarray(Image.fromarray(_label(i, t)).resize((640, 640), Image.LANCZOS))
+                                    for i, t in ((pa, f"{a}: as v1 painted"), (pb, f"{b}: even light asked"))]))
+            else:
+                c = (slice(256, 768), slice(256, 768))
+                dl = delit(code, rb, g, photo_shadow(g, meta))
+                t = g.get("trees")
+
+                def shown(rgb, g=g, t=t, c=c):
+                    im = lit(rgb, g)
+                    return (np.where(t[..., 3:] > 0, t[..., :3], im) if t is not None else im)[c]
+                ims = [_label(pa[c], f"{a}: as v1 painted"), _label(pb[c], f"{b}: even light asked"),
+                       _label(shown(dl), f"{b}, light removed"), _label(shown(code), "code art")]
+                close.append(_row([np.asarray(Image.fromarray(i).resize((448, 448), Image.LANCZOS)) for i in ims]))
+    out = {"a": a, "b": b, "inputs": res}
+    if write and res:
+        (base() / "checks").mkdir(parents=True, exist_ok=True)
+        (base() / "checks" / f"pairs_{a}_{b}.json").write_text(json.dumps(out, indent=1))
+        tag = f"{a}_{b}".lower()
+        for kind, rows, per in (("close", close, 3), ("blocks", blocks, 2)):
+            for i in range(0, len(rows), per):
+                _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in rows[i:i + per]]),
+                      img / f"test_detail_{tag}_{kind}_{i // per + 1}.jpg")
     return out

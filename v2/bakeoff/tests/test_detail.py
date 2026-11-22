@@ -116,9 +116,30 @@ def test_the_trial_job_is_quoted_from_the_last_runs_times_and_fits_the_phase():
     assert j.est_usd <= j.worst_usd <= 1.10
     budget = json.loads((HERE / "budget.json").read_text())
     assert j.worst_usd <= budget["goals"][j.goal]["cap_usd"]
-    assert 'T1)  paint "$V1" 1867,1868 ;;' in (runner.POD / "run.sh").read_text()
+    assert 'T1|T2)  paint "$V1" 1867,1868 ;;' in (runner.POD / "run.sh").read_text()
     assert B.SETUP["T1"] == "paint" and B.OUT["T1"] == "detail/painted"
     assert any(str(u[0]).endswith(B.V1_LORA) for u in B.uploads("T1", HERE))
+
+
+def test_the_even_light_repaint_differs_from_t1_by_its_prompt_only(tmp_path, monkeypatch):
+    from v2.bakeoff import prompts as PR
+    t1, t2 = J.BY_ID["T1"], J.BY_ID["T2"]
+    assert (t2.gpu, t2.cloud, t2.goal, t2.work, t2.model) == (t1.gpu, t1.cloud, t1.goal, t1.work, t1.model)
+    assert J.T1_MEASURED_S <= t2.est_h * 3600 <= J.T1_MEASURED_S + 60 and t2.worst_usd <= 1.10
+    assert runner.cap_seconds(t2) - 45 >= 1.4 * J.T1_MEASURED_S
+    assert B.OUT["T2"] == "detail/painted_even" != B.OUT["T1"] and D.PAINTED == {"T1": "painted", "T2": "painted_even"}
+    # the bundles: the same control images, the prompts apart by the even-light sentence alone
+    monkeypatch.setattr(B, "base", lambda: tmp_path)
+    monkeypatch.setattr(D, "base", lambda: tmp_path / "detail")
+    src = tmp_path / "detail" / "inputs"; src.mkdir(parents=True)
+    for n in D.input_names():
+        for ext in ("unlit.png", "layout.png"):
+            (src / f"{n}.{ext}").write_bytes(f"{n}.{ext}".encode())
+    b1, b2 = B.build("T1"), B.build("T2")
+    files = lambda d: {p.name: p.read_bytes() for p in (d / "inputs").iterdir()}          # noqa: E731
+    assert files(b1) == files(b2) and len(files(b1)) == 24
+    assert (b1 / "prompt.txt").read_text() == PR.V1_CAPTION
+    assert (b2 / "prompt.txt").read_text() == PR.V1_CAPTION + PR.EVEN
 
 
 def test_the_trial_job_cannot_run_without_its_own_approval(tmp_path):
@@ -145,7 +166,7 @@ def test_delit_keeps_the_paintings_own_drawing_and_the_codes_border_ink():
     code, g = scene()
     painting = painting_of(code, g)
     cls = g["ids"] & 255
-    out = D.delit(code, painting, g, sigma=8.0)
+    out = D.delit(code, painting, g)
     # the painted window (dark on the wall) is still there, where the light transfer keeps the code's
     win = cls == 12; wall = (cls == 11) & (D.lum(code.astype(float)) > 100)
     assert D.lum(out[win].astype(float)).mean() < 0.5 * D.lum(out[wall].astype(float)).mean()
@@ -154,3 +175,46 @@ def test_delit_keeps_the_paintings_own_drawing_and_the_codes_border_ink():
     for r0, c0 in ((40, 30), (120, 130)):
         assert (out[r0 + 30, c0 + 2:c0 + 68] == code[r0 + 30, c0 + 2:c0 + 68]).all()
     assert (out[g["which"] == 1] == code[g["which"] == 1]).all()
+
+
+def test_delit_gives_a_shaded_wall_its_lit_neighbours_colour():
+    code, g = scene()
+    # a second wall face on each building (the right 30 columns turn the corner), which the painting shades
+    cls = g["ids"] & 255; cc = np.indices(cls.shape)[1]
+    side = np.zeros(cls.shape, bool)
+    for b, c0 in ((1, 30), (2, 130)):
+        side |= (cls == 11) & ((g["ids"] >> 8) == b) & (cc >= c0 + 40)
+    g["normal"][side] = (-0.6, 0.0, 0.8)
+    painting = painting_of(code, g).astype(float)
+    painting[side] *= 0.45
+    out = D.delit(code, painting.astype(np.uint8), g)
+    for b in (1, 2):
+        w = (cls == 11) & ((g["ids"] >> 8) == b)
+        front, shaded = D.lum(out[w & ~side].astype(float)), D.lum(out[w & side].astype(float))
+        assert abs(np.median(shaded) / np.median(front) - 1) < 0.03
+    assert D.flat_by_part(out, g, min_px=200)["worst"] < 0.03 < D.flat_by_part(painting, g, min_px=200)["worst"]
+
+
+def test_pairs_set_two_runs_side_by_side_painting_by_painting(tmp_path, monkeypatch):
+    from PIL import Image
+    code, g = scene()
+    n = code.shape[0]
+    monkeypatch.setattr(D, "base", lambda: tmp_path)
+    monkeypatch.setattr(D, "WIN", n)
+    monkeypatch.setattr(D, "input_names", lambda: ["x_p125"])
+    monkeypatch.setattr(D, "window_of", lambda name: (0, 0, n, 1))
+    monkeypatch.setattr(D, "photo_shadow", lambda g, meta, rel=None: None)
+    src = tmp_path / "inputs"; src.mkdir()
+    Image.fromarray(code).save(src / "x_p125.code.png")
+    np.savez_compressed(src / "x_p125.geom.npz", **g)
+    (src / "x_p125.json").write_text(json.dumps({"x0": 0, "y0": 0}))
+    for run, shade in (("T1", True), ("T2", False)):
+        d = tmp_path / D.PAINTED[run]; d.mkdir()
+        for k in range(len(D.SEEDS)):
+            Image.fromarray(painting_of(code, g, shade=shade)).save(d / f"x_p125_{k}.png")
+    out = D.pairs("T1", "T2", img=tmp_path / "img")
+    assert set(out["inputs"]) == {"x_p125_0", "x_p125_1"}
+    for v in out["inputs"].values():
+        assert v["differ_mean"] > 0 and v["luminance"]["T2"] > v["luminance"]["T1"]
+    assert json.loads((tmp_path / "checks" / "pairs_T1_T2.json").read_text())["inputs"] == out["inputs"]
+    assert (tmp_path / "img" / "test_detail_t1_t2_close_1.jpg").exists()

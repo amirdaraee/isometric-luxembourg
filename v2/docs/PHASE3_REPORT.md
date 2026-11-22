@@ -1355,7 +1355,8 @@ were plain because of their input, not because of the model.
 Sheets, four columns (code art, light transfer, painting with its light removed, painting as painted):
 `v2/docs/img/test_detail_t1_levels_1.jpg`, `test_detail_t1_levels_2.jpg`. Whole blocks and close views of the
 light transfer: `test_detail_t1_blocks.jpg`, `test_detail_t1_close_1.jpg`, `test_detail_t1_close_2.jpg`.
-Numbers: `<data>/v2/test/bakeoff/detail/checks/T1.json`.
+Numbers: `<data>/v2/test/bakeoff/detail/checks/T1.json`. The two four-column sheets were made again in
+section 14 with the later version of light removal; the figures in this table are the first version's.
 
 | | Even light (limit 5%) | Lines | How it looks |
 |---|---|---|---|
@@ -1390,3 +1391,128 @@ Numbers: `<data>/v2/test/bakeoff/detail/checks/T1.json`.
 44. **If paintings are used, G2 is reopened** (method A was chosen when the paintings were plain). That is the
     owner's decision, after a result that passes the light and line rules on these six blocks.
 
+## 14. After the trial: free work on the paintings' light, and the even-light repaint quoted (21 November, $0)
+
+Branch `v2-phase3-evenlight`. **Spent: $0.** No pod. One quote recorded, q0017, **not approved**.
+
+The owner's decision on question 43: "Even-light repaint + free fixes".
+
+### 14.1 Free work on removing the painted light (`detail.delit`)
+
+Tried on T1's 24 paintings. What changed and what it measured:
+
+| Change | Result |
+|---|---|
+| **Tint.** A shaded wall now takes its lit neighbour's colour; a pixel keeps its tint relative to its own face's. | Kept. The washed-out grey of the first version is gone: stone is stone-coloured, windows stay dark and blue. |
+| **Windows left out of a wall's tone** (pixels about half as bright as their surroundings). Without it, a wall with windows comes out 11% brighter than a plain one (the tool's test). | Kept, because the fault it fixes is real. But my evenness figure got worse with it: 9% to 19% (median per window) against 2% to 13% without. That figure takes the median of a wall including the windows painted on it, so it counts drawing as light; I did not change the figure to suit the result. |
+| **Cast shadows from the 3D model** for the aerial photo's sun (`detail.photo_shadow`), to level the two sides of a shadow's edge apart. | Kept, small effect (at most 2 points on the windows tried). The paintings' light is mostly whole walls shaded by direction and dark ground, and the ground is the code's anyway. |
+| **Placing the whole window first**, then each building. | Reverted. The line score of the placed paintings fell from 92.0% to 89.7%. |
+
+Where that leaves it: the result looks clearly closer to v1 (`v2/docs/img/test_detail_t1_levels_1.jpg`,
+`test_detail_t1_levels_2.jpg`, third column) and does not pass. Even light is over the 5% limit on every
+window by the figure above, and the build's own shadow gate has not been run on it. Lines are unchanged:
+92.0% of building edges and 86.0% of window rows after placement, against 95%.
+
+Also seen on the sheets: a large part of v1's look is its rock faces and trees, which this method leaves to
+the code art. They are not in the trial.
+
+### 14.2 The even-light repaint, quoted: T2
+
+T1 again, the same inputs and the same seeds, with one thing changed: the prompt adds "Evenly lit with flat
+light: no shadows, no shading from one side, nothing that moves." So each painting has T1's as its pair.
+
+| Quote | GPU | Expected | Worst case | Phase 3 after it, worst case |
+|---|---|---|---|---|
+| q0017 | RunPod A100 SXM, secure, $2.19/h (read 21 Nov) | $0.72 (T1 took 19.2 min) | $1.09 (30 min cap) | $5.31 of $8 left |
+
+What it answers: whether the model leaves the light out itself when asked, given the input it was trained
+on. Phase 2's pilot asked the same of the plain code render, and 10 of its 16 paintings were evenly lit. If
+it does, light removal in code has far less to do; if it does not, the remaining road is training a style
+model on evenly lit targets (the stopped jobs C1 to C3 of Phase 2, about $10 at their quotes).
+
+### 14.3 Not verified
+
+- The full build and its gates were not run; no layer, check or threshold changed. The tool's and the
+  ledger's tests pass (49).
+- No car detection on the paintings; nothing seen in the viewer or on tiles; seams between neighbouring
+  paintings not measured.
+
+### 14.4 Open questions
+
+43 is answered ("Even-light repaint + free fixes"). 44 stands.
+
+45. **Approve q0017** (T2, expected $0.72, worst case $1.09)? (Answered on 22 November: approved; it ran,
+    section 15.)
+46. **Rock faces and trees.** Should the trial after this one let a painting reach the cliffs and the trees
+    too, since they carry much of v1's look? It would mean those layers also need a way to stay evenly lit.
+
+## 15. The even-light repaint ran: T2 (22 November, $0.67)
+
+Branch `v2-phase3-evenlight`. The owner approved q0017 on 22 November 2026 ("do both", to the commit of this
+branch and the quote). **Spent: $0.6673** (worst case $1.09). Pod `27w1mnmuztvx36`, A100 SXM secure at
+$2.19/h, 18.1 minutes, 24 of 24 paintings at 17.7 s each, terminated; the account lists no pod of ours
+(`luxembourgish-asr-pilot` untouched).
+
+| | |
+|---|---|
+| Phase 3 | $2.2679 of $8 spent, $5.7321 left, nothing committed |
+| Reconciled | by account balance: $5.9785 billed in all against $5.9839 in the ledger (the billing lines could not be read, as on 21 November) |
+
+**The answer is no.** Asked for even light, the model paints the same picture with the same light.
+
+| Measure (T1 as v1 painted, T2 even light asked; same input and seed) | T1 | T2 |
+|---|---|---|
+| Painted light: spread of a building's wall faces, median per painting, range over the 24 | 23% to 68% | 12% to 82% |
+| The same, mean of the 24 paintings | 46.5% | 44.6% |
+| Paintings where T2 is the more even of the pair | | 13 of 24 |
+| Mean difference between the two paintings of a pair (of 255) | | 5 to 14 |
+| Lines as painted: building edges, the two candidates (limit 95%) | 87.9%, 86.2% | 87.5%, 85.6% |
+| Lines as painted: window rows | 89.1%, 87.7% | 88.8%, 87.5% |
+| Lines after placement per building: building edges | 92.0%, 91.0% | 89.7%, 91.3% |
+| Lines after placement per building: window rows | 86.0%, 85.3% | 85.0%, 84.3% |
+| Light removed in code (`detail.delit`), median per window, six windows (limit 5%) | 9% to 19% | 7% to 18% |
+
+By eye it is the same: the cast shadows on the ground, the shaded sides of the buildings and the dark side of
+the trees are in the same places in both runs. The sentence that was added changes a tree's outline here and
+a dormer there, not the light.
+
+Why, as far as this shows: the light is in the input. The first control image is v1's capture, which is the
+aerial photo on the 3D buildings, with the sun of the day the photo was flown. The model was trained to ink
+what it is given, and it does. Phase 2's pilot got 10 evenly lit paintings of 16 with the same sentence
+because its input, the code render, had no light in it; those paintings were plain for the same reason.
+
+Sheets: `v2/docs/img/test_detail_t1_t2_close_1.jpg`, `_close_2.jpg` (four columns: T1 as painted, T2 as
+painted, T2 with its light removed in code, the code art; the last two under a preview sun),
+`test_detail_t1_t2_blocks_1.jpg` to `_3.jpg` (the six whole blocks, T1 beside T2), and T2's own
+`test_detail_t2_blocks.jpg`, `_close_N.jpg`, `_levels_N.jpg` as for T1. Numbers:
+`<data>/v2/test/bakeoff/detail/checks/T2.json`, `pairs_T1_T2.json` (`python -m v2.bakeoff detail --source T2`;
+the pair comparison is `detail.pairs`).
+
+### 15.1 What it leaves
+
+- **The prompt is not a lever for light.** Neither is light removal in code so far (7% to 19% against 5%).
+- **The input is.** Two ways to give the model an input without the photo's light, both untried:
+  1. Take the photo's light out of the capture before painting (the cast shadows are known from the 3D model
+     for the photo's sun, `detail.photo_shadow`; the shaded faces by their direction). Free to prepare; one
+     more run of about $0.70 to see what the model paints from it. The risk: the capture loses detail where
+     the shadow was, and the model may shade walls on its own.
+  2. Train a style model on evenly lit targets (Phase 2's stopped jobs C1 to C3, about $10 at their quotes;
+     Phase 3 has $5.73 left, so it would need the owner's word on the budget too). Its targets would have to
+     come from somewhere evenly lit and rich, which is the same open problem.
+- **Or stay with code art** (gate G2, method A, stands) and bring more of v1's richness into it by code.
+
+### 15.2 Not verified
+
+- The full build and its gates were not run; no layer, check or threshold changed. The tool's and the
+  ledger's tests pass (50).
+- No car detection on T2's paintings; nothing seen in the viewer, at night or on tiles; seams between
+  neighbouring paintings not measured; the build's own shadow gate not run on a painting.
+- The pair figures are my own measure (`detail.flat_by_part`), which counts windows drawn on a wall as light.
+  It is the same measure on both runs, so the comparison holds; the level does not stand for the gate's.
+
+### 15.3 Open questions
+
+44 and 46 stand.
+
+47. **What next on the paint route?** Even the input and paint once more (about $0.70), stop the paint route
+    and stay with code art, or something else?

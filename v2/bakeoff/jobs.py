@@ -203,6 +203,22 @@ TRIAL_JOBS = [
                "23 s = 1,221 s (20.4 min), est 0.34 h; the cap of 0.5 h (30 min) leaves 9.6 min for a slower "
                "download or model load"]),
 ]
+# T1 as it ran (q0016, pod sk3bylykkbwscf, 21 Nov 2026): 1,153 s in all, 24 paintings at 20.9 s, model load 269 s.
+T1_MEASURED_S = 1153
+TRIAL_JOBS.append(
+    Job("T2", "detail", "even-light repaint: T1's six blocks, inputs and seeds painted again with the prompt asking "
+        "for flat even light and no shadows", "runpod", "A100 SXM",
+        est_h=0.33, cap_h=0.5, price_read="2026-11-21", goal=CUTAWAY_GOAL, cloud="secure",
+        work="6 blocks x 2 scales x 2 candidates = 24 paintings, 1024 x 1024, 8 steps (Lightning)",
+        model=f"{QWEN_EDIT} + {LIGHTNING} + {INK_V1}",
+        inputs="T1's own (python -m v2.bakeoff inputs detail) and T1's seeds: only the prompt differs, v1's caption "
+               "with the even-light sentence (prompts.C_TARGET_PROMPT)",
+        outputs="<data>/v2/test/bakeoff/detail/painted_even/<block>_<scale>_<k>.png -> python -m v2.bakeoff detail --source T2",
+        notes=["one thing changed against T1, the prompt, so each painting has T1's as its pair: whether the model "
+               "leaves the light out when asked, given the input it was trained on (Phase 2's pilot asked the same "
+               "of the plain code render)",
+               "time plan: T1's measured 1,153 s (19.2 min) on the same GPU and cloud, est 0.33 h; the cap of 0.5 h "
+               "(30 min) leaves 10.8 min"]))
 
 BY_ID = {j.id: j for j in JOBS + CUTAWAY_JOBS + TRIAL_JOBS}
 
