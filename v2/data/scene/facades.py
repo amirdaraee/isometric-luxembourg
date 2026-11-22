@@ -25,6 +25,13 @@ Windows are known positions, straight by construction (PLAN_V2 section 6). For e
      its top. The church's one entrance front gets a portal and, where it fits, a rose window. Long rows get
      buttresses between their bays, and every wall high enough a string course under the sills. No shop fronts.
      Doors stay where the door rules put them, but for the one the portal replaces.
+  7. Dormers (rule 13; the owner's decision of 22 Nov 2026, "Model's details, painted surfaces"). ACT gives a
+     dormer as a BuildingInstallation: its front, its cheeks and its little roof, with no back (that is in the
+     roof). Of each installation on a roof, the largest upright face is its front when no face of comparable
+     size looks the other way (a chimney has four sides) and it is as wide and as high as a window needs. It gets
+     one window, centred, sized to the face, kept only when it lies inside the face's outline (`dormer_fronts`).
+     Each such front is a record of its own after every other wall ("dormer": true), so every other opening
+     keeps its place in the order.
 Output facades.json: per wall {building, wall id, base [e, n, z] x 2, normal [e, n], length, height, floors, bays,
 party, windows: [[u0, v0, u1, v1], ...]}; a church's walls also "worship" (the head of its windows) and "house_rule"
 (what the house rule had given the wall: see `build`), its joined walls "merged", windows with their kind
@@ -151,6 +158,108 @@ def join_walls(members, tol_cos=0.9994, tol_m=0.15):
             near = part.buffer(0.05)
             out.append({"o": g["o"] + g["u"] * s0, "u": g["u"], "n": g["n"], "poly": Polygon(ring), "L": float(s1 - s0),
                         "z0": float(z0), "members": [w["i"] for w, q in zip(g["walls"], polys) if near.contains(q.representative_point())]})
+    return out
+
+
+def dormer_fronts(verts, tris, tri_kind, tri_bld, origin, blds, p):
+    """Rule 7: the fronts of the dormers among the installations of the buildings' mesh (scene_buildings'
+    mesh.npz: every surface triangulated on its own vertices, kind 3 = installation), each with its one window.
+    Returns wall records in facades.json's form, in the order of the buildings and, on a building, from west
+    to east, south to north and low to high."""
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    sel = np.flatnonzero(np.asarray(tri_kind) == 3)
+    if not len(sel):
+        return []
+    T = np.asarray(tris)[sel]; V = np.asarray(verts, float)
+    # a surface: the triangles on one set of vertices
+    used, inv = np.unique(T, return_inverse=True)
+    t = inv.reshape(T.shape)
+    g = coo_matrix((np.ones(len(t) * 2), (np.r_[t[:, 0], t[:, 1]], np.r_[t[:, 1], t[:, 2]])), shape=(len(used), len(used)))
+    _n, vlab = connected_components(g, directed=False)
+    surf_of = vlab[t[:, 0]]
+    surfaces = {}
+    for s in np.unique(surf_of):
+        tt = T[surf_of == s]
+        P = V[tt]                                             # (n, 3, 3)
+        cr = np.cross(P[:, 1] - P[:, 0], P[:, 2] - P[:, 0])
+        area = 0.5 * np.linalg.norm(cr, axis=1)
+        if area.sum() < 1e-4:
+            continue
+        nrm = cr.sum(0)
+        nrm = nrm / max(np.linalg.norm(nrm), 1e-9)
+        cen = (P.mean(1) * area[:, None]).sum(0) / area.sum()
+        surfaces[int(s)] = {"tris": P, "n": nrm, "area": float(area.sum()), "c": cen,
+                            "b": int(np.asarray(tri_bld)[sel][surf_of == s][0])}
+    # an installation: surfaces of one building that share a corner
+    parent = {s: s for s in surfaces}
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+    at = {}
+    for s, q in surfaces.items():
+        for k in {(q["b"], *np.round(v * 50).astype(int)) for v in q["tris"].reshape(-1, 3)}:
+            if k in at:
+                parent[find(s)] = find(at[k])
+            else:
+                at[k] = s
+    groups = {}
+    for s in surfaces:
+        groups.setdefault(find(s), []).append(s)
+    out = []
+    for members in groups.values():
+        qs = [surfaces[s] for s in members]
+        b = blds[qs[0]["b"]]
+        up = [q for q in qs if abs(q["n"][2]) < 0.2 and q["area"] >= p["dormer_min_face_m2"]]
+        if not up:
+            continue
+        f = max(up, key=lambda q: q["area"])
+        nh = f["n"][:2] / max(np.linalg.norm(f["n"][:2]), 1e-9)
+        allc = np.concatenate([q["tris"].reshape(-1, 3) for q in qs])
+        if np.dot(nh, f["c"][:2] - allc[:, :2].mean(0)) < 0:      # outward: away from the installation's middle
+            nh = -nh
+        back = [q for q in up if q is not f and np.dot(q["n"][:2] / max(np.linalg.norm(q["n"][:2]), 1e-9), nh) < -0.8
+                and q["area"] > p["dormer_back_share"] * f["area"]]
+        if back:                                              # four sides: a chimney, a lift head
+            continue
+        pts = f["tris"].reshape(-1, 3)
+        z0 = float(pts[:, 2].min())
+        if z0 < b["eave_z"] - p["dormer_under_eave_m"]:           # not on the roof: a porch, a balcony
+            continue
+        u = np.array([-nh[1], nh[0]])
+        a = pts[:, :2] @ u
+        o = pts[:, :2][np.argmin(a)]                          # the front's first base corner
+        L = float(a.max() - a.min())
+        tri2 = [Polygon([((q[:2] - o) @ u, q[2] - z0) for q in tri]) for tri in f["tris"]]
+        poly = unary_union([t_ for t_ in tri2 if t_.is_valid and t_.area > 1e-6])
+        if poly.geom_type != "Polygon" or not (p["dormer_min_w_m"] <= L <= p["dormer_max_w_m"]):
+            continue
+        H = eave_height(poly, L)
+        if H < p["dormer_min_h_m"] or poly.bounds[3] > p["dormer_max_h_m"]:
+            continue
+        w = min(max(p["dormer_window_w_share"] * L, p["dormer_window_min_m"]), p["window_w_m"])
+        h = min(p["dormer_window_h_share"] * H, p["window_h_m"])
+        v0 = p["dormer_sill_share"] * H
+        r = [round(L / 2 - w / 2, 3), round(v0, 3), round(L / 2 + w / 2, 3), round(v0 + h, 3)]
+        if h < p["dormer_window_min_m"] or not poly.contains(box(r[0] - p["dormer_inset_m"], r[1] - p["dormer_inset_m"],
+                                                                 r[2] + p["dormer_inset_m"], r[3] + p["dormer_inset_m"])):
+            continue
+        e0 = o + np.asarray(origin, float)
+        base = [[float(e0[0]), float(e0[1]), z0], [float(e0[0] + u[0] * L), float(e0[1] + u[1] * L), z0]]
+        out.append({"building": b["id"], "base": [[round(x, 3) for x in q] for q in base],
+                    "normal": [round(float(x), 4) for x in nh], "length": round(L, 3), "height": round(H, 3),
+                    "outline": [[round(x, 3), round(y, 3)] for x, y in poly.exterior.coords],
+                    "floors": 1, "bays": 1, "party": False, "no_windows": None, "windows": [r], "doors": [],
+                    "shopfronts": [], "dormer": True, "_b": qs[0]["b"]})
+    out.sort(key=lambda w: (w["_b"], w["base"][0][0], w["base"][0][1], w["base"][0][2]))
+    seen = {}
+    for w in out:
+        k = seen[w["building"]] = seen.get(w["building"], 0) + 1
+        w["wall"] = f"{w['building']}:dormer:{k}"
+        del w["_b"]
     return out
 
 
@@ -294,10 +403,15 @@ def build(ctx):
                                       **fronts.get(j, {"main_eave": None, "front": {"how": "no wall to lay out", "portal": False, "rose": False}})}
     for w in out:
         w.pop("b", None)
+    # dormers (rule 7): each front a record after every other wall
+    mesh = np.load(ctx.dep("scene_buildings") / "mesh.npz")
+    dorm = dormer_fronts(mesh["verts"], mesh["tris"], mesh["tri_kind"], mesh["tri_bld"], mesh["origin_en"], blds, p)
+    out.extend(dorm)
     ctx.write_json("facades.json", {"rule": p, "walls": out, "unplaced_entrances": unplaced,
                                     "commercial_streets": commercial, "worship": worship_out,
                                     "worship_exceptions": worship.load_exceptions()})
     return {"walls": len(out), "with_windows": sum(1 for w in out if w["windows"]), "party_walls": int(party.sum()),
+            "dormer_windows": len(dorm), "buildings_with_dormer_windows": len({w["building"] for w in dorm}),
             "windows": sum(len(w["windows"]) for w in out), "windows_before_doors": n_win,
             "floors_max": max((w["floors"] for w in out), default=0), **ds,
             "places_of_worship": len(found), "church_walls": n_church["walls"], "church_walls_joined": n_church["joined"],

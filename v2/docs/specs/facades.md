@@ -43,7 +43,19 @@ crafts and commercial amenities (`fetch_osm_pois`). Parameters: `params.json` fa
     position (LoD2 walls follow the ground); a shop front is at most 3.0 m high, below the first floor line. Both
     must fit inside the outline. A door inside a shop front is the shop's door.
 12. **Windows give way.** Ground-floor windows a door or shop front overlaps (with a 0.2 m gap) are removed.
-13. **Dormers:** later (owner, G0 review).
+13. **Dormers** (owner, 22 Nov 2026: "Model's details, painted surfaces"; before that: later). ACT gives a dormer
+    as a BuildingInstallation: a front, two cheeks and a little roof, with no back. Among the installations on a
+    roof (base no more than `dormer_under_eave_m` under the building's eave), the largest upright face is a dormer's
+    front when no upright face of `dormer_back_share` of its size looks the other way (a chimney has four sides), it
+    is `dormer_min_w_m` to `dormer_max_w_m` wide, at least `dormer_min_h_m` high to its own eave and at most
+    `dormer_max_h_m` in all. It gets one window: centred, `dormer_window_w_share` of the front's width (at most a
+    house window's), `dormer_window_h_share` of its height to its eave, its sill at `dormer_sill_share` of that
+    height; kept only when the window, grown by `dormer_inset_m`, lies inside the front's outline. No shutters.
+    Each front is a wall record of its own after every other wall (`"dormer": true`), so every other opening keeps
+    its number (its glass tone, its night seed). Checks: F1, F2, F5 as for any wall; F3 asks a dormer for exactly one
+    window, its sill its own; **F26** a front is on its building's roof, inside the rule's sizes, with one window and
+    nothing else; F27 how many (report). A dormer's window is a rectangle whatever the dormer's shape; round and
+    arched dormers are not told apart.
 
 ## Places of worship (owner's decision, 13 Nov 2026: "Fix facades first")
 
@@ -176,8 +188,7 @@ of openings, never on a tower · **F24** no church wall's normal points into the
 the front was told, windows by kind, towers, buttresses, exceptions (report). On layer 5: **L5.7**, **L5.8**
 (layer-05-buildings.md).
 
-**Known limits** (bake-off): dormer windows on roofs (the installations are there), irregular historic rows, shop
-signs. Churches: the rule is a layout, not a survey. It knows no nave, aisle or choir: a wall is a tower's or not,
+**Known limits** (bake-off): irregular historic rows, shop signs. Dormer windows: rule 13, since 22 Nov 2026. Churches: the rule is a layout, not a survey. It knows no nave, aisle or choir: a wall is a tower's or not,
 and every other wall is laid out by its own height and length. The entrance front is told from an OSM main
 entrance where there is one, else guessed from the tower, the apse and the street; a church whose door is in its
 side is given a portal at an end. The rose, the tracery and the buttresses are one pattern for every church. A

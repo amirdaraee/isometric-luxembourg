@@ -2054,3 +2054,67 @@ are removed.
 ### 21.5 Open questions
 
 44 and 46 stand. 53 (paint the whole test area) waits for the dormer windows.
+
+## 22. Windows on dormers, in the model (22 November, $0)
+
+Branch `v2-phase3-surfaces`. **Spent: $0.** No pod. This is the first of the model's missing details of
+section 21.3: the owner's choice lifted the pause on code art for it.
+
+### 22.1 The rule (`v2/data/scene/facades.py`, `dormer_fronts`; `v2/docs/specs/facades.md` rule 13)
+
+ACT gives a dormer as a small solid on the roof with no back. Of each such solid, the largest upright face
+is a dormer's front when no face of half its size looks the other way (a chimney has four sides), it stands
+on the roof, and it is 0.8 to 4 m wide and at least 0.7 m high to its own eave. It gets one window, centred
+and sized to the front, kept only when it fits inside the front's outline. No shutters. The fronts are
+listed after every other wall, so every window that was there keeps its glass tone and its night seed.
+
+| On the test area | |
+|---|---|
+| Installations in the 3D model | 3,483 |
+| Dormer fronts given a window | 2,617, on 481 of 1,135 buildings |
+| A front, at the median | 1.39 m wide, 1.35 m to its eave |
+| Windows in all | 39,688 (37,071 before) |
+
+### 22.2 The build
+
+The test area was built again from the facade layout on (`python -m v2.build test g3`, 53.5 minutes of stage
+time). The release is `c46716ca4c9b`; `data/v2/test/release/current.json` points at it (section 1 names the
+release before it, `7c39be2ef469`, which is still on disk).
+
+- **53 of 57 stages pass.** 255 gate entries pass. No threshold was changed.
+- **New, both pass:** F26 (a dormer front is on its roof, within the rule's sizes, with one window and
+  nothing else: 0 that are not), F27 (how many). F3 now asks a dormer for exactly one window with a sill of
+  its own.
+- **Lines with the dormer windows:** building edges 96.3%, window rows 99.8%, against 95%.
+- **Two gate entries fail, both speed:** C2b, panning the viewer, 21.6 frames a second against 60; X8b,
+  panning in tunnel view, 21.7 against 60. They fail the stages `check_viewer` and `check_tunnel_view`, and
+  with them the summaries `g1` and `g3`.
+  - Each frame's own work is 0.4 ms at the median, as on 13 November, when the same two checks measured 92
+    to 120 frames a second on this machine. So the viewer is not slower: today the test browser was given
+    about 22 frames a second. I ran the two checks a second time on their own, with nothing else of mine
+    running: the same.
+  - I do not know why the machine paced frames so today. I did not change the checks or their thresholds.
+    They stay failed until they are run again and pass.
+
+### 22.3 The six blocks on the new model
+
+The inputs were made again from the new release, the paintings placed again, and the pictures made again in
+the surfaces-only way (section 21). Even light 24 of 24 (worst 1.0%); window rows 99.8% to 99.9%; building
+edges 93.8% to 98.0% (the Bock's close up under 95%, as the code art is there); 0 of 24 fail the vehicle
+detector; one building in two paintings 0.0% apart at the median. The viewer's copy was made again on the
+new release. Seen in the pictures themselves: the dormers of the Grund building of the owner's first view
+now have windows. Not looked at in the viewer by me after this change.
+
+### 22.4 Not done
+
+- **A landmark's real windows** (the cathedral's apse and tower, section 20.7). The church rule is a layout,
+  not a survey; the real tiers need a description by hand, landmark by landmark.
+- Round and arched dormers get a rectangular window like any other.
+- The two speed checks, run again.
+
+### 22.5 Open questions
+
+44 and 46 stand.
+
+55. **Landmark windows:** which landmarks first, and from what: the aerial photo and v1's art by my eye, or
+    the owner's own knowledge of the buildings?

@@ -166,6 +166,8 @@ def check_facades(ctx):
             kinds = {x[4] for x in w["windows"]}
             rows = {(x[4], round(x[1], 3), round(x[3], 3)) for x in w["windows"]}
             allowed = rows if len(rows) == len(kinds) else set()
+        if w.get("dormer"):                                    # a dormer: one window, its sill its own (rule 13)
+            allowed = rows if len(w["windows"]) == 1 else set()
         if not rows <= allowed:
             misrow.append(w["wall"])
         # the floor count must fit the wall: the top floor's line is below the eave
@@ -177,6 +179,16 @@ def check_facades(ctx):
     r.at_most("F4", "party walls with windows", len(party_win), 0, party_win)
     r.at_most("F5", "walls with more floors than their eave height allows", len(bad_floors), 0, bad_floors)
     blds = load_buildings(ctx.dep("scene_buildings"))
+    # dormers (rule 13): a front is on its building's roof, and as wide and as high as the rule asks
+    eave = {b["id"]: b["eave_z"] for b in blds}
+    dorm = [w for w in walls if w.get("dormer")]
+    bad_d = [w["wall"] for w in dorm
+             if w["building"] not in eave or w["base"][0][2] < eave[w["building"]] - p["dormer_under_eave_m"] - 1e-3
+             or not (p["dormer_min_w_m"] - 1e-3 <= w["length"] <= p["dormer_max_w_m"] + 1e-3) or w["height"] < p["dormer_min_h_m"] - 1e-3
+             or len(w["windows"]) != 1 or w["doors"] or w["shopfronts"]]
+    r.at_most("F26", "dormer fronts that are not on their building's roof, are outside the rule's sizes, or do not "
+              "have exactly one window and nothing else", len(bad_d), 0, bad_d)
+    r.info("F27", "dormer windows, and the buildings that have them", [len(dorm), len({w["building"] for w in dorm})])
     with_win = {w["building"] for w in walls if w["windows"]}
     tall = [b for b in blds if b["height"] >= 5 and b["footprint_m2"] >= 40]
     share = sum(1 for b in tall if b["id"] in with_win) / max(len(tall), 1)
