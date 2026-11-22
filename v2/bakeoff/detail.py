@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -374,7 +375,8 @@ def photo_shadow(g: dict, meta: dict, rel: Path | None = None) -> np.ndarray:
     return cast
 
 
-def delit(code, painting, g: dict, cast=None, sigma=24.0, clip=(-1.1, 0.5), dark=0.6, p: dict = P):
+def delit(code, painting, g: dict, cast=None, sigma=24.0, clip=(-1.1, 0.5), dark=0.6, p: dict = P, base=None,
+          own_windows=True, win_dark=0.3):
     """The painting used more directly: inside each face the (registered) painting keeps all its own drawing, its
     windows, dormers and joints, and its colour changes; only the face's light is replaced.
 
@@ -387,13 +389,18 @@ def delit(code, painting, g: dict, cast=None, sigma=24.0, clip=(-1.1, 0.5), dark
     painting shaded comes out as its lit neighbour, its windows still dark and blue, and a shadow cast across a
     face fades out over about sigma. Where `cast` (the model's cast shadow for the photo's sun, photo_shadow) is
     given, the two sides of its edge are levelled apart, so the edge does not smear. The code art keeps the
-    ground, the trees and the ink on the borders between faces and buildings; its own windows are not drawn."""
+    ground, the trees and the ink on the borders between faces and buildings; its own windows are not drawn.
+
+    `base`: what stays where the painting is not used (default the code art): a tree the model painted in front
+    of a wall, a face too small to measure. `own_windows=False`: the painting's windows are not kept either (a
+    wall's pixels darker than its tone by `win_dark`, closed over their glazing bars): the base shows there, for
+    a picture that gets the code art's windows drawn in afterwards (target)."""
     from scipy import ndimage as ndi
     code = code.astype(float); src = painting.astype(float) + 1.0
     bid, cls, face, _seg = segments(g)
     on = np.isin(g["which"], PAINT_LAYERS)
     roof = np.isin(cls, (ROOF,)).astype(np.int64)
-    out = code.copy()
+    out = code.copy() if base is None else np.asarray(base, float).copy()
     tree = greenish(src)
     seg2 = (bid * 2 + roof) * 8000 + face + g["which"].astype(np.int64) * (1 << 50)
     e = np.zeros(seg2.shape, bool)
@@ -436,7 +443,11 @@ def delit(code, painting, g: dict, cast=None, sigma=24.0, clip=(-1.1, 0.5), dark
                     d = np.clip(lys - tone, *clip)
                     crel = np.clip(chs / tint[None, None, :], 0.6, 1.6) ** 0.8
                     val = target[None, None, :] * np.exp(d)[..., None] * crel
-                    sub = out[sl]; sub[mf] = val[mf]; out[sl] = sub
+                    put = mf
+                    if not own_windows and kind == 0:
+                        glass = ndi.binary_closing(mf & (lys < tone - win_dark), iterations=2) & mf
+                        put = mf & ~ndi.binary_dilation(glass, iterations=1)
+                    sub = out[sl]; sub[put] = val[put]; out[sl] = sub
     ink = (lum(code) + 1.0 < p["ink"]) & border & on
     out[ink] = code[ink]
     return np.clip(np.round(out), 0, 255).astype(np.uint8)
@@ -494,8 +505,8 @@ def ink_changed(code, out, p: dict = P) -> int:
 def lit(rgb, g: dict, when=dt.datetime(2026, 6, 24, 11, 0, tzinfo=dt.timezone.utc)):
     """A preview only: the art under the day's sun on each face (no cast shadows), to set an unlit result beside
     v1's painted light. The viewer's own light pass is the real one."""
-    from v2.config.sun import direction_screen
-    s = direction_screen(when)
+    from v2.config.sun import direction_en
+    s = np.asarray(direction_en(when), float)                # east, north, up: the normals' frame
     n = np.asarray(g["normal"], float)
     k = np.clip(n @ s, 0, 1)
     k = np.where(np.linalg.norm(n, axis=-1) > 0.5, 0.62 + 0.55 * k, 1.0)
@@ -738,12 +749,14 @@ def _tone(lys, m, dark):
     return float(np.median(v[keep])) if keep.any() else float(med)
 
 
-def photo_sun_screen():
-    """The aerial photo's sun (params g1.shadow_photo_sun) as a direction in the frame of a window's normals."""
+def photo_sun():
+    """The aerial photo's sun (params g1.shadow_photo_sun) as a unit vector (east, north, up): the frame a
+    window's normals are in. (T3's inputs were made with the camera-frame vector by mistake: PHASE3_REPORT.md
+    section 18.1.)"""
     from v2.checks.g1_checks import _when
     from v2.config import params
-    from v2.config.sun import direction_screen
-    return np.asarray(direction_screen(_when(params()["g1"]["shadow_photo_sun"])), float)
+    from v2.layers.light import sun_vector
+    return np.asarray(sun_vector(_when(params()["g1"]["shadow_photo_sun"]))[2], float)
 
 
 def even_capture(cap, g: dict, cast=None, sun=None, p: dict = EVEN):
@@ -751,7 +764,7 @@ def even_capture(cap, g: dict, cast=None, sun=None, p: dict = EVEN):
     redrawn: a piece is made brighter as a whole, and keeps its own texture.
 
     Buildings: on each building, its wall faces, and separately its roof faces, are compared with the faces the
-    photo's sun (`sun`, photo_sun_screen) lit most. A face is raised to their tone, but never by more than the
+    photo's sun (`sun`, photo_sun) lit most. A face is raised to their tone, but never by more than the
     sun's direction explains, with the allowance `explain` (a face turned from the sun, or one the model puts in
     cast shadow for that sun, `cast` from photo_shadow; a face partly in it is split there). So a dark face that faced the sun stays dark:
     that is its material. A raised face takes the lit faces' tint for the blue of its shade, and its contrast is
@@ -863,7 +876,7 @@ def make_even_inputs(dst: Path | None = None, img: Path | None = None) -> dict:
     dst = dst or base() / "inputs_even"
     dst.mkdir(parents=True, exist_ok=True)
     img = img or V2 / "docs" / "img"
-    sun = photo_sun_screen()
+    sun = photo_sun()
     out, rows = {}, []
     for name in input_names():
         x0, y0, size, step = window_of(name)
@@ -886,3 +899,252 @@ def make_even_inputs(dst: Path | None = None, img: Path | None = None) -> dict:
         _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in rows[i:i + 2]]),
               img / f"test_detail_evenin_inputs_{i // 2 + 1}.jpg")
     return out
+
+
+# ------------------------------------------------------------------------------------------------ training pictures
+def level(rgb, g: dict, min_px=150):
+    """Each building's walls, and its roofs, brought to one median brightness over the four ways its faces turn
+    (each side multiplied by one factor; the largest side is the reference). The sides and the pixels are the
+    ones the build's own check of a painting measures (dataset.flat_light), so this passes it by construction: it
+    says nothing about light left inside a side."""
+    from scipy import ndimage as ndi
+
+    from v2.layers.common import VIEW
+    out = rgb.astype(float)
+    L = lum(out)
+    ids = np.where(np.isin(g["which"], PAINT_LAYERS), g["ids"], 0)
+    normal = np.asarray(g["normal"], float)
+    cls = ids & 255; obj = ids >> 8
+    h = np.hypot(normal[..., 0], normal[..., 1])
+    quad = (((np.degrees(np.arctan2(normal[..., 0], normal[..., 1])) % 360 + 45) % 360) // 90).astype(int)
+    key = ids.astype(np.int64) * 4 + quad
+    edge = np.zeros(key.shape, bool)
+    edge[:, 1:] |= key[:, 1:] != key[:, :-1]; edge[:, :-1] |= key[:, 1:] != key[:, :-1]
+    edge[1:, :] |= key[1:, :] != key[:-1, :]; edge[:-1, :] |= key[1:, :] != key[:-1, :]
+    inner = ~ndi.binary_dilation(edge, iterations=2) & (-(normal @ VIEW) > 0.3)
+    for c in (WALL, ROOF):
+        m = (cls == c) & (h > (0.7 if c == WALL else 0.1))
+        for o in np.unique(obj[m & inner]):
+            mo = m & (obj == o)
+            sides = [(q, mo & inner & (quad == q)) for q in range(4)]
+            qs = [(q, np.median(L[sel]), int(sel.sum())) for q, sel in sides if sel.sum() >= min_px]
+            if len(qs) < 2:
+                continue
+            ref = max(qs, key=lambda x: x[2])[1]
+            for q, med, _n in qs:
+                out[mo & (quad == q)] *= ref / max(med, 1e-6)
+    return np.clip(np.round(out), 0, 255).astype(np.uint8)
+
+
+def target(code, painting, g: dict, meta: dict) -> dict:
+    """A painting made into a picture the build's checks of a painting can pass: placed per building (register),
+    its light removed (delit), each building's sides levelled (level), and the code art's own windows drawn in
+    (the painting's windows drift from the model's, so they are left out). Where the painting cannot be used (its
+    own windows, a tree it painted in front of a wall) the code art shows in the painting's colours (transfer).
+    Returns every stage."""
+    from scipy import ndimage as ndi
+    reg = register(code, painting, g)[0]
+    under = transfer(code, reg, g)[0]                  # the code art in the painting's colours: what shows where
+    dl = delit(code, reg, g, photo_shadow(g, meta), base=under, own_windows=False)     # the painting is not used
+    lv = level(dl, g)
+    on = np.isin(g["which"], PAINT_LAYERS)
+    win = ndi.binary_dilation(np.isin(g["ids"] & 255, (12, 13, 14)) & on, iterations=1) & on
+    out = lv.copy(); out[win] = code[win]
+    return {"registered": reg, "delit": dl, "levelled": lv, "target": out}
+
+
+def painting_checks(rgb, g: dict, meta: dict, scene_folder) -> dict:
+    """The build's own checks of a painting that need no detector (paintcheck): flat light per building (5%), and
+    on a window at v2's scale the line score (95% of building edges and of window rows)."""
+    from v2.bakeoff import paintcheck as PC
+    from v2.bakeoff.dataset import flat_light
+    ids = np.where(g["which"] == PC.B_LAYER, g["ids"], 0)
+    worst, bad = flat_light(rgb, ids, g["normal"])
+    r = {"flat_worst": worst, "flat_failing": len(bad), "buildings": int(len(np.unique((ids >> 8)[ids > 0])))}
+    if rgb.shape[0] == WIN:
+        for k, (seen, hit) in PC.line_score(scene_folder, meta["x0"], meta["y0"], rgb, g).items():
+            r[k] = round(hit / seen, 4) if seen else None
+    return r
+
+
+def targets(source: str = "T1", img: Path | None = None, write=True) -> dict:
+    """Every painting of a paid run as painted (placed), with its light removed, levelled, and as a target: the
+    build's checks on each (checks/targets_<source>.json), and sheets of the first candidate of each p125 window
+    (as painted, levelled, target, code art; none lit)."""
+    from v2.build.stages import graph
+    img = img or V2 / "docs" / "img"
+    scene_folder = graph().folder("scene", AREA)
+    res, rows = {}, []
+    for name in input_names():
+        code, g, meta = load_input(name)
+        for k in range(len(SEEDS)):
+            painting = painting_for(name, source, k)[0]
+            if painting is None:
+                continue
+            t = target(code, painting, g, meta)
+            res[f"{name}_{k}"] = {s: painting_checks(t[s], g, meta, scene_folder) for s in t}
+            if write:                                      # kept for the detector, the seams and the viewer
+                (base() / "targets" / source).mkdir(parents=True, exist_ok=True)
+                Image.fromarray(t["target"]).save(base() / "targets" / source / f"{name}_{k}.png")
+            if k == 0 and name.endswith("p125"):
+                c = (slice(256, 768), slice(256, 768))
+                ims = [_label(t["registered"][c], f"{source}: as painted"), _label(t["levelled"][c], "light removed, levelled"),
+                       _label(t["target"][c], "with the code's windows"), _label(code[c], "code art")]
+                rows.append(_row([np.asarray(Image.fromarray(i).resize((448, 448), Image.LANCZOS)) for i in ims]))
+    out = {"source": source, "inputs": res}
+    if write and res:
+        (base() / "checks").mkdir(parents=True, exist_ok=True)
+        (base() / "checks" / f"targets_{source}.json").write_text(json.dumps(out, indent=1))
+        for i in range(0, len(rows), 3):
+            _save(np.concatenate([np.pad(r, ((0, 6), (0, 0), (0, 0)), constant_values=255) for r in rows[i:i + 3]]),
+                  img / f"test_detail_targets_{source.lower()}_{i // 3 + 1}.jpg")
+    return out
+
+
+def _target_png(source, name, k):
+    f = base() / "targets" / source / f"{name}_{k}.png"
+    return np.asarray(Image.open(f).convert("RGB")) if f.exists() else None
+
+
+def cars(source: str = "T1") -> dict:
+    """The build's vehicle detector (paintcheck.owl: v1's OWLv2, the gate's queries, threshold and box sizes) on
+    every target of a run. Only the painted layers come from a painting, so this finds what a painting put on a
+    building or a structure, not what it painted on a road."""
+    from v2.bakeoff import paintcheck as PC
+    d = base() / "targets" / source
+    files = sorted(d.glob("*.png"))
+    det = PC.owl(files, base() / "checks" / f"owl_{source}", mpp=0.125)
+    out = {"images": len(files), "with_vehicles": {k: len(v) for k, v in det["by_file"].items()}, "max_score": det["max_score"]}
+    (base() / "checks" / f"cars_{source}.json").write_text(json.dumps(out, indent=1))
+    return out
+
+
+def seams(source: str = "T1", min_px=600) -> dict:
+    """No two paintings of the trial are neighbours, so no seam can be measured as one. What makes a seam can: how
+    far one building's colour differs between two paintings of it. Per building part (walls, roofs) with at least
+    min_px pixels, the difference of its median brightness, relative, between (a) the two candidates of a window
+    and (b) the p125 window and the same ground in the p250 window."""
+    def parts(rgb, g):
+        bid, cls, _f, _s = segments(g)
+        on = np.isin(g["which"], PAINT_LAYERS)
+        y = lum(rgb.astype(float)); out = {}
+        for kind, classes in (("wall", (WALL, PART)), ("roof", (ROOF,))):
+            m = on & np.isin(cls, classes)
+            for b in np.unique(bid[m]):
+                mb = m & (bid == b)
+                if mb.sum() >= min_px:
+                    out[(int(b), kind)] = float(np.median(y[mb]))
+        return out
+
+    def diff(a, b):
+        return [abs(a[k] - b[k]) / (0.5 * (a[k] + b[k]) + 1e-6) for k in a if k in b]
+
+    pairs_, scales = [], []
+    for name in input_names():
+        _code, g, _meta = load_input(name)
+        t0, t1 = _target_png(source, name, 0), _target_png(source, name, 1)
+        if t0 is None or t1 is None:
+            continue
+        pairs_ += diff(parts(t0, g), parts(t1, g))
+        if name.endswith("p125"):
+            big = _target_png(source, name.replace("p125", "p250"), 0)
+            if big is not None:
+                c = (slice(BLOCK // 4, BLOCK // 4 + WIN), slice(BLOCK // 4, BLOCK // 4 + WIN))
+                scales += diff(parts(t0, g), parts(big[c], g))
+
+    def summary(v):
+        v = np.asarray(v)
+        return {"parts": int(len(v)), "median": round(float(np.median(v)), 4), "p90": round(float(np.quantile(v, 0.9)), 4),
+                "over_5_percent": round(float((v > 0.05).mean()), 4)} if len(v) else {"parts": 0}
+    out = {"two_candidates": summary(pairs_), "two_scales": summary(scales)}
+    (base() / "checks" / f"seams_{source}.json").write_text(json.dumps(out, indent=1))
+    return out
+
+
+def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted") -> Path:
+    """The built release with the six blocks' buildings and structures in their target colours, as an area of its
+    own for the viewer (python -m v2.view test_painted): every file of the release is linked, only the colour tiles
+    of layers 5 and 6 over the blocks are written anew, at every zoom. Each block shows the p250 target with the
+    p125 target over its centre. Depth, normals, ids, windows, light and every other layer are the release's own,
+    so the viewer's moving light and its night fall on the targets as on the code art. The merged far-zoom tiles
+    are not remade: zoomed far out, the view is the code art."""
+    import shutil
+
+    from v2.layers.common import COLOUR_LAYERS, TILE, read_tile, write_tile
+    rel = release()
+    idx = json.loads((rel / "index.json").read_text())
+    dst = v2_data() / area / "release" / f"{rel.name}_{source.lower()}_{k}"
+    if dst.exists():
+        shutil.rmtree(dst)
+    dst.mkdir(parents=True)
+    layers = [COLOUR_LAYERS[i - 1] for i in PAINT_LAYERS]
+    for p in rel.iterdir():
+        if p.name in layers:
+            continue
+        if p.is_symlink() or p.is_dir():
+            os.symlink(p.resolve(), dst / p.name)
+        else:
+            shutil.copy2(p, dst / p.name)
+    # the targets as one picture per block, and where they have a say
+    blocks = {}
+    for b, (x0, y0) in BLOCKS.items():
+        big = _target_png(source, f"{b}_p250", k); small = _target_png(source, f"{b}_p125", k)
+        if big is None:
+            continue
+        big = big.copy()
+        _c, g, _m = load_input(f"{b}_p250")
+        if small is not None:
+            q = BLOCK // 4
+            big[q:q + WIN, q:q + WIN] = small
+        blocks[b] = (x0, y0, big, g["which"])
+    changed = 0
+    for L, layer in zip(PAINT_LAYERS, layers):
+        src = rel / layer; out = dst / layer
+        tiles = idx["layers"][layer]["tiles"]
+        touched = set()
+        for z in sorted(tiles, key=int):
+            (out / z).mkdir(parents=True)
+            for f in (src / z).iterdir():
+                os.symlink(f.resolve(), out / z / f.name)
+        for name, dmin in tiles["0"].items():
+            tx, ty = (int(v) for v in name.split("_"))
+            t = None
+            for x0, y0, pic, which in blocks.values():
+                a0, b0 = max(x0, tx * TILE), max(y0, ty * TILE)
+                a1, b1 = min(x0 + BLOCK, (tx + 1) * TILE), min(y0 + BLOCK, (ty + 1) * TILE)
+                if a1 <= a0 or b1 <= b0:
+                    continue
+                if t is None:
+                    t = read_tile(src / "0", name, dmin, z=0)
+                    rgb = t["rgb"].copy()
+                sl = (slice(b0 - ty * TILE, b1 - ty * TILE), slice(a0 - tx * TILE, a1 - tx * TILE))
+                wl = (slice(b0 - y0, b1 - y0), slice(a0 - x0, a1 - x0))
+                m = (which[wl] == L) & np.isfinite(t["depth"][sl])
+                sub = rgb[sl]; sub[m] = pic[wl][m]; rgb[sl] = sub
+            if t is not None:
+                (out / "0" / f"{name}.c.webp").unlink()
+                write_tile(out / "0", name, rgb=rgb, q=101, z=0)
+                touched.add((tx, ty)); changed += 1
+        for z in sorted((int(v) for v in tiles if int(v) > 0)):
+            parents = {(x // 2, y // 2) for x, y in touched}
+            for px, py in parents:
+                name = f"{px}_{py}"
+                if name not in tiles[str(z)]:
+                    continue
+                acc = np.zeros((2 * TILE, 2 * TILE, 3)); valid = np.zeros((2 * TILE, 2 * TILE))
+                for dy in (0, 1):
+                    for dx in (0, 1):
+                        n = f"{2 * px + dx}_{2 * py + dy}"
+                        if n not in tiles[str(z - 1)]:
+                            continue
+                        c = read_tile(out / str(z - 1), n, tiles[str(z - 1)][n], z=z - 1)
+                        sl = (slice(dy * TILE, (dy + 1) * TILE), slice(dx * TILE, (dx + 1) * TILE))
+                        acc[sl] = c["rgb"]; valid[sl] = np.isfinite(c["depth"])
+                v4 = valid.reshape(TILE, 2, TILE, 2).sum((1, 3))
+                rgb = (acc * valid[..., None]).reshape(TILE, 2, TILE, 2, 3).sum((1, 3)) / np.maximum(v4, 1)[..., None]
+                (out / str(z) / f"{name}.c.webp").unlink()
+                write_tile(out / str(z), name, rgb=np.round(rgb).astype(np.uint8), q=101, z=z)
+            touched = parents
+    (dst.parent / "current.json").write_text(json.dumps({"key": f"{rel.name}:{source}:{k}", "folder": dst.name, "status": "ok",
+                                                         "of": rel.name, "tiles_rewritten": changed}))
+    return dst

@@ -286,3 +286,96 @@ def test_t3_differs_from_t2_by_its_first_control_image_only(tmp_path, monkeypatc
     assert set(f2) == set(f3) and len(f3) == 24
     assert all((f2[k] == f3[k]) == k.endswith("layout.png") for k in f2)
     assert (b2 / "prompt.txt").read_text() == (b3 / "prompt.txt").read_text()
+
+
+def test_level_brings_a_buildings_sides_to_one_brightness_and_the_target_has_the_codes_windows(monkeypatch):
+    from v2.bakeoff.dataset import flat_light
+    code, g = scene()
+    side = np.zeros(g["ids"].shape, bool)
+    cls = g["ids"] & 255; cc = np.indices(cls.shape)[1]
+    for b, c0 in ((1, 30), (2, 130)):
+        side |= np.isin(cls, (11, 12)) & ((g["ids"] >> 8) == b) & (cc >= c0 + 40)
+    g["normal"][np.isin(cls, (11, 12))] = (1.0, 0.0, 0.0)               # walls face east ...
+    g["normal"][side] = (0.0, -1.0, 0.0)                                # ... and the far 30 columns south
+    painting = painting_of(code, g).astype(float)
+    painting[side] *= 0.6
+    painting = painting.astype(np.uint8)
+    ids = np.where(g["which"] == 5, g["ids"], 0)
+    assert flat_light(painting, ids, g["normal"])[1]                    # the check fails it as painted
+    lv = D.level(painting, g)
+    worst, bad = flat_light(lv, ids, g["normal"])
+    assert not bad and worst < 0.02
+    assert (lv[g["which"] == 1] == painting[g["which"] == 1]).all()     # the ground is not touched
+    monkeypatch.setattr(D, "photo_shadow", lambda g, meta, rel=None: None)
+    t = D.target(code, painting, g, {})
+    assert (t["target"][cls == 12] == code[cls == 12]).all()
+    assert not flat_light(t["target"], ids, g["normal"])[1]
+
+
+def test_the_viewers_variant_rewrites_only_the_painted_layers_colour_and_leaves_the_release_alone(tmp_path, monkeypatch):
+    from PIL import Image
+
+    from v2.layers.common import TILE, read_tile, write_tile
+    n = 2 * TILE
+    monkeypatch.setattr(D, "BLOCK", n); monkeypatch.setattr(D, "WIN", TILE)
+    monkeypatch.setattr(D, "BLOCKS", {"x": (0, 0)})
+    monkeypatch.setattr(D, "base", lambda: tmp_path / "detail")
+    monkeypatch.setattr(D, "v2_data", lambda: tmp_path)
+    # a release of one block: buildings are what is seen on its left three quarters, ground on the rest
+    rel = tmp_path / "test" / "release" / "r1"; store = tmp_path / "store"
+    which = np.ones((n, n), np.uint8); which[:, : 3 * n // 4] = 5
+    tiles = {"0": {}, "1": {}}
+    for layer in ("buildings", "structures", "ground"):
+        for z, names in (("0", ("0_0", "1_0", "0_1", "1_1")), ("1", ("0_0",))):
+            for nm in names:
+                depth = np.full((TILE, TILE), np.inf)
+                if layer != "structures":
+                    depth[:] = 10.0
+                dm = write_tile(store / layer / z, nm, rgb=np.full((TILE, TILE, 3), 50, np.uint8), depth=depth,
+                                normal=np.tile([0.0, 0.0, 1.0], (TILE, TILE, 1)), q=101, z=int(z))
+                tiles[z][nm] = dm
+        (rel).mkdir(parents=True, exist_ok=True)
+        (rel / layer).symlink_to(store / layer)
+    (rel / "index.json").write_text(json.dumps({"layers": {L: {"tiles": tiles} for L in ("buildings", "structures", "ground")}}))
+    (rel.parent / "current.json").write_text(json.dumps({"folder": "r1"}))
+    before = {p: p.read_bytes() for p in store.rglob("*") if p.is_file()}
+    # the block's geometry and its targets: all 200
+    src = tmp_path / "detail" / "inputs"; src.mkdir(parents=True)
+    np.savez_compressed(src / "x_p250.geom.npz", ids=np.zeros((n, n), np.uint32), which=which,
+                        normal=np.zeros((n, n, 3), np.float16), depth=np.full((n, n), 10.0, np.float32))
+    Image.fromarray(np.zeros((n, n, 3), np.uint8)).save(src / "x_p250.code.png")
+    (src / "x_p250.json").write_text("{}")
+    tg = tmp_path / "detail" / "targets" / "T1"; tg.mkdir(parents=True)
+    Image.fromarray(np.full((n, n, 3), 200, np.uint8)).save(tg / "x_p250_0.png")
+    out = D.variant_release("T1", 0, area="painted")
+    assert out.parent == tmp_path / "painted" / "release"
+    assert json.loads((out.parent / "current.json").read_text())["folder"] == out.name
+    assert {p: p.read_bytes() for p in store.rglob("*") if p.is_file()} == before      # the release is as it was
+    t = read_tile(out / "buildings" / "0", "1_1", tiles["0"]["1_1"], z=0)["rgb"]
+    left = which[TILE:, TILE:] == 5
+    assert left.any() and not left.all()
+    assert (t[left] == 200).all() and (t[~left] == 50).all()                            # only where it is seen
+    assert (read_tile(out / "buildings" / "0", "0_0", tiles["0"]["0_0"], z=0)["rgb"] == 200).all()
+    up = read_tile(out / "buildings" / "1", "0_0", tiles["1"]["0_0"], z=1)["rgb"]       # the next zoom follows
+    assert (up[:, : 3 * TILE // 4] == 200).all() and (up[:, 3 * TILE // 4:] == 50).all()
+    assert (out / "ground").resolve() == (store / "ground").resolve()                  # the other layers: linked
+    assert (read_tile(out / "structures" / "0", "0_0", tiles["0"]["0_0"], z=0)["rgb"] == 50).all()
+
+
+def test_seams_measure_one_buildings_colour_between_two_paintings_of_it(tmp_path, monkeypatch):
+    from PIL import Image
+    code, g = scene()
+    n = code.shape[0]
+    monkeypatch.setattr(D, "base", lambda: tmp_path)
+    monkeypatch.setattr(D, "input_names", lambda: ["x_p250"])
+    src = tmp_path / "inputs"; src.mkdir()
+    Image.fromarray(code).save(src / "x_p250.code.png")
+    np.savez_compressed(src / "x_p250.geom.npz", **g)
+    (src / "x_p250.json").write_text("{}")
+    (tmp_path / "checks").mkdir(); tg = tmp_path / "targets" / "T1"; tg.mkdir(parents=True)
+    a = painting_of(code, g); b = a.copy()
+    wall1 = ((g["ids"] & 255) == 11) & ((g["ids"] >> 8) == 1)
+    b[wall1] = (b[wall1] * 0.8).astype(np.uint8)                        # one building's walls 20% darker in the second
+    Image.fromarray(a).save(tg / "x_p250_0.png"); Image.fromarray(b).save(tg / "x_p250_1.png")
+    out = D.seams("T1", min_px=200)["two_candidates"]
+    assert out["parts"] == 4 and out["median"] < 0.01 and 0.2 < out["p90"] * 1.5 and out["over_5_percent"] == 0.25
