@@ -1596,4 +1596,75 @@ pictures or ends here.
 
 44 and 46 stand.
 
-48. **Approve q0018** (T3, expected $0.68, worst case $1.09)?
+48. **Approve q0018** (T3, expected $0.68, worst case $1.09)? (Answered on 22 November: approved; it ran,
+    section 17.)
+
+## 17. The repaint from the evened input ran: T3 (22 November, $0.72)
+
+Branch `v2-phase3-eveninput`. The owner approved q0018 on 22 November 2026 ("Approve q0018"). **Spent:
+$0.7196** (worst case $1.09). Pod `qi53z00a2kt5yf`, A100 SXM secure at $2.19/h, 19.5 minutes, 24 of 24
+paintings at 21.7 s each, terminated; the account lists no pod of ours (`luxembourgish-asr-pilot` untouched).
+
+| | |
+|---|---|
+| Phase 3 | $2.9875 of $8 spent, $5.0125 left, nothing committed |
+| Reconciled | by account balance: $6.6981 billed in all against $6.7035 in the ledger (the billing lines could not be read, as before) |
+
+**The answer is no again.** Given an input with half the light, the model paints as much light as before.
+
+| Measure (T2 from the capture, T3 from the evened capture; same layout, prompt and seed) | T2 | T3 |
+|---|---|---|
+| The input: spread of a building's wall faces, mean of the 12 | 23.7% | 13.1% |
+| The paintings: the same, median per painting, range over the 24 | 12% to 82% | 25% to 90% |
+| The paintings: mean of the 24 | 44.6% | 47.6% |
+| Paintings where T3 is the more even of the pair | | 10 of 24 |
+| Mean difference between the two paintings of a pair (of 255) | | 13 to 30 |
+| Lines as painted: building edges, the two candidates (limit 95%) | 87.5%, 85.6% | 89.1%, 86.8% |
+| Lines as painted: window rows | 88.8%, 87.5% | 88.8%, 88.5% |
+| Lines after placement per building: building edges | 89.7%, 91.3% | 91.4%, 90.4% |
+| Lines after placement per building: window rows | 85.0%, 84.3% | 86.3%, 84.5% |
+| Light removed in code (`detail.delit`), median per window, six windows (limit 5%) | 7% to 18% | 5% to 19% |
+
+The paintings did change with the input (a pair differs by 13 to 30 of 255, against 5 to 14 when only the
+prompt changed), so the model reads the input. What it does not take from it is the light: the cast shadows
+on the ground and the shaded sides of the buildings are there in both runs, in the same direction. With
+section 16.1 this settles where the light comes from: v1's style model paints it, because the pictures it
+learned from have it.
+
+Sheets: `v2/docs/img/test_detail_t2_t3_close_1.jpg`, `_close_2.jpg` (four columns: T2 as painted, T3 as
+painted, T3 with its light removed in code, the code art; the last two under a preview sun),
+`test_detail_t2_t3_blocks_1.jpg` to `_3.jpg` (the six whole blocks, T2 beside T3), and T3's own
+`test_detail_t3_blocks.jpg`, `_close_N.jpg`, `_levels_N.jpg`. Numbers:
+`<data>/v2/test/bakeoff/detail/checks/T3.json`, `pairs_T2_T3.json` (`python -m v2.bakeoff detail --source T3`).
+
+### 17.1 Where the paint trial stands after three runs ($2.09 in all: T1, T2, T3)
+
+- **What works:** given v1's capture and v2's lines, v1's style model paints v2's scale sharply and in v1's
+  look.
+- **What does not:** its light. The prompt does not move it (T2), the input does not move it (T3), and
+  removing it in code reaches 5% to 19% against the 5% limit. After placement the lines reach 84% to 92% against 95%.
+- **What is left to try on this route** is a style model that never learned the light: trained on evenly
+  lit pictures. Phase 2 quoted that at about $10 (jobs C1 to C3, stopped); Phase 3 has $5.01 left, so it
+  needs the owner's word on the budget, and it needs evenly lit pictures as rich as v1's to learn from,
+  which do not exist yet. The nearest thing to them is these paintings with their light removed in code,
+  which do not pass the checks themselves.
+- **The other route** is the one gate G2 chose: code art, made richer in code. That work is paused on the
+  owner's word.
+
+### 17.2 Not verified
+
+- The full build and its gates were not run; no layer, check or threshold changed. The tool's and the
+  ledger's tests pass (53).
+- No car detection on T3's paintings; nothing seen in the viewer, at night or on tiles; seams between
+  neighbouring paintings not measured; the build's own shadow gate not run on a painting.
+- The spread figures are my own measure (`detail.flat_by_part`); the same on every run, so the comparisons
+  hold, the level does not stand for the gate's.
+- One pair moved a great deal (Pfaffenthal close up, second candidate: 12% in T2, 78% in T3). I did not
+  look into why; it is one of 24 and is in the figures above.
+
+### 17.3 Open questions
+
+44 and 46 stand.
+
+49. **What now for the paint route?** Stop it and stay with code art; or look at what training a style
+    model on evenly lit pictures would take (a plan and a quote first, nothing paid); or something else?
