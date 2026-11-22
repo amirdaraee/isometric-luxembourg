@@ -1849,4 +1849,88 @@ crosses; dense roofs are untidy where painting and model disagree.
 44 and 46 stand.
 
 51. **How do the six blocks look in the viewer?** This is step 2 of the plan, and it is the owner's eye.
-52. **One colour per building (free), next?**
+    (Answered on 22 November: "looks good".)
+52. **One colour per building (free), next?** (Answered on 22 November: "go ahead", section 20.)
+
+## 20. One colour per building, and a guard for faces the painting got wrong (22 November, $0)
+
+Branch `v2-phase3-onecolour`. **Spent: $0.** No pod. PR #18 was merged first, on the owner's "yes" (CI green on
+its three commits). The owner on the six blocks in the viewer: "looks good"; on the colour fix: "go ahead".
+
+### 20.1 What changed
+
+- **One colour per building** (`detail.part_colours`, `detail.one_colour`). Every painting of the run is placed
+  first, and each says what colour it would give each building's walls and roofs. A building then takes one
+  colour for all of them: the colour of the painting that shows the most of it (at equal share, the painting at
+  v2's own scale). Not an average: two paintings may give two hues, and their mean is neither. Levelling then
+  brings every side to that colour's brightness.
+- **A building is never split between two paintings** (`detail.variant_release`). In the viewer's copy a
+  building that lies whole inside a block's close-up is taken from the close-up, any other from the block's
+  painting.
+- **A guard: a face the painting shows in two tones is not taken from it** (`delit`'s `two_tone`, 0.25: a
+  quarter brighter at one end than the other). Found on the Grund block after the colour fix: at half scale the
+  painting drew one building about 45 px from where the 3D model has it, so the model's roof read the
+  painting's ground and the shadow painted on it, and came out as a blue patch with a hard edge. The same guard
+  catches a painted shadow's edge the model did not predict. Where it acts, the code art shows in the
+  building's painted colour.
+
+### 20.2 The checks, on T1's 24 paintings made into pictures this way
+
+| Check | Section 19 | Now |
+|---|---|---|
+| Even light (5% per building) | 24 of 24 | **24 of 24**; 0 of 2,114 buildings fail, the worst 2.6% |
+| Lines (95%), 12 close ups | 12 of 12 | **12 of 12**; edges 96.6% to 99.2%, window rows 99.1% to 100% |
+| One building in two paintings, the two candidates: difference of brightness, median | 12.6% | **1.2%** |
+| The same, the worst tenth | 35% | **7.0%** |
+| The same, share of walls and roofs over 5% (1,657 of them) | 76% | **15%** |
+| One building at the two scales of a block, median (403 walls and roofs) | 11.5% | **1.8%**; 19% over 5% |
+| Vehicles (the build's detector, threshold 0.10) | 2 of 24 fail | **3 of 24 fail**, one hit each, scores 0.11 to 0.15 |
+
+- **What the guard costs.** Of the painted surface, 33.5% is not taken from the painting (faces in two tones:
+  2,282 of 19,066). It differs widely: 11% to 16% on Pfaffenthal's pictures, 77% and 82% on the Bock's two
+  close ups, which have few buildings and much of each in the painting's shade. There the picture is mostly
+  the code art in painted colours.
+- **The vehicle hits.** Two are the same spot in both candidates of one Clausen block ("a parked car", 0.11
+  and 0.13), so it is on what the two share; I have not looked at what it is. The third is the roof-level car
+  park in the Grund of section 19 ("a truck", 0.15). As the rule stands, three pictures fail.
+- **Still by construction.** Even light passes because levelling makes it pass, and one colour makes two
+  paintings alike in brightness by the same means. What the eye sees inside a face is not in these numbers.
+
+Sheets made again: `v2/docs/img/test_detail_targets_t1_1.jpg`, `_2.jpg`. Screenshots of the viewer made
+again: `test_detail_viewer_grund_morning.jpg`, `test_detail_viewer_cathedral_day.jpg` (its trees had not
+loaded in my test browser when it was taken), `test_detail_viewer_cathedral_night.jpg`. Numbers:
+`<data>/v2/test/bakeoff/detail/checks/targets_T1.json`, `seams_T1.json`, `cars_T1.json`.
+
+### 20.3 In the viewer
+
+The copy for the viewer was made again (`python -m v2.view test_painted --port 5175`, addresses in section
+19.3). What I saw on the cathedral and Grund blocks: the straight line through buildings is gone; the blue
+patch on the Grund roof is gone; buildings keep one colour. Faults still there: a faint check pattern on a
+few pale walls; untidy small roofs in the densest part of the Grund block. I did not look at the other four
+blocks in the viewer.
+
+### 20.4 Where the paint route stands
+
+- On the six blocks, pictures made from v1-style paintings now pass even light and lines, sit side by side
+  with one colour a building, and take the viewer's moving light. All of it at $0 after the three paid runs
+  ($2.09).
+- Not done: the vehicle rule (three pictures); the build's own gates on tiles made this way; real neighbours
+  (the trial's six blocks do not touch, so seams between windows are still a forecast from one building in
+  two paintings); the far-zoom tiles; night checked against the code art's.
+- The next real test is step 5 of the plan (section 18.3): the whole test area, all 107 windows painted and
+  put through this, built and gated. About $1.60, worst case $2.15, with its own quote. Phase 3 has $5.01
+  left. It would be art that is not method A, so it comes with question 44 (gate G2).
+- Other viewing angles (`PLAN_V2.md` 10.1) weigh on that choice: this route needs paintings per direction.
+
+### 20.5 Not verified
+
+- The full build and its gates were not run; no layer, check or threshold changed. The tool's and the
+  ledger's tests pass (59).
+- The guard's threshold (0.25) was chosen on two pictures by eye, against 0.35, and applied to all.
+- T2's and T3's paintings were not made into pictures.
+
+### 20.6 Open questions
+
+44 and 46 stand.
+
+53. **Paint the whole test area this way** (a quote first, about $1.60), or stop here with the six blocks?
