@@ -1934,3 +1934,52 @@ blocks in the viewer.
 44 and 46 stand.
 
 53. **Paint the whole test area this way** (a quote first, about $1.60), or stop here with the six blocks?
+
+### 20.7 After the owner looked closely: a mistake of mine, and what the faults are (22 November, $0)
+
+The owner sent four close views of faults: wrong patches on a Grund building and dormers with no windows;
+the cathedral apse's windows incomplete; windows in the wrong place on its tower; odd marks on its roof.
+And asked: "I think the model try to add every detail and this will lead into some irregularities, you
+think?"
+
+**A mistake of mine.** Sections 17.2, 19.2 and 20.4 say that no two paintings of the trial are neighbours
+and that the six blocks do not touch. That is wrong. Five pairs of blocks overlap on the map:
+
+| Blocks | Overlap, share of a block |
+|---|---|
+| Grund and the Bock | 36% |
+| Cathedral and the palace | 35% |
+| The Bock and Pfaffenthal | 23% |
+| The palace and Grund | 15% |
+| Grund and Pfaffenthal | 2% |
+
+- What it did: the viewer's copy laid the blocks one over the other, so a building in an overlap was half
+  one painting and half another. That is the patchy Grund building of the owner's first view.
+- Fixed (`detail.variant_release`): a building two blocks show comes from the block that shows the most of
+  it. The viewer's copy was made again; that building is now one painting's throughout.
+- What it gives: a seam measure on real neighbours (`detail.seams`, "two blocks"). One building in two
+  blocks' paintings differs in brightness by 1.1% at the median, 4.9% for the worst tenth; 9% of 220 walls
+  and roofs differ by more than 5%.
+
+**The other faults are one thing.** The painting and the 3D model each describe the building's details, and
+they do not agree. The painting draws what the aerial photo shows: every window, dormer, skylight and
+hatch, a little off the model's place. The model has its own windows and dormers, from the data and from
+rules. The picture mixes them: surfaces from the painting, windows and lines from the model.
+
+| The owner's view | Cause |
+|---|---|
+| Dormers with no windows | The painting's own windows are left out (section 19.1), and the code art draws no windows on dormers. So nothing draws them. |
+| The apse's windows incomplete; the tower's in the wrong place | The same. The code art has fewer windows there than the building. The painting's were left out, and their frames remain as faint shapes. |
+| Odd marks on the roof | The painting's skylights and hatches from the photo, kept; and the model's dormers beside the painting's. |
+| A fine dotted pattern in shaded places | Not in the pictures (seen unlit, they do not have it). So it comes from the viewer's light. Not compared with the code art in the viewer. |
+
+So the owner's reading is right, as far as this shows: the more detail the painting adds, the more places
+it can disagree with the model. Where the two agree the picture is good; every fault above is a place where
+they do not.
+
+### 20.8 Open question
+
+54. **Whose details?** (a) The painting gives surfaces only (stone, slate, colour); every window, dormer and
+    roof fitting is the model's, and the model gets the ones it lacks (windows on dormers; the real windows
+    of landmarks, from a hand-made file as their materials are). (b) The painting's details are kept where a
+    face is clean, and the model's windows are not drawn there. (c) Stop the paint route.

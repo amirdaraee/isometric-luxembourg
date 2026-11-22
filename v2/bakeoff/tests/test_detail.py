@@ -467,3 +467,45 @@ def test_a_face_the_painting_shows_in_two_tones_is_not_taken_from_it():
     roof2 = (cls == 23) & (bid == 2)
     assert (out[roof2] == free[roof2]).all()                            # the other roof: the painting, as before
     assert st["faces"] == 4 and st["left_out_px"] == int(roof1.sum())
+
+
+def test_where_two_blocks_overlap_a_building_comes_from_the_block_that_shows_the_most_of_it(tmp_path, monkeypatch):
+    from PIL import Image
+
+    from v2.layers.common import TILE, read_tile, write_tile
+    n = 2 * TILE
+    monkeypatch.setattr(D, "BLOCK", n); monkeypatch.setattr(D, "WIN", TILE)
+    monkeypatch.setattr(D, "BLOCKS", {"a": (0, 0), "b": (TILE, 0)})     # b starts half a block to the right of a
+    monkeypatch.setattr(D, "base", lambda: tmp_path / "detail")
+    monkeypatch.setattr(D, "v2_data", lambda: tmp_path)
+    W = 3 * TILE
+    which = np.ones((n, W), np.uint8); ids = np.zeros((n, W), np.uint32)
+    which[100:200, TILE - 300:TILE + 100] = 5; ids[100:200, TILE - 300:TILE + 100] = 1 << 8 | 11   # mostly in a alone
+    which[400:500, TILE + 50:TILE + 700] = 5; ids[400:500, TILE + 50:TILE + 700] = 2 << 8 | 11     # whole in b, part in a
+    rel = tmp_path / "test" / "release" / "r1"; store = tmp_path / "store"
+    tiles = {"0": {}}
+    for layer in ("buildings", "structures"):
+        for tx in range(3):
+            for ty in range(2):
+                seen = which[ty * TILE:(ty + 1) * TILE, tx * TILE:(tx + 1) * TILE] == (5 if layer == "buildings" else 6)
+                tiles["0"][f"{tx}_{ty}"] = write_tile(store / layer / "0", f"{tx}_{ty}", rgb=np.full((TILE, TILE, 3), 50, np.uint8),
+                                                      depth=np.where(seen, 10.0, np.inf), normal=np.tile([0.0, 0.0, 1.0], (TILE, TILE, 1)), q=101)
+        rel.mkdir(parents=True, exist_ok=True)
+        (rel / layer).symlink_to(store / layer)
+    (rel / "index.json").write_text(json.dumps({"layers": {L: {"tiles": tiles} for L in ("buildings", "structures")}}))
+    (rel.parent / "current.json").write_text(json.dumps({"folder": "r1"}))
+    src = tmp_path / "detail" / "inputs"; src.mkdir(parents=True)
+    tg = tmp_path / "detail" / "targets" / "T1"; tg.mkdir(parents=True)
+    for name, x0, value in (("a", 0, 200), ("b", TILE, 90)):
+        np.savez_compressed(src / f"{name}_p250.geom.npz", ids=ids[:, x0:x0 + n], which=which[:, x0:x0 + n],
+                            normal=np.zeros((n, n, 3), np.float16), depth=np.full((n, n), 10.0, np.float32))
+        Image.fromarray(np.zeros((n, n, 3), np.uint8)).save(src / f"{name}_p250.code.png")
+        (src / f"{name}_p250.json").write_text("{}")
+        Image.fromarray(np.full((n, n, 3), value, np.uint8)).save(tg / f"{name}_p250_0.png")
+    out = D.variant_release("T1", 0, area="painted")
+    got = np.zeros((n, W, 3), np.uint8)
+    for nm in tiles["0"]:
+        tx, ty = (int(v) for v in nm.split("_"))
+        got[ty * TILE:(ty + 1) * TILE, tx * TILE:(tx + 1) * TILE] = read_tile(out / "buildings" / "0", nm, tiles["0"][nm])["rgb"]
+    assert (got[(ids >> 8) == 1] == 200).all()                          # a shows all of it, b a quarter: all from a
+    assert (got[(ids >> 8) == 2] == 90).all()                           # b shows all of it: all from b, also inside a

@@ -1111,10 +1111,11 @@ def cars(source: str = "T1") -> dict:
 
 
 def seams(source: str = "T1", min_px=600) -> dict:
-    """No two paintings of the trial are neighbours, so no seam can be measured as one. What makes a seam can: how
-    far one building's colour differs between two paintings of it. Per building part (walls, roofs) with at least
-    min_px pixels, the difference of its median brightness, relative, between (a) the two candidates of a window
-    and (b) the p125 window and the same ground in the p250 window."""
+    """What makes a seam: how far one building's colour differs between two paintings of it. Per building part
+    (walls, roofs) with at least min_px pixels, the difference of its median brightness, relative, between (a) the
+    two candidates of a window, (b) the p125 window and the same ground in the p250 window, and (c) two blocks on
+    the ground they share (five pairs of the trial's six blocks overlap: these are paintings of neighbouring
+    windows in the real sense)."""
     def parts(rgb, g):
         bid, cls, _f, _s = segments(g)
         on = np.isin(g["which"], PAINT_LAYERS)
@@ -1147,7 +1148,20 @@ def seams(source: str = "T1", min_px=600) -> dict:
         v = np.asarray(v)
         return {"parts": int(len(v)), "median": round(float(np.median(v)), 4), "p90": round(float(np.quantile(v, 0.9)), 4),
                 "over_5_percent": round(float((v > 0.05).mean()), 4)} if len(v) else {"parts": 0}
-    out = {"two_candidates": summary(pairs_), "two_scales": summary(scales)}
+    blocks_ = []
+    names = list(BLOCKS)
+    for i, a in enumerate(names):                          # two blocks' paintings of the ground they share
+        for b in names[i + 1:]:
+            (ax, ay), (bx, by) = BLOCKS[a], BLOCKS[b]
+            x0, y0, x1, y1 = max(ax, bx), max(ay, by), min(ax, bx) + BLOCK, min(ay, by) + BLOCK
+            ta, tb = _target_png(source, f"{a}_p250", 0), _target_png(source, f"{b}_p250", 0)
+            if x1 <= x0 or y1 <= y0 or ta is None or tb is None:
+                continue
+            _c, g, _m = load_input(f"{a}_p250")
+            sa = (slice(y0 - ay, y1 - ay), slice(x0 - ax, x1 - ax)); sb = (slice(y0 - by, y1 - by), slice(x0 - bx, x1 - bx))
+            ga = {k: g[k][sa] for k in ("ids", "which", "normal", "depth")}
+            blocks_ += diff(parts(ta[sa], ga), parts(tb[sb], ga))
+    out = {"two_candidates": summary(pairs_), "two_scales": summary(scales), "two_blocks": summary(blocks_)}
     (base() / "checks" / f"seams_{source}.json").write_text(json.dumps(out, indent=1))
     return out
 
@@ -1157,7 +1171,8 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
     own for the viewer (python -m v2.view test_painted): every file of the release is linked, only the colour tiles
     of layers 5 and 6 over the blocks are written anew, at every zoom. Each block shows the p250 target; a building
     that lies whole (whole_share of its pixels) inside the block's centre is taken from the p125 target instead,
-    so no building is split between two paintings. Depth, normals, ids, windows, light and every other layer are the release's own,
+    so no building is split between two paintings. Where two blocks overlap, a building comes from the block that
+    shows the most of it. Depth, normals, ids, windows, light and every other layer are the release's own,
     so the viewer's moving light and its night fall on the targets as on the code art. The merged far-zoom tiles
     are not remade: zoomed far out, the view is the code art."""
     import shutil
@@ -1196,7 +1211,25 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
             whole = [int(v) for v, n in zip(u.tolist(), n_all.tolist()) if n_in.get(v, 0) >= whole_share * n]
             m = on & inside & np.isin(bid, whole)
             big[m] = np.pad(small, ((q, BLOCK - q - WIN), (q, BLOCK - q - WIN), (0, 0)))[m]
-        blocks[b] = (x0, y0, big, g["which"])
+        blocks[b] = (x0, y0, big, g["which"], (g["ids"] >> 8).astype(np.int64))
+    # the trial's blocks overlap on the map: a building two blocks show is taken from the block that shows the
+    # most of it, and from another only where that block does not reach
+    seen = {}
+    for b, (x0, y0, _pic, which, bid) in blocks.items():
+        u, n = np.unique(bid[np.isin(which, PAINT_LAYERS)], return_counts=True)
+        for v, c in zip(u.tolist(), n.tolist()):
+            if v not in seen or c > seen[v][0]:
+                seen[v] = (c, b)
+    mine = {}
+    for b, (x0, y0, _pic, which, bid) in blocks.items():
+        u, inv = np.unique(bid, return_inverse=True)
+        ob = [seen.get(v, (0, b))[1] for v in u.tolist()]
+        ox = np.array([blocks[o][0] for o in ob])[inv].reshape(bid.shape)
+        oy = np.array([blocks[o][1] for o in ob])[inv].reshape(bid.shape)
+        is_me = np.array([o == b for o in ob])[inv].reshape(bid.shape)
+        Y, X = np.mgrid[y0:y0 + BLOCK, x0:x0 + BLOCK]
+        reached = (X >= ox) & (X < ox + BLOCK) & (Y >= oy) & (Y < oy + BLOCK)
+        mine[b] = is_me | ~reached
     changed = 0
     for L, layer in zip(PAINT_LAYERS, layers):
         src = rel / layer; out = dst / layer
@@ -1209,7 +1242,7 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
         for name, dmin in tiles["0"].items():
             tx, ty = (int(v) for v in name.split("_"))
             t = None
-            for x0, y0, pic, which in blocks.values():
+            for bname, (x0, y0, pic, which, _bid) in blocks.items():
                 a0, b0 = max(x0, tx * TILE), max(y0, ty * TILE)
                 a1, b1 = min(x0 + BLOCK, (tx + 1) * TILE), min(y0 + BLOCK, (ty + 1) * TILE)
                 if a1 <= a0 or b1 <= b0:
@@ -1219,7 +1252,7 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
                     rgb = t["rgb"].copy()
                 sl = (slice(b0 - ty * TILE, b1 - ty * TILE), slice(a0 - tx * TILE, a1 - tx * TILE))
                 wl = (slice(b0 - y0, b1 - y0), slice(a0 - x0, a1 - x0))
-                m = (which[wl] == L) & np.isfinite(t["depth"][sl])
+                m = (which[wl] == L) & np.isfinite(t["depth"][sl]) & mine[bname][wl]
                 sub = rgb[sl]; sub[m] = pic[wl][m]; rgb[sl] = sub
             if t is not None:
                 (out / "0" / f"{name}.c.webp").unlink()
