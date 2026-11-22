@@ -379,3 +379,133 @@ def test_seams_measure_one_buildings_colour_between_two_paintings_of_it(tmp_path
     Image.fromarray(a).save(tg / "x_p250_0.png"); Image.fromarray(b).save(tg / "x_p250_1.png")
     out = D.seams("T1", min_px=200)["two_candidates"]
     assert out["parts"] == 4 and out["median"] < 0.01 and 0.2 < out["p90"] * 1.5 and out["over_5_percent"] == 0.25
+
+
+def test_one_colour_a_building_makes_two_paintings_of_it_alike(monkeypatch):
+    code, g = scene()
+    cls = g["ids"] & 255; bid = g["ids"] >> 8
+    g["normal"][np.isin(cls, (11, 12))] = (1.0, 0.0, 0.0)               # walls a flat_light side can measure
+    a = painting_of(code, g).astype(float); b = a.copy()
+    wall1 = (cls == 11) & (bid == 1)
+    b[wall1] *= (0.75, 0.8, 0.95)                                        # the second painting: building 1 darker, bluer
+    a, b = a.astype(np.uint8), b.astype(np.uint8)
+    ta, tb = D.part_colours(a, g), D.part_colours(b, g)
+    assert set(ta) == {(1, "wall"), (1, "roof"), (2, "wall"), (2, "roof")}
+    assert np.abs(ta[(1, "wall")][0] - (240, 210, 150)).max() < 4 and np.abs(tb[(1, "wall")][0] - (180, 168, 142)).max() < 4
+    # the painting at v2's scale decides when both show the building alike; more of it shown decides otherwise
+    col = D.one_colour({"x_p250_0": ta, "x_p125_0": tb})
+    assert np.allclose(col[(1, "wall")], tb[(1, "wall")][0])
+    few = {k: (v[0], v[1] // 2) for k, v in tb.items()}
+    assert np.allclose(D.one_colour({"x_p250_0": ta, "x_p125_0": few})[(1, "wall")], ta[(1, "wall")][0])
+    monkeypatch.setattr(D, "photo_shadow", lambda g, meta, rel=None: None)
+    col = D.one_colour({"x_p250_0": ta, "x_p250_1": tb})                 # the same scale: the first
+    out = [D.target(code, None, g, {}, colours=col, reg=r)["target"] for r in (a, b)]
+    own = [D.target(code, None, g, {}, reg=r)["target"] for r in (a, b)]
+    inner = wall1 & (D.lum(code.astype(float)) > 100)
+    med = lambda im: np.median(im[inner].astype(float), axis=0)          # noqa: E731
+    assert np.abs(med(own[0]) - med(own[1])).max() > 25                  # each painting's own colour: apart
+    assert np.abs(med(out[0]) - med(out[1])).max() <= 3                  # one colour: alike
+    assert np.abs(med(out[0]) - (240, 210, 150)).max() <= 8
+
+
+def test_in_the_viewer_a_building_is_never_split_between_two_paintings(tmp_path, monkeypatch):
+    from PIL import Image
+
+    from v2.layers.common import TILE, read_tile, write_tile
+    n = 2 * TILE
+    monkeypatch.setattr(D, "BLOCK", n); monkeypatch.setattr(D, "WIN", TILE)
+    monkeypatch.setattr(D, "BLOCKS", {"x": (0, 0)})
+    monkeypatch.setattr(D, "base", lambda: tmp_path / "detail")
+    monkeypatch.setattr(D, "v2_data", lambda: tmp_path)
+    q = n // 4
+    which = np.ones((n, n), np.uint8); ids = np.zeros((n, n), np.uint32)
+    which[q + 50:q + 150, q + 50:q + 150] = 5; ids[q + 50:q + 150, q + 50:q + 150] = 1 << 8 | 11      # whole in the centre
+    which[q + 300:q + 400, q + 400:q + TILE + 80] = 5; ids[q + 300:q + 400, q + 400:q + TILE + 80] = 2 << 8 | 11   # crosses its edge
+    rel = tmp_path / "test" / "release" / "r1"; store = tmp_path / "store"
+    tiles = {"0": {}}
+    for layer in ("buildings", "structures"):
+        for nm in ("0_0", "1_0", "0_1", "1_1"):
+            tx, ty = (int(v) for v in nm.split("_"))
+            seen = which[ty * TILE:(ty + 1) * TILE, tx * TILE:(tx + 1) * TILE] == (5 if layer == "buildings" else 6)
+            tiles["0"][nm] = write_tile(store / layer / "0", nm, rgb=np.full((TILE, TILE, 3), 50, np.uint8),
+                                        depth=np.where(seen, 10.0, np.inf), normal=np.tile([0.0, 0.0, 1.0], (TILE, TILE, 1)), q=101)
+        rel.mkdir(parents=True, exist_ok=True)
+        (rel / layer).symlink_to(store / layer)
+    (rel / "index.json").write_text(json.dumps({"layers": {L: {"tiles": tiles} for L in ("buildings", "structures")}}))
+    (rel.parent / "current.json").write_text(json.dumps({"folder": "r1"}))
+    src = tmp_path / "detail" / "inputs"; src.mkdir(parents=True)
+    np.savez_compressed(src / "x_p250.geom.npz", ids=ids, which=which, normal=np.zeros((n, n, 3), np.float16),
+                        depth=np.full((n, n), 10.0, np.float32))
+    Image.fromarray(np.zeros((n, n, 3), np.uint8)).save(src / "x_p250.code.png")
+    (src / "x_p250.json").write_text("{}")
+    tg = tmp_path / "detail" / "targets" / "T1"; tg.mkdir(parents=True)
+    Image.fromarray(np.full((n, n, 3), 200, np.uint8)).save(tg / "x_p250_0.png")       # the block's painting: 200
+    Image.fromarray(np.full((TILE, TILE, 3), 90, np.uint8)).save(tg / "x_p125_0.png")  # the close up: 90
+    out = D.variant_release("T1", 0, area="painted")
+    got = np.zeros((n, n, 3), np.uint8)
+    for nm in tiles["0"]:
+        tx, ty = (int(v) for v in nm.split("_"))
+        got[ty * TILE:(ty + 1) * TILE, tx * TILE:(tx + 1) * TILE] = read_tile(out / "buildings" / "0", nm, tiles["0"][nm])["rgb"]
+    assert (got[(ids >> 8) == 1] == 90).all()                           # whole inside: from the close up
+    assert (got[(ids >> 8) == 2] == 200).all()                          # across its edge: all of it from the block's
+
+
+def test_a_face_the_painting_shows_in_two_tones_is_not_taken_from_it():
+    code, g = scene()
+    cls = g["ids"] & 255; bid = g["ids"] >> 8; cc = np.indices(cls.shape)[1]
+    painting = painting_of(code, g).astype(float)
+    roof1 = (cls == 23) & (bid == 1)
+    painting[roof1 & (cc < 65)] *= 0.45                                 # a shadow's edge across building 1's roof
+    painting = painting.astype(np.uint8)
+    under = D.transfer(code, painting, g)[0]
+    st = {}
+    out = D.delit(code, painting, g, base=under, two_tone=D.TWO_TONE, stats=st)
+    free = D.delit(code, painting, g, base=under)
+    inner = roof1.copy(); inner[:42] = False; inner[66:] = False; inner[:, :34] = False; inner[:, 96:] = False
+    assert (out[inner] == under[inner]).all() and st["left_out"] == 1   # that roof: the base, whole
+    assert not (free[inner] == under[inner]).all()
+    roof2 = (cls == 23) & (bid == 2)
+    assert (out[roof2] == free[roof2]).all()                            # the other roof: the painting, as before
+    assert st["faces"] == 4 and st["left_out_px"] == int(roof1.sum())
+
+
+def test_where_two_blocks_overlap_a_building_comes_from_the_block_that_shows_the_most_of_it(tmp_path, monkeypatch):
+    from PIL import Image
+
+    from v2.layers.common import TILE, read_tile, write_tile
+    n = 2 * TILE
+    monkeypatch.setattr(D, "BLOCK", n); monkeypatch.setattr(D, "WIN", TILE)
+    monkeypatch.setattr(D, "BLOCKS", {"a": (0, 0), "b": (TILE, 0)})     # b starts half a block to the right of a
+    monkeypatch.setattr(D, "base", lambda: tmp_path / "detail")
+    monkeypatch.setattr(D, "v2_data", lambda: tmp_path)
+    W = 3 * TILE
+    which = np.ones((n, W), np.uint8); ids = np.zeros((n, W), np.uint32)
+    which[100:200, TILE - 300:TILE + 100] = 5; ids[100:200, TILE - 300:TILE + 100] = 1 << 8 | 11   # mostly in a alone
+    which[400:500, TILE + 50:TILE + 700] = 5; ids[400:500, TILE + 50:TILE + 700] = 2 << 8 | 11     # whole in b, part in a
+    rel = tmp_path / "test" / "release" / "r1"; store = tmp_path / "store"
+    tiles = {"0": {}}
+    for layer in ("buildings", "structures"):
+        for tx in range(3):
+            for ty in range(2):
+                seen = which[ty * TILE:(ty + 1) * TILE, tx * TILE:(tx + 1) * TILE] == (5 if layer == "buildings" else 6)
+                tiles["0"][f"{tx}_{ty}"] = write_tile(store / layer / "0", f"{tx}_{ty}", rgb=np.full((TILE, TILE, 3), 50, np.uint8),
+                                                      depth=np.where(seen, 10.0, np.inf), normal=np.tile([0.0, 0.0, 1.0], (TILE, TILE, 1)), q=101)
+        rel.mkdir(parents=True, exist_ok=True)
+        (rel / layer).symlink_to(store / layer)
+    (rel / "index.json").write_text(json.dumps({"layers": {L: {"tiles": tiles} for L in ("buildings", "structures")}}))
+    (rel.parent / "current.json").write_text(json.dumps({"folder": "r1"}))
+    src = tmp_path / "detail" / "inputs"; src.mkdir(parents=True)
+    tg = tmp_path / "detail" / "targets" / "T1"; tg.mkdir(parents=True)
+    for name, x0, value in (("a", 0, 200), ("b", TILE, 90)):
+        np.savez_compressed(src / f"{name}_p250.geom.npz", ids=ids[:, x0:x0 + n], which=which[:, x0:x0 + n],
+                            normal=np.zeros((n, n, 3), np.float16), depth=np.full((n, n), 10.0, np.float32))
+        Image.fromarray(np.zeros((n, n, 3), np.uint8)).save(src / f"{name}_p250.code.png")
+        (src / f"{name}_p250.json").write_text("{}")
+        Image.fromarray(np.full((n, n, 3), value, np.uint8)).save(tg / f"{name}_p250_0.png")
+    out = D.variant_release("T1", 0, area="painted")
+    got = np.zeros((n, W, 3), np.uint8)
+    for nm in tiles["0"]:
+        tx, ty = (int(v) for v in nm.split("_"))
+        got[ty * TILE:(ty + 1) * TILE, tx * TILE:(tx + 1) * TILE] = read_tile(out / "buildings" / "0", nm, tiles["0"][nm])["rgb"]
+    assert (got[(ids >> 8) == 1] == 200).all()                          # a shows all of it, b a quarter: all from a
+    assert (got[(ids >> 8) == 2] == 90).all()                           # b shows all of it: all from b, also inside a
