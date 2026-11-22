@@ -142,7 +142,14 @@ def cmd_targets(a):
     res = D.targets(a.source)
     for k, v in res["inputs"].items():
         print(k, json.dumps(v))
-    return 0 if res["inputs"] else 1
+    if not res["inputs"]:
+        return 1
+    print("seams", json.dumps(D.seams(a.source)))
+    if a.cars:
+        print("cars", json.dumps(D.cars(a.source)))
+    if a.viewer:
+        print("viewer", D.variant_release(a.source), "-> python -m v2.view test_painted")
+    return 0
 
 
 def cmd_inputs(a):
@@ -404,6 +411,8 @@ def main(argv=None):
     tr = sub.add_parser("trial"); tr.add_argument("--no-build", action="store_true", help="measure only, no C4 build")
     sub.add_parser("pilot-gates")
     tg = sub.add_parser("targets"); tg.add_argument("--source", choices=["T1", "T2", "T3"], default="T1")
+    tg.add_argument("--cars", action="store_true", help="also the vehicle detector on every target")
+    tg.add_argument("--viewer", action="store_true", help="also the release with the targets in it, as area test_painted")
     dt_ = sub.add_parser("detail"); dt_.add_argument("--source", choices=["free", "T1", "T2", "T3"], default="free")
     pv = sub.add_parser("previews"); pv.add_argument("--url", default="http://localhost:5175/")
     pv.add_argument("--before", help="a folder with the earlier test_a_grund_golden_hour.jpg and test_a_grund_night.jpg: "

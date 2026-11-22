@@ -1767,4 +1767,86 @@ so the first step is the same whether a model is trained or not.
 
 44 and 46 stand.
 
-50. **Step 1 (free): finish the picture in code and show the six blocks in the viewer?**
+50. **Step 1 (free): finish the picture in code and show the six blocks in the viewer?** (Answered on 22 November:
+    "Do the free step", section 19.)
+
+## 19. Step 1 done: the picture finished in code, checked, and in the viewer (22 November, $0)
+
+Branch `v2-phase3-trainplan`. **Spent: $0.** No pod. The owner's decision on question 50: "Do the free step".
+The same day the owner asked for other viewing angles after v2: `PLAN_V2.md` section 10.1.
+
+### 19.1 What changed in the picture (`detail.target`)
+
+- **The painting's own windows are left out.** On a wall, what the painting drew darker than the wall (its
+  glazing, closed over the bars) is not used. So a wall has one set of windows, the code art's.
+- **A tree the model painted in front of a wall is left out** too.
+- **What shows in both places** is the code art in the painting's colours (the light transfer of section 12),
+  not the code art's own colours. So no pale patches.
+- Then as before: each building's sides levelled, the code art's windows drawn in.
+
+The two sheets of section 18.2 were made again with this version (`test_detail_targets_t1_1.jpg`, `_2.jpg`);
+the table there is the first version's.
+
+### 19.2 The checks, on T1's 24 paintings made into pictures this way
+
+| Check | Result |
+|---|---|
+| Even light (the build's check of a painting, 5% per building) | **24 of 24 pass.** 0 of 2,114 buildings fail; the worst is 4.3%. By construction (section 18.2). |
+| Lines (95% of building edges and of window rows), 12 close ups | **12 of 12 pass.** Edges 96.6% to 99.0%, window rows 98.9% to 100%. |
+| Vehicles (the build's detector, threshold 0.10) | **22 of 24 pass, 2 fail.** Four hits in two pictures, scores 0.10 to 0.17. By eye three are not vehicles (two roof fittings, one small house) and one may be a car the model painted on a roof-level car park. As the rule stands they fail. |
+| Seams | **Not measurable as seams, and what makes one is large.** No two paintings of the trial are neighbours. Measured instead: how far one building's brightness differs between two paintings of it. Between the two candidates of a window: 12.6% at the median, 35% for the worst tenth, and 76% of 1,657 walls and roofs differ by more than 5%. Between the two scales of a block: 11.5% at the median. |
+
+So the two things the paintings failed three paid runs on, light and lines, now pass. What does not is new
+and is about putting pictures side by side: **each painting gives a building its own colour.** In the viewer it
+shows as a straight line through a building where the close-up picture sits inside its block.
+
+### 19.3 In the viewer
+
+`detail.variant_release` makes a copy of the built release in which only the colour of the buildings and
+structures layers over the six blocks is the pictures'; everything else is linked. Depth, normals, windows,
+light and night are the release's own, so the viewer's moving sun and its night fall on the pictures as on
+the code art. The real release is not touched (the tool's test proves it on a made-up release).
+
+```sh
+export ISOLUX_DATA=/Users/amirdaraee/00/projects/isometric-luxembourg/data
+.venv/bin/python -m v2.view test_painted --port 5175      # Ctrl-C stops it
+# the cathedral:  http://localhost:5175/?x=60368&y=33056&z=1&hour=13&date=2026-06-24
+# the Grund:      http://localhost:5175/?x=62944&y=34176&z=1&hour=10&date=2026-06-24
+# the palace (x=61664&y=32944), the Bock (x=64096&y=33808), Pfaffenthal (x=64592&y=32368), Clausen (x=66576&y=34800)
+# the code art, for comparison:  .venv/bin/python -m v2.view test      (port 5174, the same addresses)
+```
+
+Screenshots: `v2/docs/img/test_detail_viewer_cathedral_day.jpg`, `test_detail_viewer_cathedral_night.jpg`,
+`test_detail_viewer_grund_morning.jpg`.
+
+What I saw in them: the pictures take the viewer's sun and cast shadows by day, and its night; the painted
+stone and slate read as v1's; the line between the two scales of a block is visible on the buildings it
+crosses; dense roofs are untidy where painting and model disagree.
+
+### 19.4 What it means for the plan (section 18.3)
+
+- Step 1 is done except for one thing it turned up: a building's colour has to be chosen once, for all
+  paintings that show it, instead of by each painting. That is a change in code, at $0, and it comes before
+  any more painting or any training.
+- The two vehicle hits need a rule: repaint such a picture with another seed, or take the building from the
+  code art.
+- Training is not needed for light or lines. Whether it is needed at all depends on how the six blocks look
+  to the owner (step 2).
+
+### 19.5 Not verified
+
+- The copy in the viewer is not a build: none of the build's gates ran on it (layers, shadows, seams,
+  vehicles on tiles, independence).
+- Zoomed far out the viewer shows merged tiles, which were not remade: there it is the code art.
+- Only the first candidate of T1 is in the viewer. T2's and T3's paintings were not made into pictures.
+- The golden-hour screenshot was taken and not looked at. The night screenshot shows the blue of night on the
+  pictures; I did not check lit windows against the code art's night.
+- The full build was not run; no layer, check or threshold changed. The tool's and the ledger's tests pass
+  (56).
+
+### 19.6 Open questions
+
+44 and 46 stand.
+
+51. **How do the six blocks look in the viewer?** This is step 2 of the plan, and it is the owner's eye.
+52. **One colour per building (free), next?**
