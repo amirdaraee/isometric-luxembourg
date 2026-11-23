@@ -20,21 +20,21 @@
      "id": "L1.2",
      "title": "no shading: worst relative luminance difference of a ground class, north vs south slopes",
      "passed": true,
-     "value": 0.008,
+     "value": 0.0079,
      "threshold": "<= 0.02",
      "severity": "gate",
      "examples": [
       {
        "class": "scrub",
-       "north": 119.81,
-       "south": 118.85,
-       "diff": 0.008
+       "north": 95.13,
+       "south": 94.39,
+       "diff": 0.0079
       },
       {
        "class": "pitch",
-       "north": 141.35,
-       "south": 141.59,
-       "diff": 0.0017
+       "north": 118.72,
+       "south": 118.93,
+       "diff": 0.0018
       },
       {
        "class": "rock",
@@ -43,34 +43,34 @@
        "diff": 0.0017
       },
       {
-       "class": "railground",
-       "north": 137.7,
-       "south": 137.81,
+       "class": "meadow",
+       "north": 125.39,
+       "south": 125.25,
+       "diff": 0.0011
+      },
+      {
+       "class": "square",
+       "north": 140.54,
+       "south": 140.68,
+       "diff": 0.001
+      },
+      {
+       "class": "grass",
+       "north": 118.77,
+       "south": 118.87,
        "diff": 0.0008
       },
       {
        "class": "wood",
-       "north": 93.82,
-       "south": 93.9,
-       "diff": 0.0008
-      },
-      {
-       "class": "grass",
-       "north": 139.46,
-       "south": 139.57,
+       "north": 78.04,
+       "south": 78.09,
        "diff": 0.0007
       },
       {
-       "class": "meadow",
-       "north": 163.87,
-       "south": 163.76,
-       "diff": 0.0007
-      },
-      {
-       "class": "square",
-       "north": 196.27,
-       "south": 196.19,
-       "diff": 0.0004
+       "class": "railground",
+       "north": 137.71,
+       "south": 137.8,
+       "diff": 0.0006
       }
      ]
     },
@@ -219,7 +219,7 @@
      "id": "C1c",
      "title": "mean colour difference of a built tile from the renderer (WebP: lossy for ground and transport; lossless for relief, water, layers 5-7)",
      "passed": true,
-     "value": 2.21,
+     "value": 2.19,
      "threshold": "<= 3.0",
      "severity": "gate",
      "examples": []
@@ -261,10 +261,10 @@
      "title": "worst relative difference by layer",
      "passed": true,
      "value": {
-      "ground": 0.0143,
+      "ground": 0.0177,
       "buildings": 0.04,
       "water": 0.0,
-      "transport": 0.009,
+      "transport": 0.0077,
       "structures": 0.0272
      },
      "threshold": null,
@@ -316,7 +316,7 @@
      "id": "S-ground",
      "title": "ground: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 375 chunks)",
      "passed": true,
-     "value": 2.533,
+     "value": 2.635,
      "threshold": "<= 3.0",
      "severity": "gate",
      "examples": []
@@ -379,7 +379,7 @@
      "id": "S-transport",
      "title": "transport: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 54 chunks)",
      "passed": true,
-     "value": 1.395,
+     "value": 1.042,
      "threshold": "<= 3.0",
      "severity": "gate",
      "examples": []
@@ -481,7 +481,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 77.3
+      "audit_s": 75.9
      },
      "threshold": null,
      "severity": "report",
@@ -667,7 +667,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 216.7,
+     "value": 211.5,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -855,8 +855,8 @@
      "value": {
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
-      "images": 966,
-      "seconds": 418.8,
+      "images": 964,
+      "seconds": 349.5,
       "queries": [
        "a car",
        "a parked car",
@@ -1116,23 +1116,23 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.15019999998807906,
-      "first_view_warm_s": 0.09,
+      "first_view_cold_s": 0.14710000002384185,
+      "first_view_warm_s": 0.09089999997615814,
       "pan_whole_area": {
-       "fps": 120.09687648176991,
-       "frame_ms_median": 0.5,
+       "fps": 120.14487323591858,
+       "frame_ms_median": 0.5999999642372131,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 92.95816882375229,
+       "fps": 90.11932697561677,
        "frame_ms_median": 0.30000001192092896,
        "tiles_missing": 0
       },
-      "pan_fps": 92.95816882375229,
+      "pan_fps": 90.11932697561677,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 106.90645685025603,
+        "fps": 102.42062401577729,
         "frame_ms_median": 0.800000011920929,
         "tiles_missing": 0
        }
@@ -1147,7 +1147,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.09,
+     "value": 0.091,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1156,7 +1156,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 93.0,
+     "value": 90.1,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1168,7 +1168,7 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 106.90645685025603,
+       "fps": 102.42062401577729,
        "frame_ms_median": 0.800000011920929,
        "tiles_missing": 0
       }
@@ -2656,23 +2656,23 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.15019999998807906,
-  "first_view_warm_s": 0.09,
+  "first_view_cold_s": 0.14710000002384185,
+  "first_view_warm_s": 0.09089999997615814,
   "pan_whole_area": {
-   "fps": 120.09687648176991,
-   "frame_ms_median": 0.5,
+   "fps": 120.14487323591858,
+   "frame_ms_median": 0.5999999642372131,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 92.95816882375229,
+   "fps": 90.11932697561677,
    "frame_ms_median": 0.30000001192092896,
    "tiles_missing": 0
   },
-  "pan_fps": 92.95816882375229,
+  "pan_fps": 90.11932697561677,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 106.90645685025603,
+    "fps": 102.42062401577729,
     "frame_ms_median": 0.800000011920929,
     "tiles_missing": 0
    }
@@ -2807,5 +2807,5 @@
    }
   }
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/6a8e21900358"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/66735929c193"
 }

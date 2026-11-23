@@ -102,10 +102,10 @@ def rock(e, n, z, seed=3):
 
 # Ground classes' detail: smooth tone over (large, small) patches in metres with their strengths, and the share of
 # pixels drawn as darker and lighter flecks (blades, leaves, gravel).
-GREEN = {"grass": ((4.0, 0.9), (0.05, 0.04), 0.035, 0.03), "meadow": ((5.0, 1.1), (0.06, 0.05), 0.05, 0.04),
+GREEN = {"grass": ((4.0, 0.9), (0.06, 0.04), 0.018, 0.014), "meadow": ((5.0, 1.1), (0.07, 0.05), 0.03, 0.025),
          "garden": ((2.5, 0.8), (0.07, 0.06), 0.05, 0.04), "cemetery": ((3.0, 0.9), (0.05, 0.04), 0.03, 0.03),
          "scrub": ((3.0, 1.2), (0.08, 0.07), 0.07, 0.04), "wood": ((4.0, 1.4), (0.09, 0.08), 0.08, 0.03),
-         "pitch": ((6.0, 1.0), (0.02, 0.02), 0.02, 0.02)}
+         "pitch": ((6.0, 1.0), (0.02, 0.02), 0.012, 0.012)}
 FLOWERS = ("flower_red", "flower_yellow", "flower_white", "flower_violet")
 
 
@@ -118,12 +118,12 @@ def ground_detail(rgb, k, names, e, n, z, px, py):
     fine = ihash(px, py, 9)                                   # one hash per map pixel
     m = of("paved")
     if m.any():
-        t, j = slabs(e[m], n[m], 1.5, 0.75, 0.2, joint=0.07, tone=0.035, seed=1)
-        rgb[m] *= (t * (1 - 0.13 * j))[:, None]
+        t, j = slabs(e[m], n[m], 2.2, 1.1, 0.2, joint=0.06, tone=0.04, seed=1)      # flags, as v1 drew paving
+        rgb[m] *= (t * (1 - 0.12 * j))[:, None]
     m = of("square")
     if m.any():
-        t, j = slabs(e[m], n[m], 0.9, 0.9, 0.2, joint=0.08, tone=0.05, seed=2)
-        rgb[m] *= (t * (1 - 0.16 * j))[:, None]
+        t, j = slabs(e[m], n[m], 1.4, 1.4, 0.2, joint=0.07, tone=0.05, seed=2)
+        rgb[m] *= (t * (1 - 0.14 * j))[:, None]
     for c, amount in (("parking", 0.05), ("railground", 0.09), ("buildsite", 0.07)):
         m = of(c)
         if m.any():
