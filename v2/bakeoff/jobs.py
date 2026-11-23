@@ -234,6 +234,32 @@ TRIAL_JOBS.append(
                "showed the prompt does not move the light; this asks whether the input does",
                "time plan: T2's measured 1,087 s (18.1 min) on the same GPU and cloud, est 0.31 h; the cap of 0.5 h "
                "(30 min) leaves 11.9 min"]))
+# T3 as it ran (q0018, pod qi53z00a2kt5yf, 22 Nov 2026): 1,172 s in all.
+T3_MEASURED_S = 1172
+# The whole test area (the plan's step 5, PHASE3_REPORT.md section 18.3): every window of the grid painted as T1
+# painted its six blocks. Times are T1's to T3's on the same GPU and cloud: 651 to 668 s around their 24 paintings,
+# 17.7 to 20.9 s a painting.
+T4_PAINTINGS = 101                                      # of the grid's 109 windows; 8 lie outside the area
+T4_PLAN_S = {"pod start, setup, model load, results back and terminate (T1 to T3: 651 to 668 s)": 669,
+             "101 paintings x 21 s (T1's 20.9 s, the slowest of the three runs)": 2121,
+             "the paintings copied back while it runs": 30}                # 2,820 s = 47.0 min
+TRIAL_JOBS.append(
+    Job("T4", "detail", "the test area painted: every window of its grid (1024 px at 0.125 m, stride 768) from v1's "
+        "capture and v2's line layout, as T1 painted the six blocks, 1 painting each", "runpod", "A100 SXM",
+        est_h=0.79, cap_h=1.0, price_read="2026-11-23", goal=CUTAWAY_GOAL, cloud="secure",
+        work="101 windows x 1 = 101 paintings, 1024 x 1024, 8 steps (Lightning)",
+        model=f"{QWEN_EDIT} + {LIGHTNING} + {INK_V1}",
+        inputs="python -m v2.bakeoff inputs area: control 1 = v1's capture enlarged to v2's scale, control 2 = v2's "
+               "line layout; v1's own prompt, as trained (T1's)",
+        outputs="<data>/v2/test/bakeoff/detail/painted_area/w<x0>_<y0>.png -> python -m v2.bakeoff targets --source T4",
+        notes=["a painting is never shown as it is (the owner, 22 Nov 2026: the model's details, painted surfaces): "
+               "it gives each building its colour and the texture of its plain surfaces; every window, dormer, "
+               "line and the light are the model's",
+               "the whole route was run first at 0 USD on the same grid with v1's finished art in the paintings' "
+               "place (python -m v2.bakeoff targets --source area_free)",
+               "time plan: 669 s around the painting + 101 x 21 s + 30 s = 2,820 s (47.0 min), est 0.79 h; the cap "
+               "of 1.0 h (60 min) leaves 13 min. Paintings come back as they are made and the painter skips what "
+               "exists, so a run cut by the cap keeps what it painted"]))
 
 BY_ID = {j.id: j for j in JOBS + CUTAWAY_JOBS + TRIAL_JOBS}
 

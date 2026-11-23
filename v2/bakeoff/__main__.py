@@ -14,6 +14,7 @@
     python -m v2.bakeoff inputs detail          T1 (Phase 3): six blocks' control images at two scales, v1's capture
                                                 and v2's line layout (detail.py)
     python -m v2.bakeoff inputs even            T3: the same captures with the photo's light taken down
+    python -m v2.bakeoff inputs area            T4: the same two control images for every window of the test area
     python -m v2.bakeoff targets [--source T1|T2|T3]
                                                 a run's paintings with their light removed and levelled and the
                                                 code's windows drawn in, under the build's checks of a painting ($0)
@@ -149,6 +150,11 @@ def cmd_targets(a):
         print("cars", json.dumps(D.cars(a.source)))
     if a.viewer:
         print("viewer", D.variant_release(a.source), "-> python -m v2.view test_painted")
+    if D.is_area(a.source):
+        ins = res["inputs"].values()
+        print(f"{len(res['inputs'])} pictures; even light fails on {sum(1 for v in ins if v['target']['flat_failing'])}, "
+              f"worst {max(v['target']['flat_worst'] for v in ins):.3f}; edges {min(v['target'].get('edges') or 1 for v in ins):.3f} "
+              f"at the least, window rows {min(v['target'].get('windows') or 1 for v in ins):.3f}")
     return 0
 
 
@@ -160,6 +166,13 @@ def cmd_inputs(a):
     if a.method == "even":
         from v2.bakeoff import detail as D
         print(json.dumps(D.make_even_inputs(), indent=1))
+        return 0
+    if a.method == "area":
+        from v2.bakeoff import detail as D
+        r = D.make_area_inputs(limit=a.limit)
+        share = [m["paint_share"] for m in r["inputs"].values()]
+        print(f"{len(r['inputs'])} windows to paint (T4) of {r['grid']} on the grid; {len(r['left_out'])} left out "
+              f"(under {D.MIN_PAINT:.1%} buildings and structures); paint share {min(share):.1%} to {max(share):.1%}")
         return 0
     if a.method == "cutaway":
         from v2.bakeoff import cutaway_paint as CP
@@ -390,7 +403,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status")
     q = sub.add_parser("quote"); q.add_argument("--record", action="store_true"); q.add_argument("--again", metavar="JOB")
-    i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c", "facades", "cutaway", "detail", "even"]); i.add_argument("--limit", type=int, default=0)
+    i = sub.add_parser("inputs"); i.add_argument("method", choices=["b", "c", "facades", "cutaway", "detail", "even", "area"]); i.add_argument("--limit", type=int, default=0)
     i.add_argument("--crops", action="store_true", help="b: also each landmark's unlit crop")
     i.add_argument("--release", help="c: the built release whose layers 1-4 are used (default: this checkout's)")
     s = sub.add_parser("smoke"); s.add_argument("method", choices=["c"])
@@ -410,7 +423,7 @@ def main(argv=None):
     pt = sub.add_parser("painted"); pt.add_argument("method", choices=["b", "c"])
     tr = sub.add_parser("trial"); tr.add_argument("--no-build", action="store_true", help="measure only, no C4 build")
     sub.add_parser("pilot-gates")
-    tg = sub.add_parser("targets"); tg.add_argument("--source", choices=["T1", "T2", "T3"], default="T1")
+    tg = sub.add_parser("targets"); tg.add_argument("--source", choices=["T1", "T2", "T3", "T4", "area_free"], default="T1")
     tg.add_argument("--mode", choices=["surface", "drawing"], default="surface",
                     help="surface: the painting gives colour and plain-surface texture, the code art every detail (the "
                          "owner's choice); drawing: the painting's own drawing is kept (report sections 19, 20)")

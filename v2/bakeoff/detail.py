@@ -24,7 +24,14 @@ Two sources of paintings:
          scales: p250 (one model pixel = 0.25 m, the scale v1 was painted at, one painting per 256 m block) and
          p125 (0.125 m, v2's own scale, the block's central 128 m). Paid: jobs.py T1, quoted, the owner's to approve.
 
+The whole test area (job T4, the plan's step 5: PHASE3_REPORT.md section 18.3). The same, on a grid: 1024 px
+windows at v2's own scale (p125: placing is closest there and the texture is at the map's pixel), stride 768, over
+every tile with a building or a structure; one painting a window. A building is taken from the window that shows
+the most of it (variant_release), in one colour over all the windows that show it (one_colour). "area_free" is the
+same grid with v1's finished art in the paintings' place: the whole route run at $0 before a painting is paid for.
+
     python -m v2.bakeoff inputs detail      T1's control images for the six blocks, both scales ($0)
+    python -m v2.bakeoff inputs area        T4's, for every window of the test area's grid ($0)
     python -m v2.bakeoff detail [--source free|T1|T2]
                                             register + transfer on the six blocks, the numbers and the sheets
 """
@@ -57,8 +64,13 @@ BLOCKS = {
 }
 SCALES = {"p250": 2, "p125": 1}               # v2 map pixels per model pixel
 SEEDS = (1867, 1868)                          # pod/run.sh T1, T2
-PAINTED = {"T1": "painted", "T2": "painted_even", "T3": "painted_evenin"}   # each paid job's paintings (bundle.OUT)
-LABEL = {"T1": "T1: as v1 painted", "T2": "T2: even light asked", "T3": "T3: evened input"}
+PAINTED = {"T1": "painted", "T2": "painted_even", "T3": "painted_evenin", "T4": "painted_area"}   # each paid job's paintings (bundle.OUT)
+LABEL = {"T1": "T1: as v1 painted", "T2": "T2: even light asked", "T3": "T3: evened input", "T4": "T4: the test area",
+         "area_free": "v1's finished art on the test area's grid"}
+STRIDE = 768                                  # the test area's grid (T4): windows of WIN, a quarter over their neighbours
+AREA_SOURCES = ("T4", "area_free")            # the sources on that grid; area_free = v1's finished art, at $0
+AREA_SEEDS = (1867,)                          # pod/run.sh T4: one painting a window
+MIN_PAINT = 0.002                             # a window with less of it in buildings and structures is not painted
 WALL, PART, ROOF = 11, 22, 23                 # layers/common.py CLASS: what a painting may colour
 PAINT_LAYERS = (5, 6)                         # which: buildings, structures
 P = {
@@ -550,8 +562,54 @@ def input_names() -> list:
     return [f"{b}_{s}" for b in BLOCKS for s in SCALES]
 
 
+def is_area(source) -> bool:
+    return source in AREA_SOURCES
+
+
+def inputs_dir(source=None) -> Path:
+    return base() / ("inputs_area" if is_area(source) else "inputs")
+
+
+def seeds_of(source=None) -> tuple:
+    return AREA_SEEDS if is_area(source) else SEEDS
+
+
+def area_grid(rel: Path | None = None) -> list:
+    """(x0, y0) of every window of the test area's grid: WIN px, stride STRIDE, over every tile of the release
+    with a building or a structure (inputs.windows)."""
+    from v2.bakeoff import inputs as I
+    assert (I.WIN, I.STRIDE) == (WIN, STRIDE)
+    windows = I.windows
+    rel = rel or release()
+    idx = json.loads((rel / "index.json").read_text())
+    from v2.layers.common import COLOUR_LAYERS
+    tiles = set()
+    for L in PAINT_LAYERS:
+        tiles |= set(idx["layers"].get(COLOUR_LAYERS[L - 1], {}).get("tiles", {}).get("0", {}))
+    return windows(None, sorted(tiles))
+
+
+def area_name(x0, y0) -> str:
+    return f"w{x0}_{y0}"
+
+
+def area_names() -> list:
+    """The windows T4 paints: the grid's that have enough to paint, as make_area_inputs kept them."""
+    f = base() / "inputs_area.json"
+    if not f.exists():
+        raise SystemExit("no inputs for the test area (python -m v2.bakeoff inputs area)")
+    return list(json.loads(f.read_text())["inputs"])
+
+
+def names_of(source=None) -> list:
+    return area_names() if is_area(source) else input_names()
+
+
 def window_of(name: str):
     """(x0, y0, size in v2 px, v2 px per model px) of an input."""
+    if name.startswith("w") and name[1:].replace("_", "").isdigit():      # a window of the test area's grid
+        x0, y0 = (int(v) for v in name[1:].split("_"))
+        return x0, y0, WIN, 1
     b, s = name.rsplit("_", 1)
     x0, y0 = BLOCKS[b]
     if s == "p250":
@@ -568,24 +626,59 @@ def make_inputs(dst: Path | None = None) -> dict:
     rel = release()
     out = {}
     for name in input_names():
-        x0, y0, size, step = window_of(name)
-        code, g = code_window(x0, y0, size, rel)
-        cap = v1_capture(x0, y0, size, WIN)
-        lay = layout_of(g, step)
-        assert cap.shape[:2] == (WIN, WIN) and lay.shape == (WIN, WIN), (name, cap.shape, lay.shape)
-        Image.fromarray(cap).save(dst / f"{name}.unlit.png")
-        Image.fromarray(lay).save(dst / f"{name}.layout.png")
-        Image.fromarray(code).save(dst / f"{name}.code.png")
-        Image.fromarray(trees_over(x0, y0, size, g, rel)).save(dst / f"{name}.trees.png")
-        np.savez_compressed(dst / f"{name}.geom.npz", ids=g["ids"], which=g["which"],
-                            normal=g["normal"].astype(np.float16),
-                            depth=np.where(np.isfinite(g["depth"]), g["depth"], 1e9).astype(np.float32))
-        meta = {"x0": x0, "y0": y0, "size": size, "v2_px_per_model_px": step, "m_per_model_px": 0.125 * step,
-                "release": rel.name, "paint_share": round(float(np.isin(g["which"], PAINT_LAYERS).mean()), 3)}
-        (dst / f"{name}.json").write_text(json.dumps(meta))
-        out[name] = meta
+        out[name] = _write_input(dst, name, rel)
     (dst.parent / "inputs.json").write_text(json.dumps({"blocks": BLOCKS, "inputs": out, "seeds": SEEDS}, indent=1))
     return out
+
+
+def _write_input(dst: Path, name: str, rel: Path, code_g=None) -> dict:
+    """One input's files (make_inputs), and its place."""
+    x0, y0, size, step = window_of(name)
+    code, g = code_g or code_window(x0, y0, size, rel)
+    cap = v1_capture(x0, y0, size, WIN)
+    lay = layout_of(g, step)
+    assert cap.shape[:2] == (WIN, WIN) and lay.shape == (WIN, WIN), (name, cap.shape, lay.shape)
+    Image.fromarray(cap).save(dst / f"{name}.unlit.png")
+    Image.fromarray(lay).save(dst / f"{name}.layout.png")
+    Image.fromarray(code).save(dst / f"{name}.code.png")
+    Image.fromarray(trees_over(x0, y0, size, g, rel)).save(dst / f"{name}.trees.png")
+    np.savez_compressed(dst / f"{name}.geom.npz", ids=g["ids"], which=g["which"],
+                        normal=g["normal"].astype(np.float16),
+                        depth=np.where(np.isfinite(g["depth"]), g["depth"], 1e9).astype(np.float32))
+    meta = {"x0": x0, "y0": y0, "size": size, "v2_px_per_model_px": step, "m_per_model_px": 0.125 * step,
+            "release": rel.name, "paint_share": round(float(np.isin(g["which"], PAINT_LAYERS).mean()), 4)}
+    (dst / f"{name}.json").write_text(json.dumps(meta))
+    return meta
+
+
+def make_area_inputs(dst: Path | None = None, limit=0) -> dict:
+    """T4's control images, as make_inputs, for every window of the test area's grid that has at least MIN_PAINT
+    of it in buildings and structures; the others are listed as left out. Windows made for this release are kept."""
+    dst = dst or base() / "inputs_area"
+    dst.mkdir(parents=True, exist_ok=True)
+    rel = release()
+    grid = area_grid(rel)
+    out, left = {}, []
+    for x0, y0 in grid[:limit] if limit else grid:
+        name = area_name(x0, y0)
+        mf = dst / f"{name}.json"
+        if mf.exists() and json.loads(mf.read_text()).get("release") == rel.name and (dst / f"{name}.geom.npz").exists():
+            out[name] = json.loads(mf.read_text())
+            continue
+        code, g = code_window(x0, y0, WIN, rel)
+        share = float(np.isin(g["which"], PAINT_LAYERS).mean())
+        if share < MIN_PAINT:
+            left.append([name, round(share, 4)])
+            continue
+        out[name] = _write_input(dst, name, rel, (code, g))
+    keep = set(out)
+    for f in dst.iterdir():                                # a window of an earlier grid is not left to be painted
+        if f.name.split(".")[0] not in keep:
+            f.unlink()
+    (dst.parent / "inputs_area.json").write_text(json.dumps(
+        {"win_px": WIN, "stride_px": STRIDE, "grid": len(grid), "inputs": out, "left_out": left, "seeds": AREA_SEEDS,
+         "release": rel.name}, indent=1))
+    return {"grid": len(grid), "inputs": out, "left_out": left}
 
 
 def load_input(name: str, src: Path | None = None):
@@ -613,12 +706,17 @@ def one(name: str, painting: np.ndarray, have=None, src: Path | None = None, p: 
     return {"code": code, "g": g, "meta": meta, "registered": reg, "out": out, "res": res}
 
 
+def painted_file(name: str, source: str, k: int = 0) -> Path:
+    """Where a paid job's k-th painting of an input is (pod/paint.py: no number in the name with one seed)."""
+    return base() / PAINTED[source] / (f"{name}.png" if len(seeds_of(source)) == 1 else f"{name}_{k}.png")
+
+
 def painting_for(name: str, source: str, k: int = 0):
     """The painting of an input in v2 pixels: v1's finished art ("free"), or T1's k-th candidate."""
     x0, y0, size, step = window_of(name)
-    if source == "free":
+    if source in ("free", "area_free"):
         return v1_painted(x0, y0, size)
-    f = base() / PAINTED[source] / f"{name}_{k}.png"
+    f = painted_file(name, source, k)
     if not f.exists():
         return None, None
     im = Image.open(f).convert("RGB")
@@ -1083,24 +1181,29 @@ def targets(source: str = "T1", img: Path | None = None, write=True, one=True, m
     rdir = base() / "registered" / source
     rdir.mkdir(parents=True, exist_ok=True)
     tables = {}
-    for name in input_names():
-        code, g, meta = load_input(name)
-        for k in range(len(SEEDS)):
+    src, names, seeds = inputs_dir(source), names_of(source), seeds_of(source)
+    shown = set(names)
+    if is_area(source):                                    # sheets of the six windows with the most to paint
+        share = {n: json.loads((src / f"{n}.json").read_text())["paint_share"] for n in names}
+        shown = set(sorted(names, key=lambda n: -share[n])[:6])
+    for name in names:
+        code, g, meta = load_input(name, src)
+        for k in range(len(seeds)):
             painting = painting_for(name, source, k)[0]
             if painting is None:
                 continue
             rf = rdir / f"{name}_{k}.png"                  # placing is the slow step: kept, and made again only
-            pf = base() / PAINTED[source] / f"{name}_{k}.png"   # when the painting is newer
-            if rf.exists() and rf.stat().st_mtime >= pf.stat().st_mtime:
+            pf = painted_file(name, source, k) if source in PAINTED else src / f"{name}.code.png"   # when the painting
+            if rf.exists() and rf.stat().st_mtime >= pf.stat().st_mtime:                          # (or the input) is newer
                 reg = np.asarray(Image.open(rf).convert("RGB"))
             else:
                 reg = register(code, painting, g)[0]
                 Image.fromarray(reg).save(rf)
             tables[f"{name}_{k}"] = part_colours(reg, g)
     colours = one_colour(tables) if one else None
-    for name in input_names():
-        code, g, meta = load_input(name)
-        for k in range(len(SEEDS)):
+    for name in names:
+        code, g, meta = load_input(name, src)
+        for k in range(len(seeds)):
             if f"{name}_{k}" not in tables:
                 continue
             reg = np.asarray(Image.open(rdir / f"{name}_{k}.png").convert("RGB"))
@@ -1110,10 +1213,10 @@ def targets(source: str = "T1", img: Path | None = None, write=True, one=True, m
             if write:                                      # kept for the detector, the seams and the viewer
                 (base() / "targets" / source).mkdir(parents=True, exist_ok=True)
                 Image.fromarray(t["target"]).save(base() / "targets" / source / f"{name}_{k}.png")
-            if k == 0 and name.endswith("p125"):
+            if k == 0 and (name.endswith("p125") or is_area(source)) and name in shown:
                 c = (slice(256, 768), slice(256, 768))
                 mid = ("painted surface, before levelling", "the picture") if mode == "surface" else ("light removed, levelled", "with the code's windows")
-                ims = [_label(t["registered"][c], f"{source}: as painted"), _label(t["delit" if mode == "surface" else "levelled"][c], mid[0]),
+                ims = [_label(t["registered"][c], f"{source}: as painted" if source in PAINTED else "v1's art, placed"), _label(t["delit" if mode == "surface" else "levelled"][c], mid[0]),
                        _label(t["target"][c], mid[1]), _label(code[c], "code art")]
                 rows.append(_row([np.asarray(Image.fromarray(i).resize((448, 448), Image.LANCZOS)) for i in ims]))
     out = {"source": source, "mode": mode, "one_colour": bool(one), "building_parts_coloured": len(colours or {}), "inputs": res}
@@ -1165,6 +1268,38 @@ def seams(source: str = "T1", min_px=600) -> dict:
     def diff(a, b):
         return [abs(a[k] - b[k]) / (0.5 * (a[k] + b[k]) + 1e-6) for k in a if k in b]
 
+    if is_area(source):                                    # real neighbours: two windows on the ground they share
+        src, names = inputs_dir(source), names_of(source)
+        at = {n: window_of(n)[:2] for n in names}
+        loaded = {}
+
+        def get(n):
+            if n not in loaded:
+                if len(loaded) > 12:
+                    loaded.pop(next(iter(loaded)))
+                loaded[n] = (_target_png(source, n, 0), load_input(n, src)[1])
+            return loaded[n]
+        nb = []
+        for a in names:
+            ax, ay = at[a]
+            for dx, dy in ((STRIDE, 0), (0, STRIDE), (STRIDE, STRIDE), (-STRIDE, STRIDE)):
+                b = area_name(ax + dx, ay + dy)
+                if b not in at:
+                    continue
+                bx, by = at[b]
+                x0, y0, x1, y1 = max(ax, bx), max(ay, by), min(ax, bx) + WIN, min(ay, by) + WIN
+                (ta, g), (tb, _g) = get(a), get(b)
+                if ta is None or tb is None:
+                    continue
+                sa = (slice(y0 - ay, y1 - ay), slice(x0 - ax, x1 - ax)); sb = (slice(y0 - by, y1 - by), slice(x0 - bx, x1 - bx))
+                ga = {k: g[k][sa] for k in ("ids", "which", "normal", "depth")}
+                nb += [abs(u - v) / (0.5 * (u + v) + 1e-6) for u, v in
+                       ((pa[k], pb[k]) for pa, pb in [(parts(ta[sa], ga), parts(tb[sb], ga))] for k in pa if k in pb)]
+        v = np.asarray(nb)
+        out = {"two_windows": {"parts": int(len(v)), "median": round(float(np.median(v)), 4), "p90": round(float(np.quantile(v, 0.9)), 4),
+                               "over_5_percent": round(float((v > 0.05).mean()), 4)} if len(v) else {"parts": 0}}
+        (base() / "checks" / f"seams_{source}.json").write_text(json.dumps(out, indent=1))
+        return out
     pairs_, scales = [], []
     for name in input_names():
         _code, g, _meta = load_input(name)
@@ -1228,7 +1363,18 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
             shutil.copy2(p, dst / p.name)
     # the targets as one picture per block, and where they have a say
     blocks = {}
-    for b, (x0, y0) in BLOCKS.items():
+    if is_area(source):                                    # every window of the grid, whole
+        isrc = inputs_dir(source)
+        stale = [n for n in names_of(source) if json.loads((isrc / f"{n}.json").read_text())["release"] != rel.name]
+        if stale:
+            raise SystemExit(f"{len(stale)} inputs are of another release than {rel.name} (python -m v2.bakeoff inputs area)")
+        for n in names_of(source):
+            pic = _target_png(source, n, k)
+            if pic is None:
+                continue
+            _c, g, m_ = load_input(n, isrc)
+            blocks[n] = (m_["x0"], m_["y0"], pic, g["which"], (g["ids"] >> 8).astype(np.int32))
+    for b, (x0, y0) in ({} if is_area(source) else BLOCKS).items():
         big = _target_png(source, f"{b}_p250", k); small = _target_png(source, f"{b}_p125", k)
         if big is None:
             continue
@@ -1261,8 +1407,9 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
         ox = np.array([blocks[o][0] for o in ob])[inv].reshape(bid.shape)
         oy = np.array([blocks[o][1] for o in ob])[inv].reshape(bid.shape)
         is_me = np.array([o == b for o in ob])[inv].reshape(bid.shape)
-        Y, X = np.mgrid[y0:y0 + BLOCK, x0:x0 + BLOCK]
-        reached = (X >= ox) & (X < ox + BLOCK) & (Y >= oy) & (Y < oy + BLOCK)
+        N = bid.shape[0]                                   # a piece's side: a block's, or a window's
+        Y, X = np.mgrid[y0:y0 + N, x0:x0 + N]
+        reached = (X >= ox) & (X < ox + N) & (Y >= oy) & (Y < oy + N)
         mine[b] = is_me | ~reached
     changed = 0
     for L, layer in zip(PAINT_LAYERS, layers):
@@ -1277,8 +1424,9 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
             tx, ty = (int(v) for v in name.split("_"))
             t = None
             for bname, (x0, y0, pic, which, _bid) in blocks.items():
+                N = which.shape[0]
                 a0, b0 = max(x0, tx * TILE), max(y0, ty * TILE)
-                a1, b1 = min(x0 + BLOCK, (tx + 1) * TILE), min(y0 + BLOCK, (ty + 1) * TILE)
+                a1, b1 = min(x0 + N, (tx + 1) * TILE), min(y0 + N, (ty + 1) * TILE)
                 if a1 <= a0 or b1 <= b0:
                     continue
                 if t is None:
