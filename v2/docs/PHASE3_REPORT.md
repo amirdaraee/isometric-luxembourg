@@ -2834,3 +2834,46 @@ the detector's score for whatever stands beside it.
 63. **Are the roads right now**, and shall I go on to the trees?
 64. **The 71 crossings without a word in OSM**: leave them unstriped (as now), or stripe every mapped crossing
     that OSM does not call unmarked?
+
+## 30. The crossings, fixed (24 November, $0)
+
+Branch `v2-phase3-crossings`. **Spent: $0.** No pod. Shown the asphalt (section 29) and asked about the 71
+crossings OSM says nothing about, the owner answered on 23 November: "1- good enough 2- we have to fix crossings
+3- do it 4- go ahead". PR #27 was merged (13b9165).
+
+### 30.1 The rule, and what it rests on
+
+**A mapped crossing is striped unless OSM says it is unmarked** (`crossing:markings` = no, or `crossing` =
+unmarked, no or informal). Before, only a crossing OSM called marked was striped.
+
+Two things I tried to decide the undescribed ones better than by a blanket rule:
+
+| | Result |
+|---|---|
+| The road crossed, on the 1,147 crossing ways of the fetch | Of those OSM describes: over a primary, secondary or tertiary road 288 of 290 are marked (99%); over a residential street 334 of 418 (80%) |
+| The 2023 orthophoto: how much brighter the crossing is than the asphalt 4.5 to 6 m to either side (591 crossings read) | Marked ones 24% brighter at the median, unmarked 4%, **undescribed 24%**: as a group they look like the marked ones. One by one the photo is right for 81% on minor roads against 77% for "always marked": not enough to decide each one, so it is not used |
+
+So the rule is right for nearly every undescribed crossing on a main road, and wrong for about one in five on a
+residential street (stripes where there are none). That is the stated limit.
+
+### 30.2 The build
+
+| | |
+|---|---|
+| Release | `cce0dd0cb290` (current) |
+| Stages | 59 of 59 |
+| Gate entries | 284 pass, 0 fail |
+| Crossing edges striped | 93 of 96 (22 before); 3 are unmarked in OSM |
+| L4.7 | 41 crossings with 2 m or more on a carriageway in the area, 0 unstriped; 45.3% of their 162 m striped |
+
+- No threshold was changed. Vehicle detector on the ground and transport tiles: 0. No baked light: 0 of 227,
+  worst 4.0%. 94 and 96 frames a second. 172 tests pass.
+- **The painted area was not remade** for this change: it has the same road layer, and its own checks read
+  buildings and structures only. It is remade with the trees (step 3); until then the painted viewer shows the
+  roads of section 29.
+
+![Code art, unlit, before and now: above the René Konen tunnel, the boulevard](img/test_crossings_before_now.jpg)
+
+### 30.3 Open questions
+
+44, 46, 60 and 61 stand. 63 is answered (the roads are good enough). 64 is answered (this section).
