@@ -114,13 +114,14 @@ def test_crown_lobes_stay_inside_the_measured_crown():
 def test_a_well_known_building_gets_its_own_materials():
     from v2.layers.art_a import landmark_styles
     known = landmark_styles()
-    assert known and all(set(v) <= {"name", "stone", "facade", "roof", "kind", "windows", "clad"} for v in known.values())
+    assert known and all(set(v) <= {"name", "stone", "facade", "roof", "kind", "windows", "clad", "stone_parts", "quoins"} for v in known.values())
     assert all(v.get("kind", "place_of_worship") == "place_of_worship" and v.get("windows", "round") in ("round", "pointed")
                for v in known.values())
     assert landmark_styles("kinds")["place_of_worship"]["stone"] is True
     for bid, k in known.items():
         st = Style(bid, "gable", k)
-        assert st.roof_name == k["roof"] and st.stone == bool(k.get("stone"))
+        assert ("roof" not in k or st.roof_name == k["roof"]) and st.stone == bool(k.get("stone"))
+        assert "quoins" not in k or st.quoins is k["quoins"]
         assert "facade" not in k or (st.facade == k["facade"] and k["facade"] in FACADES)
 
 
@@ -143,6 +144,28 @@ def test_a_part_in_sheet_metal_is_one_palette_colour_inside_its_cylinder_and_now
     m, rgb = A.clad(bi, P, np.arange(5.0), np.arange(5.0))
     assert m.tolist() == [True, True, False, False, False]
     assert np.abs(rgb / pal("buildings", c["colour"]) - 1).max() < 0.05                 # the colour, with the paper's grain
+
+
+def test_a_rendered_buildings_part_in_bare_stone_is_stone_inside_its_outline_and_render_outside():
+    """landmark_styles.json, stone_parts: the walls of a rendered building that stand in the part's outline on the
+    ground are sandstone; its other walls are its facade colour; another building there is not touched."""
+    from types import SimpleNamespace
+    from v2.layers.art_a import ArtA, landmark_styles
+    from v2.layers.common import pal
+    bid, own = next((k, v) for k, v in landmark_styles().items() if v.get("stone_parts"))
+    part = own["stone_parts"][0]
+    assert set(part) == {"name", "outline"} and len(part["outline"]) >= 3 and "facade" in own and not own.get("stone")
+    scene = SimpleNamespace(buildings=[{"id": bid, "roof_shape": "gable"}, {"id": "B1", "roof_shape": "gable"}],
+                            facades={"walls": [], "worship": {}})
+    empty = {"V": np.zeros((0, 3)), "T": np.zeros((0, 3), np.int64), "kind": np.zeros(0, np.int64), "obj": np.zeros(0, np.int64)}
+    A = ArtA(scene, empty)
+    e, n = np.mean(part["outline"], 0)
+    P = np.array([[e, n, 260.0], [e + 40.0, n, 260.0], [e, n, 260.0]])
+    bi = np.array([0, 0, 1])
+    assert A.in_stone_part(bi, P).tolist() == [True, False, False]
+    rgb = A.walls_rgb(bi, np.full(3, -1), P, np.arange(3.0), np.arange(3.0))
+    assert np.ptp(rgb[0] / pal("buildings", "wall_stone")) < 0.01                       # the stone's hue, in its own tone
+    assert np.ptp(rgb[1] / pal("buildings", own["facade"])) < 0.01                      # the render's
 
 
 # ------------------------------------------------------------------------------------------------ places of worship
