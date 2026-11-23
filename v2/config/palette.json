@@ -76,6 +76,7 @@
   "roof_slate_blue": {"rgb": [82, 96, 118], "src": "v2 phase 3 (blue slate)"},
   "roof_slate_warm": {"rgb": [106, 98, 102], "src": "v2 phase 3 (old, warm slate)"},
   "roof_tile_brown": {"rgb": [140, 86, 64], "src": "v2 phase 3 (brown tile)"},
+  "roof_copper": {"rgb": [116, 168, 148], "src": "v2 phase 3 (copper sheet gone green: a spire, a lantern)"},
   "trim":        {"rgb": [248, 244, 234], "src": "v2 A (window frames, cornices, quoins)"},
   "plinth":      {"rgb": [170, 156, 128], "src": "v2 A (sandstone base course)"},
   "shutter_green": {"rgb": [84, 124, 92], "src": "v2 A"},

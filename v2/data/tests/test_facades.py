@@ -429,7 +429,7 @@ def test_of_two_walls_in_one_plane_the_one_that_holds_the_openings_is_the_wall()
     assert rep["walls"] == 1 and high.get("landmark") == "tower" and "landmark" not in low
 
 
-def test_the_cathedrals_description_is_well_formed():
+def test_every_landmarks_description_is_well_formed():
     from v2.data.scene import landmarks
     data = landmarks.load()
     for b in data["buildings"].values():

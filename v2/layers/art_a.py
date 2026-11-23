@@ -171,6 +171,10 @@ class ArtA:
                         for wi, w in enumerate(walls) if w.get("merged")}
         self.w_door = [np.array([r[:4] for r in w["doors"]], float).reshape(-1, 4) for w in walls]
         self.tri_wall = self._wall_of_tris(bmesh)
+        # parts of a well-known building in sheet metal (landmark_styles.json, clad): per building index
+        self.clad_parts = {bi: [(float(c["centre"][0]), float(c["centre"][1]), float(c["radius"]), float(c["above"]),
+                                 B(c["colour"])) for c in known[b["id"]]["clad"]]
+                           for bi, b in enumerate(scene.buildings) if known.get(b["id"], {}).get("clad")}
         self.materials = None        # method B: {name: (image (H, W, 3) float, (width_m, height_m))}
 
     def tex(self, name, a, b):
@@ -431,6 +435,18 @@ class ArtA:
                 sub[stone] = CLASS["trim"]
                 cls_out[has] = sub
         return rgb * gp(px, py, 0.02, 11)[:, None] if n else rgb
+
+    def clad(self, bi, P, px, py):
+        """Where a building's pixels lie in one of its sheet-metal parts (landmark_styles.json, clad), and their
+        colour: (mask, rgb of the masked). Walls and roofs alike; plain, with the paper's grain."""
+        m = np.zeros(len(bi), bool)
+        rgb = np.zeros((len(bi), 3))
+        for b in set(np.unique(bi).tolist()) & set(self.clad_parts):
+            for ce, cn, r, z0, col in self.clad_parts[b]:
+                q = (bi == b) & (P[:, 2] >= z0) & (np.hypot(P[:, 0] - ce, P[:, 1] - cn) <= r)
+                rgb[q] = col
+                m |= q
+        return m, rgb[m] * gp(px[m], py[m], 0.03, 17)[:, None]
 
     def roofs_rgb(self, bi, P, nrm, px, py):
         n = len(bi)

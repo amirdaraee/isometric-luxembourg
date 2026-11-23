@@ -231,7 +231,7 @@ def check_facades(ctx):
                 if kind == "shopfront" and (v1 - v0 > p["ground_floor_m"] - 0.4 + 1e-6):
                     high.append(w["wall"])
                 for win in w["windows"]:
-                    if box(*win).intersects(box(u0 - p["door_window_gap_m"] + 1e-6, v0, u1 + p["door_window_gap_m"] - 1e-6, v1 + p["door_window_gap_m"] - 1e-6)):
+                    if box(*win[:4]).intersects(box(u0 - p["door_window_gap_m"] + 1e-6, v0, u1 + p["door_window_gap_m"] - 1e-6, v1 + p["door_window_gap_m"] - 1e-6)):
                         clash.append(w["wall"])
     r.at_most("F10", "shop fronts reaching above the ground floor", len(high), 0, high)
     r.at_most("F11", "doors or shop fronts outside their wall outline", len(outside), 0, outside)

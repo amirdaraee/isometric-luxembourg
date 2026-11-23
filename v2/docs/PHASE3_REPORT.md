@@ -2228,3 +2228,94 @@ the median. I looked at the cathedral in the viewer at 13:00 after this change: 
     rule lays out their windows, and I have not checked them against photographs. Saint-Michel, Saint-Jean du
     Grund and Sainte-Cunégonde are on the church rule. Each takes about what the cathedral took.
 57. **The copper spire in green** (a small code change, $0)?
+
+## 24. The copper spire, and three more churches as they are (23 November, $0)
+
+Branch `v2-phase3-landmarks-2`. **Spent: $0.** No pod. The owner's answers of 23 November to section 23: the
+cathedral's windows "looks good"; merge PR #21 "yes" (merged as df67c6d, CI green); the copper spire "do it";
+the other landmarks the same way "do it". That answers questions 56 and 57.
+
+### 24.1 The cathedral's central spire, in copper
+
+- The spire over the crossing and its lantern are copper gone green; the two tower spires stay slate, as every
+  photograph shows them.
+- **How:** a well-known building's entry in `v2/data/structures/landmark_styles.json` may now list `clad`
+  parts: an upright cylinder (centre, radius, the altitude it starts at) and a palette colour. What the model
+  has of the building inside it, walls and roofs alike, is that one colour (`v2/layers/art_a.py`,
+  `v2/layers/render.py`; `v2/docs/specs/layer-05-buildings.md`). The palette has a new colour, `roof_copper`.
+- It is a material of its own, so the shadow check compares it with itself, and a painting's colours do not
+  reach it: in the surfaces-only pictures the spire stays green.
+
+### 24.2 The other landmarks: what was done, and what was left and why
+
+All five were laid over v1's aerial capture, wall by wall, and four of them looked up on Wikimedia Commons. 25 photographs
+were fetched as reduced copies into a scratch folder outside the repository; the ones used are named in
+`v2/data/structures/landmark_facades.json` with their authors and licences.
+
+| Building | Result |
+|---|---|
+| **Saint-Michel** | 4 walls described, 13 openings. The south wall has a row of five round-headed windows under the eave and small windows below, where the rule drew three tall stained windows with buttresses; the wall east of it has small windows as on a house, where the rule drew one two-light window 9 m tall; the tower face has one belfry opening, where the rule drew a pair and a round window. |
+| **Saint-Jean du Grund** (the abbey's church) | 2 walls described, 4 openings: each tower face has one round-headed belfry opening and a small square window under it, where the rule drew a pair of openings and two lancets. The wall onto the cloister keeps the rule: the capture shows its four tall windows where the rule put them. |
+| **Sainte-Cunégonde** | 7 walls described, 22 openings. The nave has a plain lancet 1.3 m wide in each bay, where the rule drew two-light windows 1.9 m wide; the tower front has a tall lancet, a pair of small lights and a pair of belfry openings over the portal, where the rule drew a rose; the stair turrets have their two floors of small windows, where the rule left them blank. |
+| **Grand Ducal Palace** | Not described, from the capture alone (no photograph was fetched: none would show what the camera sees). Its known front looks north-west onto the rue du Marché-aux-Herbes, away from the map's camera. What the camera sees of it is turret faces and short walls 3 to 6 m wide between its neighbours, in shade, where the capture is too soft to read a window; the house rule's stacked windows agree with what little shows. |
+| **Neumünster Abbey, the wings** | Not described. The long east wing is seen at a grazing angle; the house rule's three rows agree with what shows. |
+
+So the description of a wall by hand (facades.md rules 31 to 35) still takes a church's joined walls only. A
+house-rule wall cannot be described yet. Nothing in the test area needs it for this camera; the palace's front
+will need it before other viewing angles (`PLAN_V2.md` section 10.1).
+
+In all, four buildings are now described: 34 walls, 91 openings (the cathedral's 21 and 52 among them).
+Windows in the test area: 39,713 (39,701 before).
+
+![Saint-Michel and Sainte-Cunégonde: before and now](img/test_landmark_churches_1.jpg)
+![The cathedral's central spire and Saint-Jean du Grund's tower: before and now](img/test_landmark_churches_2.jpg)
+
+### 24.3 The build
+
+`python -m v2.build test g3`, 48.7 minutes of stage time, run alone at low priority. The release is
+`1747d34158bd`; `data/v2/test/release/current.json` points at it (`549133649c88` is still on disk).
+
+- **The first run stopped at one check, and the fault was in the check.** F13 (windows clear of doors) read a
+  window's whole record as a rectangle. A described window's record also carries its kind and its head, and
+  Sainte-Cunégonde's tower front is the first described wall with a door. The check now reads the rectangle
+  only (`v2/checks/data_checks.py`). The art was already built; the checks were run again (43 seconds).
+- **57 of 57 stages pass. 280 gate entries pass, 0 fail.** No threshold was changed.
+- F28 passes (34 of 34 descriptions on a wall, nothing outside its wall or over another). F13 passes.
+- No baked light: 0 of 227 materials differ in the photo's shadow (worst 4.0% on buildings, against 5%).
+- Lines: building edges 96.3%, window rows 99.8%, church tracery 99.5%, against 95%.
+- Speed: C2b 94.2 frames a second, X8b 94.8, against 60.
+- Tests: 1 new (154 in all, all pass).
+
+### 24.4 The six blocks and the viewer
+
+Inputs, pictures and the viewer's copy were made again on the new release in the surfaces-only way. Even light
+24 of 24 (worst 1.0%); window rows 99.8% to 99.9%; building edges 93.8% to 98.0% (the Bock's close up under
+95%, as the code art is there); 0 of 24 fail the vehicle detector. Saint-Michel and the abbey lie inside the
+blocks; Sainte-Cunégonde lies east of them and shows as code art. I looked at the cathedral's block as painted:
+the spire is green.
+
+### 24.5 Limits, said plainly
+
+- **Saint-Michel's row of five windows is drawn 1.3 m lower than it is.** The model's eave there slopes down to
+  the left; the real one is level. An opening must lie inside the model's wall, so the row is set under the
+  model's eave. Count and spacing are the capture's.
+- **Saint-Michel's wall east of that row is approximate** (four small windows): the capture is soft there and
+  another building hides its lower right. No ground photograph found shows the church's south side at all:
+  other buildings stand in front of it.
+- **The three churches are drawn in bare sandstone, and they are not.** Saint-Michel is rendered in cream with
+  stone corners, Saint-Jean in ochre, Sainte-Cunégonde in white with a rubble-stone tower. The kind "place of
+  worship" makes every church stone. This is a colour question, not a window one; not touched (question 58).
+- **Kinds are the rule's kinds**, as for the cathedral: a small flat-headed window on a church wall is drawn
+  with leaded glass like a lancet.
+- **Not described, because the map's camera does not see them:** Saint-Michel's east end with its tall window
+  and its front, Saint-Jean's river side, Sainte-Cunégonde's north-west side.
+- **The cathedral's west tower spire** still shows the tan gable faces of the 3D model. Not touched.
+- **The capture's licence** as a source to measure from is still not looked into (section 23.6).
+
+### 24.6 Open questions
+
+44, 46 and 53 stand. 56 and 57 are answered.
+
+58. **The three churches' wall colours** (cream, ochre and white render in place of bare stone; a line each in
+    `landmark_styles.json`, and Sainte-Cunégonde's stone tower would need the walls of one church in two
+    materials; $0)?

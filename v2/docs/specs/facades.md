@@ -214,6 +214,35 @@ of the choir and the west tower, one of a tower's openings, one aerial view of t
 
 The west tower's east face over the nave roof was turned round (rule 32): its normal pointed west.
 
+**Three more churches** (owner, 23 Nov 2026, asked whether the other landmarks should be done the same way: "do
+it"). Each was laid over v1's aerial capture wall by wall, and looked up in photographs from Wikimedia Commons
+(named with authors and licences in the data file). Only the walls where the rule was wrong are described; a wall
+the rule had right keeps the rule.
+
+| Church | Wall | Before (the rule) | Now (as the sources show) | Measured |
+|---|---|---|---|---|
+| Saint-Michel (ACT_4df67993…, datum 291.6 m; 4 walls, 13 openings) | south-east wall of the low block along the nave | three tall windows from 2.6 to 8.1 m, with drawn buttresses | five round-headed windows in a row under the eave, three small flat-headed windows under them | capture |
+| | south-east wall east of it | one two-light window 9 m tall | four small flat-headed windows on three levels | capture (approximate) |
+| | tower, south-east face | a pair of belfry openings and a round window | one round-headed belfry opening, 30.3 to 32.7 m | photo |
+| | the short east wall over the roofs | a round window | blank | capture |
+| Saint-Jean du Grund, the abbey's church (ACT_221c9194…, datum 244.5 m; 2 walls, 4 openings) | tower, south-east and north-east faces | a pair of belfry openings and two lancets on each | one round-headed belfry opening, 25.6 to 28.2 m, and a small square window under it | photo |
+| Sainte-Cunégonde (ACT_f168f482…, datum 244.4 m; 7 walls, 22 openings) | nave, south-east wall | five two-light windows 1.9 m wide, 2.6 to 9.9 m | five plain lancets 1.3 m wide, 3.6 to 9.4 m, one in each bay | capture |
+| | tower, front | a rose and a pair of belfry openings over the portal | a tall lancet (7.2 to 13.6 m), a pair of small lights, a pair of belfry openings (19.6 to 22.8 m) over the portal | photo |
+| | tower, south-east face | a lancet and a pair of belfry openings | a pair of small lights and a pair of belfry openings | capture |
+| | the stair turrets, four faces | blank | two floors of small pointed windows | photo |
+
+Saint-Michel's row of five is set 1.3 m lower than the capture shows it: the model's eave there slopes down to the
+left and the real one is level, and an opening must lie inside the model's wall (rule 35). Saint-Jean's south wall
+onto the cloister (four tall round-headed windows) and Sainte-Cunégonde's east end were laid over the capture and
+keep the rule: it had them right.
+
+**Not described: the Grand Ducal Palace and the abbey's wings** (house rule). The palace's known front looks
+north-west onto the rue du Marché-aux-Herbes, away from the map's camera. What the camera sees of it is turret
+faces and short walls 3 to 6 m wide between its neighbours, where the capture is too soft to read a window, and
+the house rule's stacked windows agree with what little shows. The abbey's long east wing is seen at a grazing
+angle, with the same result. Rules 31 to 35 therefore still take a church's joined walls only; a house-rule wall
+cannot be described yet, and nothing in the test area needs it for this camera.
+
 **Output.** `facades.json`: the rule's parameters and per wall: building id, wall id, base (two 3D points), normal,
 length, eave height, outline, floors, bays, party flag, reason for no windows, window rectangles (u0, v0, u1, v1),
 the street it faces (or none), doors (u0, v0, u1, v1, source "osm:node/…" or "rule:…", kind door/garage) and shop
