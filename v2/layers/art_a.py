@@ -187,6 +187,8 @@ class ArtA:
         bidx = {b["id"]: i for i, b in enumerate(self.scene.buildings)}
         by_b = {}
         for wi, w in enumerate(self.walls):
+            if w.get("dormer"):                                # a dormer's front is an installation's face, not a wall
+                continue
             by_b.setdefault(bidx.get(w["building"], -1), []).append(wi)
         V, T = M["V"], M["T"]
         nrm, _ = tri_normals(V, T)
@@ -260,7 +262,7 @@ class ArtA:
                 continue
             st = self.styles[bi]
             outline = Polygon(w["outline"]) if len(w.get("outline", [])) >= 4 else None
-            shut = st.shutters and outline is not None and outline.is_valid
+            shut = st.shutters and outline is not None and outline.is_valid and not w.get("dormer")
             if w.get("worship"):
                 arch = "pointed" if w["worship"] == "pointed" else "round"
                 for r in w["windows"]:

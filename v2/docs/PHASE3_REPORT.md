@@ -1982,4 +1982,139 @@ they do not.
 54. **Whose details?** (a) The painting gives surfaces only (stone, slate, colour); every window, dormer and
     roof fitting is the model's, and the model gets the ones it lacks (windows on dormers; the real windows
     of landmarks, from a hand-made file as their materials are). (b) The painting's details are kept where a
-    face is clean, and the model's windows are not drawn there. (c) Stop the paint route.
+    face is clean, and the model's windows are not drawn there. (c) Stop the paint route. (Answered on 22 November:
+    "Model's details, painted surfaces", section 21.)
+
+## 21. The model's details, the painting's surfaces (22 November, $0)
+
+Branch `v2-phase3-surfaces`. **Spent: $0.** No pod. PR #19 was merged first, on the owner's "Merge once CI
+passes" (CI green on both commits). The owner's decision on question 54: "Model's details, painted surfaces".
+
+### 21.1 What the picture is now (`detail.target`, mode "surface")
+
+- **From the painting:** each building's colour, walls and roofs (one colour a building, section 20), and the
+  fine texture of its plain surfaces, gently.
+- **Not from the painting:** anything it drew as a thing of its own on a face. A window, a dormer, a skylight,
+  a hatch, a shadow's edge: wherever a face, looked at a few pixels wide, is brighter or darker than its own
+  tone, the painting's texture is left out there with a margin, softly, so no outline of it stays.
+- **From the code art:** every window, door, shutter, dormer, quoin, course and line, and the coursing and
+  slating it draws itself, in the painting's colour.
+- The earlier way (the painting's own drawing kept, sections 19 and 20) is still in the tool as mode
+  "drawing".
+
+### 21.2 The checks, on T1's 24 paintings made into pictures this way
+
+| Check | Drawing kept (section 20) | Surfaces only |
+|---|---|---|
+| Even light (5% per building) | 24 of 24, worst 2.6% | **24 of 24**, worst 0.8% |
+| Window rows (95%), 12 close ups | 99.1% to 100% | **99.8% to 100%** |
+| Building edges (95%), 12 close ups | 96.6% to 99.2% | **94.2% to 98.0%**: above the code art's own score on every window (92.5% to 97.1%). The two under 95% are the Bock's close up, where the code art itself is at 92.5%. |
+| Vehicles (the build's detector) | 3 of 24 fail | **0 of 24 fail** |
+| One building in two paintings, the two candidates: median; share over 5% | 1.2%; 15% | **0.0%; 0.2%** |
+| One building in two blocks' paintings (real neighbours): median; share over 5% | 1.1%; 9% | **0.1%; 1.4%** |
+
+These pass because of what the picture now is: the code art, which passes them, in another colour. That is
+the point of the choice, and it is also its price:
+
+- **What is left of the painting is mostly colour.** On 64% of the painted surface (57% to 78% a picture) the
+  painting's texture is left out as a thing. What stays is a faint grain on plain walls and roofs.
+- The faults of section 20.7 are gone from the pictures: no shapes of the painting's windows, no marks on
+  the roofs, one painting a building. Dormers still have no windows, since the code art draws none: that is
+  the model's to add (below).
+
+Sheets made again: `v2/docs/img/test_detail_targets_t1_1.jpg`, `_2.jpg` (as painted; the painted surface
+before levelling; the picture; the code art). The viewer's copy was made again
+(`python -m v2.view test_painted --port 5175`); screenshot `test_detail_viewer_cathedral_day.jpg` (its trees
+had not loaded in my test browser). The two other screenshots of section 19.3 showed the earlier way and
+are removed.
+
+### 21.3 What follows from it
+
+- **Cheaper painting.** If a painting gives colour and a faint grain, it need not be at v2's scale. At half
+  scale a window covers four times the ground: the test area would take about a quarter of section 18.3's
+  107 windows. Not quoted, not tried at coarser scales.
+- **Other viewing angles.** A building's colour does not depend on the direction it is seen from. The colour
+  table could serve every direction; only the grain would need a painting per direction, or be left out.
+  Not tried.
+- **The model's missing details are now the work.** The facade rules leave dormer windows for later
+  (`v2/docs/specs/facades.md`, rule 13), and a church's windows are a layout, not a survey. Next, in code:
+  windows on dormers; then the real windows of landmarks from a hand-made file. Each needs the test area
+  built again (about an hour on the laptop) and its gates.
+
+### 21.4 Not verified
+
+- The full build and its gates were not run; no layer, check or threshold changed. The tool's and the
+  ledger's tests pass (61).
+- Only the cathedral block was looked at in the viewer after this change; the Grund block did not finish
+  loading in my test browser.
+- The settings for what counts as a thing were chosen on two pictures by eye, the strictest of three tried
+  (the gentlest left faint shapes of the painting's windows).
+- Night, far zoom and the build's gates on tiles made this way: as in section 20.4.
+
+### 21.5 Open questions
+
+44 and 46 stand. 53 (paint the whole test area) waits for the dormer windows.
+
+## 22. Windows on dormers, in the model (22 November, $0)
+
+Branch `v2-phase3-surfaces`. **Spent: $0.** No pod. This is the first of the model's missing details of
+section 21.3: the owner's choice lifted the pause on code art for it.
+
+### 22.1 The rule (`v2/data/scene/facades.py`, `dormer_fronts`; `v2/docs/specs/facades.md` rule 13)
+
+ACT gives a dormer as a small solid on the roof with no back. Of each such solid, the largest upright face
+is a dormer's front when no face of half its size looks the other way (a chimney has four sides), it stands
+on the roof, and it is 0.8 to 4 m wide and at least 0.7 m high to its own eave. It gets one window, centred
+and sized to the front, kept only when it fits inside the front's outline. No shutters. The fronts are
+listed after every other wall, so every window that was there keeps its glass tone and its night seed.
+
+| On the test area | |
+|---|---|
+| Installations in the 3D model | 3,483 |
+| Dormer fronts given a window | 2,617, on 481 of 1,135 buildings |
+| A front, at the median | 1.39 m wide, 1.35 m to its eave |
+| Windows in all | 39,688 (37,071 before) |
+
+### 22.2 The build
+
+The test area was built again from the facade layout on (`python -m v2.build test g3`, 53.5 minutes of stage
+time). The release is `c46716ca4c9b`; `data/v2/test/release/current.json` points at it (section 1 names the
+release before it, `7c39be2ef469`, which is still on disk).
+
+- **53 of 57 stages pass.** 255 gate entries pass. No threshold was changed.
+- **New, both pass:** F26 (a dormer front is on its roof, within the rule's sizes, with one window and
+  nothing else: 0 that are not), F27 (how many). F3 now asks a dormer for exactly one window with a sill of
+  its own.
+- **Lines with the dormer windows:** building edges 96.3%, window rows 99.8%, against 95%.
+- **Two gate entries fail, both speed:** C2b, panning the viewer, 21.6 frames a second against 60; X8b,
+  panning in tunnel view, 21.7 against 60. They fail the stages `check_viewer` and `check_tunnel_view`, and
+  with them the summaries `g1` and `g3`.
+  - Each frame's own work is 0.4 ms at the median, as on 13 November, when the same two checks measured 92
+    to 120 frames a second on this machine. So the viewer is not slower: today the test browser was given
+    about 22 frames a second. I ran the two checks a second time on their own, with nothing else of mine
+    running: the same.
+  - I do not know why the machine paced frames so today. I did not change the checks or their thresholds.
+    They stay failed until they are run again and pass.
+
+### 22.3 The six blocks on the new model
+
+The inputs were made again from the new release, the paintings placed again, and the pictures made again in
+the surfaces-only way (section 21). Even light 24 of 24 (worst 1.0%); window rows 99.8% to 99.9%; building
+edges 93.8% to 98.0% (the Bock's close up under 95%, as the code art is there); 0 of 24 fail the vehicle
+detector; one building in two paintings 0.0% apart at the median. The viewer's copy was made again on the
+new release. Seen in the pictures themselves: the dormers of the Grund building of the owner's first view
+now have windows. Not looked at in the viewer by me after this change.
+
+### 22.4 Not done
+
+- **A landmark's real windows** (the cathedral's apse and tower, section 20.7). The church rule is a layout,
+  not a survey; the real tiers need a description by hand, landmark by landmark.
+- Round and arched dormers get a rectangular window like any other.
+- The two speed checks, run again.
+
+### 22.5 Open questions
+
+44 and 46 stand.
+
+55. **Landmark windows:** which landmarks first, and from what: the aerial photo and v1's art by my eye, or
+    the owner's own knowledge of the buildings?

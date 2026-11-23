@@ -286,3 +286,68 @@ def test_places_of_worship_come_from_the_data():
     assert worship.wall_in(found[1]["area"], LineString([(77100, 75000), (77115, 75000)]), P["worship_wall_tol_m"])
     assert not worship.wall_in(found[1]["area"], LineString([(77130, 75060), (77160, 75060)]), P["worship_wall_tol_m"])
     assert worship.wall_in(None, LineString([(0, 0), (1, 0)]), P["worship_wall_tol_m"])
+
+
+# ------------------------------------------------------------------------------------------------ dormers (rule 13)
+def _surface(V, T, kind, bld, pts, tri, k, b=0):
+    n = sum(len(v) for v in V)
+    V.append(np.array(pts, float)); T.extend([[n + i for i in t] for t in tri]); kind.extend([k] * len(tri)); bld.extend([b] * len(tri))
+
+
+def _dormer_scene():
+    """A building whose eave is at z = 10, with a gabled dormer (a pentagon front looking south, two cheeks, two
+    roof faces, no back), a chimney (four sides and a top) and a porch at the ground."""
+    V, T, kind, bld = [], [], [], []
+    # the dormer: front in the plane n = 0, x from 2 to 3.4, z from 11 to 12.3 at the sides, 13 at the ridge
+    _surface(V, T, kind, bld, [(2, 0, 11), (3.4, 0, 11), (3.4, 0, 12.3), (2.7, 0, 13), (2, 0, 12.3)], [(0, 1, 2), (0, 2, 3), (0, 3, 4)], 3)
+    _surface(V, T, kind, bld, [(2, 0, 11), (2, 0, 12.3), (2, 1.5, 12.3)], [(0, 1, 2)], 3)                    # west cheek
+    _surface(V, T, kind, bld, [(3.4, 0, 11), (3.4, 1.5, 12.3), (3.4, 0, 12.3)], [(0, 1, 2)], 3)              # east cheek
+    _surface(V, T, kind, bld, [(2, 0, 12.3), (2.7, 0, 13), (2.7, 1.5, 13), (2, 1.5, 12.3)], [(0, 1, 2), (0, 2, 3)], 3)
+    _surface(V, T, kind, bld, [(3.4, 0, 12.3), (3.4, 1.5, 12.3), (2.7, 1.5, 13), (2.7, 0, 13)], [(0, 1, 2), (0, 2, 3)], 3)
+    # the chimney: 1 m square, 2 m high
+    for a, b in (((6, 0), (7, 0)), ((7, 0), (7, 1)), ((7, 1), (6, 1)), ((6, 1), (6, 0))):
+        _surface(V, T, kind, bld, [(*a, 12), (*b, 12), (*b, 14), (*a, 14)], [(0, 1, 2), (0, 2, 3)], 3)
+    _surface(V, T, kind, bld, [(6, 0, 14), (7, 0, 14), (7, 1, 14), (6, 1, 14)], [(0, 1, 2), (0, 2, 3)], 3)
+    # the porch: a front at the ground, no back
+    _surface(V, T, kind, bld, [(10, -1, 0), (12, -1, 0), (12, -1, 2.5), (10, -1, 2.5)], [(0, 1, 2), (0, 2, 3)], 3)
+    _surface(V, T, kind, bld, [(10, -1, 0), (10, -1, 2.5), (10, 0, 2.5), (10, 0, 0)], [(0, 1, 2), (0, 2, 3)], 3)
+    # a wall, which is not an installation
+    _surface(V, T, kind, bld, [(0, 0, 0), (20, 0, 0), (20, 0, 10), (0, 0, 10)], [(0, 1, 2), (0, 2, 3)], 2)
+    return np.concatenate(V), np.array(T), np.array(kind), np.array(bld)
+
+
+def test_a_dormer_gets_one_window_inside_its_front_and_a_chimney_and_a_porch_get_none():
+    from shapely.geometry import Polygon, box
+
+    from v2.config import params
+    from v2.data.scene.facades import dormer_fronts, window_world
+    p = params()["facades"]
+    V, T, kind, bld = _dormer_scene()
+    out = dormer_fronts(V, T, kind, bld, (1000.0, 2000.0), [{"id": "B1", "eave_z": 10.0}], p)
+    assert len(out) == 1
+    w = out[0]
+    assert w["dormer"] and w["wall"] == "B1:dormer:1" and w["building"] == "B1" and len(w["windows"]) == 1
+    assert not w["doors"] and not w["shopfronts"] and w["floors"] == 1
+    assert abs(w["length"] - 1.4) < 1e-6 and 1.3 <= w["height"] < 1.35           # its eave (as eave_height samples it), not its ridge
+    assert np.allclose(w["normal"], (0, -1), atol=1e-6)                          # out of the roof, to the south
+    r = w["windows"][0]
+    assert Polygon(w["outline"]).contains(box(r[0] - p["dormer_inset_m"], r[1] - p["dormer_inset_m"],
+                                              r[2] + p["dormer_inset_m"], r[3] + p["dormer_inset_m"]))
+    assert abs((r[0] + r[2]) / 2 - 0.7) < 1e-3                                  # centred
+    c = np.array(window_world(w, r))                                             # and in the world: on the front
+    assert np.allclose(c[:, 1], 2000.0) and c[:, 0].min() > 1002.0 and c[:, 0].max() < 1003.4
+    assert c[:, 2].min() > 11.0 and c[:, 2].max() < 12.3
+
+
+def test_dormer_windows_come_after_every_other_wall_and_in_one_order():
+    from v2.config import params
+    from v2.data.scene.facades import dormer_fronts
+    V, T, kind, bld = _dormer_scene()
+    V2 = np.concatenate([V, V + (0, 30, 0)]); T2 = np.concatenate([T, T + len(V)])
+    k2 = np.concatenate([kind, kind]); b2 = np.concatenate([bld, bld + 1])
+    blds = [{"id": "B1", "eave_z": 10.0}, {"id": "B2", "eave_z": 10.0}]
+    a = dormer_fronts(V2, T2, k2, b2, (0.0, 0.0), blds, params()["facades"])
+    assert [w["wall"] for w in a] == ["B1:dormer:1", "B2:dormer:1"]
+    order = np.random.default_rng(3).permutation(len(T2))                       # the triangles in another order
+    b = dormer_fronts(V2, T2[order], k2[order], b2[order], (0.0, 0.0), blds, params()["facades"])
+    assert a == b

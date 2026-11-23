@@ -139,7 +139,7 @@ def cmd_detail(a):
 
 def cmd_targets(a):
     from v2.bakeoff import detail as D
-    res = D.targets(a.source)
+    res = D.targets(a.source, mode=a.mode)
     for k, v in res["inputs"].items():
         print(k, json.dumps(v))
     if not res["inputs"]:
@@ -411,6 +411,9 @@ def main(argv=None):
     tr = sub.add_parser("trial"); tr.add_argument("--no-build", action="store_true", help="measure only, no C4 build")
     sub.add_parser("pilot-gates")
     tg = sub.add_parser("targets"); tg.add_argument("--source", choices=["T1", "T2", "T3"], default="T1")
+    tg.add_argument("--mode", choices=["surface", "drawing"], default="surface",
+                    help="surface: the painting gives colour and plain-surface texture, the code art every detail (the "
+                         "owner's choice); drawing: the painting's own drawing is kept (report sections 19, 20)")
     tg.add_argument("--cars", action="store_true", help="also the vehicle detector on every target")
     tg.add_argument("--viewer", action="store_true", help="also the release with the targets in it, as area test_painted")
     dt_ = sub.add_parser("detail"); dt_.add_argument("--source", choices=["free", "T1", "T2", "T3"], default="free")
