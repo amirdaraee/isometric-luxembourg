@@ -582,12 +582,16 @@ class Renderer:
         ink = tuple(int(x) for x in np.round(pal("ink", "line_soft") * 0.45 + pal("ground", "paved") * 0.55))
         d_rgb, d_ids, d_has = ImageDraw.Draw(rgb), ImageDraw.Draw(ids), ImageDraw.Draw(has)
         px1 = 1 / DU
-        # pass 1: casings (outline), pass 2: surfaces, pass 3: markings
+        # pass 1: casings (outline) and kerbs, pass 2: surfaces, pass 3: markings
+        kerbed = {i for i, style, *_ in hits if has_kerb(self.edges[i], style)}
         for i, style, poly, line, _ in hits:
-            g = cv.geom(poly.buffer(0.18, quad_segs=4))
+            g = cv.geom(poly.buffer(0.18 + (KERB_M if i in kerbed else 0), quad_segs=4))
             fill_geom(rgb, g, ink)
             fill_geom(ids, g, (i + 1) << 8 | STYLE_CLASS[style])
             fill_geom(has, g, 1)
+        for i, style, poly, line, _ in hits:                     # kerbstones: a pale edge outside the carriageway
+            if i in kerbed:
+                fill_geom(rgb, cv.geom(poly.buffer(KERB_M, quad_segs=4)), _c("transport.kerb"))
         for i, style, poly, line, _ in hits:
             e = self.edges[i]
             g = cv.geom(poly)
@@ -626,8 +630,25 @@ class Renderer:
                         o = offset_line(en, off) if off else en
                         for a, b in dashes(o, 3.0, 6.0):
                             d_rgb.line([tuple(cv_xy(cv, a)), tuple(cv_xy(cv, b))], fill=_c("transport.lane_dash"),
-                                       width=max(1, int(round(0.15 * px1))))
-        return np.asarray(rgb), np.asarray(ids), np.asarray(has)
+                                       width=max(1, int(round(LANE_LINE_M * px1))))
+        # pass 4: marked crossings (the scene's `crossing`), striped where the crossing way lies on a carriageway
+        zebra = [(i, line) for i, style, poly, line, _ in hits if self.edges[i].get("crossing") == "zebra"]
+        out = np.asarray(rgb)
+        if zebra:
+            zb = Image.new("L", (cv.W, cv.H), 0)
+            d_zb = ImageDraw.Draw(zb)
+            for i, line in zebra:
+                half = max(float(self.edges[i]["width"]), ZEBRA_WIDTH_M) / 2
+                en = np.array(line.coords)
+                tng = lambda nrm: np.array([nrm[1], -nrm[0]])                          # noqa: E731
+                for s, nrm in sleepers(en, 2 * ZEBRA_BAR_M):
+                    hb = (ZEBRA_BAR_M - DU) / 2             # the fill takes its edge pixels: half a pixel in, each side
+                    a, b = s - tng(nrm) * hb, s + tng(nrm) * hb
+                    d_zb.polygon([cv_xy(cv, q) for q in (a - nrm * half, a + nrm * half, b + nrm * half, b - nrm * half)],
+                                 fill=1)
+            on = (np.asarray(zb) > 0) & ((np.asarray(ids) & 255) == CLASS["road"])
+            out = np.where(on[..., None], np.array(_c("transport.lane_dash"), np.uint8), out)
+        return out, np.asarray(ids), np.asarray(has)
 
     def transport(self, tile) -> LayerTile:
         self._guard("transport")
@@ -650,15 +671,14 @@ class Renderer:
             depth[on] = t["depth"][on]
             normal[on] = t["normal"][on]
             k[on] = 1
-            # the surfaces' drawn detail: setts on pedestrian streets, paths and steps, a fine grain on asphalt
+            # the surfaces' drawn detail: setts on pedestrian streets, paths and steps, a soft wash on asphalt
             cl = ids[on] & 255
             fct = np.ones(int(on.sum()))
             sett = np.isin(cl, [CLASS["path"], CLASS["steps"]])
             tn, j = detail.slabs(t["e"][on][sett], t["n"][on][sett], 0.75, 0.75, 0.2, joint=0.07, tone=0.04, seed=4)
             fct[sett] = tn * (1 - 0.12 * j)
-            PXg, PYg = np.meshgrid(*tile.centres)
             road = cl == CLASS["road"]
-            fct[road] = 1 + (detail.ihash(PXg[on][road], PYg[on][road], 6) - 0.5) * 0.06
+            fct[road] = detail.asphalt(t["e"][on][road], t["n"][on][road])
             rgb[on] = np.clip(np.round(rgb[on] * fct[:, None]), 0, 255).astype(np.uint8)
         # bridge decks, with their own depth; their surface from the deck canvas at the deck point's (u, f)
         D = self.decks
@@ -693,6 +713,10 @@ class Renderer:
                     hu = has[use]
                     col = np.round(base).astype(np.uint8)
                     col[hu] = cv2.sample(drgb, u[use][hu], f[use][hu])
+                    asph = hu & ((cv2.sample(dids, u[use], f[use]) & 255) == CLASS["road"])
+                    if asph.any():
+                        wash = detail.asphalt(wp[use][asph, 0], wp[use][asph, 1])
+                        col[asph] = np.clip(np.round(col[asph] * wash[:, None]), 0, 255).astype(np.uint8)
                     rgb.reshape(-1, 3)[gi] = col
                     idv = ((obj.astype(np.uint32) + 1) << 8) | CLASS["deck"]
                     cid = cv2.sample(dids, u[use], f[use]).astype(np.uint32)
@@ -1096,6 +1120,9 @@ def crown_lobes(C, r, b, typ):
 
 
 # ------------------------------------------------------------------------------------------------ transport style
+LANE_LINE_M = 0.25                   # a lane line as drawn (wider than the paint: it must read at 0.125 m a pixel)
+KERB_M = 0.3                         # a kerbstone as drawn
+ZEBRA_BAR_M, ZEBRA_WIDTH_M = 0.5, 3.0   # a crossing's bars and gaps along the walking line; its least width
 STYLE_ORDER = ["path", "steps", "pedestrian", "road_minor", "road", "railbed", "tram", "funicular", "rail"]
 STYLE_CLASS = {"path": CLASS["path"], "steps": CLASS["steps"], "pedestrian": CLASS["path"], "road_minor": CLASS["road"],
                "road": CLASS["road"], "railbed": CLASS["rail"], "tram": CLASS["tram"], "funicular": CLASS["rail"],
@@ -1111,6 +1138,11 @@ STYLE_COLOUR = {
     "funicular": lambda: pal("ground", "railground"),
     "rail": lambda: pal("ground", "railground"),
 }
+
+
+def has_kerb(e, style) -> bool:
+    """Streets have kerbstones; driveways, car park aisles and tracks do not."""
+    return style in ("road", "road_minor") and e.get("cls") not in ("service", "track")
 
 
 def surface_style(e) -> str:

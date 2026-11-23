@@ -7,6 +7,7 @@ L4.1  100% of road, rail and tram centre lines inside the      L4.3  no drawn pi
       drawn surface (brief 7)
 L4.6  every bridge's ends are continuous with the ways that leave them: no gap and no step over 2 px in the drawn
       transport surface (colour and depth) within 6 m of each abutment
+L4.7  every crossing OSM marks is striped where it lies on a carriageway
 L8.1  every colour layer's depth equals layer 8's where it is the nearest (<= 1 cm)
 L8.2  normals unit length and facing the camera                L8.3  every id exists in the scene
 P-1   no colour literal in the layer code: every colour from the palette
@@ -23,7 +24,8 @@ import shapely
 
 from v2.checks.framework import Report
 from v2.config import V2
-from v2.layers.common import (BUILDING_CLASSES, CLASS, COLOUR_LAYERS, TILE, Scene, Tile, VIEW, lum, project, read_tile, unproject)
+from v2.layers.common import (BUILDING_CLASSES, CLASS, COLOUR_LAYERS, TILE, Scene, Tile, VIEW, lum, pal, project, read_tile,
+                              unproject)
 from v2.layers.render import GROUND_CLASSES, Renderer
 
 
@@ -178,6 +180,7 @@ def check_layers(ctx):
     _l31(rep, R, rel, P)
     # ------------------------------------------------------------------ L4.1, L4.3
     _l41(rep, R, rel, P)
+    _l47(rep, R, rel)
     # ------------------------------------------------------------------ L4.6 bridge ends
     _l46(rep, R, rel, P)
     # ------------------------------------------------------------------ P-1 palette
@@ -526,6 +529,49 @@ def _l41(rep, R, rel, P):
         if m.any():
             tunnel_px += int(np.isin(obj[m], list(tun)).sum())
     rep.at_most("L4.3", "drawn pixels of tunnel ways (portals are drawn, tunnels are not)", tunnel_px, 0)
+
+
+def _l47(rep, R, rel):
+    """L4.7: every crossing the scene marks (`crossing`, from OSM) is striped where it lies on a carriageway. Along
+    each such way, every 0.125 m, the transport tile's pixel: on a carriageway where its class is road and it is of
+    this crossing's place (the way's own drawn height, so a deck over it does not count); striped where it is the
+    marking's pale colour. A crossing with 2 m or more on a carriageway must be striped on 20% of it or more (bars
+    and gaps are equal, so about half)."""
+    sc = R.scene
+    tr = TileCache(rel, "transport")
+    from v2.layers.geometry import deck_at
+    pale = float(pal("transport", "lane_dash").min()) * 0.85
+    n, bad, ex, on_m, white = 0, 0, [], 0.0, 0
+    for i, e in enumerate(sc.graph["edges"]):
+        if e.get("crossing") != "zebra" or e["structure"] in ("tunnel", "indoor"):
+            continue
+        en, s0, z0 = np.array(e["en"], float), np.array(e["s"], float), np.array(e["z"], float)
+        if len(en) < 2:
+            continue
+        s = np.arange(0.0625, s0[-1], 0.125)
+        ee, nn = np.interp(s, s0, en[:, 0]), np.interp(s, s0, en[:, 1])
+        ok = shapely.contains_xy(sc.polygon.buffer(-0.5), ee, nn)
+        if not ok.any():
+            continue
+        ee, nn, s = ee[ok], nn[ok], s[ok]
+        deck = deck_at(R.dense_edges[i], R.deck_masks[i], s)
+        px, py, d = project(ee, nn, np.where(deck, np.interp(s, s0, z0), R.hf.sample(ee, nn)))
+        ids, rgb, dep = (tr.lookup(px, py, w) for w in ("ids", "rgb", "depth"))
+        road = np.array([v is not None and (int(v) & 255) == CLASS["road"] and abs(float(q) - float(dd)) < 2.0
+                         for v, q, dd in zip(ids, dep, d)])
+        if road.sum() * 0.125 < 2.0:
+            continue
+        w = np.array([c is not None and int(np.min(c)) >= pale for c in rgb]) & road
+        n += 1; on_m += road.sum() * 0.125; white += int(w.sum())
+        if w.sum() < 0.2 * road.sum():
+            bad += 1
+            if len(ex) < 8:
+                ex.append({"edge": e["id"], "on_carriageway_m": round(float(road.sum()) * 0.125, 1),
+                           "striped": round(float(w.sum() / road.sum()), 2)})
+    rep.at_most("L4.7", f"marked crossings (OSM) with 2 m or more on a carriageway that are not striped there (of {n})",
+                bad, 0, ex)
+    rep.info("L4.7b", "marked crossings: metres on a carriageway, and the share of it striped (bars and gaps are equal)",
+             {"crossings": n, "metres": round(on_m, 1), "striped": round(white / max(on_m / 0.125, 1), 3)})
 
 
 RGB_LITERAL = re.compile(r"\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)")

@@ -59,6 +59,14 @@ number of bins, so the cap is exact.
 tunnel (car-park aisles and ramps), a car park's 2.5 m; else the mode's (road 4.5 m, rail 5.5 m, tram 4.5 m: accepted
 at G0). Stored per edge as `clearance_m`; P7–P9 use it.
 
+**Marked crossings.** A way OSM maps as a crossing (`footway`, `cycleway` or `path` = crossing) carries
+`crossing`: "zebra" where OSM says it is marked on the road: by `crossing:markings` where that is given (anything
+but "no"), else by `crossing` = marked, zebra, uncontrolled (OSM's older word for a marked crossing without
+signals) or traffic_signals (signal crossings in Luxembourg are striped). An unmarked crossing, or one OSM says
+nothing about, has no `crossing`: no marking is drawn that the data does not give. Layer 4 draws the stripes
+(layer-04-transport.md rule 3; check L4.7). In the test area: 96 crossing edges, 22 of them marked, 71 with no word
+either way.
+
 ## Output
 `graph.json`: nodes (OSM id, e, n, z, kind ground/abutment/deck/tunnel/mixed, degree, boundary), edges (as above,
 plus `en`, `s`, `z`, `ground`, `deck_obs` on bridges, `cover`, `tunnel_d`, chain id and length on tunnels, and how

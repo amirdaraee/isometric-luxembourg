@@ -17,10 +17,21 @@ lossless "drivable" id tile set (edge id per pixel) for the vehicle check.
    cut away (ACT cuts bridges out past OSM's bridge tag) meets its bridge with no gap or step, and meets the terrain
    where the road does (`geometry.deck_mask`; phase 2, after the owner's "red bridge not connected" report).
 2. Tunnels are not drawn; a portal is drawn at each found portal (`portals`), on the cliff face.
-3. Markings: lane dashes from `lanes`, rails as two ink lines with sleepers, tram tracks as grooved lines, steps as
-   treads across the width.
-   Surfaces on the ground carry drawn detail (phase 3): setts on pedestrian streets, paths and steps, a fine
-   grain on asphalt, from each pixel's place on the ground.
+3. Markings: lane dashes from `lanes` (drawn 0.25 m wide, so they read at 0.125 m a pixel), rails as two ink lines
+   with sleepers, tram tracks as grooved lines, steps as treads across the width.
+   Crossings: a way the graph marks (`crossing`: "zebra", from OSM, see transport-graph.md) is striped where it lies
+   on a carriageway: bars of 0.5 m with gaps of 0.5 m along the walking line, each as long as the way is wide (3 m at
+   least), in the lane dash's colour. Nothing is striped off the asphalt, and a crossing OSM does not say is marked
+   gets nothing.
+   Surfaces on the ground carry drawn detail (phase 3): setts on pedestrian streets, paths and steps; on asphalt a
+   soft wash, its tone drifting by a few per cent over 3 m and 11 m with no grain from pixel to pixel
+   (`detail.asphalt`), from each pixel's place on the ground. Bridge decks carry the same wash.
+   Kerbs: a street (every road but driveways, car park aisles and tracks: OSM service and track) has a kerbstone of
+   0.3 m outside its carriageway, in `transport.kerb`, inside the ink outline. The carriageway keeps the width the
+   graph gives it. Where a path meets the street, the path's surface cuts the kerb.
+   The asphalt wash, the wider lane dashes, the kerbs and the crossings are v1's road, which the owner asked for
+   (23 Nov 2026). v1's asphalt colour, measured where it is clean and lit, is the palette's `road` within 3%, so
+   the colour did not change.
 4. Draw order is by depth, so a bridge deck covers the road it crosses (no OSM `layer` guessing).
 
 **Checks.**
@@ -37,4 +48,7 @@ lossless "drivable" id tile set (edge id per pixel) for the vehicle check.
   edge-on or not at all are counted apart. Exceptions per way in `v2/data/exceptions.json`. Phase 2 (the owner's
   report "the red bridge is not connected to the road": 54 of the test area's 121 bridge ends failed it before the
   fix, 0 after).
+- L4.7 (gate) Every crossing the graph marks, with 2 m or more on a carriageway, is striped on 20% or more of that
+  length (bars and gaps are equal, so about half). L4.7b (info): the crossings, their metres on a carriageway and
+  the share striped.
 - L4.5 (gate) Line score: drawn edges deviate from the projected graph by ≤ 1 px over 95% of their length (brief 6).

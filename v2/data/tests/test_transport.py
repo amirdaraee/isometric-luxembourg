@@ -78,3 +78,16 @@ def test_tunnel_stays_under_the_hill_with_portals():
     assert np.all(np.abs(np.diff(z)) <= P["max_grade"]["road"] * 2.0 + 1e-6)
     assert len(portals) == 2 and all(p["found"] for p in portals)
     assert all(p["dist_m"] <= 40 for p in portals)
+
+
+def test_a_crossing_is_striped_only_where_osm_says_it_is_marked():
+    from v2.data.scene.transport import crossing_marking
+    foot = {"highway": "footway", "footway": "crossing"}
+    assert crossing_marking(dict(foot, crossing="marked")) == "zebra"
+    assert crossing_marking(dict(foot, crossing="traffic_signals")) == "zebra"
+    assert crossing_marking(dict(foot, crossing="uncontrolled")) == "zebra"
+    assert crossing_marking({"highway": "cycleway", "cycleway": "crossing", "crossing:markings": "zebra"}) == "zebra"
+    assert crossing_marking(dict(foot, crossing="marked", **{"crossing:markings": "no"})) == ""     # the marking tag decides
+    assert crossing_marking(dict(foot, crossing="unmarked")) == ""
+    assert crossing_marking(foot) == ""                                    # a crossing OSM says nothing about
+    assert crossing_marking({"highway": "footway", "crossing": "marked"}) == ""          # not a crossing way
