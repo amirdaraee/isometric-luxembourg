@@ -70,6 +70,7 @@ LABEL = {"T1": "T1: as v1 painted", "T2": "T2: even light asked", "T3": "T3: eve
 STRIDE = 768                                  # the test area's grid (T4): windows of WIN, a quarter over their neighbours
 AREA_SOURCES = ("T4", "area_free")            # the sources on that grid; area_free = v1's finished art, at $0
 AREA_SEEDS = (1867,)                          # pod/run.sh T4: one painting a window
+TINT_MIN_PX = 30                              # a material seen on fewer pixels of the targets gives its hidden pixels no colour
 MIN_PAINT = 0.002                             # a window with less of it in buildings and structures is not painted
 WALL, PART, ROOF = 11, 22, 23                 # layers/common.py CLASS: what a painting may colour
 PAINT_LAYERS = (5, 6)                         # which: buildings, structures
@@ -1335,6 +1336,17 @@ def seams(source: str = "T1", min_px=600) -> dict:
     return out
 
 
+def far_colour(rgb, k, new: dict):
+    """A merged far-zoom tile's colour with layers' new colours in it: `k` is the tile's own (layer * 16 + class,
+    layers.stages.layer_far), `new` {layer number: that layer's tile colour at the same zoom}. A pixel takes the
+    new colour of the layer that is its nearest surface; every other pixel stays."""
+    out = np.array(rgb, np.uint8)
+    for L, c in new.items():
+        m = (k // 16) == L
+        out[m] = c[m]
+    return out
+
+
 def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", whole_share=0.98) -> Path:
     """The built release with the six blocks' buildings and structures in their target colours, as an area of its
     own for the viewer (python -m v2.view test_painted): every file of the release is linked, only the colour tiles
@@ -1343,7 +1355,12 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
     so no building is split between two paintings. Where two blocks overlap, a building comes from the block that
     shows the most of it. Depth, normals, ids, windows, light and every other layer are the release's own,
     so the viewer's moving light and its night fall on the targets as on the code art. The merged far-zoom tiles
-    are not remade: zoomed far out, the view is the code art."""
+    (layer_far) take the new colour wherever layer 5 or 6 is their nearest surface (far_colour).
+
+    A target is a picture of the nearest surface of layers 1 to 6. What a layer's tile holds behind another layer
+    (a wall behind a cliff or a bridge) is in no target: it takes its own material's colour change (tints), the
+    code art's drawing in the painted colour, so a building is one colour with any layer off, and the build's
+    shadow detector, which reads each layer's tiles whole, compares like with like."""
     import shutil
 
     from v2.layers.common import COLOUR_LAYERS, TILE, read_tile, write_tile
@@ -1354,8 +1371,9 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
         shutil.rmtree(dst)
     dst.mkdir(parents=True)
     layers = [COLOUR_LAYERS[i - 1] for i in PAINT_LAYERS]
+    far = idx["layers"].get("far")
     for p in rel.iterdir():
-        if p.name in layers:
+        if p.name in layers or (far and p.name == "far"):
             continue
         if p.is_symlink() or p.is_dir():
             os.symlink(p.resolve(), dst / p.name)
@@ -1411,7 +1429,21 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
         Y, X = np.mgrid[y0:y0 + N, x0:x0 + N]
         reached = (X >= ox) & (X < ox + N) & (Y >= oy) & (Y < oy + N)
         mine[b] = is_me | ~reached
-    changed = 0
+    # how each material's colour changed where a target shows it: what its hidden pixels take
+    acc = {}
+    for bname, (x0, y0, pic, which, _bid) in blocks.items():
+        code, g, _m = load_input(*((bname, isrc) if is_area(source) else (f"{bname}_p250", None)))
+        sel = np.isin(which, PAINT_LAYERS) & mine[bname] & (lum(code.astype(float)) >= P["ink"])
+        u, inv = np.unique(g["ids"][sel], return_inverse=True)
+        n = np.bincount(inv, minlength=len(u))
+        new = np.stack([np.bincount(inv, pic[sel][:, c].astype(float), len(u)) for c in range(3)], 1)
+        old = np.stack([np.bincount(inv, code[sel][:, c].astype(float), len(u)) for c in range(3)], 1)
+        for i, v in enumerate(u.tolist()):
+            a = acc.setdefault(v, [0, np.zeros(3), np.zeros(3)])
+            a[0] += int(n[i]); a[1] += new[i]; a[2] += old[i]
+    tints = {v: a[1] / np.maximum(a[2], 1.0) for v, a in acc.items() if a[0] >= TINT_MIN_PX}
+    changed = hidden = 0
+    redo = {}                                              # zoom -> the tiles written anew, of either layer
     for L, layer in zip(PAINT_LAYERS, layers):
         src = rel / layer; out = dst / layer
         tiles = idx["layers"][layer]["tiles"]
@@ -1422,21 +1454,29 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
                 os.symlink(f.resolve(), out / z / f.name)
         for name, dmin in tiles["0"].items():
             tx, ty = (int(v) for v in name.split("_"))
-            t = None
+            t = read_tile(src / "0", name, dmin, z=0)
+            rgb = t["rgb"].copy()
+            done = np.zeros(rgb.shape[:2], bool)
             for bname, (x0, y0, pic, which, _bid) in blocks.items():
                 N = which.shape[0]
                 a0, b0 = max(x0, tx * TILE), max(y0, ty * TILE)
                 a1, b1 = min(x0 + N, (tx + 1) * TILE), min(y0 + N, (ty + 1) * TILE)
                 if a1 <= a0 or b1 <= b0:
                     continue
-                if t is None:
-                    t = read_tile(src / "0", name, dmin, z=0)
-                    rgb = t["rgb"].copy()
                 sl = (slice(b0 - ty * TILE, b1 - ty * TILE), slice(a0 - tx * TILE, a1 - tx * TILE))
                 wl = (slice(b0 - y0, b1 - y0), slice(a0 - x0, a1 - x0))
                 m = (which[wl] == L) & np.isfinite(t["depth"][sl]) & mine[bname][wl]
                 sub = rgb[sl]; sub[m] = pic[wl][m]; rgb[sl] = sub
-            if t is not None:
+                sd = done[sl]; sd |= m; done[sl] = sd
+            rest = np.isfinite(t["depth"]) & ~done           # behind another layer, or in no target
+            if rest.any() and tints and "ids" in t:
+                rest &= lum(t["rgb"].astype(float)) >= P["ink"]
+                u, inv = np.unique(t["ids"][rest], return_inverse=True)
+                f = np.array([tints.get(v, np.ones(3)) for v in u.tolist()]).reshape(-1, 3)[inv]
+                rgb[rest] = np.clip(np.round(t["rgb"][rest] * f), 0, 255).astype(np.uint8)
+                hidden += int((f != 1).any(1).sum())
+                done[rest] |= (f != 1).any(1)
+            if done.any():
                 (out / "0" / f"{name}.c.webp").unlink()
                 write_tile(out / "0", name, rgb=rgb, q=101, z=0)
                 touched.add((tx, ty)); changed += 1
@@ -1459,7 +1499,88 @@ def variant_release(source: str = "T1", k: int = 0, area: str = "test_painted", 
                 rgb = (acc * valid[..., None]).reshape(TILE, 2, TILE, 2, 3).sum((1, 3)) / np.maximum(v4, 1)[..., None]
                 (out / str(z) / f"{name}.c.webp").unlink()
                 write_tile(out / str(z), name, rgb=np.round(rgb).astype(np.uint8), q=101, z=z)
+                redo.setdefault(z, set()).add(name)
             touched = parents
+    far_changed = 0
+    if far:                                                # the merged far-zoom tiles over the same ground
+        (dst / "far").mkdir()
+        for f in (rel / "far").iterdir():
+            if not f.is_dir():
+                os.symlink(f.resolve(), dst / "far" / f.name)
+        for z, names in far["tiles"].items():
+            (dst / "far" / z).mkdir()
+            for f in (rel / "far" / z).iterdir():
+                os.symlink(f.resolve(), dst / "far" / z / f.name)
+            for name in sorted(redo.get(int(z), set()) & set(names)):
+                t = read_tile(rel / "far" / z, name, names[name], z=int(z))
+                new = {L: read_tile(dst / layer / z, name, idx["layers"][layer]["tiles"][z][name], z=int(z))["rgb"]
+                       for L, layer in zip(PAINT_LAYERS, layers) if name in idx["layers"][layer]["tiles"].get(z, {})}
+                (dst / "far" / z / f"{name}.c.webp").unlink()
+                write_tile(dst / "far" / z, name, rgb=far_colour(t["rgb"], t["k"], new), q=101, z=int(z))
+                far_changed += 1
     (dst.parent / "current.json").write_text(json.dumps({"key": f"{rel.name}:{source}:{k}", "folder": dst.name, "status": "ok",
-                                                         "of": rel.name, "tiles_rewritten": changed}))
+                                                         "of": rel.name, "tiles_rewritten": changed,
+                                                         "far_tiles_rewritten": far_changed, "hidden_px_tinted": hidden}))
     return dst
+
+
+# ------------------------------------------------------------------------------------------------ the build's gates
+GATE_CHECKS = ("check_lines", "check_shadows", "check_no_cars")
+
+
+def gates(source: str = "T4", area: str = "test_painted", checks=GATE_CHECKS) -> dict:
+    """The build's own checks of a release that read the colour of layers 5 and 6, run on the viewer's copy with
+    the paintings in it (variant_release) as the build runs them on the code art: the same functions, parameters
+    and thresholds, the copy's folder in the release's place.
+
+      check_lines    L5.2 building edges and window rows, L5.8 tracery, L5.7 church glass
+      check_shadows  L5.1 the shadow detector on every colour layer; the light's own checks are the release's
+      check_no_cars  the vehicle detector on every tile of every colour layer
+      seams          v1's rule at tile borders on layers 5 and 6 (g1_checks.seams_of), with its control through
+                     the tiles' middles. The build's own seam gate compares a tile with the code's render across
+                     the border, which a painted tile is not: it is left out, and so is check_independence
+                     (a layer rendered again is the code art, not the painting).
+    Results: checks/gates_<source>.json, and each check's own files under checks/gates/<source>/<check>/."""
+    import shutil
+    import time
+
+    from v2.build.graph import Ctx
+    from v2.build.stages import graph
+    from v2.checks import g1_checks as gc
+    from v2.checks.layer_checks import load, release_tiles
+    from v2.layers.common import COLOUR_LAYERS
+    cur = json.loads((v2_data() / area / "release" / "current.json").read_text())
+    if cur.get("key", "").split(":")[1:2] != [source]:
+        raise SystemExit(f"the viewer's copy is not {source}'s (python -m v2.bakeoff targets --source {source} --viewer)")
+    var = v2_data() / area / "release" / cur["folder"]
+    G = graph()
+    out = {"source": source, "release": cur["folder"], "of": cur.get("of"), "checks": {}}
+    for name in checks:
+        s = G.stages[name]
+        _k, spec = G.key(name, AREA)
+        dest = base() / "checks" / "gates" / source / name
+        if dest.exists():
+            shutil.rmtree(dest)
+        dest.mkdir(parents=True)
+        ctx = Ctx(area=AREA, out=dest, params=spec["params"], workers=2,
+                  deps={d: var if d == "release" else G.folder(d, AREA) for d in s.deps})
+        t0 = time.time()
+        r = s.fn(ctx) or {}
+        out["checks"][name] = {"passed": bool(r.get("passed")), "seconds": round(time.time() - t0, 1), "lines": r.get("lines", []),
+                               "entries": r.get("entries", [])}
+        (dest / "result.json").write_text(json.dumps(out["checks"][name], default=str))
+    P = G.key("check_seams", AREA)[1]["params"]["g1"]
+    out["seams"] = {}
+    for L in (COLOUR_LAYERS[i - 1] for i in PAINT_LAYERS):
+        names = release_tiles(var, L)
+
+        def get(n, L=L):
+            t = load(var, L, n)
+            return None if t is None else (t["rgb"], np.isfinite(t["depth"]))
+        bad, total, _ = gc.seams_of(get, names, P)
+        c1, _, _ = gc.seams_of(get, names, P, at=gc.TILE // 2)
+        c2, _, _ = gc.seams_of(get, names, P, at=gc.TILE + gc.TILE // 2)
+        out["seams"][L] = {"chunks": total, "borders": bad, "middles": (c1 + c2) / 2}
+    out["passed"] = all(c["passed"] for c in out["checks"].values())
+    (base() / "checks" / f"gates_{source}.json").write_text(json.dumps(out, indent=1, default=str))
+    return out

@@ -2442,3 +2442,120 @@ the vehicle detector on all 101, the build's own gates on the painted tiles, and
 44 and 46 stand. 58 is answered.
 
 53. **Approve q0019** (paint the whole test area: expected $1.73, worst case $2.19)?
+
+## 26. The whole test area, painted (23 November, $1.69)
+
+Branch `v2-phase3-test-area-paint`. The owner's answers of 23 November to section 25: "Approve q0019
+(Recommended)" and, for PR #23, "Merge (Recommended)" (merged as 2690bfd, CI green). That answers question 53.
+
+| | |
+|---|---|
+| Spent | **$1.6946** (quote q0019: expected $1.73, worst case $2.19). Pod `iilx3elqn8dkrw`, A100 SXM, secure cloud, $2.19/h, 46.0 minutes, finished, terminated. |
+| Made | 101 of 101 paintings, 20.8 s each |
+| Phase 3 | $4.6821 of $8 spent, $3.3179 left, nothing committed |
+| Reconciled | By account balance: RunPod's fell by $8.3942 since before the first v2 pod, the ledger has $8.3981. The per-pod billing lines could not be read today. |
+| Pods | None of ours left (`python -m v2.bakeoff pods`); `luxembourgish-asr-pilot` not touched |
+
+### 26.1 The paintings, and the pictures made from them
+
+The paintings are v1's look over the whole area. The model also painted things that are not there (two
+waterfalls, cars on the roads). None of it is used: a painting gives each building its colour and the texture
+of its plain surfaces, nothing else.
+
+`python -m v2.bakeoff targets --source T4 --mode surface --cars --viewer` (10.9 minutes at low priority):
+
+| Check | As painted | As pictures |
+|---|---|---|
+| Even light (5% per building) | 93 of 101 windows fail | **0 of 101 fail**; the worst 1.1% |
+| Window rows (95%) | median 85.4% | **101 of 101**; the least 98.9% |
+| Building edges (95%) | median 90.6% | 91 of 101; 10 between 89.9% and 95% (not compared with the code art's own score on those windows) |
+| One building in two neighbouring windows: difference of brightness (2,737 walls and roofs) | | median 0.22%, worst tenth 1.1%, 0.84% over 5% |
+| Vehicles (the build's detector) on the 101 pictures | | 0 |
+
+- 2,052 walls and roofs take one colour each over all the windows that show them.
+- **Two thirds of the painted surface (67.5%) is not the painting's**: where it drew a thing (a window, a
+  dormer, a tree in front), the code art shows in the building's painted colour. The painting's own texture
+  is on the other third.
+
+### 26.2 Two faults found before the paintings were judged, both in the viewer's copy
+
+- **What a layer holds behind another layer kept the code art's colour.** A picture is of the nearest surface.
+  A wall behind a cliff or a bridge is in the buildings' tiles all the same, and it stayed as the code drew
+  it: a patch of another colour with a layer switched off, and a difference the build's shadow detector reads
+  as light. On the dry run 47 of 189 materials failed for it. Those pixels now take their own material's
+  colour change (823,885 pixels here); the dry run went to 2 of 189.
+- **The far-zoom tiles were not remade** (section 25.4). They now take the new colour wherever layer 5 or 6 is
+  their nearest surface (34 tiles).
+
+Both are in `variant_release` (`v2/bakeoff/detail.py`), each with a test.
+
+### 26.3 The build's own checks, on the painted tiles
+
+`python -m v2.bakeoff gates --source T4` runs the build's check functions on the viewer's copy, with the
+build's parameters and thresholds (10.3 minutes).
+
+| Check | Code art (section 25.2) | Painted tiles |
+|---|---|---|
+| Lines: building edges, window rows, church tracery (95%) | 96.3%, 99.8%, 99.5% | **pass**: 97.4%, 99.8%, 99.5% |
+| Church glass, no shutters or shop fronts on churches | pass | **pass** |
+| Baked light: materials that differ in the photo's shadow by more than 5% (of 227) | 0; worst 4.0% | **1: fails.** One small roof, 5.2% |
+| Shadow direction at 08:00, 13:00, 19:00 | pass | pass (the light is the release's own) |
+| Vehicles on every tile of every colour layer (966 tiles; score 0.10) | 0 | **1: fails.** "A bus", score 0.101 |
+| v1's seam rule at tile borders, buildings: flagged at borders, and through the tiles' middles as a control (of 740) | 3, 3 | 6, 10 |
+| The same, structures (of 55) | 3, 0 | 3, 0 |
+
+- **The roof.** The detector reads every third tile; in the one it read, a strip of this roof 25 px wide lies
+  at the tile's edge: 85 pixels in the model's shadow against 139 beside them. Over the whole roof the two
+  differ by 0.7%. What it measures there is the painting's texture on a small sample, not a shadow. On the
+  four windows I measured, what is left of a cast shadow inside a side is 0.5% at the median, 8% at the most
+  (on 50 pixels).
+- **The bus.** A storey on a flat roof with a row of windows, the 3D model's own shape. In the code art its
+  roof is dark slate and the detector stays under 0.10; in the painted colours the roof is light and it reads
+  0.101. No vehicle is painted there.
+- **Both stand as failures.** No threshold was changed and nothing was listed as an exception: that is the
+  owner's to decide (question 59).
+- **Not run on the painted tiles, and why:** the build's seam gate and the independence check compare a tile
+  with the code's own render, which a painted tile is not. The viewer's check (speed, layer toggles) reads no
+  colour of layers 5 and 6; it was not run again.
+
+### 26.4 In the viewer
+
+`python -m v2.view test_painted --port 5175`. I looked at the whole area zoomed out and at the old town close
+up at 17:00: the painted colours are there at both, the light and the shadows move over them, no line where
+two windows meet. I did not look at night or at every part of the area.
+
+![The old town: code art, and painted](img/test_area_painted_1.jpg)
+![The plateau and Pfaffenthal: code art, and painted](img/test_area_painted_2.jpg)
+![The viewer, the whole test area](img/test_area_painted_viewer_far.jpg)
+![The viewer, the old town at 17:00](img/test_area_painted_viewer_1700.jpg)
+![Sainte-Cunégonde, Saint-Michel, the cathedral, the abbey: code art, and painted](img/test_area_painted_landmarks.jpg)
+
+Sheets of the six windows with the most to paint: `v2/docs/img/test_detail_targets_t4_1.jpg`, `_2.jpg`.
+
+### 26.5 Limits, said plainly
+
+- **The painted area is cream walls and slate roofs, as v1 is.** The code art's house colours (pink, green,
+  blue, red tile) are gone: a building's colour is the aerial photo's, through the painting.
+- **Section 25.1's church colours do not show in the painted area.** There a church takes its painting's
+  colour: Sainte-Cunégonde's nave is cream, not white. Its tower stays stone and the cathedral's spire stays
+  copper green.
+- **Texture is on a third of the surface** (section 26.1).
+- Even light and one colour pass because levelling makes them pass; what the eye sees inside a side is not
+  in those numbers. The build's shadow detector is the independent measure, and it finds one roof.
+- The aerial capture's licence for this use is still not looked into. The cliffs and the trees stay code art.
+- This is the test area. It decides nothing for the city: gate G2 chose method A (question 44).
+
+### 26.6 What the city would cost this way (an estimate, not a quote)
+
+The commune is about 33 times the test area: about 3,300 windows. At 21 s a painting on the same machine that
+is about 19 hours, about $43 at today's price, in runs of a few hours each. Phase 4's line is $60. The 10%
+pilot the plan asks for first would be about $4.50.
+
+### 26.7 Open questions
+
+44 and 46 stand. 53 is answered.
+
+59. **The two narrow failures on the painted tiles** (one roof at 5.2% against 5%; one rooftop storey read as
+    a bus at 0.101 against 0.10): list each as an exception with its reason, or have me look for a cause to
+    fix in the method first?
+60. **Which art for the city** (gate G2, question 44): the code art, or painted this way?
