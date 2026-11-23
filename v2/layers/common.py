@@ -354,6 +354,14 @@ class Scene:
         return dict(np.load(self.part("trees") / "trees.npz"))
 
     @cached_property
+    def groundcover(self):
+        """The photo's vegetated ground as a grid (scene/groundcover.py), or None in a scene built without it."""
+        from v2.data.scene.groundcover import load_grid
+        if "groundcover" not in self.index["parts"]:
+            return None
+        return load_grid(self.part("groundcover"))
+
+    @cached_property
     def water(self):
         return json.loads((self.part("water") / "water.json").read_text())
 

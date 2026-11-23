@@ -326,6 +326,15 @@ class Renderer:
         cls = np.asarray(cls)
         k = np.zeros(m.shape, np.uint8)
         k[m] = cv.sample(cls, t["u"][m], t["f"][m])
+        # land OSM does not class, inside the built-up area: a lawn where the orthophoto shows vegetated ground
+        # (scene/groundcover.py: the photo classes, it never colours), paving elsewhere
+        un = m & (k == GROUND_CLASSES.index("paved"))
+        gc = self.scene.groundcover
+        if gc is not None and un.any():
+            from v2.data.scene.groundcover import vegetated
+            sub = k[un]
+            sub[vegetated(gc, t["e"][un], t["n"][un])] = GROUND_CLASSES.index("grass")
+            k[un] = sub
         # bare rock: the scene's cliff cells (slope >= 60 degrees with a drop), except under water
         k[m & (self.terrain_class(t) == 2) & (k != GROUND_CLASSES.index("water"))] = GROUND_CLASSES.index("rock")
         lut = np.zeros((len(GROUND_CLASSES), 3))

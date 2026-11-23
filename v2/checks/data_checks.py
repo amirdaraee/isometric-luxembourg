@@ -383,6 +383,57 @@ def check_facades(ctx):
 
 
 # ------------------------------------------------------------------------------------------------ trees
+def check_groundcover(ctx):
+    """The photo's vegetated ground (scene/groundcover.py) against the land OSM does class: its paved classes must
+    stay paved and its gardens come out vegetated, cell by cell, outside the buildings. What is measured is the
+    classing itself, on land it is not used for: the layer uses it only where OSM is silent."""
+    import json
+
+    import shapely
+    from v2.data.geo import area_polygon, osm_area_en
+    from v2.data.scene.groundcover import _raster
+    from v2.layers.render import GROUND_CLASSES, ground_class
+    r = Report("groundcover")
+    P = ctx.params["checks"]
+    d = np.load(ctx.dep("scene_groundcover") / "groundcover.npz")
+    veg, have = d["veg"] > 0, d["photo"] > 0
+    e0, n0, step = float(d["e0"]), float(d["n0"]), float(d["step"])
+    H, W = veg.shape
+    area = _raster((H, W), e0, n0, step, polys=[area_polygon(ctx.area)])
+    r.at_least("GC1", "share of the area's cells the orthophoto covers", round(float(have[area].mean()), 4), P["groundcover_min_photo"])
+    cls = np.zeros((H, W), np.uint8)
+    by = {}
+    clip = area_polygon(ctx.area).buffer(50)
+    for el in json.loads((ctx.dep("fetch_osm_ground") / "ground.json").read_text())["elements"]:
+        if el["type"] not in ("way", "relation"):
+            continue
+        c = ground_class(el.get("tags", {}))
+        if c is None:
+            continue
+        g = osm_area_en(el)
+        if g is not None and g.intersects(clip):
+            by.setdefault(c, []).append(g)
+    for c in sorted(by, key=GROUND_CLASSES.index):          # the layer's own order: the later class lies on top
+        cls[_raster((H, W), e0, n0, step, polys=by[c])] = GROUND_CLASSES.index(c)
+    open_ = area & have & ~_raster((H, W), e0, n0, step, polys=footprints(load_buildings(ctx.dep("scene_buildings"))))
+
+    def share(names):
+        m = np.isin(cls, [GROUND_CLASSES.index(c) for c in names]) & open_
+        return (round(float(veg[m].mean()), 4), int(m.sum())) if m.any() else (None, 0)
+    paved, n_p = share(("square", "parking", "railground"))
+    garden, n_g = share(("garden",))
+    if n_p:
+        r.at_most("GC2", f"share of OSM's squares, car parks and rail ground (outside buildings, {n_p} cells) the photo calls vegetated",
+                  paved, P["groundcover_paved_max"])
+    if n_g:
+        r.at_least("GC3", f"share of OSM's gardens ({n_g} cells) the photo calls vegetated", garden, P["groundcover_garden_min"])
+    r.info("GC4", "share vegetated by OSM class (cells)", {c: share((c,)) for c in GROUND_CLASSES[1:] if share((c,))[1]})
+    un = (cls == 0) & open_
+    r.info("GC5", "land OSM does not class, outside buildings: cells, and the share the photo calls vegetated",
+           [int(un.sum()), round(float(veg[un].mean()), 4) if un.any() else None])
+    return r.result()
+
+
 def check_trees(ctx):
     r = Report("trees")
     p = params()["trees"]

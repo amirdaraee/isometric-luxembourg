@@ -58,6 +58,10 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | F24 | yes | No church wall's normal points into the building's footprint (where the footprint tells the side) |
 | F25 | report | Per place of worship: how the entrance front was told, portal, rose, windows by kind, tower walls, buttresses; the exceptions list |
 | **Trees** | | |
+| GC1 | yes | The orthophoto covers ≥ 99% of the area's cells |
+| GC2 | yes | Of OSM's squares, car parks and rail ground (outside buildings), ≤ 15% of the cells come out vegetated (the classing measured on land it is not used for) |
+| GC3 | yes | Of OSM's gardens, ≥ 70% of the cells come out vegetated |
+| GC4, GC5 | no | Share vegetated by OSM class; the land OSM does not class and the share of it vegetated |
 | TE1 | yes | No tree standing inside a building |
 | TE2 | yes | No tree standing in water |
 | TE3 | yes | No crown more than 30% (+2%) over buildings or water |

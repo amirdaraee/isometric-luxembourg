@@ -2658,3 +2658,96 @@ v1's art, on one private page for the owner (not in the repository). The viewers
 60. **Which art for the city** (gate G2): the code art, or painted this way?
 61. **More of v1's contrast** (deeper darks, a wider run from dark to light): try it, or is the painted area
     alive enough now?
+
+## 28. v1's ground: step 1 of three (23 November, $0)
+
+Branch `v2-phase3-ground`. **Spent: $0.** No pod. Shown the painted area against v1's art, the owner said on 23
+November: "in the v1 I like the texture of the ground, asphalt and also the trees". Asked where to start, the
+owner chose "Ground, then asphalt, then trees (Recommended)", each step shown before the next, and "Merge
+(Recommended)" for PR #25 (merged as acaaeea, CI green).
+
+### 28.1 What was tried first, and did not work
+
+Lifting the ground, the roads and the trees out of the 101 paintings, as the buildings' surfaces are (two
+windows, in a scratch tool, nothing kept):
+
+- **Texture alone hardly shows.** The ground stays pale.
+- **Colour too goes wrong where the painting and the map disagree.** One meadow came out teal: the model had
+  painted water there (and a waterfall beside it).
+- **Trees came out flat lime green.**
+
+What it showed is that three different things make v1's ground and trees, and one of them is texture:
+what the ground is, its tone, and how it is drawn.
+
+### 28.2 What the ground is: lawns and gardens where OSM is silent
+
+- **The fault.** Land OSM does not class was drawn as paving inside the built-up area: 21% of the ground seen.
+  Gardens and planted slopes were bare beige.
+- **The rule** (`v2/data/scene/groundcover.py`, a new scene part; `v2/docs/specs/scene.md` "Ground cover";
+  layer-01 rule 1). The orthophoto classes the land on a 0.5 m grid and is never a colour, as layer 1's own
+  spec allowed for from the start. A cell is vegetated where the green share of the readable land within about
+  5 m is 35% or more; land under buildings, within 1.5 m of a surveyed crown or in deep shadow is not read and
+  takes its surroundings' answer. So a street tree does not turn its pavement into lawn, and a lawn keeps its
+  dry patches.
+- **The thresholds were set on the land OSM does class**, and three new data checks measure the same on every
+  build: GC1 the photo covers the area (100%); GC2 of OSM's squares, car parks and rail ground, 5.3% come out
+  vegetated (limit 15%); GC3 of OSM's gardens, 79.9% (limit 70%).
+- **A quarter of the unclassed land (25.6%) becomes lawn.**
+- **Limit: the photo is of a dry summer.** A straw-coloured lawn is not told from paving and stays paved: of
+  OSM's own lawns only 40% come out vegetated. A second photo from another season would be a new download;
+  not asked for.
+- **Limit: the photo on disk covers v1's extent**, not the whole commune. GC1 would fail where it does not.
+
+### 28.3 Its tone and its drawing
+
+Measured class by class, in the model's light and with no tree in front, on v1's art and on the T4 paintings,
+which agree with each other:
+
+| Class | v1 against v2's palette | Now |
+|---|---|---|
+| Paving, squares | 0.67 to 0.72 of its brightness, warmer | set to v1's tone |
+| Grass, pitch | 0.82 to 0.83, more olive | set between v2's green and v1's |
+| Meadow, garden, wood, scrub | 0.58 to 0.89 | darkened |
+| Roads | 0.95 to 1.05, warmer | not changed (step 2) |
+
+- The palette's ground colours, and the pedestrian, path and steps colours that lie in the same plane, were
+  changed (`v2/config/palette.json`, each with its source).
+- Paving flags are 2.2 m by 1.1 m (they were 1.5 by 0.75) and square setts 1.4 m, as v1 drew paving; lawns keep
+  their patches and lose half their flecks (`v2/layers/detail.py`).
+- **Chosen by measurement, then by eye.** The measured tone of unclassed "paving" was olive, because much of it
+  was vegetation; I set paving from the squares' tone instead.
+
+![Code art, before and now: Clausen, Grund, the old town](img/test_ground_before_now.jpg)
+![Close up: v1's art, the T4 painting, v2's code art before this step](img/test_ground_v1_closeups.jpg)
+
+### 28.4 The builds
+
+| | Ground cover | Ground cover and tones |
+|---|---|---|
+| Release | `6a8e21900358` | `66735929c193` (current) |
+| Stages | 59 of 59 (two new) | 59 of 59 |
+| Stage time, alone at low priority | 53.4 min | 49.7 min |
+| Gate entries | pass, 0 fail | 283 pass, 0 fail |
+
+- No threshold was changed. No shading on the ground: 0.8% between north and south slopes (limit 2%). No baked
+  light: 0 of 227, worst 4.0% on buildings, 1.8% on the ground.
+- Lines and speed as before: edges 96.3%, window rows 99.8%; 90 and 94 frames a second.
+- Tests: 4 new (168 in all, all pass).
+
+**The painted area on the new ground** (`targets --source T4`, `gates --source T4`): 101 pictures, even light 0
+fail; the build's line, shadow and vehicle checks pass (edges 96.5%, 0 of 227 at worst 4.3%, 0 vehicles); the
+detector on each whole picture now marks none of the 101 (it marked 3 in section 27.3).
+
+### 28.5 Not done
+
+- Asphalt (step 2) and trees (step 3). The close ups show the trees are the largest difference left: v1's are
+  bushy clumps with bright tops, dark undersides and heavy outlines, with no trunk showing; v2's are tall ovals
+  on trunks.
+- The dry lawns (section 28.2).
+- I looked at three views before and after; not at every part of the area.
+
+### 28.6 Open questions
+
+44, 46, 60 and 61 stand.
+
+62. **Is the ground right now**, and shall I go on to the asphalt?

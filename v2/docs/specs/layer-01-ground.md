@@ -3,7 +3,7 @@
 **Purpose.** The colour of the land: pavements, squares, parks, gardens, lawns, woods, fields, car parks, sports
 grounds, rail ground, building sites, under everything else. **Made by:** code (phase 1).
 
-**Inputs.** Scene terrain (`terrain.npz`), OSM land use (`fetch_osm_ground`: landuse, leisure, natural, amenity,
+**Inputs.** Scene terrain (`terrain.npz`), the scene's ground cover (`groundcover.npz`), OSM land use (`fetch_osm_ground`: landuse, leisure, natural, amenity,
 place=square, area:highway), the palette (`ground.*`), paper grain. The orthophoto may be used to *classify* only
 (lawn vs paving where OSM is silent), never as colour, so no car or shadow in the photo can reach the layer.
 
@@ -12,8 +12,9 @@ needed (layer 5 covers them), but the ground is complete under them so a buildin
 
 **Rules.**
 1. One class per pixel, from OSM areas in a fixed priority (water > pitch > wood > scrub > meadow > garden >
-   cemetery > grass > square > parking > rail ground > building site > paved); unclassified land: paved inside the
-   built-up area, meadow outside. One class is not from OSM: **rock**, the scene's cliff cells (terrain class 2:
+   cemetery > grass > square > parking > rail ground > building site > paved); unclassified land: inside the
+   built-up area a lawn (class grass) where the orthophoto shows vegetated ground (`scene_groundcover`, scene.md
+   "Ground cover"; owner, 23 Nov 2026) and paved elsewhere; meadow outside. One class is not from OSM: **rock**, the scene's cliff cells (terrain class 2:
    60° or steeper with a drop of 2.5 m or more), whatever the land use says of them, except under water (phase 3).
 2. Colour = the class's palette colour, with paper grain (±3% luminance, fixed seed per tile position, seamless),
    and the class's drawn detail (phase 3, `v2/layers/detail.py`): stone slabs on paved land, setts on squares,

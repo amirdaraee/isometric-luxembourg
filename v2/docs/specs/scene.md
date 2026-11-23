@@ -46,6 +46,24 @@ See facades.md. Checks F1–F7.
 - **Output:** `trees.npz` (e, n, base_z, height, crown_r, crown_r_shape, crown_r_measured, type, uuid).
 - **Checks:** TE1–TE8.
 
+## Ground cover (`scene_groundcover`)
+
+Vegetated ground where OSM classes nothing (owner, 23 Nov 2026: v1's ground; layer-01 rule 1). The orthophoto
+(2023, the tiles v1 downloaded, about 0.39 m a pixel) classes the land; it is never a colour.
+
+1. A grid of 0.5 m over the area. A cell is *readable* where the photo has a tile and shows ground that can be
+   told: not under a building's footprint, not within 1.5 m of a surveyed tree's measured crown, not in deep
+   shadow.
+2. A readable cell is *green* where its excess green, (2g − r − b) / (r + g + b), is over 0.07.
+3. A cell is *vegetated* where the green share of the readable land within about 5 m (a Gaussian) is 35% or
+   more. A cell with no readable land in reach takes the nearest decided cell's answer. So a lawn keeps its dry
+   patches, a square keeps its planter, and a street tree's crown does not turn its pavement into lawn.
+4. Patches and holes under 20 m² are dropped.
+
+`groundcover.npz`: `veg`, `photo` (a tile there), `e0`, `n0`, `step`. Limits: the photo is of a dry summer, so a
+straw-coloured lawn is not told from paving and stays paved; the photo on disk covers v1's extent, not yet the
+whole commune (GC1 fails where it does not).
+
 ## Places (`scene_places`)
 v1's 129 landmark cards and 1,035 places, streets and pins, from v1 pixels back to LUREF by the ray inversion on
 v1's own terrain (camera.md), then given the LiDAR 2024 height and v2 pixels; v1 pixels are kept for links.
