@@ -165,7 +165,7 @@ def test_a_marked_crossing_is_striped_on_the_carriageway_only():
     R2_, cv2, c2 = road_scene(crossing="")
     rgb2, _, _ = R2_._draw_transport(cv2, bridge=False)
     w2 = (np.abs(rgb2.astype(int) - white).max(-1) == 0)
-    assert not any(w2[px(c2 + (5, d))] for d in np.arange(-2.9, 2.9, 0.125) if abs(d) > 0.3)   # no word, no stripes
+    assert not any(w2[px(c2 + (5, d))] for d in np.arange(-2.9, 2.9, 0.125) if abs(d) > 0.3)   # unmarked: no stripes
 
 
 def test_streets_have_a_kerb_and_driveways_do_not():

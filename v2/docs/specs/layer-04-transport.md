@@ -21,8 +21,8 @@ lossless "drivable" id tile set (edge id per pixel) for the vehicle check.
    with sleepers, tram tracks as grooved lines, steps as treads across the width.
    Crossings: a way the graph marks (`crossing`: "zebra", from OSM, see transport-graph.md) is striped where it lies
    on a carriageway: bars of 0.5 m with gaps of 0.5 m along the walking line, each as long as the way is wide (3 m at
-   least), in the lane dash's colour. Nothing is striped off the asphalt, and a crossing OSM does not say is marked
-   gets nothing.
+   least), in the lane dash's colour. Nothing is striped off the asphalt, and a crossing OSM calls unmarked gets
+   nothing.
    Surfaces on the ground carry drawn detail (phase 3): setts on pedestrian streets, paths and steps; on asphalt a
    soft wash, its tone drifting by a few per cent over 3 m and 11 m with no grain from pixel to pixel
    (`detail.asphalt`), from each pixel's place on the ground. Bridge decks carry the same wash.
