@@ -689,3 +689,50 @@ def test_what_a_layer_holds_behind_another_layer_takes_its_materials_painted_col
     assert (got[(ids >> 8) == 2] == 90).all() and (got[hid] == 90).all()   # shown and hidden alike: 100 x 90 / 100
     assert (got[(ids >> 8) == 1] == 200).all() and (got[ids == 0] == 100).all()
     assert json.loads((out.parent / "current.json").read_text())["hidden_px_tinted"] == 100 * 100
+
+
+def _roof_rows(g, b=1):
+    roof = ((g["ids"] & 255) == 23) & ((g["ids"] >> 8) == b)
+    return roof, np.flatnonzero(roof.any(1)), np.flatnonzero(roof.any(0))
+
+
+def test_a_narrow_painted_shadow_on_the_models_shadow_line_is_no_part_of_the_texture():
+    """A shadow the painting kept as a band along a roof's foot, narrower than the texture's own reach: with the
+    3D model's shadow given (cast), the texture is read on each side of its line apart and the band is gone;
+    without it the band comes through as a darker strip."""
+    code, g = scene()
+    roof, rows, cols = _roof_rows(g)
+    band = roof.copy(); band[: rows[-1] - 7] = False                    # the roof's lowest 8 rows
+    paint = painting_of(code, g).astype(float); paint[band] *= 0.87
+    paint = paint.astype(np.uint8)
+    inside = np.zeros(roof.shape, bool); inside[:, cols[0] + 6:cols[-1] - 5] = True
+    low = band & inside; low[rows[-1] - 1:] = False; low[: rows[-1] - 5] = False        # the band's middle rows
+    high = roof & inside & ~band; high[: rows[-1] - 16] = False; high[rows[-1] - 9:] = False
+    def ratio(out):
+        L = D.lum(out.astype(float))
+        return float(np.median(L[low]) / np.median(L[high]))
+    assert ratio(paint) < 0.9                                            # the painting has it
+    assert ratio(D.transfer(code, paint, g, p=D.SURFACE)[0]) < 0.96      # and so had the picture
+    assert abs(ratio(D.transfer(code, paint, g, p=D.SURFACE, cast=band)[0]) - 1) < 0.02
+    # a cast shadow where the painting has none changes nothing but the grain's own mean
+    flat = painting_of(code, g)
+    a, b = D.transfer(code, flat, g, p=D.SURFACE)[0], D.transfer(code, flat, g, p=D.SURFACE, cast=band)[0]
+    assert abs(ratio(a) - 1) < 0.02 and abs(ratio(b) - 1) < 0.02
+
+
+def test_a_parts_colour_is_read_in_the_light_at_its_middle_tone_and_in_the_shade_as_before():
+    """SURFACE: where the 3D model says the sun falls, a part's colour is the middle of those pixels' brightness
+    (the tone the surface has), not the highlights; a part with too few pixels in the light keeps the upper band."""
+    rng = np.random.default_rng(3)
+    body = np.array([170.0, 150.0, 110.0])
+    px = np.tile(body, (2000, 1)) + rng.normal(0, 4, (2000, 3))
+    px[:300] *= 1.35                                                     # highlights
+    px[300:700] *= 0.35                                                  # windows and ink the painting drew
+    lit = np.ones(2000, bool); lit[700:1100] = False                     # and a part of it in the model's shadow
+    px[700:1100] *= 0.6
+    got = D.part_colour(px, lit, "wall", D.SURFACE)
+    assert abs(D.lum(got) / D.lum(body) - 1) < 0.06                      # the body's tone (a fifth of the lit pixels are highlights)
+    assert D.lum(D.part_colour(px, lit, "wall", D.P)) > D.lum(body) * 1.08   # the upper band read into the highlights
+    few = np.zeros(2000, bool); few[:20] = True                          # a wall seen from its shaded side
+    assert np.allclose(D.part_colour(px, few, "wall", D.SURFACE), D.band_colour(px, D.P["band_wall"]))
+    assert np.allclose(D.part_colour(px, None, "wall", D.SURFACE), D.band_colour(px, D.P["band_wall"]))

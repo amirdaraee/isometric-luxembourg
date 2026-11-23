@@ -307,14 +307,34 @@ def band_colour(px, band):
     return s.mean(0) if len(s) else px.mean(0)
 
 
-def transfer(code, painting, g: dict, have=None, p: dict = P, colours=None):
+def part_colour(px, lit, kind: str, p: dict = P):
+    """A building part's colour out of its painting's pixels. `px`: all of them (rgb rows); `lit`: which of them
+    the 3D model puts in the photo's light (None: not known).
+
+    p["band_lit_" + kind] (SURFACE): the colour is read where the model says the sun is, over the middle of those
+    pixels' brightness: the tone the surface has, not its highlights (the upper band read walls 38% brighter than
+    the painting has them, and roofs light grey for dark slate: report section 27). A part with too few pixels in
+    the light (a wall seen from its shaded side only) is read as before, over the upper band of all of it: its
+    brightest is the nearest it has to its lit colour."""
+    band = p.get("band_lit_" + kind)
+    if band is not None and lit is not None and lit.sum() >= p["min_px"] * 0.5:
+        return band_colour(px[lit], band)
+    return band_colour(px, p["band_" + kind])
+
+
+def transfer(code, painting, g: dict, have=None, p: dict = P, colours=None, cast=None):
     """The code art with each building's wall and roof colour and fine texture taken from the (registered)
     painting. Returns (rgb, {"parts", "skipped", "changed": share of the window's pixels}).
 
     With p["obj"] (SURFACE): the painting gives its surface only. Whatever it drew as a thing of its own on a
     face (a window, a dormer, a skylight, a shadow's edge: where the face, blurred over obj_blur px, is brighter
     or darker than its own tone over obj_sigma px by more than obj) is left out with a margin, softly, so no
-    outline of it stays. Every window, dormer and line is then the code art's."""
+    outline of it stays. Every window, dormer and line is then the code art's.
+
+    With `cast` (photo_shadow: where the 3D model puts a cast shadow for the aerial photo's sun): the texture is
+    the painting's brightness against its local mean on its own side of that shadow line. A shadow the painting
+    kept inside a face is wider than sigma and falls out by itself; one narrower than sigma (a band along a roof's
+    foot), or the step at its edge, does not, and came through as a darker strip (report section 27)."""
     from scipy import ndimage as ndi
     code = code.astype(float); src = painting.astype(float)
     bid, cls, face, seg = segments(g)
@@ -344,7 +364,7 @@ def transfer(code, painting, g: dict, have=None, p: dict = P, colours=None):
             if good.sum() < p["min_px"] * 0.5 or not plain.any():
                 st["skipped"] += 1
                 continue
-            target = band_colour(src[good], p["band_" + kind])
+            target = part_colour(src[good], None if cast is None else ~cast[good], kind, p)
             if colours and (int(b), kind) in colours:                  # the building's one colour (one_colour)
                 target = np.asarray(colours[(int(b), kind)], float)
             base_c = np.median(code[plain], axis=0)
@@ -357,8 +377,16 @@ def transfer(code, painting, g: dict, have=None, p: dict = P, colours=None):
                 mf = (m[sl] & (face[sl] == f) & ~tree[sl]).astype(float)
                 if mf.sum() < 40:
                     continue
-                num = ndi.gaussian_filter(lys[sl] * mf, p["sigma"]); den = ndi.gaussian_filter(mf, p["sigma"])
-                D += np.where(mf > 0, lys[sl] - num / np.maximum(den, 1e-3), 0)
+                # the local mean is taken on each side of the model's shadow line apart (cast): a painted shadow
+                # narrower than sigma, or its edge, is then no part of the texture
+                sides = [mf]
+                if cast is not None:
+                    a, b_ = mf * cast[sl], mf * ~cast[sl]
+                    if min(a.sum(), b_.sum()) >= p.get("cast_min_px", 12):
+                        sides = [a, b_]
+                for ms in sides:
+                    num = ndi.gaussian_filter(lys[sl] * ms, p["sigma"]); den = ndi.gaussian_filter(ms, p["sigma"])
+                    D += np.where(ms > 0, lys[sl] - num / np.maximum(den, 1e-3), 0)
                 if p.get("obj"):
                     near_ = ndi.gaussian_filter(lys[sl] * mf, p["obj_blur"]) / np.maximum(ndi.gaussian_filter(mf, p["obj_blur"]), 1e-3)
                     tone = ndi.gaussian_filter(lys[sl] * mf, p["obj_sigma"]) / np.maximum(ndi.gaussian_filter(mf, p["obj_sigma"]), 1e-3)
@@ -1074,9 +1102,10 @@ def level(rgb, g: dict, min_px=150, colours=None):
     return np.clip(np.round(out), 0, 255).astype(np.uint8)
 
 
-def part_colours(reg, g: dict, p: dict = P) -> dict:
+def part_colours(reg, g: dict, p: dict = P, cast=None) -> dict:
     """What a (placed) painting gives each building for a colour: {(building, "wall" | "roof"): (rgb, pixels)},
-    the colour delit would set it on (the painting's brighter band, trees and borders left out)."""
+    the colour delit would set it on (the painting's brighter band, trees and borders left out); with SURFACE and
+    the model's shadow (cast), part_colour's reading in the light."""
     from scipy import ndimage as ndi
     src = np.asarray(reg, float)
     bid, cls, face, _seg = segments(g)
@@ -1098,7 +1127,7 @@ def part_colours(reg, g: dict, p: dict = P) -> dict:
             continue
         k = int(u[i]) - 1
         kind = "roof" if k % 2 else "wall"
-        out[(k // 2, kind)] = (band_colour(src[sl][m], p["band_" + kind]), int(m.sum()))
+        out[(k // 2, kind)] = (part_colour(src[sl][m], None if cast is None else ~cast[sl][m], kind, p), int(m.sum()))
     return out
 
 
@@ -1119,10 +1148,11 @@ def one_colour(tables: dict) -> dict:
 TWO_TONE = 0.25                                  # delit's two_tone for a target
 # the painting's surface only (owner, 22 Nov 2026: "Model's details, painted surfaces"): transfer's settings
 SURFACE = dict(P, k_wall=1.0, clip_wall=(-0.16, 0.10), k_roof=1.0, clip_roof=(-0.22, 0.14),
-               obj=0.22, obj_blur=2.5, obj_sigma=24.0, obj_grow=3, obj_soft=2.0)
+               obj=0.22, obj_blur=2.5, obj_sigma=24.0, obj_grow=3, obj_soft=2.0,
+               band_lit_wall=(0.5, 0.85), band_lit_roof=(0.3, 0.7))
 
 
-def target(code, painting, g: dict, meta: dict, colours=None, reg=None, two_tone=TWO_TONE, mode="surface") -> dict:
+def target(code, painting, g: dict, meta: dict, colours=None, reg=None, two_tone=TWO_TONE, mode="surface", cast=None) -> dict:
     """A painting made into a picture the build's checks of a painting can pass: placed per building (register),
     its light removed (delit), each building's sides levelled (level), and the code art's own windows drawn in
     (the painting's windows drift from the model's, so they are left out). Where the painting cannot be used (its
@@ -1138,7 +1168,7 @@ def target(code, painting, g: dict, meta: dict, colours=None, reg=None, two_tone
     if reg is None:
         reg = register(code, painting, g)[0]
     if mode == "surface":                               # the model's details, the painting's surfaces
-        sf, st = transfer(code, reg, g, p=SURFACE, colours=colours)
+        sf, st = transfer(code, reg, g, p=SURFACE, colours=colours, cast=cast)
         lv = level(sf, g, colours=colours)
         ink = lum(code.astype(float)) + 1.0 < P["ink"]   # levelling scales a side whole: the code's ink stays its own
         lv[ink] = code[ink]
@@ -1181,7 +1211,7 @@ def targets(source: str = "T1", img: Path | None = None, write=True, one=True, m
     # first every painting placed, and what it would give each building for a colour; then one colour a building
     rdir = base() / "registered" / source
     rdir.mkdir(parents=True, exist_ok=True)
-    tables = {}
+    tables, casts = {}, {}
     src, names, seeds = inputs_dir(source), names_of(source), seeds_of(source)
     shown = set(names)
     if is_area(source):                                    # sheets of the six windows with the most to paint
@@ -1200,7 +1230,9 @@ def targets(source: str = "T1", img: Path | None = None, write=True, one=True, m
             else:
                 reg = register(code, painting, g)[0]
                 Image.fromarray(reg).save(rf)
-            tables[f"{name}_{k}"] = part_colours(reg, g)
+            if mode == "surface" and name not in casts:
+                casts[name] = photo_shadow(g, meta)
+            tables[f"{name}_{k}"] = part_colours(reg, g, SURFACE, casts[name]) if mode == "surface" else part_colours(reg, g)
     colours = one_colour(tables) if one else None
     for name in names:
         code, g, meta = load_input(name, src)
@@ -1208,7 +1240,7 @@ def targets(source: str = "T1", img: Path | None = None, write=True, one=True, m
             if f"{name}_{k}" not in tables:
                 continue
             reg = np.asarray(Image.open(rdir / f"{name}_{k}.png").convert("RGB"))
-            t = target(code, None, g, meta, colours=colours, reg=reg, mode=mode)
+            t = target(code, None, g, meta, colours=colours, reg=reg, mode=mode, cast=casts.get(name))
             res[f"{name}_{k}"] = {s: painting_checks(t[s], g, meta, scene_folder) for s in t if s != "faces"}
             res[f"{name}_{k}"]["faces"] = t["faces"]
             if write:                                      # kept for the detector, the seams and the viewer
