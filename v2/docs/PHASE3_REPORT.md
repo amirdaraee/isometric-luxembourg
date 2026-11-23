@@ -2559,3 +2559,102 @@ pilot the plan asks for first would be about $4.50.
     a bus at 0.101 against 0.10): list each as an exception with its reason, or have me look for a cause to
     fix in the method first?
 60. **Which art for the city** (gate G2, question 44): the code art, or painted this way?
+
+## 27. The two narrow failures fixed, and the painted area closer to v1's colour (23 November, $0)
+
+Branch `v2-phase3-paint-gates`. **Spent: $0.** No pod. The owner's answers of 23 November to section 26: the
+painted area "looks good"; merge PR #24 "do it" (merged as 31fe13e, CI green); the two narrow failures "fix
+them"; which art for the city "show pictures side by side". Then, on seeing them: "the colors in v1 are more
+alive, can we do something about it?"
+
+### 27.1 The roof that failed the shadow detector
+
+- **The cause.** The painting kept a shadow as a band about 5 px wide along that roof's foot. The texture is
+  the painting's brightness against its local mean over 7 px, so a shadow wider than that falls out and one
+  narrower does not. On the exact strip the detector read, the picture was 5.5% darker in the model's shadow
+  than beside it; the painting itself is 4.2% darker there; with no painted texture the picture is 0.8%, as
+  the code art is.
+- **The fix.** The 3D model's shadow for the aerial photo's sun is known. The local mean is now taken on each
+  side of that shadow line apart (`transfer`, `cast`; `v2/bakeoff/detail.py`). The strip: 0.9%.
+- **Tried and taken out again:** levelling the shadow's pixels to the lit ones per building part (it moved
+  nothing: the residue is local, not over the whole shadow), and bringing the kept texture to a mean of
+  nothing per face (no effect on the strip, and none in a test made for it).
+- **The build's shadow detector on the painted tiles: 0 of 227, the worst 4.3%** (it was 1 at 5.2%; the code
+  art is 0, worst 4.0%).
+
+### 27.2 The colour, against v1
+
+Measured on the old town, the same ground in each (brightness and saturation from 0 to 1):
+
+| | Buildings, brightness | Buildings, saturation a pixel | Darkest and lightest twentieth |
+|---|---|---|---|
+| v1's finished art | 0.47 | 0.25 | 0.13 to 0.85 |
+| T4's painting, as painted | 0.44 | 0.27 | 0.10 to 0.86 |
+| v2 painted in the viewer, before | 0.53 | 0.17 | 0.18 to 0.82 |
+| v2 painted in the viewer, now | **0.46** | 0.20 | 0.18 to 0.75 |
+
+- **The model paints as vividly as v1.** The colour was lost in making the picture.
+- **The cause found: each part's colour was read at its highlights.** The upper band of a part's brightness
+  (walls 70% to 95%) was taken as "the lit side". It read walls 38% brighter than the painting has them and
+  roofs light grey for dark slate.
+- **The fix.** A part's colour is read where the 3D model says the sun falls, over the middle of those pixels'
+  brightness (walls 50% to 85%, roofs 30% to 70%): the tone the surface has. A part with too few pixels in the
+  light is read as before (`part_colour`, `SURFACE`). No building came out dark on the window tried; a first
+  try (the most common tone of all pixels) turned three walls black and was dropped.
+- **What it does not close.** Averaged over an area the painted colours are as saturated as v1's (walls 0.27
+  against 0.22). What v1 has more of is difference from pixel to pixel and a wider run from dark to light:
+  ink, shading inside a face, deep street shadows. The darkest tone in v2 is its ink line (0.18).
+- **Not the light.** The viewer's daylight already tints the shade blue and has about v1's contrast between
+  lit and shaded faces (the painting: walls 144 lit against 122 in the model's shadow, roofs 114 against 82).
+  It was not changed.
+
+![v1's art, v2 painted before, v2 painted now: the old town at the photo's hour](img/test_area_painted_against_v1.jpg)
+![One window: the painting, the picture before, the picture now (no light)](img/test_area_painted_colour_reading.jpg)
+
+### 27.3 The whole area made again, and its checks
+
+| Check | Section 26 | Now |
+|---|---|---|
+| Pictures: even light (5% per building) | 0 of 101 fail, worst 1.1% | 0 of 101 fail, worst 1.4% |
+| Pictures: window rows (95%) | least 98.9% | least 96.3% |
+| Pictures: building edges (95%) | 91 of 101 | 86 of 101; the least 79.9%, the median 96.7% |
+| Pictures: one building in two neighbouring windows, median | 0.22% | 0.17%; 0.84% over 5% |
+| Pictures: vehicles (the build's detector on each picture) | 0 of 101 | **3 of 101**, see below |
+| Build: lines (edges, window rows, tracery; 95%) | 97.4%, 99.8%, 99.5% | **pass**: 96.5%, 99.8%, 99.5% |
+| Build: baked light (of 227) | 1 fails, 5.2% | **pass**: 0, worst 4.3% |
+| Build: vehicles on every tile of every colour layer | 1 fails, 0.101 | **pass**: 0 |
+
+- **The rooftop storey read as a bus is gone.** Its roof had been read too pale; at its own tone the detector
+  stays under 0.10. This is the same cause as section 27.2, not a change made for the detector.
+- **The three pictures the detector marks are not the gate**, and none is a vehicle: a strip of wall at one
+  picture's edge (0.106), and one small building in two pictures (0.124, 0.136). That building is a dark blue
+  shelter beside the railway; the aerial photo shows it dark blue, the code art drew it pink, and at its own
+  colour, whole in a picture with the road beside it, it reads as a bus. On the tiles, where the gate reads
+  each layer by itself, the detector finds nothing.
+- **Edges on dark roofs.** With roofs at their own tone the ink line stands out less from them, and the line
+  score falls on some pictures. The build's score over the whole area passes (96.5% against 95%; the code art
+  96.3%).
+- Tests: 2 new (164 in all, all pass).
+
+### 27.4 The side-by-side pictures
+
+Eight views of the test area photographed in the viewer, code art beside painted, and the old town against
+v1's art, on one private page for the owner (not in the repository). The viewers: painted
+`python -m v2.view test_painted --port 5175`, code art `python -m v2.view test --port 5176`.
+
+### 27.5 Limits, said plainly
+
+- v1 still has the wider run from dark to light (section 27.2). Closing it means either deeper darks in the
+  ink and the windows, more of the painting's own shading inside a face (against the even-light rule), or a
+  change to the look's grade. None was tried.
+- The ground, the cliffs and the trees are the code art's in both; in v1's art they are darker and greener.
+- The pictures against v1 are not framed to the pixel alike.
+- I looked at the old town and at the eight views; not at every part of the area at the new colours.
+
+### 27.6 Open questions
+
+44 and 46 stand. 59 is answered (both fixed by a cause; nothing listed as an exception).
+
+60. **Which art for the city** (gate G2): the code art, or painted this way?
+61. **More of v1's contrast** (deeper darks, a wider run from dark to light): try it, or is the painted area
+    alive enough now?

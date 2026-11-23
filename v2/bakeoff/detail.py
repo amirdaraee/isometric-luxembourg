@@ -307,6 +307,21 @@ def band_colour(px, band):
     return s.mean(0) if len(s) else px.mean(0)
 
 
+def part_colour(px, lit, kind: str, p: dict = P):
+    """A building part's colour out of its painting's pixels. `px`: all of them (rgb rows); `lit`: which of them
+    the 3D model puts in the photo's light (None: not known).
+
+    p["band_lit_" + kind] (SURFACE): the colour is read where the model says the sun is, over the middle of those
+    pixels' brightness: the tone the surface has, not its highlights (the upper band read walls 38% brighter than
+    the painting has them, and roofs light grey for dark slate: report section 27). A part with too few pixels in
+    the light (a wall seen from its shaded side only) is read as before, over the upper band of all of it: its
+    brightest is the nearest it has to its lit colour."""
+    band = p.get("band_lit_" + kind)
+    if band is not None and lit is not None and lit.sum() >= p["min_px"] * 0.5:
+        return band_colour(px[lit], band)
+    return band_colour(px, p["band_" + kind])
+
+
 def transfer(code, painting, g: dict, have=None, p: dict = P, colours=None, cast=None):
     """The code art with each building's wall and roof colour and fine texture taken from the (registered)
     painting. Returns (rgb, {"parts", "skipped", "changed": share of the window's pixels}).
@@ -349,7 +364,7 @@ def transfer(code, painting, g: dict, have=None, p: dict = P, colours=None, cast
             if good.sum() < p["min_px"] * 0.5 or not plain.any():
                 st["skipped"] += 1
                 continue
-            target = band_colour(src[good], p["band_" + kind])
+            target = part_colour(src[good], None if cast is None else ~cast[good], kind, p)
             if colours and (int(b), kind) in colours:                  # the building's one colour (one_colour)
                 target = np.asarray(colours[(int(b), kind)], float)
             base_c = np.median(code[plain], axis=0)
@@ -1087,9 +1102,10 @@ def level(rgb, g: dict, min_px=150, colours=None):
     return np.clip(np.round(out), 0, 255).astype(np.uint8)
 
 
-def part_colours(reg, g: dict, p: dict = P) -> dict:
+def part_colours(reg, g: dict, p: dict = P, cast=None) -> dict:
     """What a (placed) painting gives each building for a colour: {(building, "wall" | "roof"): (rgb, pixels)},
-    the colour delit would set it on (the painting's brighter band, trees and borders left out)."""
+    the colour delit would set it on (the painting's brighter band, trees and borders left out); with SURFACE and
+    the model's shadow (cast), part_colour's reading in the light."""
     from scipy import ndimage as ndi
     src = np.asarray(reg, float)
     bid, cls, face, _seg = segments(g)
@@ -1111,7 +1127,7 @@ def part_colours(reg, g: dict, p: dict = P) -> dict:
             continue
         k = int(u[i]) - 1
         kind = "roof" if k % 2 else "wall"
-        out[(k // 2, kind)] = (band_colour(src[sl][m], p["band_" + kind]), int(m.sum()))
+        out[(k // 2, kind)] = (part_colour(src[sl][m], None if cast is None else ~cast[sl][m], kind, p), int(m.sum()))
     return out
 
 
@@ -1132,7 +1148,8 @@ def one_colour(tables: dict) -> dict:
 TWO_TONE = 0.25                                  # delit's two_tone for a target
 # the painting's surface only (owner, 22 Nov 2026: "Model's details, painted surfaces"): transfer's settings
 SURFACE = dict(P, k_wall=1.0, clip_wall=(-0.16, 0.10), k_roof=1.0, clip_roof=(-0.22, 0.14),
-               obj=0.22, obj_blur=2.5, obj_sigma=24.0, obj_grow=3, obj_soft=2.0)
+               obj=0.22, obj_blur=2.5, obj_sigma=24.0, obj_grow=3, obj_soft=2.0,
+               band_lit_wall=(0.5, 0.85), band_lit_roof=(0.3, 0.7))
 
 
 def target(code, painting, g: dict, meta: dict, colours=None, reg=None, two_tone=TWO_TONE, mode="surface", cast=None) -> dict:
@@ -1194,7 +1211,7 @@ def targets(source: str = "T1", img: Path | None = None, write=True, one=True, m
     # first every painting placed, and what it would give each building for a colour; then one colour a building
     rdir = base() / "registered" / source
     rdir.mkdir(parents=True, exist_ok=True)
-    tables = {}
+    tables, casts = {}, {}
     src, names, seeds = inputs_dir(source), names_of(source), seeds_of(source)
     shown = set(names)
     if is_area(source):                                    # sheets of the six windows with the most to paint
@@ -1213,7 +1230,9 @@ def targets(source: str = "T1", img: Path | None = None, write=True, one=True, m
             else:
                 reg = register(code, painting, g)[0]
                 Image.fromarray(reg).save(rf)
-            tables[f"{name}_{k}"] = part_colours(reg, g)
+            if mode == "surface" and name not in casts:
+                casts[name] = photo_shadow(g, meta)
+            tables[f"{name}_{k}"] = part_colours(reg, g, SURFACE, casts[name]) if mode == "surface" else part_colours(reg, g)
     colours = one_colour(tables) if one else None
     for name in names:
         code, g, meta = load_input(name, src)
@@ -1221,8 +1240,7 @@ def targets(source: str = "T1", img: Path | None = None, write=True, one=True, m
             if f"{name}_{k}" not in tables:
                 continue
             reg = np.asarray(Image.open(rdir / f"{name}_{k}.png").convert("RGB"))
-            t = target(code, None, g, meta, colours=colours, reg=reg, mode=mode,
-                       cast=photo_shadow(g, meta) if mode == "surface" else None)
+            t = target(code, None, g, meta, colours=colours, reg=reg, mode=mode, cast=casts.get(name))
             res[f"{name}_{k}"] = {s: painting_checks(t[s], g, meta, scene_folder) for s in t if s != "faces"}
             res[f"{name}_{k}"]["faces"] = t["faces"]
             if write:                                      # kept for the detector, the seams and the viewer

@@ -718,3 +718,21 @@ def test_a_narrow_painted_shadow_on_the_models_shadow_line_is_no_part_of_the_tex
     flat = painting_of(code, g)
     a, b = D.transfer(code, flat, g, p=D.SURFACE)[0], D.transfer(code, flat, g, p=D.SURFACE, cast=band)[0]
     assert abs(ratio(a) - 1) < 0.02 and abs(ratio(b) - 1) < 0.02
+
+
+def test_a_parts_colour_is_read_in_the_light_at_its_middle_tone_and_in_the_shade_as_before():
+    """SURFACE: where the 3D model says the sun falls, a part's colour is the middle of those pixels' brightness
+    (the tone the surface has), not the highlights; a part with too few pixels in the light keeps the upper band."""
+    rng = np.random.default_rng(3)
+    body = np.array([170.0, 150.0, 110.0])
+    px = np.tile(body, (2000, 1)) + rng.normal(0, 4, (2000, 3))
+    px[:300] *= 1.35                                                     # highlights
+    px[300:700] *= 0.35                                                  # windows and ink the painting drew
+    lit = np.ones(2000, bool); lit[700:1100] = False                     # and a part of it in the model's shadow
+    px[700:1100] *= 0.6
+    got = D.part_colour(px, lit, "wall", D.SURFACE)
+    assert abs(D.lum(got) / D.lum(body) - 1) < 0.06                      # the body's tone (a fifth of the lit pixels are highlights)
+    assert D.lum(D.part_colour(px, lit, "wall", D.P)) > D.lum(body) * 1.08   # the upper band read into the highlights
+    few = np.zeros(2000, bool); few[:20] = True                          # a wall seen from its shaded side
+    assert np.allclose(D.part_colour(px, few, "wall", D.SURFACE), D.band_colour(px, D.P["band_wall"]))
+    assert np.allclose(D.part_colour(px, None, "wall", D.SURFACE), D.band_colour(px, D.P["band_wall"]))
