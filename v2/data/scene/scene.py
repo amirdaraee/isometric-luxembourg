@@ -14,7 +14,7 @@ from v2.config.camera import camera, en_to_px
 from v2.data.geo import area_polygon
 
 PARTS = ("scene_terrain", "scene_water", "scene_buildings", "scene_facades", "scene_trees", "scene_places",
-         "scene_transport", "scene_structures", "scene_transit")
+         "scene_transport", "scene_structures", "scene_transit", "scene_groundcover")
 
 
 def build(ctx):
