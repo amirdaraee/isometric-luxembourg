@@ -351,3 +351,90 @@ def test_dormer_windows_come_after_every_other_wall_and_in_one_order():
     order = np.random.default_rng(3).permutation(len(T2))                       # the triangles in another order
     b = dormer_fronts(V2, T2[order], k2[order], b2[order], (0.0, 0.0), blds, params()["facades"])
     assert a == b
+
+
+# ------------------------------------------------------------------ landmarks as they are (rules 31 to 35)
+def _lm_wall(b0, b1, n, H, z0=300.0, name="w", **kw):
+    L = float(np.hypot(b1[0] - b0[0], b1[1] - b0[1]))
+    return dict({"building": "B", "wall": name, "base": [[*b0, z0], [*b1, z0]], "normal": list(n), "length": L, "height": H,
+                 "outline": [[0, 0], [L, 0], [L, H], [0, H], [0, 0]], "windows": [[1.0, 2.6, 2.0, 8.0, "lancet"]],
+                 "doors": [], "merged": [name], "worship": "pointed", "tower": False,
+                 "buttresses": [[4.0, 0.0, 4.8, 6.0]], "courses": [2.25]}, **kw)
+
+
+def _lm(walls, datum=300.0):
+    return {"buildings": {"B": {"name": "a church", "datum": datum, "walls": walls}}}
+
+
+def test_a_described_walls_openings_replace_the_rules_in_metres_from_its_left_end():
+    from v2.data.scene import landmarks
+    # a wall that looks south: seen from outside (from the south) its left end is its west end
+    w = _lm_wall((100.0, 50.0), (110.0, 50.0), (0.0, -1.0), 12.0)
+    other = _lm_wall((100.0, 60.0), (110.0, 60.0), (0.0, 1.0), 12.0, name="north")
+    out = [w, other]
+    rep = landmarks.apply(out, _lm([{"name": "south", "at": [100.0, 50.0], "facing": 180, "measured": "photo", "courses": [4.0],
+                                    "openings": [["traceried", 2.0, 4.0, 5.0, 10.0, "pointed"], ["lancet", 6.0, 7.0, 1.0, 3.0, "flat"]]}]))["B"]
+    assert rep["walls"] == 1 and rep["openings"] == {"traceried": 1, "lancet": 1} and rep["measured"] == {"photo": 1}
+    assert not (rep["unmatched"] or rep["outside"] or rep["overlapping"] or rep["turned"])
+    assert w["windows"] == [[2.0, 5.0, 4.0, 10.0, "traceried", "pointed"], [6.0, 1.0, 7.0, 3.0, "lancet", "flat"]]
+    assert w["landmark"] == "south" and w["buttresses"] == [] and w["courses"] == [4.0]
+    assert other["windows"] == [[1.0, 2.6, 2.0, 8.0, "lancet"]] and "landmark" not in other      # not described: the rule's
+
+
+def test_heights_are_from_the_datum_and_a_wall_standing_on_a_roof_takes_them_from_its_own_foot():
+    from v2.data.scene import landmarks
+    w = _lm_wall((100.0, 50.0), (110.0, 50.0), (0.0, -1.0), 10.0, z0=312.0)
+    rep = landmarks.apply([w], _lm([{"name": "upper", "at": [100.0, 50.0], "facing": 180, "measured": "capture",
+                                    "openings": [["belfry", 4.0, 5.0, 16.0, 20.0, "round"]]}]))["B"]
+    assert rep["walls"] == 1 and w["windows"] == [[4.0, 4.0, 5.0, 8.0, "belfry", "round"]]
+
+
+def test_a_wall_whose_normal_points_the_wrong_way_is_turned_to_the_bearing_given():
+    from v2.data.scene import landmarks
+    # the record says the wall looks north; the source shows its outside looks south. Left end seen from the south: west
+    w = _lm_wall((110.0, 50.0), (100.0, 50.0), (0.0, 1.0), 12.0)
+    w["doors"] = [[1.0, 0.0, 2.0, 2.2, "rule"]]
+    rep = landmarks.apply([w], _lm([{"name": "s", "at": [100.0, 50.0], "facing": 180, "measured": "photo",
+                                    "openings": [["lancet", 6.0, 7.0, 5.0, 9.0, "round"]]}]))["B"]
+    assert rep["turned"] == ["s"] and w["normal"] == [0.0, -1.0] and w["base"][0][:2] == [100.0, 50.0]
+    assert w["windows"] == [[6.0, 5.0, 7.0, 9.0, "lancet", "round"]]
+    assert w["doors"] == [[8.0, 0.0, 9.0, 2.2, "rule"]]                 # the door stays where it stands in the world
+    corners = window_world(w, w["windows"][0][:4])
+    assert corners[0][:2] == (106.0, 50.0) and corners[0][2] == 305.0
+
+
+def test_what_does_not_fit_is_listed_and_not_drawn():
+    from v2.data.scene import landmarks
+    w = _lm_wall((100.0, 50.0), (110.0, 50.0), (0.0, -1.0), 12.0)
+    rep = landmarks.apply([w], _lm([
+        {"name": "south", "at": [100.0, 50.0], "facing": 180, "measured": "photo",
+         "openings": [["lancet", 2.0, 3.0, 5.0, 9.0, "pointed"], ["lancet", 2.5, 3.5, 6.0, 8.0, "pointed"],      # over the first
+                      ["lancet", 9.5, 10.5, 5.0, 9.0, "pointed"]]},                                                # past the end
+        {"name": "nowhere", "at": [300.0, 50.0], "facing": 180, "measured": "photo", "openings": []},
+        {"name": "east?", "at": [100.0, 50.0], "facing": 90, "measured": "photo", "openings": []},
+        {"name": "no head", "at": [100.0, 50.0], "facing": 180, "measured": "photo", "openings": [["lancet", 1, 2, 1, 2]]},
+    ]))["B"]
+    assert w["windows"] == [[2.0, 5.0, 3.0, 9.0, "lancet", "pointed"]]
+    assert len(rep["overlapping"]) == 1 and len(rep["outside"]) == 1
+    assert [x[0] for x in rep["unmatched"]] == ["nowhere", "east?", "no head"]
+    assert rep["walls"] == 1 and rep["described"] == 4
+
+
+def test_of_two_walls_in_one_plane_the_one_that_holds_the_openings_is_the_wall():
+    from v2.data.scene import landmarks
+    low = _lm_wall((100.0, 50.0), (110.0, 50.0), (0.0, -1.0), 8.0, name="low")
+    high = _lm_wall((100.0, 50.0), (110.0, 50.0), (0.0, -1.0), 10.0, z0=312.0, name="high")
+    rep = landmarks.apply([low, high], _lm([{"name": "tower", "at": [100.0, 50.0], "facing": 180, "measured": "photo",
+                                            "openings": [["belfry", 4.0, 5.0, 16.0, 20.0, "round"]]}]))["B"]
+    assert rep["walls"] == 1 and high.get("landmark") == "tower" and "landmark" not in low
+
+
+def test_the_cathedrals_description_is_well_formed():
+    from v2.data.scene import landmarks
+    data = landmarks.load()
+    for b in data["buildings"].values():
+        assert b["sources"] and isinstance(b["datum"], float)
+        names = [d["name"] for d in b["walls"]]
+        assert len(names) == len(set(names))
+        for d in b["walls"]:
+            assert landmarks.bad_description(d) is None, d["name"]

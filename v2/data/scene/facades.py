@@ -32,11 +32,17 @@ Windows are known positions, straight by construction (PLAN_V2 section 6). For e
      one window, centred, sized to the face, kept only when it lies inside the face's outline (`dormer_fronts`).
      Each such front is a record of its own after every other wall ("dormer": true), so every other opening
      keeps its place in the order.
+  8. Landmarks as they are (rules 31 to 35; the owner's decision of 23 Nov 2026). The church rule is a layout, not
+     a survey. A building entered in v2/data/structures/landmark_facades.json has its walls described one by one
+     from named sources; each description's openings replace the rule's on the joined wall it names
+     (landmarks.py). A wall that is not described keeps the rule.
 Output facades.json: per wall {building, wall id, base [e, n, z] x 2, normal [e, n], length, height, floors, bays,
 party, windows: [[u0, v0, u1, v1], ...]}; a church's walls also "worship" (the head of its windows) and "house_rule"
 (what the house rule had given the wall: see `build`), its joined walls "merged", windows with their kind
 ([u0, v0, u1, v1, "lancet" | "traceried" | "oculus" | "rose" | "belfry"]), "tower", "front", "buttresses" and
-"courses"; and "worship": the places of worship, by building id, each with its entrance front and how it was told.
+"courses"; a described wall also "landmark" (the description's name) and "measured", and its windows their head
+([..., kind, "pointed" | "round" | "flat"]); "worship": the places of worship, by building id, each with its entrance
+front and how it was told; and "landmarks": per described building what was set and what did not fit.
 """
 from __future__ import annotations
 
@@ -389,6 +395,9 @@ def build(ctx):
                         "buttresses": g["buttresses"], "courses": g["courses"]})
             n_church["joined"] += 1
             n_church["windows"] += len(g["windows"])
+    # landmarks as they are (rule 31): a described wall's openings in place of the rule's
+    from v2.data.scene import landmarks
+    landmark_out = landmarks.apply(out)
     worship_out = {}
     for j, f in sorted(found.items()):
         ws = [w for w in out if w["building"] == blds[j]["id"] and w.get("worship")]
@@ -408,7 +417,7 @@ def build(ctx):
     dorm = dormer_fronts(mesh["verts"], mesh["tris"], mesh["tri_kind"], mesh["tri_bld"], mesh["origin_en"], blds, p)
     out.extend(dorm)
     ctx.write_json("facades.json", {"rule": p, "walls": out, "unplaced_entrances": unplaced,
-                                    "commercial_streets": commercial, "worship": worship_out,
+                                    "commercial_streets": commercial, "worship": worship_out, "landmarks": landmark_out,
                                     "worship_exceptions": worship.load_exceptions()})
     return {"walls": len(out), "with_windows": sum(1 for w in out if w["windows"]), "party_walls": int(party.sum()),
             "dormer_windows": len(dorm), "buildings_with_dormer_windows": len({w["building"] for w in dorm}),
@@ -418,7 +427,9 @@ def build(ctx):
             "church_windows": n_church["windows"], "church_walls_turned": n_church["turned"],
             "church_party_walls_freed": n_church["freed"],
             "church_portals": sum(1 for v in worship_out.values() if v["front"]["portal"]),
-            "house_windows_replaced": n_church["house_windows"], "shopfronts_removed_from_churches": n_church["shopfronts"]}
+            "house_windows_replaced": n_church["house_windows"], "shopfronts_removed_from_churches": n_church["shopfronts"],
+            "landmark_walls": sum(v["walls"] for v in landmark_out.values()),
+            "landmark_openings": sum(sum(v["openings"].values()) for v in landmark_out.values())}
 
 
 def window_world(w, win):
