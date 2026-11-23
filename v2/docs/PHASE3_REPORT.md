@@ -2319,3 +2319,126 @@ the spire is green.
 58. **The three churches' wall colours** (cream, ochre and white render in place of bare stone; a line each in
     `landmark_styles.json`, and Sainte-Cunégonde's stone tower would need the walls of one church in two
     materials; $0)?
+
+## 25. The three churches' wall colours, and the whole test area's paint job (23 November, $0)
+
+Branch `v2-phase3-church-colours`. **Spent: $0.** No pod. The owner's answers of 23 November to section 24: the
+spire and the three churches are "good enough for v2"; merge PR #22 "yes" (merged as 501873a, CI green); the
+churches' real wall colours "yes"; the quote for painting the whole test area as the next step "yes". That
+answers question 58 and opens question 53.
+
+### 25.1 The wall colours
+
+| Building | Before | Now | From |
+|---|---|---|---|
+| **Saint-Michel** | bare sandstone | cream render, corner stones | the photographs named in `landmark_facades.json` |
+| **Neumünster Abbey with Saint-Jean du Grund** | white render | ochre render, the wings and the church alike | the same |
+| **Sainte-Cunégonde** | bare sandstone | white render; the tower stays coursed sandstone | the same |
+
+- **A correction to section 24.5.** It said all three were drawn in bare sandstone. Saint-Jean du Grund was not:
+  the abbey's entry already made the whole building white. White was wrong too; the photographs show ochre.
+- **How.** A church whose own entry in `v2/data/structures/landmark_styles.json` gives a `facade` colour is
+  rendered in it. Two new keys: `stone_parts` (a name and an outline on the ground: the building's walls
+  standing in it stay sandstone, here Sainte-Cunégonde's tower) and `quoins` (true or false where the
+  photographs show corner stones or none). `v2/layers/art_a.py`; `v2/docs/specs/layer-05-buildings.md`.
+- **The colours are palette colours chosen by eye** from the photographs (`facade_cream`, `facade_ochre`,
+  `facade_white`), not measured from them.
+- **Not done:** Sainte-Cunégonde's buttresses and Saint-Michel's corner stones are stone-coloured in the
+  photographs; here the buttresses are the wall's white with their outline, and the corner stones are the pale
+  trim colour. Sainte-Cunégonde's tower has lighter corner stones on rubble; here it is plain coursed ashlar.
+
+![The three churches: before and now](img/test_church_colours.jpg)
+
+### 25.2 The build
+
+`python -m v2.build test g3`, 50.9 minutes of stage time, run alone at low priority. The release is
+`9de8d10933b1`; `data/v2/test/release/current.json` points at it (`1747d34158bd` is still on disk).
+
+- **57 of 57 stages pass. 280 gate entries pass, 0 fail.** No threshold was changed.
+- No baked light: 0 of 227 materials differ in the photo's shadow (worst 4.0% on buildings, against 5%).
+- Lines: building edges 96.3%, window rows 99.8%, church tracery 99.5%, against 95%.
+- Speed: C2b 93.0 frames a second, X8b 94.7, against 60.
+- Tests: 1 new for the colours and 5 for section 25.3 (160 in all, all pass).
+
+### 25.3 The whole test area's paint job: T4
+
+The plan's step 5 (section 18.3): the six blocks' route on the whole test area. Everything but the paintings
+is made and was run; the paintings are the paid part.
+
+- **The grid.** Windows of 1024 px at v2's own scale (0.125 m a pixel), stride 768, over every tile with a
+  building or a structure: 109 windows. 8 lie outside the area's outline and have nothing to paint; **101 are
+  painted**, one painting each. v2's scale and not v1's half scale, because a painting sits closest to the
+  model there (section 13.1) and its texture is at the map's pixel. The six blocks' own paintings are not
+  reused: they are on another grid.
+- **What a painting is given** is what T1's were: v1's aerial capture enlarged to v2's scale, v2's line
+  layout, v1's own prompt, v1's style model (`python -m v2.bakeoff inputs area`; 202 files, 158 MB).
+- **What is taken from a painting** is the owner's choice of 22 November: each building's colour and the fine
+  texture of its plain surfaces. Every window, dormer, line and the light are the model's. A building takes
+  one colour over all the windows that show it, and is drawn from the window that shows the most of it.
+- **A fault found on the way, in the count.** The first count was 109: where a window reaches outside the
+  area nothing is built, and those empty pixels were read as structures. `inputs.render_window` now leaves a
+  pixel with nothing on it to no layer. Inside the area nothing changes.
+
+Code: `v2/bakeoff/detail.py` (the grid, the inputs, and `targets`, `seams` and `variant_release` on it),
+`jobs.py` (T4), `bundle.py`, `pod/run.sh`, `__main__.py`; 5 new tests.
+
+### 25.4 The dry run, at $0
+
+The whole route on the 101 windows with v1's finished art in the paintings' place
+(`python -m v2.bakeoff targets --source area_free --mode surface --viewer`, 8.9 minutes at low priority).
+v1's art is coarser than a fresh painting and has the sun in it, so this proves the route, not the look.
+
+| Check | Result |
+|---|---|
+| Pictures made | 101 of 101 |
+| Even light (5% per building) | 0 of 101 fail; the worst 0.9% |
+| Window rows (95%) | 101 of 101; the least 98.4% |
+| Building edges (95%) | 94 of 101; 7 between 89.9% and 94.5%. Not compared with the code art's own score on those windows; the six blocks' Bock close up was under 95% as code art too |
+| One building in two neighbouring windows: difference of brightness (2,737 walls and roofs) | median 0.08%, worst tenth 0.9%, 1.1% of them over 5% |
+| Tiles written for the viewer | 289, at every zoom of layers 5 and 6 |
+
+- **Seams between neighbours are now measured on real neighbours.** Section 20.4 had only a forecast.
+- **61% of the painted surface was not taken from v1's art** (windows, dormers, faces in two tones); there the
+  code art shows in the building's painted colour. On T1's fresh paintings the same figure was 33.5%.
+- I looked at one stretch of the old town two windows wide as the tiles have it: no line where two windows
+  meet, one colour a building.
+- **Not done in the dry run:** the vehicle detector (v1's art is not what will be painted); the build's own
+  gates on the painted tiles; the far-zoom tiles (zoomed far out the view is still the code art).
+
+![The dry run: code art, and the same with v1's finished art through the route](img/test_area_dryrun.jpg)
+
+Sheets of the six windows with the most to paint (v1's art as placed, the surface taken, the picture, code
+art): `v2/docs/img/test_detail_targets_area_free_1.jpg`, `_2.jpg`.
+
+### 25.5 The quote
+
+| Quote | GPU | Expected | Worst case | Phase 3 after it, worst case |
+|---|---|---|---|---|
+| q0019 | RunPod A100 SXM, secure, $2.19/h (read 23 Nov) | $1.73 (47 min) | $2.19 (60 min cap) | $2.82 of $8 left |
+
+- **Time plan**, from T1 to T3 on the same machine: 669 s around the painting, 101 paintings at 21 s, 30 s
+  for results: 2,820 s. The cap leaves 13 minutes. Paintings come back as they are made and the painter skips
+  what exists, so a run cut by the cap keeps what it painted.
+- **Why it is above section 18.3's estimate** ($1.60, worst case $2.15): that figure was Phase 2's, at 10 s a
+  painting on another GPU. The three trial runs measured 17.7 to 20.9 s.
+- Phase 3 has spent $2.99 of $8. No pod of ours is open; `luxembourgish-asr-pilot` not touched.
+- **Not approved.** It needs the owner's OK (question 53).
+
+### 25.6 After the paintings, at $0
+
+Pictures, checks and the viewer's copy (`targets --source T4 --cars --viewer`); then what the dry run left out:
+the vehicle detector on all 101, the build's own gates on the painted tiles, and the far-zoom tiles.
+
+### 25.7 Limits, said plainly
+
+- The art this makes is not method A. Gate G2 chose A for the whole city (question 44); T4 is the test area
+  only and decides nothing for the city.
+- The aerial capture's licence for this use is still not looked into.
+- The cliffs and the trees stay code art (question 46).
+- Windows reach outside the area at its edge: the model paints ground there that is never used.
+
+### 25.8 Open questions
+
+44 and 46 stand. 58 is answered.
+
+53. **Approve q0019** (paint the whole test area: expected $1.73, worst case $2.19)?

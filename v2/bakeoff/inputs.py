@@ -90,7 +90,7 @@ def render_window(R_plain, x0, y0, size=WIN, layers=PAINT_LAYERS, rel=None):
                     on = (k != 3) & np.isfinite(d) & (which[dl] == 1)
                     sub = rgb[dl]; sub[on] = sub[on] * c[on] / 255; rgb[dl] = sub
                     d = np.where(k == 3, d, np.inf)
-                m = d <= depth[dl]
+                m = np.isfinite(d) & (d <= depth[dl])      # where a layer has nothing, it is not the nearest
                 for arr, val in ((rgb, c), (depth, d)):
                     sub = arr[dl]; sub[m] = val[m]; arr[dl] = sub
                 sw = which[dl]; sw[m] = li + 1; which[dl] = sw

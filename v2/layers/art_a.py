@@ -19,7 +19,9 @@ beside a window only where both fit inside the wall's outline.
 
 Places of worship (the owner's decision of 13 Nov 2026; the facade layout says which walls, facades.md rule 6):
   walls       the stone of landmark_styles.json's kind "place_of_worship" (a building's own entry goes first), coursed
-              ashlar, no floor cornices (a nave has no storeys), no banded ground floor
+              ashlar, no floor cornices (a nave has no storeys), no banded ground floor. A rendered church
+              (its own entry gives a facade colour) is that colour, with a faint mottle; a part of it named in
+              stone_parts (a tower) stays ashlar
   windows     the layout's rectangle drawn by its kind, its head round or pointed (a described landmark wall's
               opening says its own: pointed, round, or flat under a lintel): a lancet (a stone frame along
               the arch, leaded glass); a traceried window (a stone mullion, two lights with their own heads and a
@@ -36,6 +38,8 @@ from __future__ import annotations
 import math
 
 import numpy as np
+from shapely import contains_xy
+from shapely.geometry import Polygon
 
 from v2.layers.common import CLASS, RIGHT, UP, VIEW, pal
 from v2.layers.detail import band, gp, ihash, slabs, soft_band, vnoise
@@ -125,7 +129,7 @@ class Style:
             if known.get("roof"):
                 name, courses = next((n, c) for n, c, _ in ROOFS if n == known["roof"])
             self.roof, self.courses, self.roof_name = B(name) * rt, courses, name
-        self.quoins = h01(bid + "q") < 0.35
+        self.quoins = bool(known["quoins"]) if "quoins" in known else h01(bid + "q") < 0.35
         self.shutters = h01(bid + "s") < 0.45
         self.shutter = B(SHUTTERS[int(h01(bid + "sc") * len(SHUTTERS)) % len(SHUTTERS)])
         self.door = B(DOORS[int(h01(bid + "d") * len(DOORS)) % len(DOORS)])
@@ -175,6 +179,13 @@ class ArtA:
         self.clad_parts = {bi: [(float(c["centre"][0]), float(c["centre"][1]), float(c["radius"]), float(c["above"]),
                                  B(c["colour"])) for c in known[b["id"]]["clad"]]
                            for bi, b in enumerate(scene.buildings) if known.get(b["id"], {}).get("clad")}
+        # parts of a rendered well-known building left in bare stone (landmark_styles.json, stone_parts): per
+        # building index, their outlines on the ground (a hand's width wider) and the building's style in stone
+        self.stone_parts = {bi: ([Polygon(c["outline"]).buffer(0.15) for c in known[b["id"]]["stone_parts"]],
+                                 Style(b["id"], b.get("roof_shape", ""),
+                                       {**{k: v for k, v in known[b["id"]].items() if k != "facade"}, "stone": True},
+                                       church=bi in self.church))
+                            for bi, b in enumerate(scene.buildings) if known.get(b["id"], {}).get("stone_parts")}
         self.materials = None        # method B: {name: (image (H, W, 3) float, (width_m, height_m))}
 
     def tex(self, name, a, b):
@@ -315,6 +326,9 @@ class ArtA:
         n = len(bi)
         rgb = np.zeros((n, 3))
         base = np.array([self.styles[b].wall for b in bi]) if n else np.zeros((0, 3))
+        sp = self.in_stone_part(bi, P)                                         # a rendered building's part in bare stone
+        if sp.any():
+            base[sp] = np.array([self.stone_parts[b][1].wall for b in bi[sp]])
         rgb[:] = base
         has = wi >= 0
         if has.any():
@@ -338,6 +352,10 @@ class ArtA:
                         c[mm] = t
             trim = B("trim")
             sty = [self.church[b] if k else self.styles[b] for b, k in zip(bi[has], ch)]
+            if sp[has].any():
+                q = sp[has]
+                c[q] = np.array([self.stone_parts[b][1].wall for b in bi[has][q]])
+                sty = [self.stone_parts[b][1] if k else x for x, b, k in zip(sty, bi[has], q)]
             # the wall's own surface: coursed ashlar on stone buildings; on render a faint mottle and, on some
             # buildings, a banded ground floor
             stone_w = np.array([x.stone for x in sty], bool)
@@ -435,6 +453,16 @@ class ArtA:
                 sub[stone] = CLASS["trim"]
                 cls_out[has] = sub
         return rgb * gp(px, py, 0.02, 11)[:, None] if n else rgb
+
+    def in_stone_part(self, bi, P):
+        """Which pixels of a rendered building stand in one of its parts of bare stone (landmark_styles.json,
+        stone_parts: an outline on the ground, as a tower's)."""
+        m = np.zeros(len(bi), bool)
+        for b in set(np.unique(bi).tolist()) & set(self.stone_parts) if len(bi) else ():
+            q = np.flatnonzero(bi == b)
+            for poly in self.stone_parts[b][0]:
+                m[q] |= contains_xy(poly, P[q, 0], P[q, 1])
+        return m
 
     def clad(self, bi, P, px, py):
         """Where a building's pixels lie in one of its sheet-metal parts (landmark_styles.json, clad), and their

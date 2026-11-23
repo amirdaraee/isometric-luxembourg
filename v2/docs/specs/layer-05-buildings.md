@@ -29,6 +29,13 @@ Chosen by `params.json` art.method (or `V2_ART`); each method builds into its ow
   courses, no ashlar. It is a material of its own (class trim), so the shadow detector compares it with itself and
   a painting's colours do not reach it. The cathedral's central spire and its lantern are the one entry; its two
   tower spires are slate, as they are.
+- **A, a rendered church (owner, 23 Nov 2026: the three churches' real wall colours, "yes"):** a church whose
+  own entry in `landmark_styles.json` gives a `facade` colour is rendered in that colour with a faint mottle,
+  not stone: Saint-Michel cream, Sainte-Cunégonde white, Neumünster Abbey with Saint-Jean du Grund ochre (the
+  whole building, wings and church alike, as it is). An entry may name `stone_parts`: each a name and its outline
+  on the ground; the building's walls that stand in it stay coursed sandstone (Sainte-Cunégonde's tower). It may
+  set `quoins` true or false where the photographs show corner stones or none (Saint-Michel: true). Chosen by
+  hand from the photographs named in `landmark_facades.json`; nothing else about the walls changes.
 - **A, places of worship, round two (owner, 13 Nov 2026, "One more round"):** what the layout's rules 21 to 30
   place is drawn so (`church_rgb` and `walls_rgb` in `v2/layers/art_a.py`):
   - *lancet:* a sill, leaded glass, a lead line up the middle;

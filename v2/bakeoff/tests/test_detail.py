@@ -533,3 +533,128 @@ def test_surface_mode_takes_the_paintings_colour_and_plain_texture_and_none_of_i
     assert t[roof_in].std() > code[roof_in].std() + 1                    # the roof's hatch: a plain surface, kept
     d = D.target(code, None, g, {}, reg=painting, mode="drawing")["target"]
     assert not (d[cls == 11] == t[cls == 11]).all()
+
+
+# ------------------------------------------------------------------------------------------------ the whole test area (T4)
+def test_the_test_areas_job_is_quoted_from_the_trials_times_and_fits_the_phase():
+    j, t1 = J.BY_ID["T4"], J.BY_ID["T1"]
+    assert j in J.TRIAL_JOBS and j not in J.JOBS and j.goal == "phase3_lock_look"
+    assert (j.gpu, j.cloud, j.model) == (t1.gpu, t1.cloud, t1.model)       # the machine and the model the times are from
+    need = sum(J.T4_PLAN_S.values())
+    assert need <= j.est_h * 3600 <= need + 60
+    assert runner.cap_seconds(j) - 45 >= 1.2 * need                      # a fifth over the plan still finishes
+    assert f"{J.T4_PAINTINGS} windows x 1 = {J.T4_PAINTINGS} paintings" in j.work and len(D.AREA_SEEDS) == 1
+    assert f"{J.T4_PAINTINGS} paintings x 21 s" in " ".join(J.T4_PLAN_S)
+    budget = json.loads((HERE / "budget.json").read_text())
+    assert j.est_usd <= j.worst_usd <= 2.19 <= budget["goals"][j.goal]["cap_usd"]
+    assert 'T4)  paint "$V1" 1867 ;;' in (runner.POD / "run.sh").read_text()
+    assert B.SETUP["T4"] == "paint" and B.OUT["T4"] == "detail/" + D.PAINTED["T4"] == "detail/painted_area"
+    assert any(str(u[0]).endswith(B.V1_LORA) for u in B.uploads("T4", HERE))
+
+
+def test_the_test_areas_grid_covers_every_tile_with_a_building_or_a_structure(tmp_path):
+    from v2.layers.common import TILE
+    tiles = {"buildings": ["10_10", "11_10", "13_12"], "structures": ["16_11"]}
+    (tmp_path / "index.json").write_text(json.dumps({"layers": {L: {"tiles": {"0": {n: 1.0 for n in v}}} for L, v in tiles.items()}}))
+    grid = D.area_grid(tmp_path)
+    assert all(x % 2 == 0 and y % 2 == 0 for x, y in grid)               # v1's pixels are whole
+    assert all((x - grid[0][0]) % D.STRIDE == 0 and (y - grid[0][1]) % D.STRIDE == 0 for x, y in grid)
+    for n in sum(tiles.values(), []):
+        tx, ty = (int(v) for v in n.split("_"))
+        seen = np.zeros((TILE, TILE), bool)
+        for x, y in grid:
+            a0, b0, a1, b1 = max(x, tx * TILE), max(y, ty * TILE), min(x + D.WIN, (tx + 1) * TILE), min(y + D.WIN, (ty + 1) * TILE)
+            if a1 > a0 and b1 > b0:
+                seen[b0 - ty * TILE:b1 - ty * TILE, a0 - tx * TILE:a1 - tx * TILE] = True
+        assert seen.all(), n
+    x0, y0 = grid[0]
+    assert D.window_of(D.area_name(x0, y0)) == (x0, y0, D.WIN, 1)
+    assert D.window_of("cathedral_p125") == (D.BLOCKS["cathedral"][0] + D.BLOCK // 4, D.BLOCKS["cathedral"][1] + D.BLOCK // 4, D.WIN, 1)
+
+
+def test_the_test_areas_bundle_is_its_grids_windows_with_t1s_prompt(tmp_path, monkeypatch):
+    from v2.bakeoff import prompts as PR
+    monkeypatch.setattr(B, "base", lambda: tmp_path)
+    monkeypatch.setattr(D, "base", lambda: tmp_path / "detail")
+    src = tmp_path / "detail" / "inputs_area"; src.mkdir(parents=True)
+    names = ["w0_0", "w768_0", "w0_768"]
+    (tmp_path / "detail" / "inputs_area.json").write_text(json.dumps({"inputs": {n: {} for n in names}}))
+    for n in names + ["w9999_0"]:                                        # a file of an earlier grid is not taken
+        for ext in ("unlit.png", "layout.png"):
+            (src / f"{n}.{ext}").write_bytes(f"{n}.{ext}".encode())
+    b = B.build("T4")
+    assert sorted(p.name for p in (b / "inputs").iterdir()) == sorted(f"{n}.{e}" for n in names for e in ("unlit.png", "layout.png"))
+    assert (b / "prompt.txt").read_text() == PR.V1_CAPTION               # as T1 was painted
+    assert D.names_of("T4") == names == D.names_of("area_free") and D.names_of("T1") == D.input_names()
+    # the painter gives one seed's painting no number (pod/paint.py); two seeds' have one
+    assert D.painted_file("w0_0", "T4") == tmp_path / "detail" / "painted_area" / "w0_0.png"
+    assert D.painted_file("cathedral_p125", "T1", 1).name == "cathedral_p125_1.png"
+
+
+def _grid_scene(tmp_path, monkeypatch, source):
+    """Two windows of a made-up grid, the second half a window to the right, over three tiles by two; a release
+    r1 with empty tiles; targets of one grey each (200 and 90). Returns (ids, which, tiles, W)."""
+    from PIL import Image
+
+    from v2.layers.common import TILE, write_tile
+    n = 2 * TILE
+    monkeypatch.setattr(D, "WIN", n); monkeypatch.setattr(D, "STRIDE", TILE)
+    monkeypatch.setattr(D, "base", lambda: tmp_path / "detail")
+    monkeypatch.setattr(D, "v2_data", lambda: tmp_path)
+    W = 3 * TILE
+    which = np.ones((n, W), np.uint8); ids = np.zeros((n, W), np.uint32)
+    which[100:200, TILE - 300:TILE + 100] = 5; ids[100:200, TILE - 300:TILE + 100] = 1 << 8 | 11   # mostly in the first alone
+    which[400:500, TILE + 50:TILE + 700] = 5; ids[400:500, TILE + 50:TILE + 700] = 2 << 8 | 11     # whole in the second
+    rel = tmp_path / "test" / "release" / "r1"; store = tmp_path / "store"
+    tiles = {"0": {}}
+    for layer in ("buildings", "structures"):
+        for tx in range(3):
+            for ty in range(2):
+                seen = which[ty * TILE:(ty + 1) * TILE, tx * TILE:(tx + 1) * TILE] == (5 if layer == "buildings" else 6)
+                tiles["0"][f"{tx}_{ty}"] = write_tile(store / layer / "0", f"{tx}_{ty}", rgb=np.full((TILE, TILE, 3), 50, np.uint8),
+                                                      depth=np.where(seen, 10.0, np.inf), normal=np.tile([0.0, 0.0, 1.0], (TILE, TILE, 1)), q=101)
+        rel.mkdir(parents=True, exist_ok=True)
+        (rel / layer).symlink_to(store / layer)
+    (rel / "index.json").write_text(json.dumps({"layers": {L: {"tiles": tiles} for L in ("buildings", "structures")}}))
+    (rel.parent / "current.json").write_text(json.dumps({"folder": "r1"}))
+    src = tmp_path / "detail" / "inputs_area"; src.mkdir(parents=True)
+    tg = tmp_path / "detail" / "targets" / source; tg.mkdir(parents=True)
+    (tmp_path / "detail" / "checks").mkdir()
+    metas = {}
+    for x0, value in ((0, 200), (TILE, 90)):
+        name = D.area_name(x0, 0)
+        np.savez_compressed(src / f"{name}.geom.npz", ids=ids[:, x0:x0 + n], which=which[:, x0:x0 + n],
+                            normal=np.zeros((n, n, 3), np.float16), depth=np.full((n, n), 10.0, np.float32))
+        Image.fromarray(np.zeros((n, n, 3), np.uint8)).save(src / f"{name}.code.png")
+        metas[name] = {"x0": x0, "y0": 0, "size": n, "release": "r1", "paint_share": 0.1}
+        (src / f"{name}.json").write_text(json.dumps(metas[name]))
+        Image.fromarray(np.full((n, n, 3), value, np.uint8)).save(tg / f"{name}_0.png")
+    (tmp_path / "detail" / "inputs_area.json").write_text(json.dumps({"inputs": metas}))
+    return ids, which, tiles, W
+
+
+def test_on_the_grid_a_building_two_windows_show_comes_from_the_one_that_shows_the_most_of_it(tmp_path, monkeypatch):
+    import pytest
+
+    from v2.layers.common import TILE, read_tile
+    ids, _which, tiles, W = _grid_scene(tmp_path, monkeypatch, "T4")
+    out = D.variant_release("T4", 0, area="painted")
+    got = np.zeros((2 * TILE, W, 3), np.uint8)
+    for nm in tiles["0"]:
+        tx, ty = (int(v) for v in nm.split("_"))
+        got[ty * TILE:(ty + 1) * TILE, tx * TILE:(tx + 1) * TILE] = read_tile(out / "buildings" / "0", nm, tiles["0"][nm])["rgb"]
+    assert (got[(ids >> 8) == 1] == 200).all()                          # the first shows all of it: all from the first
+    assert (got[(ids >> 8) == 2] == 90).all()                           # the second shows all of it, the first a part
+    assert (got[ids == 0] == 50).all()                                  # nothing else is touched
+    # inputs made for another release are refused: their geometry is not this release's
+    src = tmp_path / "detail" / "inputs_area"
+    (src / "w0_0.json").write_text(json.dumps({"x0": 0, "y0": 0, "release": "r0"}))
+    with pytest.raises(SystemExit):
+        D.variant_release("T4", 0, area="painted")
+
+
+def test_seams_on_the_grid_compare_two_neighbours_on_the_ground_they_share(tmp_path, monkeypatch):
+    _grid_scene(tmp_path, monkeypatch, "area_free")
+    s = D.seams("area_free", min_px=600)["two_windows"]
+    # building 2 lies whole in both windows' shared half; building 1's part there is 100 x 100 px: two walls
+    assert s["parts"] == 2 and abs(s["median"] - (200 - 90) / 145) < 0.01 and s["over_5_percent"] == 1.0
