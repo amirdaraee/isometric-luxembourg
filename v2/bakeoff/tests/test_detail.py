@@ -591,9 +591,11 @@ def test_the_test_areas_bundle_is_its_grids_windows_with_t1s_prompt(tmp_path, mo
     assert D.painted_file("cathedral_p125", "T1", 1).name == "cathedral_p125_1.png"
 
 
-def _grid_scene(tmp_path, monkeypatch, source):
+def _grid_scene(tmp_path, monkeypatch, source, grey=0, hidden=None):
     """Two windows of a made-up grid, the second half a window to the right, over three tiles by two; a release
-    r1 with empty tiles; targets of one grey each (200 and 90). Returns (ids, which, tiles, W)."""
+    r1 with empty tiles; targets of one grey each (200 and 90). Returns (ids, which, tiles, W). With `grey`, the
+    code art and the tiles are that grey and the tiles carry their ids; `hidden` (a slice pair) is a part of the
+    buildings' layer that the windows see another layer in front of."""
     from PIL import Image
 
     from v2.layers.common import TILE, write_tile
@@ -610,13 +612,17 @@ def _grid_scene(tmp_path, monkeypatch, source):
     for layer in ("buildings", "structures"):
         for tx in range(3):
             for ty in range(2):
-                seen = which[ty * TILE:(ty + 1) * TILE, tx * TILE:(tx + 1) * TILE] == (5 if layer == "buildings" else 6)
-                tiles["0"][f"{tx}_{ty}"] = write_tile(store / layer / "0", f"{tx}_{ty}", rgb=np.full((TILE, TILE, 3), 50, np.uint8),
-                                                      depth=np.where(seen, 10.0, np.inf), normal=np.tile([0.0, 0.0, 1.0], (TILE, TILE, 1)), q=101)
+                tl = (slice(ty * TILE, (ty + 1) * TILE), slice(tx * TILE, (tx + 1) * TILE))
+                seen = which[tl] == (5 if layer == "buildings" else 6)
+                tiles["0"][f"{tx}_{ty}"] = write_tile(store / layer / "0", f"{tx}_{ty}", rgb=np.full((TILE, TILE, 3), grey or 50, np.uint8),
+                                                      depth=np.where(seen, 10.0, np.inf), normal=np.tile([0.0, 0.0, 1.0], (TILE, TILE, 1)), q=101,
+                                                      ids=ids[tl] if grey and layer == "buildings" else None)
         rel.mkdir(parents=True, exist_ok=True)
         (rel / layer).symlink_to(store / layer)
     (rel / "index.json").write_text(json.dumps({"layers": {L: {"tiles": tiles} for L in ("buildings", "structures")}}))
     (rel.parent / "current.json").write_text(json.dumps({"folder": "r1"}))
+    if hidden is not None:                                               # the windows see another layer there
+        which = which.copy(); which[hidden] = 2
     src = tmp_path / "detail" / "inputs_area"; src.mkdir(parents=True)
     tg = tmp_path / "detail" / "targets" / source; tg.mkdir(parents=True)
     (tmp_path / "detail" / "checks").mkdir()
@@ -625,7 +631,7 @@ def _grid_scene(tmp_path, monkeypatch, source):
         name = D.area_name(x0, 0)
         np.savez_compressed(src / f"{name}.geom.npz", ids=ids[:, x0:x0 + n], which=which[:, x0:x0 + n],
                             normal=np.zeros((n, n, 3), np.float16), depth=np.full((n, n), 10.0, np.float32))
-        Image.fromarray(np.zeros((n, n, 3), np.uint8)).save(src / f"{name}.code.png")
+        Image.fromarray(np.full((n, n, 3), grey, np.uint8)).save(src / f"{name}.code.png")
         metas[name] = {"x0": x0, "y0": 0, "size": n, "release": "r1", "paint_share": 0.1}
         (src / f"{name}.json").write_text(json.dumps(metas[name]))
         Image.fromarray(np.full((n, n, 3), value, np.uint8)).save(tg / f"{name}_0.png")
@@ -658,3 +664,28 @@ def test_seams_on_the_grid_compare_two_neighbours_on_the_ground_they_share(tmp_p
     s = D.seams("area_free", min_px=600)["two_windows"]
     # building 2 lies whole in both windows' shared half; building 1's part there is 100 x 100 px: two walls
     assert s["parts"] == 2 and abs(s["median"] - (200 - 90) / 145) < 0.01 and s["over_5_percent"] == 1.0
+
+
+def test_a_far_zoom_tile_takes_a_layers_new_colour_only_where_that_layer_is_its_nearest_surface():
+    k = np.zeros((4, 4), np.uint8); k[0] = 1 * 16 + 2; k[1] = 5 * 16 + 11; k[2] = 6 * 16; k[3] = 7 * 16 + 1
+    rgb = np.full((4, 4, 3), 10, np.uint8)
+    out = D.far_colour(rgb, k, {5: np.full((4, 4, 3), 200, np.uint8), 6: np.full((4, 4, 3), 90, np.uint8)})
+    assert (out[0] == 10).all() and (out[1] == 200).all() and (out[2] == 90).all() and (out[3] == 10).all()   # ground, trees stay
+    assert (D.far_colour(rgb, k, {5: np.full((4, 4, 3), 200, np.uint8)})[2] == 10).all()   # a layer with no tile there
+    assert (rgb == 10).all()                                              # the tile read is not changed
+
+
+def test_what_a_layer_holds_behind_another_layer_takes_its_materials_painted_colour(tmp_path, monkeypatch):
+    """A target shows the nearest surface only. The part of a wall behind a cliff is in the buildings' tile all
+    the same: it takes the colour change the wall has where a target shows it, not the code art's colour."""
+    from v2.layers.common import TILE, read_tile
+    hid = (slice(400, 500), slice(TILE + 600, TILE + 700))               # a part of building 2's wall
+    ids, _which, tiles, W = _grid_scene(tmp_path, monkeypatch, "T4", grey=100, hidden=hid)
+    out = D.variant_release("T4", 0, area="painted")
+    got = np.zeros((2 * TILE, W, 3), np.uint8)
+    for nm in tiles["0"]:
+        tx, ty = (int(v) for v in nm.split("_"))
+        got[ty * TILE:(ty + 1) * TILE, tx * TILE:(tx + 1) * TILE] = read_tile(out / "buildings" / "0", nm, tiles["0"][nm])["rgb"]
+    assert (got[(ids >> 8) == 2] == 90).all() and (got[hid] == 90).all()   # shown and hidden alike: 100 x 90 / 100
+    assert (got[(ids >> 8) == 1] == 200).all() and (got[ids == 0] == 100).all()
+    assert json.loads((out.parent / "current.json").read_text())["hidden_px_tinted"] == 100 * 100

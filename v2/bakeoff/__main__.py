@@ -18,6 +18,9 @@
     python -m v2.bakeoff targets [--source T1|T2|T3]
                                                 a run's paintings with their light removed and levelled and the
                                                 code's windows drawn in, under the build's checks of a painting ($0)
+    python -m v2.bakeoff gates [--source T4|area_free]
+                                                the build's own checks of layers 5 and 6 on the viewer's copy with
+                                                the paintings in it: lines, the shadow detector, vehicles, seams
     python -m v2.bakeoff detail [--source free|T1|T2|T3]
                                                 detail transfer on the six blocks: a painting's colour and fine
                                                 texture onto the code art, the numbers and the sheets. free = from
@@ -156,6 +159,18 @@ def cmd_targets(a):
               f"worst {max(v['target']['flat_worst'] for v in ins):.3f}; edges {min(v['target'].get('edges') or 1 for v in ins):.3f} "
               f"at the least, window rows {min(v['target'].get('windows') or 1 for v in ins):.3f}")
     return 0
+
+
+def cmd_gates(a):
+    from v2.bakeoff import detail as D
+    res = D.gates(a.source)
+    for name, c in res["checks"].items():
+        print(name, "PASS" if c["passed"] else "FAIL", f"{c['seconds']} s")
+        for ln in c["lines"]:
+            if ln.startswith(("FAIL", "PASS L5", "PASS N", "info D0")) or "buildings" in ln or "structures" in ln:
+                print("   ", ln[:260])
+    print("seams (v1's rule)", json.dumps(res["seams"]))
+    return 0 if res["passed"] else 1
 
 
 def cmd_inputs(a):
@@ -429,6 +444,7 @@ def main(argv=None):
                          "owner's choice); drawing: the painting's own drawing is kept (report sections 19, 20)")
     tg.add_argument("--cars", action="store_true", help="also the vehicle detector on every target")
     tg.add_argument("--viewer", action="store_true", help="also the release with the targets in it, as area test_painted")
+    gt = sub.add_parser("gates"); gt.add_argument("--source", choices=["T4", "area_free"], default="T4")
     dt_ = sub.add_parser("detail"); dt_.add_argument("--source", choices=["free", "T1", "T2", "T3"], default="free")
     pv = sub.add_parser("previews"); pv.add_argument("--url", default="http://localhost:5175/")
     pv.add_argument("--before", help="a folder with the earlier test_a_grund_golden_hour.jpg and test_a_grund_night.jpg: "
@@ -438,7 +454,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     return {"status": cmd_status, "quote": cmd_quote, "inputs": cmd_inputs, "smoke": cmd_smoke, "run": cmd_run,
             "register": cmd_register, "end": cmd_end, "pods": cmd_pods, "reconcile": cmd_reconcile, "check": cmd_check, "adopt": cmd_adopt,
-            "pick": cmd_pick, "detail": cmd_detail, "targets": cmd_targets, "painted": cmd_painted, "trial": cmd_trial, "previews": cmd_previews,
+            "pick": cmd_pick, "detail": cmd_detail, "targets": cmd_targets, "gates": cmd_gates, "painted": cmd_painted, "trial": cmd_trial, "previews": cmd_previews,
             "pilot-gates": lambda a: __import__("v2.bakeoff.results", fromlist=["x"]).pilot_gates()}[a.cmd](a) or 0
 
 
