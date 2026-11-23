@@ -2118,3 +2118,113 @@ now have windows. Not looked at in the viewer by me after this change.
 
 55. **Landmark windows:** which landmarks first, and from what: the aerial photo and v1's art by my eye, or
     the owner's own knowledge of the buildings?
+
+## 23. The cathedral's windows as they are (23 November, $0)
+
+Branch `v2-phase3-landmark-windows`. **Spent: $0.** No pod. The owner's answers of 23 November: the
+surfaces-only version "looking good"; merge PR #20 "yes" (merged as c6c1276, CI green); the cathedral's real
+windows: "look for images and aerial photos and figure it out". That answers question 55 for the cathedral.
+
+### 23.1 What was wrong, and why
+
+The church rule (section 11) is a layout: one row of windows per wall, sized to the wall. It knows no apse, no
+crypt and no clerestory. On the cathedral it drew the apse's windows from near the ground to mid height (they
+stand in the upper half, over a crypt), single lancets where the choir has pairs of small lights, tall church
+windows on the two-storey blocks beside the apse, windows from the ground on the nave (they stand in the upper
+part of each bay), and a pair of belfry openings on a tower face that has one. These are the owner's second
+and third faults of 22 November.
+
+### 23.2 The sources, and how they were read
+
+- **v1's aerial capture of the area** (the picture v1 was painted from), flattened onto each wall of the 3D
+  model: every wall the map's camera sees becomes a straight-on elevation at 12 pixels a metre, with a ruler.
+  Windows were read off it in metres. The capture is blurred; a reading is good to about half a metre. Eaves
+  and roof lines in it meet the model's within about 0.3 m, which is how I know the two line up.
+- **Eight photographs from Wikimedia Commons**, each named in the data file with its author and licence: two
+  drone views from the south-west (CC0), two views of the apse from the south, one of the apse and the
+  south-west block, one of the choir and west tower, one of a tower's openings, one aerial view of the towers.
+  They say what kind each window is (two lights with a round light in the head; flat-headed windows on the
+  low blocks; round-headed tower openings) and show the west side, which the capture does not.
+- The east side, the side the map shows, stands on an enclosed garden behind trees: no ground photograph shows
+  it. There the capture is the only source of positions, and the west side's photographs the source of kinds.
+- 21 photographs were fetched as reduced copies to look at, into a scratch folder outside the repository. None
+  is in the repository or in the map. The data holds measurements, not pictures.
+
+### 23.3 What was built
+
+- **Data:** `v2/data/structures/landmark_facades.json`. Per building its sources and a datum; per wall a point
+  on its foot, the bearing it looks to, its openings in metres as a visitor sees them, and how it was measured.
+- **Code:** `v2/data/scene/landmarks.py` puts each description on the joined wall it names, in place of the
+  rule's windows, courses and drawn buttresses (`v2/docs/specs/facades.md`, rules 31 to 35). A wall that is
+  not described keeps the rule. Walls are named by where they stand, never by a number in a list.
+- **Art:** an opening of a described wall says its own head: pointed, round, or flat under a lintel
+  (`v2/layers/art_a.py`). Nothing else is drawn differently.
+- **Checks:** F28 (gate): every description is on exactly one wall, every opening lies inside its wall and
+  clear of the others, a described wall carries none of the rule's buttresses. F29 reports the counts. F2, F3,
+  F16 and F17 pass over a described wall, whose rows and sizes are its sources' and not the rule's.
+- **Tests:** 7 new (153 in all, all pass).
+
+| The cathedral | |
+|---|---|
+| Walls described | 21 (15 from the capture, 5 from photographs, 1 as the mirror of its other side) |
+| Openings | 52: 16 two-light windows, 32 single lights, 4 belfry openings; one wall is blank |
+| A wall turned round | the west tower's east face over the nave roof: the model had it looking west |
+| Windows in the test area | 39,701 (39,688 before) |
+
+| Part | Before | Now |
+|---|---|---|
+| Apse | a window from 2.6 to 14.6 m on each side | a two-light window from 11.5 to 22.0 m on each side, a flat crypt window at its foot |
+| Choir, straight bay | one window a side | two a side |
+| Choir, east clerestory | four lancets | four pairs of small lights |
+| Nave, east wall | six windows from 2.6 m, with drawn buttresses | six windows from 9.8 to 16.5 m, between the model's own buttresses |
+| Towers | a pair of belfry openings and a round window per face | one round-headed belfry opening per face, small round-headed windows under it |
+| Blocks beside the apse | tall church windows | small flat-headed windows on two floors |
+
+![The apse: before and now](img/test_landmark_cathedral_1.jpg)
+![The nave and towers: before and now](img/test_landmark_cathedral_2.jpg)
+
+### 23.4 The build
+
+`python -m v2.build test g3`, 50.3 minutes of stage time, run alone at low priority. The release is
+`549133649c88`; `data/v2/test/release/current.json` points at it (`c46716ca4c9b` is still on disk).
+
+- **57 of 57 stages pass. 277 gate entries pass, 0 fail.** No threshold was changed.
+- **The two speed checks of section 22.2 pass again:** C2b 94 frames a second, X8b 93.7, against 60. Nothing
+  in the viewer was changed between the two runs. I still do not know why the machine paced frames at about
+  22 a second on 22 November.
+- F28 passes (0 that do not fit). Lines: building edges 96.3%, window rows 99.8%, church tracery 99.6%,
+  against 95%.
+
+### 23.5 The six blocks and the viewer
+
+Inputs, pictures and the viewer's copy were made again on the new release in the surfaces-only way. Even light
+24 of 24 (worst 1.0%); window rows 99.8% to 99.9%; building edges 93.8% to 98.0% (the Bock's close up under
+95%, as the code art is there); 0 of 24 fail the vehicle detector; one building in two paintings 0.0% apart at
+the median. I looked at the cathedral in the viewer at 13:00 after this change: the new windows are there.
+
+### 23.6 Limits, said plainly
+
+- **Kinds are the rule's kinds.** A two-light window is drawn as the rule's two-light window, whatever its real
+  tracery. A triple window is three lights side by side.
+- **The south-west block's windows are approximate** (two pairs on each floor): trees and a tower hide part of
+  that wall in every photograph I found. They are marked `photo` in the data.
+- **Not described, because the map's camera does not see them:** the north front on rue Notre-Dame, the west
+  side and the west portal. They keep the rule. They will need describing before other viewing angles
+  (`PLAN_V2.md` section 10.1).
+- **One hidden part left empty:** the south end of the east side block's wall stands behind the round stair
+  turret in every source. Its third window is likely there; it is not entered.
+- **The copper spire over the crossing is still drawn in slate and stone.** It is green in every photograph.
+  Materials are set per building, not per part of one; this needs a small change of its own.
+- **The west tower's spire** still shows the tan gable faces of the 3D model at its foot. Not a window fault;
+  not touched.
+- **The capture's licence** as a source to measure from was not looked into (the same open point as in section
+  18 for using it as paint input). The data file holds only measurements read off it.
+
+### 23.7 Open questions
+
+44, 46 and 53 stand.
+
+56. **Other landmarks the same way?** The Grand Ducal Palace and Neumünster Abbey are not churches: the house
+    rule lays out their windows, and I have not checked them against photographs. Saint-Michel, Saint-Jean du
+    Grund and Sainte-Cunégonde are on the church rule. Each takes about what the cathedral took.
+57. **The copper spire in green** (a small code change, $0)?

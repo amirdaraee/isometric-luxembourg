@@ -20,7 +20,8 @@ beside a window only where both fit inside the wall's outline.
 Places of worship (the owner's decision of 13 Nov 2026; the facade layout says which walls, facades.md rule 6):
   walls       the stone of landmark_styles.json's kind "place_of_worship" (a building's own entry goes first), coursed
               ashlar, no floor cornices (a nave has no storeys), no banded ground floor
-  windows     the layout's rectangle drawn by its kind, its head round or pointed: a lancet (a stone frame along
+  windows     the layout's rectangle drawn by its kind, its head round or pointed (a described landmark wall's
+              opening says its own: pointed, round, or flat under a lintel): a lancet (a stone frame along
               the arch, leaded glass); a traceried window (a stone mullion, two lights with their own heads and a
               round top light); a rose (a wheel of stone spokes in two rings) and an oculus (a round window with a
               cross); a belfry opening (louvres in a stone frame). Stained panes in four colours, every pane as
@@ -54,7 +55,7 @@ OPEN_KIND = {"window": 0, "door": 1, "garage": 2, "shopfront": 3, "shutter": 4, 
              "traceried": 7, "rose": 8, "oculus": 9, "belfry": 10, "entrance": 11}
 CHURCH_KINDS = {"lancet": "church", "traceried": "traceried", "rose": "rose", "oculus": "oculus", "belfry": "belfry"}
 ROUND_KINDS = ("rose", "oculus")
-HEAD = {None: 0, "round": 1, "pointed": 2, "circle": 3}
+HEAD = {None: 0, "round": 1, "pointed": 2, "circle": 3, "flat": 4}
 STAINED = ["stained_blue", "stained_red", "stained_amber", "stained_green"]
 POINTED = 0.8660254037844386          # a pointed head's height over its width (two arcs struck from the springs)
 LUMA = np.array([0.2126, 0.7152, 0.0722])
@@ -236,7 +237,7 @@ class ArtA:
             n = 2
             if pointed is not None and shape is None:
                 shape = "pointed" if pointed else "round"
-            if shape is None or k == "entrance":
+            if shape is None or shape == "flat" or k == "entrance":
                 M.quad(c[0], c[1], c[2], c[3], cls, bi, "buildings.window")
             else:                                              # an arched or a round window: its outline, as a fan
                 (e0, n0, z0), (e1, n1, _) = w["base"]
@@ -267,8 +268,9 @@ class ArtA:
                 arch = "pointed" if w["worship"] == "pointed" else "round"
                 for r in w["windows"]:
                     kd = r[4] if len(r) > 4 else "lancet"
+                    # a described wall's opening says its own head (landmark_facades.json), a rule's has the church's
                     add(w, bi, r, CHURCH_KINDS[kd], CLASS["door"] if kd == "belfry" else CLASS["window"],
-                        shape="circle" if kd in ROUND_KINDS else arch)
+                        shape="circle" if kd in ROUND_KINDS else (r[5] if len(r) > 5 and r[5] else arch))
                 for r in w["doors"]:
                     if len(r) > 5 and r[5] == "portal":
                         add(w, bi, r, "entrance", CLASS["door"], shape=arch)
@@ -299,7 +301,7 @@ class ArtA:
         out["frame"] = np.array(frame, float).reshape(-1, 9)
         out["open_bld"] = np.array(bld, np.int64)
         out["tone"] = np.array(tone, np.int64)
-        out["head"] = np.array(head, np.int8)                  # 0 a rectangle, 1 a round head, 2 a pointed head
+        out["head"] = np.array(head, np.int8)                  # 0 a rectangle, 1 a round head, 2 a pointed, 3 a circle, 4 a flat one (a church's)
         return out
 
     # ------------------------------------------------------------------ shading
@@ -589,14 +591,15 @@ class ArtA:
         K = OPEN_KIND
         stone = np.array([self.church[b].surround if b in self.church else self.styles[b].surround for b in bi]).reshape(-1, 3)
         head = O["head"][ti]
-        pointed, circ = head == 2, head == 3
-        hh = np.where(pointed, POINTED, 0.5) * W
+        pointed, circ, flat = head == 2, head == 3, head == 4
+        hh = np.where(flat, 0.0, np.where(pointed, POINTED, 0.5) * W)            # a flat head: a lintel, no arch
         ts = H - hh                                                              # the springing line
         # how far inside the outline the pixel is (metres; negative outside it)
         d_head = np.where(pointed, W - np.maximum(np.hypot(s, t - ts), np.hypot(s - W, t - ts)),
                           W / 2 - np.hypot(s - W / 2, t - ts))
         r = np.hypot(s - W / 2, t - H / 2)
-        d = np.where(circ, W / 2 - r, np.where(t > ts, d_head, np.minimum(s, W - s)))
+        d = np.where(circ, W / 2 - r, np.where(flat, np.minimum(np.minimum(s, W - s), H - t),
+                                               np.where(t > ts, d_head, np.minimum(s, W - s))))
         tone = O["tone"][ti]
         # ---- the stone inside the frame, and each pane's place (two numbers)
         frame = (d < 0.12) | (~circ & (t < 0.1))

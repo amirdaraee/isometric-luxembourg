@@ -37,6 +37,10 @@ Chosen by `params.json` art.method (or `V2_ART`); each method builds into its ow
   - *stained glass by day:* seven panes in ten are stained, in the palette's four colours at 85% strength, and
     every pane is scaled to the plain glass's brightness. Colour varies, brightness does not, so L5.1 measures
     one glass whichever way a wall faces. The gate and its limit are as they were.
+- **A, landmarks as they are (owner, 23 Nov 2026):** an opening of a described wall (facades.md rules 31 to 35)
+  says its own head, where a rule's opening has its church's: pointed, round, or flat. A flat head is a lintel:
+  the opening is its rectangle, with the same stone frame, sill, leaded glass and lead line as a lancet. Nothing
+  else is drawn differently: a described two-light window is the traceried window above.
 - **B, C (stopped at G2, 10 Nov 2026):** `v2/layers/bakeoff.py`, `v2/bakeoff/` (kept as the bake-off's record).
 
 **Inputs.** Scene buildings (ACT LoD2: footprint, walls, roof planes, roof shape, installations; `mesh.npz`),

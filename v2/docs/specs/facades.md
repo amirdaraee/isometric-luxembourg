@@ -160,14 +160,70 @@ church's footprint; nothing is placed by hand, so it carries to the whole city.
 30. **Windows carry their kind**: `[u0, v0, u1, v1, kind]`, kind one of lancet, traceried, oculus, rose, belfry.
     A round window's rectangle is the square round its circle.
 
+## Landmarks as they are (owner's decision, 23 Nov 2026: "look for images and aerial photos and figure it out")
+
+Code: `v2/data/scene/landmarks.py`, called by `facades.build` after the church rule. Data:
+`v2/data/structures/landmark_facades.json`. The church rule is a layout, not a survey: on the cathedral it put
+windows where there are none and left out the ones there are (the owner's faults of 22 Nov 2026). A well-known
+building can be entered wall by wall, as its sources show it. This is the one place where openings are placed by
+hand; every other building, and every wall of a landmark that is not described, keeps the rules above.
+
+31. **A description names its wall by where it stands**, never by a number in a list: a point on the wall's foot
+    (`at`: its left end as seen from outside, LUREF east and north) and the compass bearing its outside looks to
+    (`facing`). It is put on the joined wall (rule 16) of that building whose plane it is: the wall's normal
+    within 20 degrees of the bearing, either way round, and the point within 0.75 m of its base line. Where two
+    joined walls stand in one plane (a tower's wall over a nave wall), it is the one that holds more of the
+    openings, then the one whose left end is nearer the point.
+32. **Openings are given as a visitor sees them**: `[kind, x0, x1, z0, z1, head]`, x in metres from `at` to the
+    right as seen from outside, z in metres above the building's `datum` (the altitude of its ground in the
+    model), kind one of rule 30's, head `pointed`, `round` or `flat` (a lintel: the crypt's and the sacristies'
+    windows). A joined wall whose normal points the other way is turned round first (base, normal, outline and
+    doors): rule 21 tells the outside by the footprint, which does not tell for a tower's wall over the roofs,
+    and `facing` is what a source shows.
+33. **They replace the rule's** on that wall: its windows, its string courses and its drawn buttresses (rules 23,
+    24, 28, 29). A description gives its own courses (`courses`, heights above the datum). Doors, the portal
+    and the rose of the entrance front stay. A described wall with no opening is a blank wall. In
+    `facades.json` the wall carries `landmark` (the description's name) and `measured`, and each of its windows
+    its head: `[u0, v0, u1, v1, kind, head]`.
+34. **Only what a source shows is entered.** Every building names its sources, and every wall how it was
+    measured: `capture` (read off v1's aerial capture of the area, flattened onto the wall: 0.125 m a pixel, about
+    half a metre sure), `photo` (counted and placed by eye from the photographs named: about a metre sure) or
+    `mirror` (not seen in any source; set as the mirror of the other side, which the photographs show to be
+    alike). A part of a wall that no source shows gets no opening. Walls the map's camera does not see (it
+    looks north-west: walls that face north or west) are described only where a photograph shows them plainly.
+35. **What does not fit is not drawn, and fails the build.** An opening is kept only where it lies inside its
+    wall's outline (within 2 cm) and overlaps no other opening and no door. A description that names no wall, or
+    the wall of another description, and every opening that is not kept, is listed in `facades.json`
+    (`landmarks`), and check F28 fails on any of them.
+
+**The cathedral** (ACT_e92ec91a…, datum 296.0 m; 21 walls, 52 openings). Sources: v1's aerial capture, and
+eight photographs from Wikimedia Commons, named with their authors and licences in the data file (two drone
+views from the south-west, two views of the apse from the south, one of the apse and the south-west block, one
+of the choir and the west tower, one of a tower's openings, one aerial view of the towers).
+
+| Part | Before (the rule) | Now (as the sources show) | Measured |
+|---|---|---|---|
+| Apse, five sides | one window from 2.6 to 14.6 m, 1.6 m wide | one two-light window from 11.5 to 22.0 m, 2.0 m wide; a flat crypt window at the foot; a course at 4.8 m | capture; the west-south-west side as the mirror |
+| Choir, straight bay, each side | one window | two two-light windows, 11.6 to 22.0 m | capture (east), photo (west) |
+| Choir, east clerestory | four single lancets | four pairs of small lights, 21.1 to 23.2 m | capture |
+| Nave, east wall | six windows from 2.6 to 14.6 m, with drawn buttresses | six windows from 9.8 to 16.5 m, one in each bay between the model's own buttresses; nothing below them | capture |
+| Towers | a pair of belfry openings and a round window on each face | one round-headed belfry opening on each face, 31.0 to 34.5 m, and small round-headed windows below it | capture (east tower), photo (west tower) |
+| East side block | three tall windows from the ground | two arched windows on the upper floor (the third stands behind the stair turret: not entered) | capture |
+| The low blocks beside the apse | tall church windows | small flat-headed windows on two floors | capture (south-east), photo (south-west) |
+| One short wall of the choir | a lancet | blank | capture |
+
+The west tower's east face over the nave roof was turned round (rule 32): its normal pointed west.
+
 **Output.** `facades.json`: the rule's parameters and per wall: building id, wall id, base (two 3D points), normal,
 length, eave height, outline, floors, bays, party flag, reason for no windows, window rectangles (u0, v0, u1, v1),
 the street it faces (or none), doors (u0, v0, u1, v1, source "osm:node/…" or "rule:…", kind door/garage) and shop
 fronts (u0, v0, u1, v1, source); a church's walls also `worship` (round or pointed), `house_rule` and, on a joined
-wall, `merged`, `tower`, `front`, `buttresses` (u0, v0, u1, v1) and `courses` (heights); plus the OSM entrances that could not be placed, with the reason, the commercial streets, and
+wall, `merged`, `tower`, `front`, `buttresses` (u0, v0, u1, v1) and `courses` (heights), a described wall
+also `landmark` and `measured` (rule 33); plus the OSM entrances that could not be placed, with the reason, the commercial streets, and
 `worship`: the places of worship by building id (source, name, the share of the footprint that is church, walls,
 windows by kind, tower walls, buttresses, the main eave, and `front`: how the entrance front was told, portal,
-rose); and `worship_exceptions`, the list of rule 14. `facades.window_world()` turns any rectangle into its four world corners.
+rose); `worship_exceptions`, the list of rule 14; and `landmarks`, per described building what was set and what
+did not fit (rule 35). `facades.window_world()` turns any rectangle into its four world corners.
 
 **Checks.** F1 windows inside the outline · F2 gaps ≥ 0.3 m · F3 every window row on a floor line (straight rows,
 still true with doors) · F4 no windows on party walls · F5 floor count fits the eave · F6 ≥ 90% of buildings ≥ 5 m
@@ -185,8 +241,12 @@ listed place has a church wall · F20 places of worship by source, church walls 
 (report) · **F21** one entrance front per church, the rose only over its portal · **F22** belfry openings only on
 tower walls, above the main eave · **F23** buttresses upright, one width, one top line, inside the outline, clear
 of openings, never on a tower · **F24** no church wall's normal points into the footprint · F25 per church: how
-the front was told, windows by kind, towers, buttresses, exceptions (report). On layer 5: **L5.7**, **L5.8**
-(layer-05-buildings.md).
+the front was told, windows by kind, towers, buttresses, exceptions (report) · **F26**, F27 dormers (rule 13) ·
+**F28** every landmark description is on one wall, every opening inside its wall and clear of the others, and a
+described wall carries none of the rule's buttresses · F29 per described building: walls set, openings by kind,
+how they were measured, blank walls, walls turned round (report). F2, F3, F16 and F17 pass over a described
+wall: its paired lights stand closer than the rule's gap, and its rows and sizes are its sources', not the rule's.
+On layer 5: **L5.7**, **L5.8** (layer-05-buildings.md).
 
 **Known limits** (bake-off): irregular historic rows, shop signs. Dormer windows: rule 13, since 22 Nov 2026. Churches: the rule is a layout, not a survey. It knows no nave, aisle or choir: a wall is a tower's or not,
 and every other wall is laid out by its own height and length. The entrance front is told from an OSM main
@@ -194,4 +254,8 @@ entrance where there is one, else guessed from the tower, the apse and the stree
 side is given a portal at an end. The rose, the tracery and the buttresses are one pattern for every church. A
 buttress is drawn on the wall, not built: it has no depth and casts no shadow. Short facets of a round apse
 (under 2.2 m) get no window. A church OSM does not map as a building, and that no list names, stays a house. The
-rule gives straight, plausible openings; the owner judges the look.
+rule gives straight, plausible openings; the owner judges the look. A landmark described wall by wall (rules 31 to 35)
+has the openings its sources show, in the rule's own kinds: a two-light window is the rule's two-light window,
+whatever its real tracery; a triple window is three lights side by side. The cathedral's north front, its west
+side and its west portal are not described: the map's camera does not see them. Its green copper spire over the
+crossing is still drawn in slate and stone: materials are per building (landmark_styles.json), not per part.

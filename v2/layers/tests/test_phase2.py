@@ -317,3 +317,41 @@ def test_a_church_wall_turned_round_keeps_the_night_rows_the_house_rule_had():
     # it had faced away and was turned to the camera: no dark rows (it had none), its glass at the end
     to = rows([_wall(0, 0, house), _wall(1, 20, glass, worship="round", house_rule=dict(hr, outline=out)), _wall(2, 40, house)])
     assert to[:, 7].tolist() == [0, 0, 0, 0, 10] and (to[:4] == before[[0, 1, 4, 5]]).all()
+
+
+def test_a_described_walls_opening_has_its_own_head_and_a_flat_one_is_its_rectangle():
+    """Landmarks as they are (23 Nov 2026): on a church whose windows are pointed, a described opening can be round
+    or flat. A flat head is a lintel: glass up to a stone frame under the rectangle's top, in every corner."""
+    from v2.layers.art_a import HEAD, OPEN_KIND
+    from v2.layers.common import CLASS
+    wins = [(1.0, 2.0, 2.0, 5.0, "lancet"), (3.0, 2.0, 4.0, 5.0, "lancet", "round"), (5.0, 2.0, 6.0, 5.0, "lancet", "flat"),
+            (7.0, 6.0, 8.3, 9.5, "belfry", "round")]
+    church = _wall(1, 20, wins, worship="pointed", merged=["a"], landmark="x",
+                   house_rule={"windows": [], "doors": 0, "shopfronts": 0}, buttresses=[], courses=[])
+    A = _art(_scene([church], {"B1": {"source": "osm:way/1", "name": "x", "share": 1.0, "walls": 1}}))
+    O = A.openings_mesh()
+    heads = {}
+    for t in range(len(O["T"])):
+        x = O["V"][O["T"][t]][:, 0].min()
+        heads.setdefault(int(np.floor(x - 20.0 + 1e-6)), set()).add(int(O["head"][t]))
+    assert heads == {1: {HEAD["pointed"]}, 3: {HEAD["round"]}, 5: {HEAD["flat"]}, 7: {HEAD["round"]}}
+    # the flat one is the whole rectangle: two triangles, and glass in its top corners inside the frame
+    flat = np.flatnonzero(O["head"] == HEAD["flat"])
+    assert len(flat) == 2
+    V = O["V"][O["T"][flat]].reshape(-1, 3)
+    assert abs(V[:, 0].min() - 25.0) < 1e-9 and abs(V[:, 0].max() - 26.0) < 1e-9 and abs(V[:, 2].max() - 305.0) < 1e-9
+    xs, zs = np.meshgrid(np.linspace(25.01, 25.99, 99), np.linspace(302.01, 304.99, 299))
+    P = np.column_stack([xs.ravel(), np.full(xs.size, -0.05), zs.ravel()])
+    _, cls = A.openings_rgb(O, np.full(len(P), flat[0]), P, np.full(len(P), 1))
+    cls = cls.reshape(xs.shape)
+    assert (cls[-5:] == CLASS["trim"]).all() and (cls[:5] == CLASS["trim"]).all()          # a lintel and a sill
+    corner = (xs > 25.2) & (xs < 25.4) & (zs > 304.6) & (zs < 304.8)                        # where an arch would be stone
+    assert (cls[corner] == CLASS["window"]).mean() > 0.8
+    # the pointed one beside it is stone there: the head has come in
+    xs2 = xs - 4.0
+    P2 = np.column_stack([xs2.ravel(), np.full(xs.size, -0.05), zs.ravel()])
+    ti = np.flatnonzero(O["head"] == HEAD["pointed"])
+    _, cls2 = A.openings_rgb(O, np.full(len(P2), ti[0]), P2, np.full(len(P2), 1))
+    cls2 = cls2.reshape(xs.shape)
+    edge = (xs2 > 21.0) & (xs2 < 21.08) & (zs > 304.6) & (zs < 304.8)
+    assert (cls2[edge] == CLASS["trim"]).all()

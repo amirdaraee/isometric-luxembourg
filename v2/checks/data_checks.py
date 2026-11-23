@@ -154,7 +154,9 @@ def check_facades(ctx):
         rects = [box(*x[:4]) for x in w["windows"]]
         if poly is None or any(not poly.contains(b) for b in rects):
             outside.append(w["wall"])
-        ws = sorted(w["windows"], key=lambda x: (x[1], x[0]))
+        # a described landmark wall (rule 31) has the openings its sources show: paired lights stand closer than
+        # the rule's gap and its rows are its own; F28 checks them
+        ws = [] if w.get("landmark") else sorted(w["windows"], key=lambda x: (x[1], x[0]))
         for a, b in zip(ws, ws[1:]):
             if abs(a[1] - b[1]) < 1e-6 and b[0] - a[2] < ctx.params["checks"]["facade_window_min_gap_m"] - 1e-6:
                 overlap.append(w["wall"]); break
@@ -165,7 +167,7 @@ def check_facades(ctx):
             # sills on one line and their tops on one
             kinds = {x[4] for x in w["windows"]}
             rows = {(x[4], round(x[1], 3), round(x[3], 3)) for x in w["windows"]}
-            allowed = rows if len(rows) == len(kinds) else set()
+            allowed = rows if len(rows) == len(kinds) or w.get("landmark") else set()
         if w.get("dormer"):                                    # a dormer: one window, its sill its own (rule 13)
             allowed = rows if len(w["windows"]) == 1 else set()
         if not rows <= allowed:
@@ -255,7 +257,7 @@ def check_facades(ctx):
     house_win, shop, low, strays = [], [], [], []
     from v2.data.scene import church
     for w in cw:
-        for x in w["windows"]:
+        for x in ([] if w.get("landmark") else w["windows"]):      # a described wall's are its sources', not the rule's
             wd, ht, kind = x[2] - x[0], x[3] - x[1], x[4]
             if kind in church.TALL:
                 ok = abs(wd - church.window_width(ht, w["length"], p)) <= 1.1e-2         # the layout rounds a width to the centimetre
@@ -351,6 +353,30 @@ def check_facades(ctx):
            [{str(v["name"] or v["source"]): [v["front"]["how"], v["front"]["portal"], v["front"]["rose"], v["windows"], v["towers"],
                                              v["buttresses"]] for v in wor.values()},
             [[x["osm"], x["owner"]] for x in f_all.get("worship_exceptions", [])]])
+    # landmarks as they are (the owner's decision of 23 Nov 2026): every description is on one wall, every opening
+    # in its wall and clear of the others, and a described wall carries nothing else
+    from v2.data.scene import landmarks
+    lm = f_all.get("landmarks", {})
+    described = landmarks.load().get("buildings", {})
+    here = {b["id"] for b in blds}
+    bad_lm = [[bid, "described, and in this area, but not in the layout"] for bid in described if bid in here and bid not in lm]
+    for bid, v in lm.items():
+        bad_lm += [[bid, k, x] for k in ("unmatched", "outside", "overlapping") for x in v[k]]
+        if v["walls"] != v["described"]:
+            bad_lm.append([bid, f"{v['described']} walls described, {v['walls']} set"])
+    for w in walls:
+        if not w.get("landmark"):
+            continue
+        if not w.get("merged") or not w.get("worship") or w.get("buttresses"):
+            bad_lm.append([w["wall"], "a described wall that is not a church's joined wall, or still has the rule's buttresses"])
+        for x in w["windows"]:
+            if len(x) < 5 or x[4] not in landmarks.KINDS or (x[4] not in landmarks.ROUND and (len(x) < 6 or x[5] not in landmarks.HEADS)):
+                bad_lm.append([w["wall"], "an opening without a kind or a head", x])
+    r.at_most("F28", "landmark descriptions that are on no wall or on two, openings outside their wall or over another, "
+              "described walls that still carry the rule's", len(bad_lm), 0, bad_lm)
+    r.info("F29", "landmarks as they are: per building its walls set, openings by kind, how they were measured, blank "
+           "walls, walls turned round",
+           {bid: [v["name"], v["walls"], v["openings"], v["measured"], v["blank"], v["turned"]] for bid, v in lm.items()})
     r.info("F7", "walls, with windows, party walls, windows",
            [len(walls), sum(1 for w in walls if w["windows"]), sum(1 for w in walls if w["party"]), sum(len(w["windows"]) for w in walls)])
     return r.result()

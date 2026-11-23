@@ -410,7 +410,7 @@
      "title": "buildings: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 740",
      "passed": true,
      "value": {
-      "borders": 6,
+      "borders": 3,
       "middles": 3.0
      },
      "threshold": null,
@@ -461,9 +461,9 @@
     },
     {
      "id": "L8.4",
-     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1334 of 192811 vs 1324 of 188745; a seam would make it larger)",
+     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1334 of 192770 vs 1318 of 188677; a seam would make it larger)",
      "passed": true,
-     "value": 0.986,
+     "value": 0.991,
      "threshold": "<= 1.5",
      "severity": "gate",
      "examples": []
@@ -481,7 +481,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 82.9
+      "audit_s": 76.7
      },
      "threshold": null,
      "severity": "report",
@@ -667,7 +667,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 232.1,
+     "value": 214.1,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -679,9 +679,9 @@
    "entries": [
     {
      "id": "L5.2-edges",
-     "title": "line score, building edges (creases and outlines of the 3D model): share of 723356 seen samples (every 0.25 m, of 1647926) whose drawn line is within 1.0 px of the model's",
+     "title": "line score, building edges (creases and outlines of the 3D model): share of 723004 seen samples (every 0.25 m, of 1647926) whose drawn line is within 1.0 px of the model's",
      "passed": true,
-     "value": 0.9635,
+     "value": 0.9632,
      "threshold": ">= 0.95",
      "severity": "gate",
      "examples": [
@@ -691,19 +691,19 @@
        "z": 321.99
       },
       {
-       "e": 77748.06,
-       "n": 75038.78,
-       "z": 266.22
+       "e": 77745.58,
+       "n": 75037.62,
+       "z": 266.2
       },
       {
-       "e": 77654.65,
-       "n": 74834.11,
-       "z": 258.76
+       "e": 77648.86,
+       "n": 74849.69,
+       "z": 260.46
       },
       {
-       "e": 77555.12,
-       "n": 75057.42,
-       "z": 290.48
+       "e": 77557.11,
+       "n": 75057.08,
+       "z": 289.0
       },
       {
        "e": 77549.46,
@@ -711,27 +711,27 @@
        "z": 311.76
       },
       {
-       "e": 77217.19,
-       "n": 75503.87,
-       "z": 335.47
+       "e": 77324.13,
+       "n": 75446.22,
+       "z": 317.21
       },
       {
-       "e": 77507.79,
-       "n": 75118.23,
-       "z": 317.96
+       "e": 77510.17,
+       "n": 75117.54,
+       "z": 316.77
       },
       {
-       "e": 77952.75,
-       "n": 75266.46,
-       "z": 257.26
+       "e": 77959.96,
+       "n": 75269.02,
+       "z": 247.35
       }
      ]
     },
     {
      "id": "L5.2-windows",
-     "title": "line score, window rows (top and bottom of every window): share of 75215 seen samples (every 0.25 m, of 221889) whose drawn line is within 1.0 px of the model's",
+     "title": "line score, window rows (top and bottom of every window): share of 79120 seen samples (every 0.25 m, of 230658) whose drawn line is within 1.0 px of the model's",
      "passed": true,
-     "value": 0.9984,
+     "value": 0.9979,
      "threshold": ">= 0.95",
      "severity": "gate",
      "examples": [
@@ -741,19 +741,14 @@
        "z": 314.54
       },
       {
-       "e": 78288.07,
-       "n": 75377.89,
-       "z": 246.5
+       "e": 78283.33,
+       "n": 75380.67,
+       "z": 253.1
       },
       {
-       "e": 78200.97,
-       "n": 75425.99,
-       "z": 253.11
-      },
-      {
-       "e": 77667.14,
-       "n": 75470.26,
-       "z": 251.85
+       "e": 77270.03,
+       "n": 75525.77,
+       "z": 328.35
       },
       {
        "e": 77683.84,
@@ -761,27 +756,32 @@
        "z": 258.45
       },
       {
-       "e": 77410.29,
-       "n": 75335.64,
-       "z": 313.03
+       "e": 77407.51,
+       "n": 75337.59,
+       "z": 314.48
       },
       {
-       "e": 78123.22,
-       "n": 75503.03,
-       "z": 253.34
+       "e": 77427.21,
+       "n": 74817.02,
+       "z": 292.08
       },
       {
-       "e": 77415.76,
-       "n": 74837.82,
-       "z": 295.59
+       "e": 77419.17,
+       "n": 74831.08,
+       "z": 298.59
+      },
+      {
+       "e": 77639.93,
+       "n": 75325.8,
+       "z": 252.41
       }
      ]
     },
     {
      "id": "L5.8-tracery",
-     "title": "line score, church tracery (the mullion of every traceried window, a straight upright line): share of 931 seen samples (every 0.25 m, of 2716) whose drawn line is within 1.0 px of the model's",
+     "title": "line score, church tracery (the mullion of every traceried window, a straight upright line): share of 751 seen samples (every 0.25 m, of 2401) whose drawn line is within 1.0 px of the model's",
      "passed": true,
-     "value": 0.9968,
+     "value": 0.996,
      "threshold": ">= 0.95",
      "severity": "gate",
      "examples": [
@@ -808,9 +808,9 @@
      "passed": true,
      "value": [
       9,
-      6,
-      418582,
-      21215
+      5,
+      244569,
+      10546
      ],
      "threshold": null,
      "severity": "report",
@@ -856,7 +856,7 @@
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
       "images": 966,
-      "seconds": 428.4,
+      "seconds": 325.5,
       "queries": [
        "a car",
        "a parked car",
@@ -1070,7 +1070,7 @@
      "id": "V3b",
      "title": "share of pixels whose shadow changes between 10:00 and 16:00 (shadows move with ?hour)",
      "passed": true,
-     "value": 0.4257,
+     "value": 0.4256,
      "threshold": ">= 0.02",
      "severity": "gate",
      "examples": []
@@ -1116,23 +1116,23 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.15530000001192093,
-      "first_view_warm_s": 0.09689999997615814,
+      "first_view_cold_s": 0.14810000002384185,
+      "first_view_warm_s": 0.092,
       "pan_whole_area": {
-       "fps": 120.13887154417968,
+       "fps": 120.06390095387931,
        "frame_ms_median": 0.5,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 91.74541272963694,
+       "fps": 94,
        "frame_ms_median": 0.19999998807907104,
        "tiles_missing": 0
       },
-      "pan_fps": 91.74541272963694,
+      "pan_fps": 94,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 113.04651627104901,
+        "fps": 119.99100067459179,
         "frame_ms_median": 0.800000011920929,
         "tiles_missing": 0
        }
@@ -1147,7 +1147,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.097,
+     "value": 0.092,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1156,7 +1156,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 91.7,
+     "value": 94,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1168,7 +1168,7 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 113.04651627104901,
+       "fps": 119.99100067459179,
        "frame_ms_median": 0.800000011920929,
        "tiles_missing": 0
       }
@@ -1467,10 +1467,31 @@
      "examples": []
     },
     {
+     "id": "F26",
+     "title": "dormer fronts that are not on their building's roof, are outside the rule's sizes, or do not have exactly one window and nothing else",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F27",
+     "title": "dormer windows, and the buildings that have them",
+     "passed": true,
+     "value": [
+      2617,
+      481
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
      "id": "F6",
      "title": "share of buildings >= 5 m tall and >= 40 m2 with at least one window",
      "passed": true,
-     "value": 0.996,
+     "value": 0.997,
      "threshold": ">= 0.9",
      "severity": "gate",
      "examples": []
@@ -1662,7 +1683,7 @@
        ]
       },
       1237,
-      291,
+      304,
       1006
      ],
      "threshold": null,
@@ -1716,14 +1737,13 @@
         true,
         true,
         {
-         "traceried": 42,
-         "lancet": 20,
+         "traceried": 37,
+         "lancet": 44,
          "rose": 1,
-         "oculus": 2,
-         "belfry": 14
+         "belfry": 10
         },
         7,
-        4
+        0
        ],
        "Sainte-Cun\u00e9gonde": [
         "the tower end",
@@ -1840,14 +1860,51 @@
      "examples": []
     },
     {
+     "id": "F28",
+     "title": "landmark descriptions that are on no wall or on two, openings outside their wall or over another, described walls that still carry the rule's",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "F29",
+     "title": "landmarks as they are: per building its walls set, openings by kind, how they were measured, blank walls, walls turned round",
+     "passed": true,
+     "value": {
+      "ACT_e92ec91a-b2d2-445e-9305-4dd27f787994": [
+       "Notre-Dame Cathedral",
+       21,
+       {
+        "traceried": 16,
+        "lancet": 32,
+        "belfry": 4
+       },
+       {
+        "capture": 15,
+        "mirror": 1,
+        "photo": 5
+       },
+       1,
+       [
+        "west tower, east face over the nave roof"
+       ]
+      ]
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
      "id": "F7",
      "title": "walls, with windows, party walls, windows",
      "passed": true,
      "value": [
-      23001,
-      6221,
+      25618,
+      8837,
       4421,
-      37071
+      39701
      ],
      "threshold": null,
      "severity": "report",
@@ -2440,7 +2497,7 @@
      "id": "L2",
      "title": "total spent + committed (USD)",
      "passed": true,
-     "value": 4.61,
+     "value": 6.7,
      "threshold": "<= 100.0",
      "severity": "gate",
      "examples": []
@@ -2458,23 +2515,23 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.15530000001192093,
-  "first_view_warm_s": 0.09689999997615814,
+  "first_view_cold_s": 0.14810000002384185,
+  "first_view_warm_s": 0.092,
   "pan_whole_area": {
-   "fps": 120.13887154417968,
+   "fps": 120.06390095387931,
    "frame_ms_median": 0.5,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 91.74541272963694,
+   "fps": 94,
    "frame_ms_median": 0.19999998807907104,
    "tiles_missing": 0
   },
-  "pan_fps": 91.74541272963694,
+  "pan_fps": 94,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 113.04651627104901,
+    "fps": 119.99100067459179,
     "frame_ms_median": 0.800000011920929,
     "tiles_missing": 0
    }
@@ -2609,5 +2666,5 @@
    }
   }
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/7c39be2ef469"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/549133649c88"
 }
