@@ -3,8 +3,8 @@
 **Purpose.** Every tree at its measured place and size, as part of the drawing, changing with the seasons.
 **Made by:** code crowns (A, B) or an AI-painted canopy field (C), decided at the bake-off. Methods A and B: the
 crown fills the measured height down to a trunk of a quarter of it (at least 2 m); its width follows the tree's
-shape by species and age (rule 1); both draw leaf clumps (a 0.8 m cell pattern on the crown's surface, lighter and
-darker clumps, darker gaps; B has A's crowns by the owner's decision of 10 Nov 2026). Method C uses the same code crowns unless a canopy is painted.
+shape by species and age (rule 1); both draw the crown as leaf clumps (below; B has A's crowns by the owner's
+decision of 10 Nov 2026). Method C uses the same code crowns unless a canopy is painted.
 
 **Inputs.** Scene trees (`trees.npz`: LiDAR 2024 survey position, height, crown radius after thinning, type), the
 palette (`trees.*`), terrain and buildings (depth).
@@ -12,13 +12,28 @@ palette (`trees.*`), terrain and buildings (depth).
 **Output.** RGBA tiles, depth per pixel (each crown as a 3D shape on a trunk to the measured height), a crown mask
 (for sway and seasons), id tiles.
 
-**Crown shape and variety (phase 3).** A broadleaf crown is a core with five to seven lobes round it and one on
-top; a conifer is three tiers narrowing upwards; a crown under 1.2 m radius stays one shape. No lobe reaches beyond
-the tree's crown radius, above its measured top or below the crown's foot, and the top lobe ends exactly at the
-measured top, so rule 1 holds (unit test `test_crown_lobes_stay_inside_the_measured_crown`). Each tree has its own
-depth of green and leans to a warmer or a cooler green (palette `summer_light_warm`, `summer_light_cool`); a
-lighter ink line marks where two lobes of one crown meet. Lobes, colours and lines are hashes of the tree's index:
-nothing follows the sun. Layer 9 casts the shadows of the same lobes.
+**Crown shape and variety (phase 3; v1's trees, the owner, 23 Nov 2026).** A broadleaf crown is a dark core
+(0.8 of the crown's radius and half-height) with leaf clumps all over its surface, one of them on top; a conifer is
+three tiers narrowing upwards; a crown under 1.2 m radius stays one shape.
+- **Clumps.** A clump is a spheroid of half the crown's radius (0.6 m at least, 2.4 m at most, never over 0.6 of
+  the crown's), 0.85 as high as wide, each its own size (±30%). They are spread evenly over the measured crown's
+  surface (golden angle, turned and jittered per tree), as many as cover it once with 1.3 of a clump's footprint
+  each (8 at least): about 15 seen on a grown tree. No clump reaches beyond the tree's crown radius, above its
+  measured top or below the crown's foot, and the top clump ends exactly at the measured top, so rule 1 holds (unit
+  test `test_crown_lobes_stay_inside_the_measured_crown`).
+- **Colours** (`art_a.crown_rgb`). A clump is the tree's light green, each clump its own tone (±11%), with a fine
+  fleck of leaves (0.3 m, ±4%). The core, seen between clumps, is the foliage's dark. The underside of a clump,
+  which sees no sky, goes to the dark across a ragged edge (0.45 m): at full strength on a clump of 1.3 m radius or
+  more, fading to a third on the smallest, so a small tree is not striped. Each tree leans to a warmer or a cooler
+  green (palette `summer_light_warm`, `summer_light_cool`).
+- **Lines.** Ink (the foliage's dark at 0.55) at 0.9 where a crown meets anything else, and at 0.8 where two shapes
+  of one crown meet (the nearer shape's edge), so every clump is drawn round.
+- **Nothing follows the sun.** Clumps, colours and lines are hashes of the tree's index and of the place; the dark
+  underside follows "up". What moves with the hour is the viewer's light on each clump's own normal (bright on the
+  sunward side) and layer 9's cast shadows, from the same shapes.
+- Before 23 Nov 2026 a crown was a core with five to seven large lobes, a mid green with a 0.8 m cell pattern.
+  v1's foliage runs from [10, 23, 17] to [156, 176, 43] (5th to 95th percentile of luminance, three views); v2's
+  ran from [33, 40, 24] to [120, 138, 68].
 
 **Rules.**
 1. Position and height come from the survey and are never changed. The crown's width is the survey's

@@ -93,12 +93,12 @@ def test_drawn_detail_is_even_and_knows_no_side():
 
 
 def test_crown_lobes_stay_inside_the_measured_crown():
-    from v2.layers.render import crown_lobes
+    from v2.layers.render import CROWN_CLUMP, CROWN_CORE_KIND, crown_lobes
     rng = np.random.default_rng(5)
     k = 500
     C = np.column_stack([rng.uniform(0, 100, k), rng.uniform(0, 100, k), rng.uniform(260, 300, k)])
     r, b, typ = rng.uniform(0.6, 6.5, k), rng.uniform(1.0, 9.0, k), rng.integers(0, 4, k)
-    C2, r2, b2, own = crown_lobes(C, r, b, typ)
+    C2, r2, b2, own, kind = crown_lobes(C, r, b, typ)
     assert set(own.tolist()) == set(range(k))
     d = np.hypot(C2[:, 0] - C[own, 0], C2[:, 1] - C[own, 1])
     assert (d + r2 <= r[own] + 1e-9).all()                               # never wider than the measured crown
@@ -108,7 +108,34 @@ def test_crown_lobes_stay_inside_the_measured_crown():
     np.maximum.at(top, own, C2[:, 2] + b2)
     assert np.allclose(top, C[:, 2] + b)                                  # and its top is the measured top
     again = crown_lobes(C, r, b, typ)
-    assert all(np.array_equal(x, y) for x, y in zip((C2, r2, b2, own), again))
+    assert all(np.array_equal(x, y) for x, y in zip((C2, r2, b2, own, kind), again))
+    # a broadleaf that is not small: one dark core, and leaf clumps all round it, up to the measured width
+    lob = (typ != 2) & (r >= 1.2)
+    cores = np.bincount(own[kind == CROWN_CORE_KIND], minlength=k)
+    clumps = np.bincount(own[kind == CROWN_CLUMP], minlength=k)
+    assert (cores[lob] == 1).all() and (cores[~lob] == 0).all() and (clumps[lob] >= 8).all() and (clumps[~lob] == 0).all()
+    reach = np.zeros(k)
+    np.maximum.at(reach, own, d + r2)
+    assert (reach[lob] > 0.97 * r[lob]).all()
+
+
+def test_a_crown_s_colours_follow_up_and_never_the_sun():
+    from v2.layers.art_a import ArtA
+    from v2.layers.common import lum, pal
+    from v2.layers.render import CROWN_CLUMP, CROWN_CORE_KIND
+    rng = np.random.default_rng(2)
+    n = 4000
+    light, dark = np.tile(pal("trees", "summer_light"), (n, 1)), np.tile(pal("trees", "summer_dark"), (n, 1))
+    P = rng.uniform(0, 30, (n, 3)); px, py = rng.uniform(0, 500, n), rng.uniform(0, 500, n)
+    tree, shape = np.zeros(n, np.int64), rng.integers(0, 20, n)
+    clump = np.full(n, CROWN_CLUMP)
+    top = lum(ArtA.crown_rgb(light, dark, P, np.full(n, 0.9), tree, shape, clump, px, py))
+    under = lum(ArtA.crown_rgb(light, dark, P, np.full(n, -0.6), tree, shape, clump, px, py))
+    core = lum(ArtA.crown_rgb(light, dark, P, np.full(n, 0.9), tree, shape, np.full(n, CROWN_CORE_KIND), px, py))
+    assert np.median(top) > 3 * np.median(under) and np.median(top) > 2.5 * np.median(core)  # light tops, dark below and inside
+    assert np.median(top) > 0.8 * lum(pal("trees", "summer_light"))
+    # the same inputs give the same colours: nothing in the function knows the hour or the view
+    assert np.array_equal(top, lum(ArtA.crown_rgb(light, dark, P, np.full(n, 0.9), tree, shape, clump, px, py)))
 
 
 def test_a_well_known_building_gets_its_own_materials():

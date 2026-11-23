@@ -100,9 +100,9 @@
  },
  "trees": {
   "summer_dark":   {"rgb": [28, 44, 24],   "src": "pipeline/layers/v2_canopy.py dark"},
-  "summer_light":  {"rgb": [150, 178, 84], "src": "v2_canopy.py light"},
-  "summer_light_warm": {"rgb": [176, 186, 76], "src": "v2 phase 3 (tree to tree variety: a yellower green)"},
-  "summer_light_cool": {"rgb": [112, 166, 96], "src": "v2 phase 3 (tree to tree variety: a bluer green)"},
+  "summer_light":  {"rgb": [130, 155, 44], "src": "v2 phase 3 (v1's lit foliage, measured on v1's art, over the viewer's light; owner 23 Nov 2026)"},
+  "summer_light_warm": {"rgb": [150, 163, 40], "src": "v2 phase 3 (tree to tree variety: a yellower green; v1's trees)"},
+  "summer_light_cool": {"rgb": [100, 150, 54], "src": "v2 phase 3 (tree to tree variety: a bluer green; v1's trees)"},
   "conifer_dark":  {"rgb": [20, 40, 30],   "src": "v2_canopy.py conifer"},
   "conifer_light": {"rgb": [96, 132, 84],  "src": "v2_canopy.py conifer"},
   "red_dark":      {"rgb": [48, 26, 30],   "src": "v2_canopy.py red"},

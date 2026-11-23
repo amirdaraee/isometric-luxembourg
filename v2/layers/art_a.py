@@ -746,15 +746,27 @@ class ArtA:
         return rgb * gp(px, py, 0.02, 17)[:, None]
 
     @staticmethod
-    def crown_rgb(col, P, tree_id, px, py):
-        """Leaf clumps: a 3D cell pattern (0.8 m cells) on the crown's surface, lighter and darker clumps and dark
-        gaps between them. No light: the pattern does not depend on the sun or the view."""
-        q = P / 0.8
-        cell = np.floor(q)
-        f = q - cell - 0.5
-        r = np.sqrt((f ** 2).sum(1))
-        tone = 1 + (ihash(cell[:, 0], cell[:, 1], cell[:, 2], tree_id) - 0.5) * 0.22
-        out = col * tone[:, None]
-        gap = r > 0.62
-        out[gap] *= 0.72
+    def crown_rgb(light, dark, P, nz, tree_id, shape_id, kind, px, py, shape_r=None):
+        """A crown's colours (v1's trees: the owner, 23 Nov 2026), per pixel: `light` and `dark` the tree's two ends,
+        P the world point, nz the shape's normal's upward part, kind the shape's (render.crown_lobes).
+          - a leaf clump is the tree's light green, each clump its own tone, with a fine fleck of leaves;
+          - the crown's core, seen between clumps, is its dark inside;
+          - the underside of a clump sees no sky: it goes to the dark, across a ragged, leafy edge; less so on a
+            small clump (`shape_r`, its radius: under 1.3 m the dark fades, to a third at 0.67 m), where a full
+            dark band would stripe the tree.
+        No light in it: the pattern follows "up" and the tree, never the sun or the view (the viewer's sun lights
+        the clumps by their own normals, which is what moves)."""
+        from v2.layers.render import CROWN_CORE_KIND, CROWN_WHOLE
+        mix = (0.85 + 0.15 * ihash(tree_id, 31))[:, None]
+        out = (dark * (1 - mix) + light * mix) * (1 + (ihash(shape_id, 33) - 0.5) * 0.22)[:, None]
+        q = np.floor(P / 0.3)
+        out *= (1 + (ihash(q[:, 0], q[:, 1], q[:, 2], tree_id) - 0.5) * 0.08)[:, None]
+        core = kind == CROWN_CORE_KIND
+        out[core] = out[core] * 0.1 + dark[core] * 0.9
+        q = np.floor(P / 0.45)
+        u = np.clip((0.38 - (nz + (ihash(q[:, 0], q[:, 1], q[:, 2], tree_id + 5) - 0.5) * 0.5)) / 0.4, 0, 1)
+        u = u * u * (3 - 2 * u) * np.where(kind == CROWN_WHOLE, 0.45, 0.88) * ~core
+        if shape_r is not None:
+            u = u * np.where(kind == CROWN_WHOLE, 1.0, np.clip((shape_r - 0.4) / 0.9, 0.3, 1.0))
+        out = out * (1 - u)[:, None] + dark * (u * 0.5)[:, None]
         return out * gp(px, py, 0.04, 7)[:, None]
