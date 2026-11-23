@@ -123,3 +123,69 @@ def test_seam_check_finds_a_seam_and_nothing_else():
     assert bad >= 3
     ctrl, _, _ = seams_of(lambda n: (tiles[n], ok), set(tiles), P, at=256)
     assert ctrl == 0
+
+
+def road_scene(crossing="zebra", cls="secondary"):
+    """A two-lane street running east through a tile's plan canvas, a footway crossing it: (renderer, canvas, the
+    street's centre point)."""
+    from shapely import STRtree
+    from shapely.geometry import LineString
+
+    from v2.layers.common import Tile
+    from v2.layers.render import DU, Canvas, Renderer
+    cv = Canvas(Tile(0, 0, apron=0), 0.0, 40.0)
+    u, f = cv.u0 + 256 * DU, cv.f0 + 160 * DU
+    c = np.array([cv.oe + (u - f) * R2, cv.on + (u + f) * R2])
+    street = LineString([c + (-25, 0), c + (25, 0)])
+    walk = LineString([c + (5, -6), c + (5, 6)])
+    R = Renderer.__new__(Renderer)
+    R.__dict__["edges"] = [
+        {"mode": "road", "cls": cls, "width": 6.5, "lanes": 2, "oneway": False},
+        {"mode": "path", "cls": "footway", "width": 2.0, "lanes": 0, "oneway": False, "crossing": crossing}]
+    R.__dict__["surfaces"] = [(0, "road", street.buffer(3.25, cap_style="flat"), street, False),
+                             (1, "path", walk.buffer(1.0, cap_style="flat"), walk, False)]
+    R.__dict__["surface_tree"] = STRtree([s[2] for s in R.surfaces])
+    return R, cv, c
+
+
+def test_a_marked_crossing_is_striped_on_the_carriageway_only():
+    from v2.layers.common import CLASS, pal
+    white = np.round(pal("transport", "lane_dash")).astype(int)
+    R, cv, c = road_scene()
+    rgb, ids, _ = R._draw_transport(cv, bridge=False)
+    is_white = (np.abs(rgb.astype(int) - white).max(-1) == 0)
+    px = lambda p: tuple(int(v) for v in np.floor(cv.xy(p[0], p[1]))[::-1])        # noqa: E731
+    along = [is_white[px(c + (5, d))] for d in np.arange(-2.9, 2.9, 0.125)]        # across the street, on the walk
+    runs = np.flatnonzero(np.diff(np.r_[0, np.array(along, int), 0]) == 1)
+    assert 5 <= len(runs) <= 7                                                    # bars of 0.5 m every metre
+    assert 0.35 < np.mean(along) < 0.65
+    assert is_white[(ids & 255) != CLASS["road"]].sum() == 0                      # nothing striped off the asphalt
+    assert not any(is_white[px(c + (5, d))] for d in (-5.0, 5.0))                 # the footway beyond the kerbs
+    assert not is_white[px(c + (-10, 1.5))]                                       # the street away from the crossing
+    R2_, cv2, c2 = road_scene(crossing="")
+    rgb2, _, _ = R2_._draw_transport(cv2, bridge=False)
+    w2 = (np.abs(rgb2.astype(int) - white).max(-1) == 0)
+    assert not any(w2[px(c2 + (5, d))] for d in np.arange(-2.9, 2.9, 0.125) if abs(d) > 0.3)   # no word, no stripes
+
+
+def test_streets_have_a_kerb_and_driveways_do_not():
+    from v2.layers.common import pal
+    from v2.layers.render import KERB_M
+    kerb = np.round(pal("transport", "kerb")).astype(int)
+    px = lambda cv, p: tuple(int(v) for v in np.floor(cv.xy(p[0], p[1]))[::-1])   # noqa: E731
+    for cls, want in (("secondary", True), ("residential", True), ("service", False), ("track", False)):
+        R, cv, c = road_scene(crossing="", cls=cls)
+        if cls != "secondary":
+            R.surfaces[0] = (0, "road_minor") + R.surfaces[0][2:]
+        rgb, _, _ = R._draw_transport(cv, bridge=False)
+        at = rgb[px(cv, c + (-10, 3.25 + KERB_M / 2))].astype(int)
+        assert (np.abs(at - kerb).max() == 0) == want, cls
+        assert np.abs(rgb[px(cv, c + (-10, 2.5))].astype(int) - kerb).max() > 20    # the carriageway keeps its width
+
+
+def test_asphalt_is_a_soft_wash_without_grain():
+    from v2.layers import detail
+    e, n = np.meshgrid(np.arange(0, 60, 0.125), np.arange(0, 60, 0.125))
+    f = detail.asphalt(e, n)
+    assert abs(f.mean() - 1) < 0.01 and 0.01 < f.std() < 0.04
+    assert np.abs(np.diff(f, axis=1)).max() < 0.004 and np.abs(np.diff(f, axis=0)).max() < 0.004   # pixel to pixel

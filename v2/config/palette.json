@@ -39,6 +39,7 @@
   "pedestrian":  {"rgb": [164, 150, 126], "src": "v2 phase 3 (v1's ground tone, measured on v1's art and the T4 paintings; owner 23 Nov 2026)"},
   "path":        {"rgb": [172, 152, 114], "src": "v2 phase 3 (v1's ground tone, measured on v1's art and the T4 paintings; owner 23 Nov 2026)"},
   "steps":       {"rgb": [160, 148, 126], "src": "v2 phase 3 (v1's ground tone, measured on v1's art and the T4 paintings; owner 23 Nov 2026)"},
+  "kerb":        {"rgb": [192, 182, 162], "src": "v2 phase 3 (kerbstone: v1's pale road edge; owner 23 Nov 2026)"},
   "lane_dash":   {"rgb": [238, 234, 222], "src": "v2_ink.py dash"},
   "rail":        {"rgb": [36, 32, 30],    "src": "v2_ink.py rail"},
   "tram":        {"rgb": [58, 54, 52],    "src": "v2_ink.py tram"},

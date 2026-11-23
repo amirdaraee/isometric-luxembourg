@@ -144,7 +144,7 @@
     },
     {
      "id": "L4.1",
-     "title": "road, rail and tram centre-line samples (every 0.5 m) inside the drawn surface (of 63133; 4182 behind the terrain; 181 within 1 px of the surface's edge)",
+     "title": "road, rail and tram centre-line samples (every 0.5 m) inside the drawn surface (of 63236; 4079 behind the terrain; 179 within 1 px of the surface's edge)",
      "passed": true,
      "value": 1.0,
      "threshold": ">= 1.0",
@@ -158,6 +158,28 @@
      "value": 0,
      "threshold": "<= 0",
      "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L4.7",
+     "title": "marked crossings (OSM) with 2 m or more on a carriageway that are not striped there (of 9)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L4.7b",
+     "title": "marked crossings: metres on a carriageway, and the share of it striped (bars and gaps are equal)",
+     "passed": true,
+     "value": {
+      "crossings": 9,
+      "metres": 37.8,
+      "striped": 0.397
+     },
+     "threshold": null,
+     "severity": "report",
      "examples": []
     },
     {
@@ -264,7 +286,7 @@
       "ground": 0.0177,
       "buildings": 0.04,
       "water": 0.0,
-      "transport": 0.0077,
+      "transport": 0.0293,
       "structures": 0.0272
      },
      "threshold": null,
@@ -377,20 +399,20 @@
     },
     {
      "id": "S-transport",
-     "title": "transport: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 54 chunks)",
+     "title": "transport: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 55 chunks)",
      "passed": true,
-     "value": 1.042,
+     "value": 1.008,
      "threshold": "<= 3.0",
      "severity": "gate",
      "examples": []
     },
     {
      "id": "S-transport-v1",
-     "title": "transport: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 101",
+     "title": "transport: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 122",
      "passed": true,
      "value": {
       "borders": 0,
-      "middles": 0.0
+      "middles": 3.0
      },
      "threshold": null,
      "severity": "report",
@@ -461,9 +483,9 @@
     },
     {
      "id": "L8.4",
-     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1337 of 192773 vs 1319 of 188675; a seam would make it larger)",
+     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1338 of 192802 vs 1319 of 188696; a seam would make it larger)",
      "passed": true,
-     "value": 0.992,
+     "value": 0.993,
      "threshold": "<= 1.5",
      "severity": "gate",
      "examples": []
@@ -481,7 +503,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 75.9
+      "audit_s": 77.7
      },
      "threshold": null,
      "severity": "report",
@@ -667,7 +689,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 211.5,
+     "value": 217.3,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -855,8 +877,8 @@
      "value": {
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
-      "images": 964,
-      "seconds": 349.5,
+      "images": 965,
+      "seconds": 347.0,
       "queries": [
        "a car",
        "a parked car",
@@ -1116,23 +1138,23 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.14710000002384185,
-      "first_view_warm_s": 0.09089999997615814,
+      "first_view_cold_s": 0.1535,
+      "first_view_warm_s": 0.09140000003576279,
       "pan_whole_area": {
-       "fps": 120.14487323591858,
-       "frame_ms_median": 0.5999999642372131,
+       "fps": 120.02495321272613,
+       "frame_ms_median": 0.5,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 90.11932697561677,
-       "frame_ms_median": 0.30000001192092896,
+       "fps": 92.44915296614414,
+       "frame_ms_median": 0.19999998807907104,
        "tiles_missing": 0
       },
-      "pan_fps": 90.11932697561677,
+      "pan_fps": 92.44915296614414,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 102.42062401577729,
+        "fps": 120.12686995757748,
         "frame_ms_median": 0.800000011920929,
         "tiles_missing": 0
        }
@@ -1156,7 +1178,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 90.1,
+     "value": 92.4,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1168,7 +1190,7 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 102.42062401577729,
+       "fps": 120.12686995757748,
        "frame_ms_median": 0.800000011920929,
        "tiles_missing": 0
       }
@@ -3089,17 +3111,17 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 8.800000011920929
+        "ms": 8.899999976158142
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8
+        "ms": 9.199999988079071
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 7.800000011920929
+        "ms": 8.200000047683716
        },
        {
         "on": false,
@@ -3109,49 +3131,49 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 7.900000035762787
+        "ms": 8.300000011920929
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 7.100000023841858
+        "ms": 8.5
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 8.700000047683716
+        "ms": 8.899999976158142
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8
+        "ms": 8.400000035762787
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 8
+        "ms": 8.300000011920929
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 7
+        "ms": 7.800000011920929
        }
       ],
       "pan_whole_area": {
-       "fps": 120.11187134902251,
+       "fps": 120.0938779590112,
        "frame_ms_median": 0.5,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
       "pan_zoom1": {
-       "fps": 94.21231507340909,
+       "fps": 95.19764129757004,
        "frame_ms_median": 0.3999999761581421,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
-      "pan_fps": 94.21231507340909,
+      "pan_fps": 95.19764129757004,
       "viewport": "1600x1000 CSS px, device pixel ratio 1"
      },
      "threshold": null,
@@ -3160,7 +3182,7 @@
     },
     {
      "id": "X8a",
-     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 8.8 ms at most)",
+     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 9.2 ms at most)",
      "passed": true,
      "value": 1,
      "threshold": "<= 1",
@@ -3171,7 +3193,7 @@
      "id": "X8b",
      "title": "panning in tunnel view, desktop (frames per second, the whole area and 1:1)",
      "passed": true,
-     "value": 94.2,
+     "value": 95.2,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -3180,7 +3202,7 @@
      "id": "X9",
      "title": "seconds",
      "passed": true,
-     "value": 108.2,
+     "value": 109.3,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -4710,7 +4732,7 @@
      "id": "K6v-far-on",
      "title": "far zoom: pixels the cutaways change when on",
      "passed": true,
-     "value": 832373,
+     "value": 832664,
      "threshold": ">= 1",
      "severity": "gate",
      "examples": []
@@ -4728,28 +4750,28 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.14710000002384185,
-  "first_view_warm_s": 0.09089999997615814,
+  "first_view_cold_s": 0.1535,
+  "first_view_warm_s": 0.09140000003576279,
   "pan_whole_area": {
-   "fps": 120.14487323591858,
-   "frame_ms_median": 0.5999999642372131,
+   "fps": 120.02495321272613,
+   "frame_ms_median": 0.5,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 90.11932697561677,
-   "frame_ms_median": 0.30000001192092896,
+   "fps": 92.44915296614414,
+   "frame_ms_median": 0.19999998807907104,
    "tiles_missing": 0
   },
-  "pan_fps": 90.11932697561677,
+  "pan_fps": 92.44915296614414,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 102.42062401577729,
+    "fps": 120.12686995757748,
     "frame_ms_median": 0.800000011920929,
     "tiles_missing": 0
    }
   },
   "viewport": "1600x1000 CSS px, device pixel ratio 1"
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/66735929c193"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/21b51c727efe"
 }

@@ -127,6 +127,19 @@ def width_lanes(tg, cls, mode, p):
     return float(w), int(lanes)
 
 
+def crossing_marking(tg) -> str:
+    """"zebra" where OSM says a way is a foot or cycle crossing marked on the road, else "". `crossing:markings`
+    decides where it is given (anything but "no" is a marking); without it, `crossing` = marked, zebra, uncontrolled
+    (OSM's older word for a marked crossing without signals) or traffic_signals (signal crossings in Luxembourg are
+    striped). An unmarked or untagged crossing gets nothing."""
+    if "crossing" not in (tg.get("footway"), tg.get("cycleway"), tg.get("path")):
+        return ""
+    mk = tg.get("crossing:markings")
+    if mk is not None:
+        return "" if mk == "no" else "zebra"
+    return "zebra" if tg.get("crossing") in ("marked", "zebra", "uncontrolled", "traffic_signals") else ""
+
+
 def ways_to_edges(elements, grid: Grid, select, p):
     """Split the graph ways into edges at junctions; cut where they leave the grid."""
     x0, y0, x1, y1 = grid.bounds()
@@ -665,6 +678,8 @@ def solve_graph(edges, boundary, mnt, mns, p, chk, footprints_=(), crowns=None):
                "en": [[round(float(x), 2), round(float(y), 2)] for x, y in pts], "s": r2(s), "z": r2(z),
                "ground": r2(ground)}
         rec["clearance_m"] = round(float(ed["clearance"]), 2)
+        if crossing_marking(tg):
+            rec["crossing"] = crossing_marking(tg)
         if ed.get("on_structure_m"):
             rec["on_structure_m"] = round(ed["on_structure_m"], 1)
         if "deck_obs" in rec_extra:

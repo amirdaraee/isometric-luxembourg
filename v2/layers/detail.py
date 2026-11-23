@@ -62,6 +62,12 @@ def vnoise(x, y, scale, seed=0):
     return (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy
 
 
+def asphalt(e, n):
+    """Asphalt's tone factor from its place on the ground: a soft wash at two scales and no grain (v1's asphalt,
+    measured: smooth from pixel to pixel, its tone drifting over a few metres)."""
+    return 1 + (vnoise(e, n, 3.0, 6) - 0.5) * 0.035 + (vnoise(e, n, 11.0, 7) - 0.5) * 0.08
+
+
 def slabs(x, y, w, h, px=PX, joint=0.06, tone=0.04, seed=0):
     """Stones w x h in rows with staggered joints: (each stone's tone factor, the joints' coverage)."""
     row = np.floor(y / h)

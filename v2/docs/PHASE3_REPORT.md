@@ -2751,3 +2751,86 @@ detector on each whole picture now marks none of the 101 (it marked 3 in section
 44, 46, 60 and 61 stand.
 
 62. **Is the ground right now**, and shall I go on to the asphalt?
+
+## 29. v1's asphalt: step 2 of three (23 November, $0)
+
+Branch `v2-phase3-asphalt`. **Spent: $0.** No pod. Shown the ground (section 28), the owner answered on 23
+November: "1- looks good 2- do it 3- go ahead". PR #26 was merged (d8debab); this is the asphalt.
+
+### 29.1 What v1's roads have that v2's did not
+
+Measured on v1's art at v2's road surfaces, by road style, with no tree in front and out of the model's shadow
+(51 of the 101 windows), and looked at close up:
+
+- **The colour is the same.** v1's clean, lit asphalt on main roads is [132, 128, 130] at its most common tone;
+  the palette's `road` is [132, 130, 128]. Section 28.3 called v1's roads "warmer": that figure pooled paths,
+  pavements and shadows with the asphalt, and was wrong for the asphalt itself. The colour was not changed.
+- **The grain.** v2 gave asphalt a grain from pixel to pixel (6%). v1's is smooth from pixel to pixel (1.4% of its
+  luminance) and its tone drifts over a few metres (7%, a part of which is markings and lane patches).
+- **The markings.** v1's lane lines are bold; v2's were one pixel wide.
+- **The edge.** v1's roads have a pale edge (kerb and pavement) inside a dark outline; v2's had the outline only.
+- **Crossings.** v1 has zebra crossings (painted from the photo); v2 had none.
+
+![Close up: v1's roads, and v2's code art before this step](img/test_asphalt_v1_closeups.jpg)
+
+### 29.2 What changed
+
+| | Before | Now |
+|---|---|---|
+| Asphalt surface | pixel grain, 6% | a soft wash: 3.5% over 3 m and 8% over 11 m, no grain (`detail.asphalt`); on decks too |
+| Lane dashes | 0.15 m (1 px) | 0.25 m (2 px) |
+| Kerb | none | 0.3 m of `transport.kerb` outside the carriageway of every street; not on OSM service roads and tracks |
+| Crossings | none | bars of 0.5 m every metre where OSM says the crossing is marked, on the carriageway only |
+| Road colour | [132, 130, 128] | the same |
+
+- **Crossings come from the data.** A new field of the transport graph, `crossing`, from OSM's `crossing:markings`
+  and `crossing` tags (`transport-graph.md`, "Marked crossings"). In the test area 96 edges are crossing ways: 22
+  are marked, 3 are unmarked, **71 carry no word either way and get no stripes**. Nearly all of those 71 are
+  probably zebra crossings in fact; I left them unstriped rather than draw a marking the data does not give.
+- **The carriageway keeps the width the graph gives it**: the kerb is outside it.
+- **A new gate, L4.7**: every marked crossing with 2 m or more on a carriageway is striped there. 9 crossings in
+  the area qualify (the other marked edges are outside the area or shorter), 0 fail; 39.7% of their 37.8 m is
+  striped (bars and gaps are equal; the rest is where a bar meets a kerb or a lane line's gap).
+
+![Code art, unlit, before and now: Kirchberg, above the René Konen tunnel, the boulevard](img/test_asphalt_before_now.jpg)
+
+### 29.3 The build and the painted area
+
+| | |
+|---|---|
+| Release | `21b51c727efe` (current) |
+| Stages | 59 of 59 |
+| Gate entries | 284 pass, 0 fail (283 and the new L4.7) |
+
+- No threshold was changed. No baked light: 0 of 227, worst 4.0% on buildings, 2.9% on the transport layer, 1.8%
+  on the ground. Vehicle detector on the ground and transport tiles: 0. Centre lines inside their surface: 100%.
+  Lines: edges 96.3%, window rows 99.8%. 92 and 95 frames a second.
+- Tests: 4 new (172 in all, all pass).
+
+**The painted area on the new roads** (`inputs area`, `targets --source T4`, `gates --source T4`): 101 pictures,
+even light 0 fail; the build's line, shadow and vehicle checks pass on the painted tiles (edges 96.5%, window rows
+99.8%, 0 of 227 at worst 4.3%, 0 vehicles on buildings and structures); seams between neighbouring windows median
+0.17%.
+
+**One figure got worse.** The detector run on each whole picture (not a gate: section 26) marks 2 of the 101 as
+"a bus", at 0.115 and 0.107 against the 0.10 line; it marked none in section 28. I looked at both: one is a row
+of facades at a picture's top edge beside a kerbed street, the other a red and white shop front. Neither is a
+vehicle, and neither is on a road. My reading, not tested: a street that reads more clearly as a street raises
+the detector's score for whatever stands beside it.
+
+### 29.4 Not done
+
+- Trees (step 3).
+- The 71 crossings OSM says nothing about.
+- v1's stop lines, edge lines and arrows: OSM does not carry them.
+- The tram's track bed. v1 paints it pale ([224, 203, 181], concrete); v2's is a grey between road and paving. Not
+  asphalt, so not touched in this step.
+- I looked at four views before and after, not at every road.
+
+### 29.5 Open questions
+
+44, 46, 60 and 61 stand. 62 is answered (the ground looks good).
+
+63. **Are the roads right now**, and shall I go on to the trees?
+64. **The 71 crossings without a word in OSM**: leave them unstriped (as now), or stripe every mapped crossing
+    that OSM does not call unmarked?
