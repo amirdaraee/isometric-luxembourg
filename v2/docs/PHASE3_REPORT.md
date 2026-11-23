@@ -2248,7 +2248,7 @@ the other landmarks the same way "do it". That answers questions 56 and 57.
 
 ### 24.2 The other landmarks: what was done, and what was left and why
 
-All five were laid over v1's aerial capture, wall by wall, and looked up on Wikimedia Commons. 28 photographs
+All five were laid over v1's aerial capture, wall by wall, and four of them looked up on Wikimedia Commons. 25 photographs
 were fetched as reduced copies into a scratch folder outside the repository; the ones used are named in
 `v2/data/structures/landmark_facades.json` with their authors and licences.
 
@@ -2257,7 +2257,7 @@ were fetched as reduced copies into a scratch folder outside the repository; the
 | **Saint-Michel** | 4 walls described, 13 openings. The south wall has a row of five round-headed windows under the eave and small windows below, where the rule drew three tall stained windows with buttresses; the wall east of it has small windows as on a house, where the rule drew one two-light window 9 m tall; the tower face has one belfry opening, where the rule drew a pair and a round window. |
 | **Saint-Jean du Grund** (the abbey's church) | 2 walls described, 4 openings: each tower face has one round-headed belfry opening and a small square window under it, where the rule drew a pair of openings and two lancets. The wall onto the cloister keeps the rule: the capture shows its four tall windows where the rule put them. |
 | **Sainte-Cunégonde** | 7 walls described, 22 openings. The nave has a plain lancet 1.3 m wide in each bay, where the rule drew two-light windows 1.9 m wide; the tower front has a tall lancet, a pair of small lights and a pair of belfry openings over the portal, where the rule drew a rose; the stair turrets have their two floors of small windows, where the rule left them blank. |
-| **Grand Ducal Palace** | Not described. Its known front looks north-west onto the rue du Marché-aux-Herbes, away from the map's camera. What the camera sees of it is turret faces and short walls 3 to 6 m wide between its neighbours, in shade, where the capture is too soft to read a window; the house rule's stacked windows agree with what little shows. |
+| **Grand Ducal Palace** | Not described, from the capture alone (no photograph was fetched: none would show what the camera sees). Its known front looks north-west onto the rue du Marché-aux-Herbes, away from the map's camera. What the camera sees of it is turret faces and short walls 3 to 6 m wide between its neighbours, in shade, where the capture is too soft to read a window; the house rule's stacked windows agree with what little shows. |
 | **Neumünster Abbey, the wings** | Not described. The long east wing is seen at a grazing angle; the house rule's three rows agree with what shows. |
 
 So the description of a wall by hand (facades.md rules 31 to 35) still takes a church's joined walls only. A
