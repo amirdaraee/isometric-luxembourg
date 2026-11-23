@@ -461,9 +461,9 @@
     },
     {
      "id": "L8.4",
-     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1334 of 192770 vs 1318 of 188677; a seam would make it larger)",
+     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1337 of 192773 vs 1319 of 188682; a seam would make it larger)",
      "passed": true,
-     "value": 0.991,
+     "value": 0.992,
      "threshold": "<= 1.5",
      "severity": "gate",
      "examples": []
@@ -481,7 +481,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 76.7
+      "audit_s": 76.0
      },
      "threshold": null,
      "severity": "report",
@@ -667,7 +667,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 214.1,
+     "value": 212.4,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -691,45 +691,45 @@
        "z": 321.99
       },
       {
-       "e": 77745.58,
-       "n": 75037.62,
-       "z": 266.2
+       "e": 77429.26,
+       "n": 75737.84,
+       "z": 251.9
       },
       {
-       "e": 77648.86,
-       "n": 74849.69,
-       "z": 260.46
+       "e": 77651.28,
+       "n": 74851.66,
+       "z": 258.43
       },
       {
-       "e": 77557.11,
-       "n": 75057.08,
-       "z": 289.0
+       "e": 78157.94,
+       "n": 74764.79,
+       "z": 291.07
       },
       {
-       "e": 77549.46,
-       "n": 74748.1,
-       "z": 311.76
+       "e": 78219.77,
+       "n": 74877.4,
+       "z": 280.9
       },
       {
-       "e": 77324.13,
-       "n": 75446.22,
-       "z": 317.21
+       "e": 77498.25,
+       "n": 75011.5,
+       "z": 308.75
       },
       {
-       "e": 77510.17,
-       "n": 75117.54,
-       "z": 316.77
+       "e": 77508.87,
+       "n": 75117.91,
+       "z": 317.42
       },
       {
-       "e": 77959.96,
-       "n": 75269.02,
-       "z": 247.35
+       "e": 77960.01,
+       "n": 75268.89,
+       "z": 252.85
       }
      ]
     },
     {
      "id": "L5.2-windows",
-     "title": "line score, window rows (top and bottom of every window): share of 79120 seen samples (every 0.25 m, of 230658) whose drawn line is within 1.0 px of the model's",
+     "title": "line score, window rows (top and bottom of every window): share of 79108 seen samples (every 0.25 m, of 230636) whose drawn line is within 1.0 px of the model's",
      "passed": true,
      "value": 0.9979,
      "threshold": ">= 0.95",
@@ -779,9 +779,9 @@
     },
     {
      "id": "L5.8-tracery",
-     "title": "line score, church tracery (the mullion of every traceried window, a straight upright line): share of 751 seen samples (every 0.25 m, of 2401) whose drawn line is within 1.0 px of the model's",
+     "title": "line score, church tracery (the mullion of every traceried window, a straight upright line): share of 607 seen samples (every 0.25 m, of 2257) whose drawn line is within 1.0 px of the model's",
      "passed": true,
-     "value": 0.996,
+     "value": 0.9951,
      "threshold": ">= 0.95",
      "severity": "gate",
      "examples": [
@@ -810,7 +810,7 @@
       9,
       5,
       244569,
-      10546
+      8080
      ],
      "threshold": null,
      "severity": "report",
@@ -856,7 +856,7 @@
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
       "images": 966,
-      "seconds": 325.5,
+      "seconds": 317.1,
       "queries": [
        "a car",
        "a parked car",
@@ -1116,23 +1116,23 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.14810000002384185,
-      "first_view_warm_s": 0.092,
+      "first_view_cold_s": 0.1475,
+      "first_view_warm_s": 0.08689999997615815,
       "pan_whole_area": {
-       "fps": 120.06390095387931,
+       "fps": 120.23497062867142,
        "frame_ms_median": 0.5,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 94,
-       "frame_ms_median": 0.19999998807907104,
+       "fps": 94.17466027206301,
+       "frame_ms_median": 0.30000001192092896,
        "tiles_missing": 0
       },
-      "pan_fps": 94,
+      "pan_fps": 94.17466027206301,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 119.99100067459179,
+        "fps": 120.02495321272613,
         "frame_ms_median": 0.800000011920929,
         "tiles_missing": 0
        }
@@ -1147,7 +1147,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.092,
+     "value": 0.087,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1156,7 +1156,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 94,
+     "value": 94.2,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1168,7 +1168,7 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 119.99100067459179,
+       "fps": 120.02495321272613,
        "frame_ms_median": 0.800000011920929,
        "tiles_missing": 0
       }
@@ -1683,7 +1683,7 @@
        ]
       },
       1237,
-      304,
+      316,
       1006
      ],
      "threshold": null,
@@ -1750,11 +1750,10 @@
         true,
         true,
         {
-         "traceried": 10,
-         "lancet": 11,
+         "lancet": 28,
+         "traceried": 5,
          "oculus": 2,
-         "belfry": 8,
-         "rose": 1
+         "belfry": 8
         },
         4,
         0
@@ -1803,13 +1802,12 @@
         true,
         false,
         {
-         "lancet": 15,
-         "traceried": 5,
-         "belfry": 6,
-         "oculus": 2
+         "lancet": 24,
+         "traceried": 4,
+         "belfry": 5
         },
         4,
-        8
+        4
        ],
        "Al Kapell": [
         "the end onto a street",
@@ -1828,9 +1826,9 @@
         true,
         true,
         {
-         "lancet": 22,
+         "lancet": 20,
          "rose": 1,
-         "belfry": 6
+         "belfry": 4
         },
         4,
         1
@@ -1890,6 +1888,47 @@
        [
         "west tower, east face over the nave roof"
        ]
+      ],
+      "ACT_4df67993-baf9-45db-890c-acb665692493": [
+       "Saint-Michel",
+       4,
+       {
+        "lancet": 12,
+        "belfry": 1
+       },
+       {
+        "capture": 3,
+        "photo": 1
+       },
+       1,
+       []
+      ],
+      "ACT_221c9194-94ad-47d9-807a-60553478a3d2": [
+       "Neum\u00fcnster Abbey and its church, Saint-Jean du Grund",
+       2,
+       {
+        "belfry": 2,
+        "lancet": 2
+       },
+       {
+        "photo": 2
+       },
+       0,
+       []
+      ],
+      "ACT_f168f482-4608-419d-923a-fd8840718ef8": [
+       "Sainte-Cun\u00e9gonde",
+       7,
+       {
+        "lancet": 18,
+        "belfry": 4
+       },
+       {
+        "capture": 2,
+        "photo": 5
+       },
+       0,
+       []
       ]
      },
      "threshold": null,
@@ -1902,9 +1941,9 @@
      "passed": true,
      "value": [
       25618,
-      8837,
+      8840,
       4421,
-      39701
+      39713
      ],
      "threshold": null,
      "severity": "report",
@@ -2948,17 +2987,7 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 8.899999976158142
-       },
-       {
-        "on": false,
-        "frames": 1,
-        "ms": 6.5
-       },
-       {
-        "on": true,
-        "frames": 1,
-        "ms": 7.800000011920929
+        "ms": 9.300000011920929
        },
        {
         "on": false,
@@ -2968,49 +2997,59 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 8.299999952316284
+        "ms": 9.400000035762787
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 7
+        "ms": 10.5
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 7.100000023841858
+        "ms": 8.300000011920929
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8.900000035762787
+        "ms": 8.699999988079071
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 9.300000011920929
+        "ms": 8
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8.299999952316284
+        "ms": 7.400000035762787
+       },
+       {
+        "on": true,
+        "frames": 1,
+        "ms": 8.5
+       },
+       {
+        "on": false,
+        "frames": 1,
+        "ms": 8.400000035762787
        }
       ],
       "pan_whole_area": {
-       "fps": 120.08788135909157,
+       "fps": 120.14487323591858,
        "frame_ms_median": 0.5999999642372131,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
       "pan_zoom1": {
-       "fps": 93.7335966208707,
-       "frame_ms_median": 0.19999998807907104,
+       "fps": 94.80564842101944,
+       "frame_ms_median": 0.40000003576278687,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
-      "pan_fps": 93.7335966208707,
+      "pan_fps": 94.80564842101944,
       "viewport": "1600x1000 CSS px, device pixel ratio 1"
      },
      "threshold": null,
@@ -3019,7 +3058,7 @@
     },
     {
      "id": "X8a",
-     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 9.3 ms at most)",
+     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 10.5 ms at most)",
      "passed": true,
      "value": 1,
      "threshold": "<= 1",
@@ -3030,7 +3069,7 @@
      "id": "X8b",
      "title": "panning in tunnel view, desktop (frames per second, the whole area and 1:1)",
      "passed": true,
-     "value": 93.7,
+     "value": 94.8,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -3039,7 +3078,7 @@
      "id": "X9",
      "title": "seconds",
      "passed": true,
-     "value": 109.5,
+     "value": 108.7,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -3699,7 +3738,7 @@
     },
     {
      "id": "K2d-abbey",
-     "title": "Neum\u00fcnster Abbey: share of the model's own opening in the mask (46431 px that are surely of it; 124 more within 1 cm of the outside)",
+     "title": "Neum\u00fcnster Abbey: share of the model's own opening in the mask (46431 px that are surely of it; 133 more within 1 cm of the outside)",
      "passed": true,
      "value": 0.99927,
      "threshold": ">= 0.995",
@@ -4569,7 +4608,7 @@
      "id": "K6v-far-on",
      "title": "far zoom: pixels the cutaways change when on",
      "passed": true,
-     "value": 832582,
+     "value": 832624,
      "threshold": ">= 1",
      "severity": "gate",
      "examples": []
@@ -4587,28 +4626,28 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.14810000002384185,
-  "first_view_warm_s": 0.092,
+  "first_view_cold_s": 0.1475,
+  "first_view_warm_s": 0.08689999997615815,
   "pan_whole_area": {
-   "fps": 120.06390095387931,
+   "fps": 120.23497062867142,
    "frame_ms_median": 0.5,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 94,
-   "frame_ms_median": 0.19999998807907104,
+   "fps": 94.17466027206301,
+   "frame_ms_median": 0.30000001192092896,
    "tiles_missing": 0
   },
-  "pan_fps": 94,
+  "pan_fps": 94.17466027206301,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 119.99100067459179,
+    "fps": 120.02495321272613,
     "frame_ms_median": 0.800000011920929,
     "tiles_missing": 0
    }
   },
   "viewport": "1600x1000 CSS px, device pixel ratio 1"
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/549133649c88"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/1747d34158bd"
 }

@@ -22,6 +22,13 @@ Chosen by `params.json` art.method (or `V2_ART`); each method builds into its ow
   arch itself (round or pointed) or a circle, with a stone frame along it. No shutters. Doors: planks under a
   round arch, in stone, no fanlight. No light in any of it. A building that is mostly church (half its footprint
   or more) is stone all over; where the church is a smaller part of a building, only its walls are.
+- **A, a part in sheet metal (owner, 23 Nov 2026: the cathedral's central spire is copper gone green, "do it"):**
+  a well-known building's entry in `landmark_styles.json` may list `clad` parts: a name, the centre and radius of
+  an upright cylinder, the altitude it starts at, and a palette colour (`roof_copper`). Whatever the model has of
+  that building inside the cylinder, walls and roofs alike, is that one colour with the paper's grain: no slate
+  courses, no ashlar. It is a material of its own (class trim), so the shadow detector compares it with itself and
+  a painting's colours do not reach it. The cathedral's central spire and its lantern are the one entry; its two
+  tower spires are slate, as they are.
 - **A, places of worship, round two (owner, 13 Nov 2026, "One more round"):** what the layout's rules 21 to 30
   place is drawn so (`church_rgb` and `walls_rgb` in `v2/layers/art_a.py`):
   - *lancet:* a sill, leaded glass, a lead line up the middle;

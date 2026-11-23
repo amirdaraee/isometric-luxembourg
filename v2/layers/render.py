@@ -888,6 +888,15 @@ class Renderer:
                 pc[~vert] = CLASS["roof"]
                 sc_[part] = pc
                 pcls[on_b] = sc_
+            if A.clad_parts:
+                # a part in sheet metal: its walls and roofs one colour, a material of its own (class trim: the
+                # shadow detector and a painting's colours take a building's walls and roofs apart from it)
+                cm, crgb = A.clad(bi, P_, x_, y_)
+                if cm.any():
+                    sub[cm] = crgb
+                    sc_ = pcls[on_b]
+                    sc_[cm] = CLASS["trim"]
+                    pcls[on_b] = sc_
             rgb[on_b] = sub
         on_o = mi == 1
         if on_o.any():

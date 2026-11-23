@@ -68,6 +68,71 @@
     {"name": "north-east stair turret, east face: the top window (the rest stands behind the next building)", "at": [77369.15, 75034.09], "facing": 89, "measured": "capture",
      "openings": [["lancet", 2.2, 2.9, 20.3, 21.9, "round"]]}
    ]
+  },
+  "ACT_4df67993-baf9-45db-890c-acb665692493": {
+   "name": "Saint-Michel",
+   "datum": 291.6,
+   "sources": [
+    "v1's aerial capture of the area, flattened onto each wall (the church's south side stands behind other buildings in every ground photograph found: the capture alone shows it)",
+    "Wikimedia Commons, File:Michaelskirche Luxemburg (DSC08308).jpg (Polibil, CC BY-SA 4.0): the tower from the south; one round-headed belfry opening with louvres in each face",
+    "Wikimedia Commons, File:Luxembourg, view to the St. Michael's Church.jpg (Dguendel, CC BY 3.0) and File:Higher city Luxembourg.JPG (Nikilux, CC BY-SA 3.0 lu): the tower and the east end from the north-east"
+   ],
+   "walls": [
+    {"name": "south-east wall of the low block along the nave: five round-headed windows under the eave (set 1.3 m lower than the capture shows them: the model's eave slopes down to the left, the real one is level), three small windows under them", "at": [77592.91, 75158.90], "facing": 139, "measured": "capture",
+     "openings": [["lancet", 4.15, 5.25, 7.4, 9.5, "round"], ["lancet", 6.25, 7.35, 7.4, 9.5, "round"], ["lancet", 8.65, 9.75, 7.4, 9.5, "round"],
+                  ["lancet", 11.05, 12.15, 7.4, 9.5, "round"], ["lancet", 13.55, 14.65, 7.4, 9.5, "round"],
+                  ["lancet", 5.4, 6.5, 4.3, 5.3, "flat"], ["lancet", 11.1, 12.2, 4.3, 5.3, "flat"], ["lancet", 14.5, 15.6, 4.3, 5.3, "flat"]]},
+    {"name": "south-east wall east of the low block: small windows, as on a house (approximate: the capture is soft here, and its lower right stands behind the next building)", "at": [77605.37, 75170.19], "facing": 137, "measured": "capture",
+     "openings": [["lancet", 1.6, 2.3, 9.0, 10.1, "flat"], ["lancet", 1.1, 1.8, 4.0, 5.1, "flat"],
+                  ["lancet", 3.75, 4.45, 12.2, 13.2, "flat"], ["lancet", 6.4, 7.1, 12.2, 13.2, "flat"]]},
+    {"name": "tower, south-east face: one belfry opening", "at": [77576.18, 75174.13], "facing": 152, "measured": "photo",
+     "openings": [["belfry", 2.45, 3.95, 30.3, 32.7, "round"]], "courses": [29.6]},
+    {"name": "east end, the short wall over the roofs that looks east: blank", "at": [77611.46, 75178.97], "facing": 102, "measured": "capture",
+     "openings": []}
+   ]
+  },
+  "ACT_221c9194-94ad-47d9-807a-60553478a3d2": {
+   "name": "Neumünster Abbey and its church, Saint-Jean du Grund",
+   "datum": 244.5,
+   "sources": [
+    "v1's aerial capture of the area, flattened onto each wall: the church's south wall onto the cloister has four tall round-headed windows where the church rule puts them, so that wall keeps the rule",
+    "Wikimedia Commons, File:Church of St Jean du Grund - Luxembourg (37372279334).jpg (bvi4092, CC BY 2.0), File:Abbaye de Neumünster - Natural light.jpg (Philip Serracino Inglott, CC BY-SA 3.0), File:Abbey Neumunster, Grund.JPG (Nikilux, CC BY-SA 3.0 lu) and File:Johanniskirche Luxemburg.jpg (Roland Struwe, CC BY-SA 3.0): the tower from four sides; one round-headed belfry opening with louvres in each face, small square windows under it"
+   ],
+   "walls": [
+    {"name": "church tower, south-east face", "at": [77709.28, 75119.46], "facing": 143, "measured": "photo",
+     "openings": [["belfry", 2.5, 4.0, 25.6, 28.2, "round"], ["lancet", 2.9, 3.55, 21.4, 22.1, "flat"]]},
+    {"name": "church tower, north-east face", "at": [77714.42, 75123.39], "facing": 53, "measured": "photo",
+     "openings": [["belfry", 2.7, 4.2, 25.6, 28.2, "round"], ["lancet", 3.15, 3.8, 21.4, 22.1, "flat"]]}
+   ]
+  },
+  "ACT_f168f482-4608-419d-923a-fd8840718ef8": {
+   "name": "Sainte-Cunégonde",
+   "datum": 244.4,
+   "sources": [
+    "v1's aerial capture of the area, flattened onto each wall: the nave's windows, the tower's openings",
+    "Wikimedia Commons, File:Kierch Clausen.jpg (Jwh, CC BY-SA 3.0 lu): the tower, the south stair turret and the nave's south-east wall from the south",
+    "Wikimedia Commons, File:Kirche Clausen 02.jpg (MMFE, CC BY-SA 3.0): the front; the portal, the tall lancet over it, the pair of small lights, the pair of belfry openings, the turrets' two floors of small windows",
+    "Wikimedia Commons, File:Luxembourg, Église Ste-Cunégonde Clausen.jpg (GilPe, CC BY-SA 3.0): the church from the north-west, far off"
+   ],
+   "walls": [
+    {"name": "nave, south-east wall: a plain lancet in each of the five bays between the buttresses (the east end's two windows and the low room's keep the rule)", "at": [78202.99, 75590.22], "facing": 119, "measured": "capture",
+     "openings": [["lancet", 2.4, 3.7, 3.6, 9.4, "pointed"], ["lancet", 8.15, 9.45, 3.6, 9.4, "pointed"], ["lancet", 13.4, 14.7, 3.6, 9.4, "pointed"],
+                  ["lancet", 18.7, 20.0, 3.6, 9.4, "pointed"], ["lancet", 24.4, 25.7, 3.6, 9.4, "pointed"]], "courses": [2.25]},
+    {"name": "tower, front (south-south-west): over the rule's portal a tall lancet, a pair of small lights, a pair of belfry openings", "at": [78191.41, 75591.43], "facing": 209, "measured": "photo",
+     "openings": [["lancet", 2.58, 3.34, 7.2, 13.6, "pointed"], ["lancet", 2.55, 2.9, 16.2, 17.3, "pointed"], ["lancet", 3.02, 3.37, 16.2, 17.3, "pointed"],
+                  ["belfry", 1.75, 2.7, 19.6, 22.8, "pointed"], ["belfry", 3.22, 4.17, 19.6, 22.8, "pointed"]], "courses": [18.6]},
+    {"name": "tower, south-east face over the nave roof: a pair of small lights, a pair of belfry openings", "at": [78196.56, 75588.52], "facing": 119, "measured": "capture",
+     "openings": [["lancet", 2.57, 2.92, 16.2, 17.3, "pointed"], ["lancet", 3.03, 3.38, 16.2, 17.3, "pointed"],
+                  ["belfry", 1.77, 2.72, 19.6, 22.8, "pointed"], ["belfry", 3.24, 4.19, 19.6, 22.8, "pointed"]], "courses": [18.6]},
+    {"name": "south stair turret, the face that looks south-south-west", "at": [78197.31, 75589.84], "facing": 209, "measured": "photo",
+     "openings": [["lancet", 0.52, 1.07, 5.0, 6.6, "pointed"], ["lancet", 0.55, 1.05, 1.5, 2.6, "pointed"]]},
+    {"name": "south stair turret, the face that looks south", "at": [78198.68, 75589.06], "facing": 165, "measured": "photo",
+     "openings": [["lancet", 0.56, 1.11, 5.0, 6.6, "pointed"], ["lancet", 0.58, 1.08, 1.5, 2.6, "pointed"]]},
+    {"name": "south stair turret, the face that looks east-south-east", "at": [78200.29, 75589.49], "facing": 119, "measured": "photo",
+     "openings": [["lancet", 0.7, 1.25, 5.0, 6.6, "pointed"], ["lancet", 0.73, 1.23, 1.5, 2.6, "pointed"]]},
+    {"name": "north stair turret, the face that looks south-south-west", "at": [78190.77, 75593.53], "facing": 209, "measured": "photo",
+     "openings": [["lancet", 0.52, 1.07, 5.0, 6.6, "pointed"], ["lancet", 0.55, 1.05, 1.5, 2.6, "pointed"]]}
+   ]
   }
  }
 }

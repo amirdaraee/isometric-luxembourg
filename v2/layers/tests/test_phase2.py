@@ -114,7 +114,7 @@ def test_crown_lobes_stay_inside_the_measured_crown():
 def test_a_well_known_building_gets_its_own_materials():
     from v2.layers.art_a import landmark_styles
     known = landmark_styles()
-    assert known and all(set(v) <= {"name", "stone", "facade", "roof", "kind", "windows"} for v in known.values())
+    assert known and all(set(v) <= {"name", "stone", "facade", "roof", "kind", "windows", "clad"} for v in known.values())
     assert all(v.get("kind", "place_of_worship") == "place_of_worship" and v.get("windows", "round") in ("round", "pointed")
                for v in known.values())
     assert landmark_styles("kinds")["place_of_worship"]["stone"] is True
@@ -122,6 +122,27 @@ def test_a_well_known_building_gets_its_own_materials():
         st = Style(bid, "gable", k)
         assert st.roof_name == k["roof"] and st.stone == bool(k.get("stone"))
         assert "facade" not in k or (st.facade == k["facade"] and k["facade"] in FACADES)
+
+
+def test_a_part_in_sheet_metal_is_one_palette_colour_inside_its_cylinder_and_nowhere_else():
+    """landmark_styles.json, clad: what the model has of the building inside an upright cylinder, from an altitude
+    up, is that colour (walls and roofs alike); nothing below it, beside it or on another building."""
+    from types import SimpleNamespace
+    from v2.layers.art_a import ArtA, landmark_styles
+    from v2.layers.common import pal
+    bid, own = next((k, v) for k, v in landmark_styles().items() if v.get("clad"))
+    c = own["clad"][0]
+    assert set(c) == {"name", "centre", "radius", "above", "colour"} and c["radius"] > 0
+    scene = SimpleNamespace(buildings=[{"id": bid, "roof_shape": "gable"}, {"id": "B1", "roof_shape": "gable"}],
+                            facades={"walls": [], "worship": {}})
+    empty = {"V": np.zeros((0, 3)), "T": np.zeros((0, 3), np.int64), "kind": np.zeros(0, np.int64), "obj": np.zeros(0, np.int64)}
+    A = ArtA(scene, empty)
+    e, n, r, z = c["centre"][0], c["centre"][1], c["radius"], c["above"]
+    P = np.array([[e, n, z + 5], [e + r - 0.1, n, z + 0.1], [e, n, z - 0.5], [e + r + 0.3, n, z + 5], [e, n, z + 5]])
+    bi = np.array([0, 0, 0, 0, 1])
+    m, rgb = A.clad(bi, P, np.arange(5.0), np.arange(5.0))
+    assert m.tolist() == [True, True, False, False, False]
+    assert np.abs(rgb / pal("buildings", c["colour"]) - 1).max() < 0.05                 # the colour, with the paper's grain
 
 
 # ------------------------------------------------------------------------------------------------ places of worship
