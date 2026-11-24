@@ -109,12 +109,12 @@ def test_crown_lobes_stay_inside_the_measured_crown():
     assert np.allclose(top, C[:, 2] + b)                                  # and its top is the measured top
     again = crown_lobes(C, r, b, typ)
     assert all(np.array_equal(x, y) for x, y in zip((C2, r2, b2, own, kind, group, sky), again))
-    # a broadleaf that is not small: one dark core, and leaf clumps all round it, up to the measured width; a
-    # clump is CLUMP_PETALS leaf tufts, and a tuft knows how much sky it sees
-    lob = (typ != 2) & (r >= 1.2)
+    # a crown that is not small: a dark inside (up to five shapes up the crown), and leaf clumps all round it, up
+    # to the measured width; a clump is CLUMP_PETALS leaf tufts, and a tuft knows how much sky it sees
+    lob = r >= 1.2
     cores = np.bincount(own[kind == CROWN_CORE_KIND], minlength=k)
     tufts = np.bincount(own[kind == CROWN_CLUMP], minlength=k)
-    assert (cores[lob] == 1).all() and (cores[~lob] == 0).all() and (tufts[~lob] == 0).all()
+    assert ((cores[lob] >= 1) & (cores[lob] <= 5)).all() and (cores[~lob] == 0).all() and (tufts[~lob] == 0).all()
     assert (tufts[lob] >= 8 * CLUMP_PETALS).all() and (tufts % CLUMP_PETALS == 0).all()
     per_clump = np.unique(group[kind == CROWN_CLUMP], return_counts=True)[1]
     assert (per_clump == CLUMP_PETALS).all() and (group // 1024 == own).all()
@@ -125,6 +125,36 @@ def test_crown_lobes_stay_inside_the_measured_crown():
     reach = np.zeros(k)
     np.maximum.at(reach, own, d + r2)
     assert (reach[lob] > 0.97 * r[lob]).all()
+
+
+def test_every_species_crown_stays_inside_its_size_and_has_its_outline():
+    from v2.layers import tree_forms
+    from v2.layers.render import CROWN_CLUMP, crown_lobes
+    F = tree_forms.table()
+    rng = np.random.default_rng(7)
+    k = 40
+    for s, name in enumerate(F["names"]):
+        C = np.column_stack([rng.uniform(0, 100, k), rng.uniform(0, 100, k), rng.uniform(260, 300, k)])
+        r, b = rng.uniform(1.3, 7.0, k), rng.uniform(1.5, 9.0, k)
+        C2, r2, b2, own, kind, group, sky = crown_lobes(C, r, b, np.zeros(k, int), tree_forms.form_of(np.full(k, s)))
+        d = np.hypot(C2[:, 0] - C[own, 0], C2[:, 1] - C[own, 1])
+        assert (d + r2 <= r[own] + 1e-9).all(), name                         # never wider than the tree's crown
+        assert (C2[:, 2] + b2 <= C[own, 2] + b[own] + 1e-9).all(), name       # never above its top
+        assert (C2[:, 2] - b2 >= C[own, 2] - b[own] - 1e-9).all(), name       # never below its foot
+        top = np.full(k, -np.inf)
+        np.maximum.at(top, own, C2[:, 2] + b2)
+        assert np.allclose(top, C[:, 2] + b), name                           # its top is the tree's top
+        # the outline: the foliage's reach at each height follows the species' form (widest where the form is)
+        tuft = kind == CROWN_CLUMP
+        zz = (C2[tuft, 2] - C[own[tuft], 2]) / b[own[tuft]]
+        reach = (d[tuft] + r2[tuft]) / r[own[tuft]]
+        w = 2 * F["widest"][s] - 1
+        near, far = np.abs(zz - w) < 0.25, np.abs(zz - w) > 0.8
+        if far.sum() > 20:
+            assert np.percentile(reach[near], 90) > np.percentile(reach[far], 90) + 0.1, name
+    # outlines differ: a column is boxier than a cone at three quarters of the height
+    f = lambda form: tree_forms.profile(0.5, *(tree_forms._surface.__wrapped__ and [tree_forms.tree_species()["forms"][form][q] for q in ("widest", "top", "bottom")]))
+    assert f("column") > f("round") > f("cone") + 0.3
 
 
 def test_a_crown_s_colours_follow_up_and_never_the_sun():

@@ -22,7 +22,9 @@ import shapely
 from shapely import STRtree
 from shapely.ops import unary_union
 
+from v2.config import tree_species as tree_species_cfg
 from v2.data.geo import area_polygon
+from v2.data.scene import tree_species
 from v2.data.scene.buildings import footprints, load
 from v2.data.scene.grid import Grid
 from v2.data.scene.water import load_polygons
@@ -43,17 +45,21 @@ def overlap_share(e, n, r, blockers, tree=None):
     return np.where(r > 0, out, 0.0)
 
 
-def shape_radius(h, r_survey, typ, e, n, p, names):
+def shape_radius(h, r_survey, typ, e, n, p, names, width=None):
     """The drawn crown radius by species and age: width = height x a ratio that grows from young to mature trees
-    (params trees.crown_shape; height is the age proxy), capped per type, and by the room the tree has (at most
-    neighbour_factor x the distance to its nearest neighbour, so a stand stays a stand of crowns); never under the
-    survey's radius. Returns (radius, allometric radius before the neighbour cap)."""
+    (height is the age proxy), capped, and by the room the tree has (at most neighbour_factor x the distance to its
+    nearest neighbour, so a stand stays a stand of crowns); never under the survey's radius. The ratios and the cap
+    are each tree's species' (`width`: young, mature, widest in m, per tree: tree_species.json) or, without it, its
+    type's (params trees.crown_shape.by_type). Returns (radius, allometric radius before the neighbour cap)."""
     from scipy.spatial import cKDTree
     c = p["crown_shape"]
     h = np.asarray(h, float)
     age = np.clip((h - c["young_h_m"]) / max(c["mature_h_m"] - c["young_h_m"], 1e-6), 0, 1)
     allo = np.zeros(len(h))
-    for t, name in enumerate(names):
+    if width is not None:
+        width = np.asarray(width, float)
+        allo = np.minimum(h * (width[:, 0] + (width[:, 1] - width[:, 0]) * age), width[:, 2]) / 2
+    for t, name in enumerate(names if width is None else ()):
         k = c["by_type"].get(name, c["by_type"]["other"])
         m = np.asarray(typ) == t
         allo[m] = np.minimum(h[m] * (k["young"] + (k["mature"] - k["young"]) * age[m]), k["max_width_m"]) / 2
@@ -96,7 +102,14 @@ def build(ctx):
     r_meas = (T["cmean"][idx] / 2).astype(np.float64)
     names = [str(s) for s in T["type_names"]]
     r_survey = r_meas * p["crown_scale"]
-    r, _ = shape_radius(T["h"][idx], r_survey, T["type"][idx], e[idx], n[idx], p, names)
+    # the species each tree is drawn as (by rule: tree_species.py), and its crown's width from it
+    S = tree_species_cfg()
+    sp, rule, sp_names = tree_species.assign(
+        e[idx], n[idx], T["type"][idx], T["h"][idx], names, S,
+        tree_species.context(ctx.dep("fetch_osm_ground") / "ground.json", ctx.dep("fetch_osm_transport") / "transport.json", S),
+        water=water)
+    widths = np.array([{**S["defaults"], **S["list"][k]}["width"] for k in sp_names], float)[sp]
+    r, _ = shape_radius(T["h"][idx], r_survey, T["type"][idx], e[idx], n[idx], p, names, width=widths)
     r_shape = r.copy()
     widened = int((r > r_survey + 1e-6).sum())
     blockers = list(fps) + list(water)
@@ -119,11 +132,15 @@ def build(ctx):
                         height=drawn_height(T["h"][idx], p), height_measured=T["h"][idx].astype(np.float32),
                         crown_r=r.astype(np.float32), crown_r_shape=r_shape.astype(np.float32),
                         crown_r_measured=r_meas.astype(np.float32),
-                        type=T["type"][idx], uuid=T["uuid"][idx], type_names=T["type_names"])
+                        type=T["type"][idx], uuid=T["uuid"][idx], type_names=T["type_names"],
+                        species=sp.astype(np.int8), species_names=np.array(sp_names), species_rule=rule.astype(np.int8),
+                        species_rules=np.array(tree_species.RULES))
     hw = drawn_height(T["h"][idx], p) / np.maximum(2 * r, 1e-3)
     return {"trees": int(len(idx)), "dropped": dropped, "crowns_thinned": thinned, "crowns_widened": widened,
             "height_over_width_median": float(np.median(hw)) if len(idx) else 0,
             "by_type": {names[t]: int((T["type"][idx] == t).sum()) for t in range(len(names))},
+            "by_species": {k: int((sp == i).sum()) for i, k in enumerate(sp_names)},
+            "by_species_rule": {k: int((rule == i).sum()) for i, k in enumerate(tree_species.RULES)},
             "height_m": {"median": float(np.median(T["h"][idx])) if len(idx) else 0,
                          "max": float(T["h"][idx].max()) if len(idx) else 0},
             "drawn_height_m": {"scale": p["drawn_height_scale"],

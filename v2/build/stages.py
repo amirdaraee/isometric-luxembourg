@@ -71,8 +71,11 @@ def graph() -> Graph:
                                 REPO / "v2/data/structures/landmark_facades.json"],
               doc="facade layout per wall: floors, windows, doors and shop fronts; the church rule on places of worship; "
                   "the openings of landmarks as they are"),
-        Stage("scene_trees", trees.build, deps=("fetch_trees", "scene_buildings", "scene_water", "scene_terrain"),
-              params=_p("trees"), code=GEO, doc="LiDAR trees, thinned over water and buildings"),
+        Stage("scene_trees", trees.build, deps=("fetch_trees", "scene_buildings", "scene_water", "scene_terrain",
+                                                "fetch_osm_ground", "fetch_osm_transport"),
+              params=_p("trees"), code=GEO + ("v2.data.scene.tree_species",),
+              raw=lambda area: [REPO / "v2/config/tree_species.json"],
+              doc="LiDAR trees, each given a species by rule, thinned over water and buildings"),
         Stage("scene_groundcover", groundcover.build, deps=("scene_buildings", "scene_trees"), params=_p("groundcover"),
               raw=lambda area: [raw_dir() / params()["groundcover"]["ortho_dir"] / str(params()["groundcover"]["zoom"])],
               code=GEO, doc="vegetated ground where OSM is silent, classed from the orthophoto"),
@@ -134,7 +137,7 @@ def graph() -> Graph:
 
 LAYER_CODE = GEO + CAM + ("v2.layers.common", "v2.layers.raster", "v2.layers.geometry", "v2.layers.render", "v2.layers.detail",
                           "v2.layers.tiles", "v2.layers.light", "v2.layers.data", "v2.data.scene.facades",
-                          "v2.layers.art_a", "v2.layers.bakeoff", "v2.config.art")
+                          "v2.layers.art_a", "v2.layers.bakeoff", "v2.config.art", "v2.layers.tree_forms")
 
 
 def _art(area):
@@ -146,7 +149,7 @@ def _art(area):
 
 def _layer_raw(area):
     from v2.config import CONFIG
-    return [CONFIG / "palette.json", CONFIG / "light.json", CONFIG / "camera.json"]
+    return [CONFIG / "palette.json", CONFIG / "light.json", CONFIG / "camera.json", CONFIG / "tree_species.json"]
 
 
 def _art_raw(area):

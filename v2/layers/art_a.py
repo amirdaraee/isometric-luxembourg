@@ -750,7 +750,7 @@ class ArtA:
         return rgb * gp(px, py, 0.02, 17)[:, None]
 
     @staticmethod
-    def crown_rgb(light, dark, P, nz, tree_id, shape_id, kind, px, py, shape_r=None, tuft_id=None, sky=None):
+    def crown_rgb(light, dark, P, nz, tree_id, shape_id, kind, px, py, shape_r=None, tuft_id=None, sky=None, tall=None):
         """A crown's colours (v1's trees: the owner, 23 Nov 2026), per pixel: `light` and `dark` the tree's two ends,
         P the world point, nz the shape's normal's upward part, kind the shape's (render.crown_lobes).
           - a leaf clump is the tree's light green, each clump (`shape_id`, the group of its tufts) its own tone,
@@ -762,8 +762,14 @@ class ArtA:
           - the underside of a clump sees no sky: it goes to the dark, across a ragged, leafy edge; less so on a
             small clump (`shape_r`, its radius: under 1.3 m the dark fades, to a third at 0.67 m), where a full
             dark band would stripe the tree.
+          - `tall` (a shape's half-height over its radius): on a shape taller than wide the tones go by how far up
+            the shape a point is, so a long hanging tuft (a willow's) is light down its upper part as a round one
+            is, not dark all down its side.
         No light in it: the pattern follows "up" and the tree, never the sun or the view (the viewer's sun lights
         the clumps by their own normals, which is what moves)."""
+        if tall is not None:
+            t = np.maximum(tall, 1.0)                    # only shapes taller than wide: the others are as before
+            nz = nz * t / np.sqrt(np.maximum(1 - nz ** 2 + (nz * t) ** 2, 1e-9))
         from v2.layers.render import CROWN_CORE_KIND, CROWN_WHOLE
         mix = (0.85 + 0.15 * ihash(tree_id, 31))[:, None]
         out = (dark * (1 - mix) + light * mix) * (1 + (ihash(shape_id, 33) - 0.5) * 0.22)[:, None]

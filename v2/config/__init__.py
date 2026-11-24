@@ -50,6 +50,12 @@ def palette() -> dict:
 
 
 @lru_cache(maxsize=None)
+def tree_species() -> dict:
+    """The city's tree species: how each is drawn, and the rules that give one to a surveyed tree."""
+    return load_json("tree_species.json")
+
+
+@lru_cache(maxsize=None)
 def layers() -> list[dict]:
     return load_json("layers.json")["layers"]
 
