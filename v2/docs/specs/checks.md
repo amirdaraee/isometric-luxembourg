@@ -65,10 +65,11 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | TE1 | yes | No tree standing inside a building |
 | TE2 | yes | No tree standing in water |
 | TE3 | yes | No crown more than 30% (+2%) over buildings or water |
-| TE4 | yes | Heights within 2–50 m |
+| TE4 | yes | Measured heights within 2–50 m |
 | TE6 | yes | No crown wider than its species' and age's shape allows (layer-07 rule 1), or than the survey's width where that is wider |
 | TE7 | yes | Thinning only narrows a crown |
-| TE8 | info | Median height over crown width |
+| TE8 | info | Median drawn height over crown width |
+| TE9 | yes | Every tree is drawn at the stated share (0.7) of its measured height, within 1 cm |
 | **Transport profiles** | | |
 | P1 | yes | Every sample has a height |
 | P2 | yes | Edge ends at their node's height (≤ 0.3 m): continuous across junctions |

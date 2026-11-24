@@ -9,9 +9,11 @@ Rules, in order:
      the tree's shape by species and age (shape_radius: the LiDAR crowns are a few metres wide on trees 15-25 m
      tall, which draws poplars; the owner asked for rounder crowns at the measured height, 9 Nov 2026); thin it so
      that at most max_overlap_share of the crown disc lies over buildings or water: r is reduced until it does;
-  4. the base height is the terrain at the point (LiDAR ground), the top base + height (never changed).
-trees.npz: e, n, base_z, height, crown_r (drawn: shaped, then thinned), crown_r_shape (before thinning),
-crown_r_measured, type, uuid; plus counts of what was dropped, widened and thinned.
+  4. the base height is the terrain at the point (LiDAR ground); the tree is drawn at drawn_height_scale of its
+     measured height (the owner, 24 Nov 2026: at the measured height the trees were too big beside the buildings;
+     70% of the height, width and place kept). Rules 1 to 3 use the measured height.
+trees.npz: e, n, base_z, height (drawn), height_measured, crown_r (drawn: shaped, then thinned), crown_r_shape
+(before thinning), crown_r_measured, type, uuid; plus counts of what was dropped, widened and thinned.
 """
 from __future__ import annotations
 
@@ -62,6 +64,11 @@ def shape_radius(h, r_survey, typ, e, n, p, names):
     return np.maximum(r_survey, np.minimum(allo, room)), allo
 
 
+def drawn_height(h, p):
+    """The height a tree is drawn at: a fixed share of the measured one (params trees.drawn_height_scale)."""
+    return np.asarray(h, np.float32) * np.float32(p["drawn_height_scale"])
+
+
 def build(ctx):
     p = ctx.params["trees"]
     T = np.load(ctx.dep("fetch_trees") / "trees.npz")
@@ -109,12 +116,15 @@ def build(ctx):
     base = terrain.sample(e[idx], n[idx])
     base = np.where(np.isfinite(base), base, T["terrain"][idx])
     np.savez_compressed(ctx.out / "trees.npz", e=e[idx], n=n[idx], base_z=base.astype(np.float32),
-                        height=T["h"][idx], crown_r=r.astype(np.float32), crown_r_shape=r_shape.astype(np.float32),
+                        height=drawn_height(T["h"][idx], p), height_measured=T["h"][idx].astype(np.float32),
+                        crown_r=r.astype(np.float32), crown_r_shape=r_shape.astype(np.float32),
                         crown_r_measured=r_meas.astype(np.float32),
                         type=T["type"][idx], uuid=T["uuid"][idx], type_names=T["type_names"])
-    hw = T["h"][idx] / np.maximum(2 * r, 1e-3)
+    hw = drawn_height(T["h"][idx], p) / np.maximum(2 * r, 1e-3)
     return {"trees": int(len(idx)), "dropped": dropped, "crowns_thinned": thinned, "crowns_widened": widened,
             "height_over_width_median": float(np.median(hw)) if len(idx) else 0,
             "by_type": {names[t]: int((T["type"][idx] == t).sum()) for t in range(len(names))},
             "height_m": {"median": float(np.median(T["h"][idx])) if len(idx) else 0,
-                         "max": float(T["h"][idx].max()) if len(idx) else 0}}
+                         "max": float(T["h"][idx].max()) if len(idx) else 0},
+            "drawn_height_m": {"scale": p["drawn_height_scale"],
+                               "median": float(np.median(drawn_height(T["h"][idx], p))) if len(idx) else 0}}

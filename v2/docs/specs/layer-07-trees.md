@@ -1,8 +1,9 @@
 # Layer 7: Trees and greenery
 
-**Purpose.** Every tree at its measured place and size, as part of the drawing, changing with the seasons.
+**Purpose.** Every tree at its measured place, at 70% of its measured height (rule 1), as part of the drawing,
+changing with the seasons.
 **Made by:** code crowns (A, B) or an AI-painted canopy field (C), decided at the bake-off. Methods A and B: the
-crown fills the measured height down to a trunk of a quarter of it (at least 2 m); its width follows the tree's
+crown fills the drawn height down to a trunk of a quarter of it (at least 2 m); its width follows the tree's
 shape by species and age (rule 1); both draw the crown as leaf clumps (below; B has A's crowns by the owner's
 decision of 10 Nov 2026). Method C uses the same code crowns unless a canopy is painted.
 
@@ -41,7 +42,12 @@ three tiers narrowing upwards; a crown under 1.2 m radius stays one shape.
   ran from [33, 40, 24] to [120, 138, 68].
 
 **Rules.**
-1. Position and height come from the survey and are never changed. The crown's width is the survey's
+1. Position comes from the survey and is never changed. **Height: every tree is drawn at 0.7 of its measured
+   height** (`params.json` `trees.drawn_height_scale`; owner decision, 24 Nov 2026). The measured heights are right
+   (they agree with the LiDAR surface to 1.7 m at the median) and the trees here are tall (median 16.8 m against
+   13.4 m to the ridge for the median building), but drawn so they were too big beside the buildings. Of three
+   sizes shown beside v1 (as measured; 80% of height and width; 70% of height with the width kept) the owner chose
+   the last. `trees.npz` keeps both heights; the width below follows the measured one. The crown's width is the survey's
    (0.85 × crown_mean), widened to the tree's shape by species and age (owner decision, 9 Nov 2026: the survey's
    crowns are 2–5 m wide on trees 15–25 m tall, which drew poplars):
    - width = height × a ratio; the ratio grows evenly from a young tree (6 m or less) to a mature one (20 m or
@@ -59,8 +65,8 @@ three tiers narrowing upwards; a crown under 1.2 m radius stays one shape.
 **Checks.**
 - L7.1 (gate, as data checks TE6 and TE7) Crown size: no drawn crown wider than rule 1 allows for its species
   and height (or than the survey's width, where that is wider), and thinning only narrows. TE8 reports the median
-  height over width (5.05 with the survey's widths, 2.19 with rule 1, on the test area). No tree is taller than
-  measured (TE4).
+  height over width (5.05 with the survey's widths, 2.19 with rule 1 at the measured height, on the test area).
+  Every tree is drawn at exactly the stated share of its measured height, none taller than measured (TE9).
 - L7.2 (gate) 0 tree pixels in front of a nearer surface (depth test, per pixel).
 - L7.3 (gate) Flat-share: no photo texture in crowns (the London check: share of near-flat 8×8 blocks within bounds).
 - L7.4 (gate) Seams, layer-off and no-cars checks.

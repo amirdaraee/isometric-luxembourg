@@ -1,8 +1,9 @@
-"""Layer 7 rule 1: the drawn crown follows the tree's shape by species and age; its height is never touched."""
+"""Layer 7 rule 1: the drawn crown follows the tree's shape by species and age (by its measured height); the tree is
+drawn at one stated share of its measured height."""
 import numpy as np
 
 from v2.config import params
-from v2.data.scene.trees import shape_radius
+from v2.data.scene.trees import drawn_height, shape_radius
 
 P = params()["trees"]
 NAMES = P["types"]
@@ -36,3 +37,12 @@ def test_never_narrower_than_surveyed_and_never_wider_than_the_cap():
 def test_a_crown_has_no_more_room_than_its_neighbours_leave():
     r = _r([20.0, 20.0], [1.0, 1.0], [0, 0], e=[0.0, 3.0], n=[0.0, 0.0])      # two trees 3 m apart
     assert np.allclose(r, 3.0 * P["crown_shape"]["neighbour_factor"])
+
+
+def test_every_tree_is_drawn_at_the_same_share_of_its_measured_height():
+    h = np.array([2.0, 10.0, 16.8, 44.5])
+    d = drawn_height(h, P)
+    assert np.allclose(d, h * P["drawn_height_scale"]) and 0.5 <= P["drawn_height_scale"] <= 1.0
+    assert (d <= h).all() and (np.diff(d) > 0).all()             # never taller than measured, order kept
+    # the crown's width follows the measured height (the tree's age), not the drawn one
+    assert _r([20.0], [1.4], [0])[0] > _r(drawn_height([20.0], P), [1.4], [0])[0]

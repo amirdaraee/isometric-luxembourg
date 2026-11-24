@@ -148,6 +148,8 @@
  "trees": {
   "min_height_m": 2.0,
   "max_height_m": 50.0,
+    "drawn_height_scale": 0.7,
+    "drawn_height_about": "Every tree is drawn at this share of its measured height; its width and place are kept (owner, 24 Nov 2026: at the measured height the trees were too big beside the buildings; of three sizes shown, 70% of the height with the width kept). The filters and the crown's shape by age use the measured height.",
   "crown_scale": 0.85,
   "max_overlap_share": 0.3,
   "crown_shape": {
