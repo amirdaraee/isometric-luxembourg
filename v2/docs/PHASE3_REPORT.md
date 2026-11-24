@@ -2877,3 +2877,80 @@ residential street (stripes where there are none). That is the stated limit.
 ### 30.3 Open questions
 
 44, 46, 60 and 61 stand. 63 is answered (the roads are good enough). 64 is answered (this section).
+
+## 31. v1's trees: step 3 of three (24 November, $0)
+
+Branch `v2-phase3-trees`, on top of `v2-phase3-crossings` (PR #28, open). **Spent: $0.** No pod. The owner's
+"4- go ahead" of 23 November (section 30) asked for this step.
+
+### 31.1 What v1's trees have that v2's did not
+
+Measured on v1's art and on v2's tree layer, lit as the viewer lights it at 11:00 on 15 June (the hour of v1's
+aerial photo), at three places (the park by the boulevard, the Bock, Rue Vauban; 0.9 million tree pixels):
+
+| | Brightness of 255: 5th, 50th, 95th percentile | Darkest 5%, lightest 5% (mean colour) |
+|---|---|---|
+| v1's foliage (foliage only, as measured for `layer-07-trees.md`) | about 18 and 150 (5th, 95th) | [10,23,17], [156,176,43] |
+| v2 before (`cce0dd0cb290`) | 35, 88, 126 | [29,33,23], [125,150,71] |
+| v2 now (`1be22d28fd55`) | 14, 70, 158 | [9,13,8], [163,189,52] |
+
+v1 paints foliage as dark masses with bright yellow-green leaf highlights and heavy dark lines. v2 drew each
+crown as a few smooth, pale domes with a fine scale pattern: half of v1's range from dark to light, and a
+greyer green.
+
+### 31.2 What changed
+
+| | Before | Now |
+|---|---|---|
+| A broadleaf crown of 1.2 m radius or more | A few large lobes | A dark core (0.8 of the crown) covered in 8 to 120 leaf clumps on the measured crown's surface, the top one at the measured top |
+| A clump | – | A spheroid of 0.6 to 2.4 m radius (0.6 of the crown's radius at most), light on top, dark underneath, its tone ±11% of the tree's |
+| Lines | Fine, 0.32 and 0.5 | Heavy and dark green: 0.8 between the clumps of one crown, 0.9 around the crown |
+| Lit greens (palette) | [150,178,84], warm [176,186,76], cool [112,166,96] | [130,155,44], warm [150,163,40], cool [100,150,54]; the dark [28,44,24] is unchanged |
+| Small crowns and conifers | – | Shape unchanged; they take the new lines and the dark underside |
+
+- **Kept from the data:** every tree's place, measured height, crown width and trunk. A clump never reaches
+  outside the measured crown (unit test; TE6 and TE7 pass).
+- **No light is baked in.** The bright side of a clump is the viewer's sun on the clump's own normal, so it
+  moves with the hour. The dark underside and core follow "up", never the sun, and are a fixed colour. The
+  check that reads the tree layer for baked light (L5.1/L9.2) passes: 0 of 229, worst 4.0%.
+- Two trials that only repainted the old lobes' surface (a cracked mosaic, then dark dots) were dropped: the
+  crown still read as a smooth dome. The clumps are real shapes with their own depth and normals.
+
+### 31.3 The build and the painted area
+
+| | |
+|---|---|
+| Release | `1be22d28fd55` (current) |
+| Stages | 59 of 59 |
+| Gate entries | 284 pass, 0 fail |
+| Tree layer | 106.4 MB (96.8 before); the release 17.75 MB (17.63) |
+| Speed | 120 frames a second over the whole area, 95 at zoom 1 |
+| Painted area (`1be22d28fd55_t4_0`) | 101 pictures, even light fails on 0; edges 96.5%, window rows 99.8%; no baked light 0 of 229, worst 4.3%; vehicle gates 0 |
+
+- No threshold was changed. 173 tests pass. Tree checks TE1 to TE7, S-trees (seams: 0.0), D-trees (vehicle
+  detector: 0), V1-trees and V5 (season) pass.
+- The painted area is remade on this release, so it now has the striped crossings of section 30 as well.
+- The per-picture vehicle detector (not a gate) still marks the same 2 of 101 paintings as in section 29
+  (highest score 0.15): a row of house fronts and a shop front, not vehicles.
+
+![v1's trees, close up: the park by the boulevard, the Bock, Rue Vauban](img/test_trees_v1_closeups.jpg)
+
+![Before and now at 13:00: the park and Rue Vauban in code art, the Bock painted](img/test_trees_before_now.jpg)
+
+### 31.4 Not done
+
+- **A wood is still many round trees.** v1 paints a wood as one mass of foliage; v2 draws every surveyed tree
+  as its own crown, so from close up the clumps read as bunches of balls. Zoomed out the woods read much closer to v1's.
+- The clumps are all much the same size within a crown. No branches show, and no gaps to the sky.
+- The trunks, the autumn, winter and blossom colours and the conifers' shape were not touched. Only the summer
+  greens were measured against v1.
+- Looked at: the eight views of both viewers at 13:00, evening and night, and three close views. Not looked at:
+  other seasons, and the far north and south of the test area.
+
+### 31.5 Open questions
+
+44, 46, 60 and 61 stand.
+
+| # | Question |
+|---|---|
+| 65 | Are the trees right? If the clumps read as too round or too regular, the next thing to try is clumps of more varied size and a ragged outline. |
