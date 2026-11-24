@@ -93,12 +93,12 @@ def test_drawn_detail_is_even_and_knows_no_side():
 
 
 def test_crown_lobes_stay_inside_the_measured_crown():
-    from v2.layers.render import CROWN_CLUMP, CROWN_CORE_KIND, crown_lobes
+    from v2.layers.render import CLUMP_PETALS, CROWN_CLUMP, CROWN_CORE_KIND, crown_lobes
     rng = np.random.default_rng(5)
     k = 500
     C = np.column_stack([rng.uniform(0, 100, k), rng.uniform(0, 100, k), rng.uniform(260, 300, k)])
     r, b, typ = rng.uniform(0.6, 6.5, k), rng.uniform(1.0, 9.0, k), rng.integers(0, 4, k)
-    C2, r2, b2, own, kind = crown_lobes(C, r, b, typ)
+    C2, r2, b2, own, kind, group, sky = crown_lobes(C, r, b, typ)
     assert set(own.tolist()) == set(range(k))
     d = np.hypot(C2[:, 0] - C[own, 0], C2[:, 1] - C[own, 1])
     assert (d + r2 <= r[own] + 1e-9).all()                               # never wider than the measured crown
@@ -108,12 +108,20 @@ def test_crown_lobes_stay_inside_the_measured_crown():
     np.maximum.at(top, own, C2[:, 2] + b2)
     assert np.allclose(top, C[:, 2] + b)                                  # and its top is the measured top
     again = crown_lobes(C, r, b, typ)
-    assert all(np.array_equal(x, y) for x, y in zip((C2, r2, b2, own, kind), again))
-    # a broadleaf that is not small: one dark core, and leaf clumps all round it, up to the measured width
+    assert all(np.array_equal(x, y) for x, y in zip((C2, r2, b2, own, kind, group, sky), again))
+    # a broadleaf that is not small: one dark core, and leaf clumps all round it, up to the measured width; a
+    # clump is CLUMP_PETALS leaf tufts, and a tuft knows how much sky it sees
     lob = (typ != 2) & (r >= 1.2)
     cores = np.bincount(own[kind == CROWN_CORE_KIND], minlength=k)
-    clumps = np.bincount(own[kind == CROWN_CLUMP], minlength=k)
-    assert (cores[lob] == 1).all() and (cores[~lob] == 0).all() and (clumps[lob] >= 8).all() and (clumps[~lob] == 0).all()
+    tufts = np.bincount(own[kind == CROWN_CLUMP], minlength=k)
+    assert (cores[lob] == 1).all() and (cores[~lob] == 0).all() and (tufts[~lob] == 0).all()
+    assert (tufts[lob] >= 8 * CLUMP_PETALS).all() and (tufts % CLUMP_PETALS == 0).all()
+    per_clump = np.unique(group[kind == CROWN_CLUMP], return_counts=True)[1]
+    assert (per_clump == CLUMP_PETALS).all() and (group // 1024 == own).all()
+    assert ((sky >= 0) & (sky <= 1)).all() and (sky[kind != CROWN_CLUMP] == 1).all()
+    low = kind == CROWN_CLUMP
+    high = low & (C2[:, 2] > C[own, 2] + 0.5 * b[own]); low &= C2[:, 2] < C[own, 2] - 0.5 * b[own]
+    assert sky[high].mean() > sky[low].mean() + 0.2                       # more sky at the top of a crown than under it
     reach = np.zeros(k)
     np.maximum.at(reach, own, d + r2)
     assert (reach[lob] > 0.97 * r[lob]).all()
@@ -134,6 +142,14 @@ def test_a_crown_s_colours_follow_up_and_never_the_sun():
     core = lum(ArtA.crown_rgb(light, dark, P, np.full(n, 0.9), tree, shape, np.full(n, CROWN_CORE_KIND), px, py))
     assert np.median(top) > 3 * np.median(under) and np.median(top) > 2.5 * np.median(core)  # light tops, dark below and inside
     assert np.median(top) > 0.8 * lum(pal("trees", "summer_light"))
+    # a tuft is drawn in flat tones: light where it faces up, a mid green on its side, dark underneath; and a tuft
+    # that sees little sky is darker than one that sees it all
+    tuft = lambda nz, sky: lum(ArtA.crown_rgb(light, dark, P, np.full(n, nz), tree, shape, clump, px, py, np.full(n, 1.2),
+                                                tuft_id=shape, sky=np.full(n, sky)))
+    up, side, down = (np.median(tuft(nz, 1.0)) for nz in (0.9, 0.0, -0.7))
+    assert up > 1.2 * side > 1.2 * 2 * down
+    assert abs(np.median(tuft(0.9, 1.0)) - np.median(tuft(0.7, 1.0))) < 0.03 * up     # flat inside a tone
+    assert np.median(tuft(0.9, 1.0)) > 1.3 * np.median(tuft(0.9, 0.1))
     # the same inputs give the same colours: nothing in the function knows the hour or the view
     assert np.array_equal(top, lum(ArtA.crown_rgb(light, dark, P, np.full(n, 0.9), tree, shape, clump, px, py)))
 

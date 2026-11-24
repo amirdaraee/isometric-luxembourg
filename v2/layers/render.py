@@ -992,15 +992,16 @@ class Renderer:
         cz = base + h - b
         C = np.column_stack([e, n, cz])
         owner, kind = np.arange(len(e)), np.zeros(len(e), np.int64)
+        group, sky = owner * 1024, np.ones(len(e))
         if self.art != "plain":
-            C, r, b, owner, kind = crown_lobes(C, r, b, typ)
+            C, r, b, owner, kind, group, sky = crown_lobes(C, r, b, typ)
         # trunks: thin boxes from the ground to the crown's centre
         M = G.Mesh()
         for i in range(len(e)):
             if cz[i] - base[i] < 0.5:
                 continue
             G.box(M, np.array([e[i], n[i]]), np.array([1.0, 0.0]), 0.35, 0.35, base[i], cz[i], CLASS["trunk"], i, "trees.trunk")
-        return {"C": C, "r": r, "b": b, "type": typ, "tree": owner, "kind": kind, "trunks": M.done()}
+        return {"C": C, "r": r, "b": b, "type": typ, "tree": owner, "kind": kind, "group": group, "sky": sky, "trunks": M.done()}
 
     def trees(self, tile) -> LayerTile:
         """Layer 7 (code crowns for methods A and B, both with A's leaf clumps: owner, 10 Nov 2026): every surveyed tree at its measured place and size, a flat crown colour by type
@@ -1053,13 +1054,17 @@ class Renderer:
                 X, Y = px[cc], py[rr]
                 wx, wy, wz = unproject(X, Y, zb[crown])
                 col = ArtA.crown_rgb(light[typ], dark[typ], np.column_stack([wx, wy, wz]), nb[crown][:, 2], ib[crown],
-                                     lobe[crown], g["kind"][lobe[crown]], X, Y, g["r"][lobe[crown]])
+                                     g["group"][lobe[crown]], g["kind"][lobe[crown]], X, Y, g["r"][lobe[crown]],
+                                     tuft_id=lobe[crown], sky=g["sky"][lobe[crown]])
             rgb[crown] = col
-            # outlines: heavy ink where a crown meets anything else, and nearly as heavy where two shapes of one
-            # crown meet (the nearer shape's edge), so every leaf clump is drawn round
+            # outlines (the nearer shape's edge): heavy ink where foliage meets anything else, nearly as heavy
+            # where two clumps meet, of one tree or of two (so a wood is one mass of clumps, not a row of crowns),
+            # and a faint one between the tufts of a clump
             ink = pal("trees", "summer_dark") * CROWN_INK if self.art in ("a", "b") else pal("trees", "summer_dark")
-            w_lobe, w_out = (0.8, 0.9) if self.art in ("a", "b") else (0.32, 0.5)
-            for idg, wgt, two_sided in ((np.where(crown, lobe, -1), w_lobe, False), (np.where(crown, ib, -1), w_out, True)):
+            w_tuft, w_lobe, w_out = CROWN_LINES if self.art in ("a", "b") else (0.32, 0.32, 0.5)
+            grp = np.where(crown, g["group"][np.maximum(lobe, 0)], -1)
+            edge = np.where(crown, 1, 0) if self.art in ("a", "b") else np.where(crown, ib, -1)
+            for idg, wgt, two_sided in ((np.where(crown, lobe, -1), w_tuft, False), (grp, w_lobe, False), (edge, w_out, True)):
                 dh, dv = idg[:, :-1] != idg[:, 1:], idg[:-1, :] != idg[1:, :]
                 e = np.zeros((H, W), bool)
                 if two_sided:
@@ -1084,34 +1089,42 @@ class Renderer:
 
 # ------------------------------------------------------------------------------------------------ crowns
 CROWN_INK = 0.55                      # the crown outlines' ink: the foliage's dark at this strength
+CROWN_LINES = (0.15, 0.75, 0.9)        # line weights: between the tufts of a clump, between clumps (of one tree or of two), around the foliage
 CLUMP_R = (0.5, 0.6, 2.4)            # a leaf clump's radius: this share of the crown's, never under or over (m)
 CLUMP_SQUASH = 0.85                  # its half-height over its radius
-CLUMP_COVER = 1.3                    # the crown's surface over (clumps x a clump's footprint): fewer clumps when larger
+CLUMP_COVER = 1.5                    # the crown's surface over (clumps x a clump's footprint): fewer clumps when larger
 CLUMP_SPREAD = 0.6                   # clump to clump, the size varies by this share
 CROWN_CORE = 0.8                     # the crown's dark inside, as a share of its radius and half-height
+CLUMP_PETALS = 5                     # a clump is this many leaf tufts: one facing out, the others around it
+PETAL_R = 0.55                       # a tuft's radius over its clump's; tufts lie inside the clump
+TUFT_SKY = (0.3, 0.7)                # how much sky a tuft sees: by its clump's height on the crown, by its own place on the clump
 CROWN_WHOLE, CROWN_CORE_KIND, CROWN_CLUMP = 0, 1, 2
 
 
 def crown_lobes(C, r, b, typ):
     """A tree's crown as rounded shapes inside its measured size (centres C, radius r, half-height b, type): a
     broadleaf is a dark core with leaf clumps all over its surface, one of them on top (v1's trees: the owner, 23 Nov
-    2026); a conifer three tiers narrowing upwards; a small crown one shape. No shape reaches beyond the tree's
-    crown radius, above its top or below its crown's foot, so the survey's size holds, and the top clump ends at the
-    measured top. Each clump's place and size is a hash of its tree's index. Returns (C, r, b, the tree of each
-    shape, its kind: CROWN_WHOLE a whole small crown or a conifer's tier, CROWN_CORE_KIND, CROWN_CLUMP)."""
+    2026), each clump a cluster of leaf tufts (closer to v1: the owner, 24 Nov 2026); a conifer three tiers narrowing
+    upwards; a small crown one shape. No shape reaches beyond the tree's crown radius, above its top or below its
+    crown's foot, so the scene's size holds, and the top clump's outward tuft ends at the tree's top. Each clump's
+    and tuft's place and size is a hash of its tree's index. Returns, per shape: C, r, b, its tree, its kind
+    (CROWN_WHOLE a whole small crown or a conifer's tier, CROWN_CORE_KIND, CROWN_CLUMP a tuft), its group (tree x
+    1024 + the clump: the tufts of one clump share it), and how much sky it sees (0 to 1; 1 for all but tufts)."""
     n = len(r)
     idx = np.arange(n)
     conifer = typ == 2
     small = (r < 1.2) & ~conifer
-    oC, orr, ob, own, kind = [], [], [], [], []
+    oC, orr, ob, own, kind, group, sky = [], [], [], [], [], [], []
 
-    def add(m, c, rr, bb, k):
+    def add(m, c, rr, bb, k, grp=0, up=None):
         oC.append(c[m]); orr.append(rr[m]); ob.append(bb[m]); own.append(idx[m]); kind.append(np.full(int(m.sum()), k))
+        group.append(idx[m] * 1024 + grp)
+        sky.append(np.ones(int(m.sum())) if up is None else np.clip(0.5 + 0.5 * up[m], 0, 1))
     add(small, C, r, b, CROWN_WHOLE)
     # conifers: three tiers from the crown's foot to the top
     foot = C[:, 2] - b
     for frac_r, zc, hb in ((1.0, 0.28, 0.28), (0.72, 0.55, 0.25), (0.45, 0.8, 0.2)):
-        add(conifer, np.column_stack([C[:, 0], C[:, 1], foot + 2 * b * zc]), r * frac_r, 2 * b * hb, CROWN_WHOLE)
+        add(conifer, np.column_stack([C[:, 0], C[:, 1], foot + 2 * b * zc]), r * frac_r, 2 * b * hb, CROWN_WHOLE, int(zc * 100))
     # broadleaves: the core, and clumps spread evenly over the measured crown's surface (golden angle), the first on top
     lob = ~small & ~conifer
     add(lob, C, r * CROWN_CORE, b * CROWN_CORE, CROWN_CORE_KIND)
@@ -1131,9 +1144,30 @@ def crown_lobes(C, r, b, typ):
             lr, lb = np.minimum(cr * size, r * 0.6), np.minimum(cb * size, b * 0.6)
         ang = a0 + golden * j + 0.5 * (detail.ihash(idx, 60 + j) - 0.5)
         rho = np.sqrt(1 - zz ** 2)
-        add(m, np.column_stack([C[:, 0] + (r - lr) * rho * np.cos(ang), C[:, 1] + (r - lr) * rho * np.sin(ang),
-                                C[:, 2] + (b - lb) * zz]), lr, lb, CROWN_CLUMP)
-    return np.concatenate(oC), np.concatenate(orr), np.concatenate(ob), np.concatenate(own), np.concatenate(kind)
+        cc = np.column_stack([C[:, 0] + (r - lr) * rho * np.cos(ang), C[:, 1] + (r - lr) * rho * np.sin(ang),
+                              C[:, 2] + (b - lb) * zz])
+        if CLUMP_PETALS < 2:
+            add(m, cc, lr, lb, CROWN_CLUMP, 1 + j, zz)
+            continue
+        # the clump as leaf tufts, all inside it: one facing out of the crown (so the crown keeps its measured
+        # reach and top), the others around that one, each its own size
+        out = np.column_stack([rho * np.cos(ang), rho * np.sin(ang), zz])
+        t1 = np.column_stack([-np.sin(ang), np.cos(ang), np.zeros(n)])
+        t2 = np.cross(out, t1)
+        turn = 2 * np.pi * detail.ihash(idx, 90 + j)
+        for q in range(CLUMP_PETALS):
+            if q == 0:
+                d, pr = out, np.full(n, PETAL_R)
+            else:
+                psi = turn + 2 * np.pi * q / (CLUMP_PETALS - 1)
+                d = 0.3 * out + np.cos(psi)[:, None] * t1 + np.sin(psi)[:, None] * t2
+                d = d / np.linalg.norm(d, axis=1, keepdims=True)
+                pr = PETAL_R * (0.75 + 0.25 * detail.ihash(idx, 100 + j * 8 + q))
+            off = d * (1 - pr)[:, None]
+            add(m, cc + off * np.column_stack([lr, lr, lb]), lr * pr, lb * pr, CROWN_CLUMP, 1 + j,
+                TUFT_SKY[0] * zz + TUFT_SKY[1] * d[:, 2])
+    return (np.concatenate(oC), np.concatenate(orr), np.concatenate(ob), np.concatenate(own), np.concatenate(kind),
+            np.concatenate(group), np.concatenate(sky))
 
 
 # ------------------------------------------------------------------------------------------------ transport style

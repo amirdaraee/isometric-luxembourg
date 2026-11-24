@@ -136,6 +136,10 @@ class Style:
         self.awning = B(AWNINGS[int(h01(bid + "a") * len(AWNINGS)) % len(AWNINGS)])
 
 
+CROWN_TONES = (0.25, -0.05, 0.07, 0.35)  # a tuft's tones by how far its surface faces up: light above this, dark under this, the step's width, the mid tone's depth
+CROWN_SKY = (0.5, 2.2, 0.2)          # a tuft that sees less sky is darker: strength, curve; and one that sees more, lighter
+
+
 class ArtA:
     """Per-pixel materials of method A for one scene."""
 
@@ -746,10 +750,14 @@ class ArtA:
         return rgb * gp(px, py, 0.02, 17)[:, None]
 
     @staticmethod
-    def crown_rgb(light, dark, P, nz, tree_id, shape_id, kind, px, py, shape_r=None):
+    def crown_rgb(light, dark, P, nz, tree_id, shape_id, kind, px, py, shape_r=None, tuft_id=None, sky=None):
         """A crown's colours (v1's trees: the owner, 23 Nov 2026), per pixel: `light` and `dark` the tree's two ends,
         P the world point, nz the shape's normal's upward part, kind the shape's (render.crown_lobes).
-          - a leaf clump is the tree's light green, each clump its own tone, with a fine fleck of leaves;
+          - a leaf clump is the tree's light green, each clump (`shape_id`, the group of its tufts) its own tone,
+            each tuft (`tuft_id`) a little its own, with a fine fleck of leaves;
+          - a tuft is drawn in flat tones, as by hand (CROWN_TONES): light where it faces up, a mid green on its
+            side, dark underneath; one that sees little sky (`sky`, from its place on the clump and the crown) is
+            darker (CROWN_SKY);
           - the crown's core, seen between clumps, is its dark inside;
           - the underside of a clump sees no sky: it goes to the dark, across a ragged, leafy edge; less so on a
             small clump (`shape_r`, its radius: under 1.3 m the dark fades, to a third at 0.67 m), where a full
@@ -759,14 +767,27 @@ class ArtA:
         from v2.layers.render import CROWN_CORE_KIND, CROWN_WHOLE
         mix = (0.85 + 0.15 * ihash(tree_id, 31))[:, None]
         out = (dark * (1 - mix) + light * mix) * (1 + (ihash(shape_id, 33) - 0.5) * 0.22)[:, None]
+        if tuft_id is not None:
+            out *= (1 + (ihash(tuft_id, 34) - 0.5) * 0.1)[:, None]
+        if sky is not None:
+            k = (CROWN_SKY[0] * (1 - sky) ** CROWN_SKY[1])[:, None]
+            out = out * (1 + CROWN_SKY[2] * (sky - 0.5))[:, None] * (1 - k) + dark * k * 0.5
         q = np.floor(P / 0.3)
         out *= (1 + (ihash(q[:, 0], q[:, 1], q[:, 2], tree_id) - 0.5) * 0.08)[:, None]
         core = kind == CROWN_CORE_KIND
         out[core] = out[core] * 0.1 + dark[core] * 0.9
         q = np.floor(P / 0.45)
-        u = np.clip((0.38 - (nz + (ihash(q[:, 0], q[:, 1], q[:, 2], tree_id + 5) - 0.5) * 0.5)) / 0.4, 0, 1)
+        a = nz + (ihash(q[:, 0], q[:, 1], q[:, 2], tree_id + 5) - 0.5) * 0.5
+        u = np.clip((0.38 - a) / 0.4, 0, 1)
         u = u * u * (3 - 2 * u) * np.where(kind == CROWN_WHOLE, 0.45, 0.88) * ~core
         if shape_r is not None:
-            u = u * np.where(kind == CROWN_WHOLE, 1.0, np.clip((shape_r - 0.4) / 0.9, 0.3, 1.0))
+            u = u * np.where(kind == CROWN_WHOLE, 1.0, np.clip((shape_r - 0.2) / 0.5, 0.3, 1.0))
+        if tuft_id is not None:
+            # a tuft in three flat tones, as drawn by hand: the top light, a band of mid green, the underside dark
+            step = lambda x: np.clip(x, 0, 1) ** 2 * (3 - 2 * np.clip(x, 0, 1))
+            tuft = (kind != CROWN_WHOLE) & ~core
+            mid = step((CROWN_TONES[0] - a) / CROWN_TONES[2]) * tuft
+            u = np.where(tuft, step((CROWN_TONES[1] - a) / CROWN_TONES[2]) * 0.92, u)
+            out = out * (1 - mid * CROWN_TONES[3])[:, None] + dark * (mid * CROWN_TONES[3] * 0.4)[:, None]
         out = out * (1 - u)[:, None] + dark * (u * 0.5)[:, None]
         return out * gp(px, py, 0.04, 7)[:, None]

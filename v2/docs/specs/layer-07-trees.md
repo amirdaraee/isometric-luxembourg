@@ -15,19 +15,24 @@ palette (`trees.*`), terrain and buildings (depth).
 **Crown shape and variety (phase 3; v1's trees, the owner, 23 Nov 2026).** A broadleaf crown is a dark core
 (0.8 of the crown's radius and half-height) with leaf clumps all over its surface, one of them on top; a conifer is
 three tiers narrowing upwards; a crown under 1.2 m radius stays one shape.
-- **Clumps.** A clump is a spheroid of half the crown's radius (0.6 m at least, 2.4 m at most, never over 0.6 of
-  the crown's), 0.85 as high as wide, each its own size (±30%). They are spread evenly over the measured crown's
-  surface (golden angle, turned and jittered per tree), as many as cover it once with 1.3 of a clump's footprint
-  each (8 at least): about 15 seen on a grown tree. No clump reaches beyond the tree's crown radius, above its
-  measured top or below the crown's foot, and the top clump ends exactly at the measured top, so rule 1 holds (unit
-  test `test_crown_lobes_stay_inside_the_measured_crown`).
-- **Colours** (`art_a.crown_rgb`). A clump is the tree's light green, each clump its own tone (±11%), with a fine
-  fleck of leaves (0.3 m, ±4%). The core, seen between clumps, is the foliage's dark. The underside of a clump,
-  which sees no sky, goes to the dark across a ragged edge (0.45 m): at full strength on a clump of 1.3 m radius or
-  more, fading to a third on the smallest, so a small tree is not striped. Each tree leans to a warmer or a cooler
-  green (palette `summer_light_warm`, `summer_light_cool`).
-- **Lines.** Ink (the foliage's dark at 0.55) at 0.9 where a crown meets anything else, and at 0.8 where two shapes
-  of one crown meet (the nearer shape's edge), so every clump is drawn round.
+- **Clumps.** A clump is half the crown's radius (0.6 m at least, 2.4 m at most, never over 0.6 of the crown's),
+  0.85 as high as wide, each its own size (±30%). They are spread evenly over the crown's surface (golden angle,
+  turned and jittered per tree), as many as cover it once with 1.5 of a clump's footprint each (8 at least), so the
+  dark core shows between them.
+- **Tufts** (closer to v1: the owner, 24 Nov 2026). A clump is drawn as five leaf tufts, spheroids of about half its
+  radius that all lie inside it: one facing out of the crown, four around that one, each its own size. From
+  outside a clump reads as a cluster of leaves with a lobed outline, as v1's foliage does, and not as a ball. No tuft
+  reaches beyond the tree's crown radius, above its top or below the crown's foot, and the top clump's outward tuft
+  ends exactly at the tree's top, so rule 1 holds (unit test `test_crown_lobes_stay_inside_the_measured_crown`).
+- **Colours** (`art_a.crown_rgb`). A clump is the tree's light green, each clump its own tone (±11%), each tuft a
+  little its own (±5%), with a fine fleck of leaves (0.3 m, ±4%). A tuft is in three flat tones by how far its
+  surface faces up, across ragged edges (0.45 m): light on top, a mid green on its side, the foliage's dark
+  underneath. A tuft that sees little sky (low on its clump, or on a clump low on the crown) is darker. The core,
+  seen between clumps, is the foliage's dark. Each tree leans to a warmer or a cooler green (palette
+  `summer_light_warm`, `summer_light_cool`).
+- **Lines.** Ink (the foliage's dark at 0.55): 0.9 where foliage meets anything that is not foliage; 0.75 where two
+  clumps meet, whether of one tree or of two, so a wood is drawn as one mass of clumps and not as a row of crowns;
+  0.15 between the tufts of one clump.
 - **Nothing follows the sun.** Clumps, colours and lines are hashes of the tree's index and of the place; the dark
   underside follows "up". What moves with the hour is the viewer's light on each clump's own normal (bright on the
   sunward side) and layer 9's cast shadows, from the same shapes.
