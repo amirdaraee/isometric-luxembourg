@@ -2954,3 +2954,90 @@ greyer green.
 | # | Question |
 |---|---|
 | 65 | Are the trees right? If the clumps read as too round or too regular, the next thing to try is clumps of more varied size and a ragged outline. |
+
+## 32. The trees, second round: closer to v1, and 70% as tall (24 November, $0)
+
+Shown section 31's trees, the owner said they were better, could be more like v1's, and were too big beside the
+buildings. Both are done, built and checked. No money was spent; Phase 3 stands at $4.68 of $8.
+
+### 32.1 Too big: what was measured, and what was decided
+
+The trees were drawn at the height the 2024 LiDAR tree survey gives. Those heights were checked against the
+LiDAR surface itself (surface less terrain at each tree): they agree to 1.67 m at the median. The trees of the
+test area really are tall:
+
+| | 5th | 25th | 50th | 75th | 95th percentile |
+|---|---|---|---|---|---|
+| Trees, measured height (12,414) | 4.8 | 10.1 | 16.8 | 22.6 | 29.0 m |
+| Buildings, ridge height | 3.7 | 10.9 | 13.4 | 17.2 | 24.3 m |
+| Trees, as drawn now | 3.3 | 7.1 | 11.8 | 15.8 | 20.3 m |
+
+64% of the trees are measured taller than the median building. So "smaller" could only mean drawn smaller than
+measured, which is the owner's call. Three sizes were shown beside v1 as trial drawings: as measured, 80% of
+height and width, and 70% of height with the width kept. **The owner chose 70% of height, width kept
+(24 November).**
+
+- `trees.drawn_height_scale` = 0.7 in `params.json`. Every tree is drawn at 70% of its measured height. Its
+  place and its crown width are unchanged, so the woods stay closed.
+- The measured height is kept in the data (`height_measured`) and still decides which trees are kept and the
+  crown's shape by age. The shadows come from the trees as drawn, so they are shorter too.
+- New gate **TE9**: trees not drawn at 0.7 of their measured height, within 1 cm: 0 of 12,414.
+- 40% of the trees are still drawn taller than the median building (64% before).
+- This is a departure from the measurement, recorded in `DECISIONS.md` and in `layer-07-trees.md`.
+
+Tried and not applied: narrowing each crown to the LiDAR canopy around it. It would narrow 2,754 trees (7.1 to
+4.1 m at the median) and made the trees thinner and taller-looking, the opposite of what was asked.
+
+### 32.2 Closer to v1: what changed in the drawing
+
+| | Section 31 | Now |
+|---|---|---|
+| A leaf clump | One spheroid | A cluster of five leaf tufts inside the clump's shape: one facing out, four around it, so the outline is lobed |
+| A tuft's colour | Smooth from light to dark | Three flat tones: light on top, a mid green on the side, dark underneath, as v1's foliage is drawn |
+| Depth inside a crown | – | A tuft that sees less sky (low on the crown, or on the underside of its clump) is darker |
+| Lines | 0.8 between clumps, 0.9 around each crown | 0.15 between the tufts of a clump, 0.75 between clumps, 0.9 around the foliage as a whole |
+| Between two neighbouring trees | The heavy outline | The same line as between two clumps of one tree, so a wood reads as one mass of leaves |
+
+- **No light is baked in.** The tones and the darkening by sky follow "up" and the tuft's place on the crown,
+  never the sun; the sunlit side still comes from the viewer's sun on each tuft's own normal. L5.1/L9.2 passes:
+  0 of 255 compared.
+- Three earlier trials (smaller tufts, smooth shading) read duller and finer than v1 and were dropped.
+- Lit as the viewer lights them at 11:00 on 15 June, at the same three places as section 31: brightness
+  13, 71, 165 (5th, 50th, 95th percentile of 255) against 14, 70, 158 in section 31; the lightest 5% is
+  [170,199,56]. The trees cover 20% fewer pixels there (0.72 million against 0.90).
+
+### 32.3 The build and the painted area
+
+| | |
+|---|---|
+| Release | `8e04abbcca4d` (current) |
+| Stages | 59 of 59 |
+| Gate entries | 285 pass, 0 fail (284 and the new TE9) |
+| Tree layer | 99.7 MB (106.4 in section 31); the release 17.54 MB (17.75) |
+| Speed | 120 frames a second over the whole area, 94 at zoom 1 |
+| Painted area (`8e04abbcca4d_t4_0`) | 101 pictures, even light fails on 0; edges 96.5%, window rows 99.8%; no baked light 0 of 255, worst 4.0%; vehicle gates 0 |
+
+- No threshold was changed. 174 tests pass. Tree checks TE1 to TE9, S-trees (seams: 0.0), D-trees (vehicle
+  detector: 0) pass. TE8 (report): drawn height over crown width 1.53 at the median.
+- The per-picture vehicle detector (not a gate) marks the same 2 of 101 paintings as before (highest score
+  0.15): house fronts and a shop front.
+
+![Section 31's trees and now, at 13:00: the park and Rue Vauban in code art, the Bock painted](img/test_trees_round2.jpg)
+
+### 32.4 Not done
+
+- Every surveyed tree is still its own crown. A wood now reads as one mass because no heavy line parts its
+  trees, but it is not painted as one shape the way v1's is.
+- The crown widths are as before: the drawn canopy still covers 8.7 ha of open ground and leaves 28% of the
+  LiDAR canopy bare (42.0 ha drawn against 46.1 ha measured).
+- With the width kept and the height at 70%, tall narrow trees are squatter than they are.
+- The trunks, the conifers' shape and the autumn, winter and blossom colours were not touched or looked at.
+- Looked at: the eight views of both viewers at 13:00, evening and night, and three close views.
+
+### 32.5 Open questions
+
+44, 46, 60 and 61 stand. 65 stands, on these trees:
+
+| # | Question |
+|---|---|
+| 65 | Are the trees right now, in drawing and in size? |
