@@ -3041,3 +3041,106 @@ Tried and not applied: narrowing each crown to the LiDAR canopy around it. It wo
 | # | Question |
 |---|---|
 | 65 | Are the trees right now, in drawing and in size? |
+
+## 33. The trees by species (24 and 25 November, $0)
+
+Shown section 32's trees, the owner said they were not that good and asked whether the trees that grow in
+Luxembourg could be researched and modelled. They are: built and checked. No money was spent; Phase 3 stands at
+$4.68 of $8.
+
+### 33.1 What grows in the city, and what data says so
+
+| Source | What it has | Licence | Used |
+|---|---|---|---|
+| ACT LiDAR 2024 tree survey (the trees we draw) | Place, height, crown; green broadleaf, red-leaved, conifer or other. No species | CC0 | Yes, as before |
+| The city's tree register (Ville de Luxembourg, Service Parcs) | 23,940 trees: Latin name, cultivar, height, crown, street or park | None stated | Yes, by the owner's decision of 25 Nov |
+| OpenStreetMap | 88 trees with a species or genus in the commune | ODbL | Yes |
+| Remarkable trees (ANF) | 238 trees nationally, about 14 in the commune | CC0 | No (too few; OSM has most) |
+
+The register's count by genus: Acer 16.5%, Tilia 10.8%, Quercus 8.6%, Fraxinus 6.4%, Platanus 5.6%, Carpinus
+4.5%, Aesculus 4.2%, Ulmus 4.2%, Prunus 3.6%, Pinus 3.2%, Fagus 3.0%, Betula 3.0%; 102 genera in all.
+
+### 33.2 The 23 species
+
+Each has its own outline, bare trunk, width, leaf texture, greens and bark (`v2/config/tree_species.json`,
+`layer-07-trees.md` "Species"): maple, columnar maple, lime, oak, columnar oak, ash, plane, hornbeam, columnar
+hornbeam, horse chestnut, elm, cherry, purple cherry plum, beech, copper beech, birch, robinia, Lombardy poplar,
+weeping willow, ginkgo, pine, spruce, yew.
+
+- Ten outlines: round, egg, flame, column, spire, cone, pyramid, dome, vase, weeping. A conifer is no longer
+  three stacked tiers: a spruce is a cone of tufts, a pine a crown on a bare red-brown trunk, a yew a dark dome.
+- Crown widths are the species' (the register's mean height and crown width by genus): a maple 0.50 to 0.58 of its
+  measured height, an oak up to 0.64, a columnar oak 0.31, a spruce 0.33.
+- The drawing of a crown (clumps of five tufts in flat tones) is section 32's; a round maple's tufts are the same
+  shapes as before.
+- A species not among the 23 is drawn as the nearest one (an alder as a hornbeam, a pear as a columnar hornbeam,
+  a cedar as a pine): 23,749 of the register's 23,940 trees map to one.
+
+![The 23 species, each at three ages beside a 10 m pole, at 70% of their height](img/test_trees_species_sheet.jpg)
+
+### 33.3 Which tree is which species
+
+The first rule that applies decides (`scene.md`, "Tree species"). In the test area (12,414 trees):
+
+| Rule | Trees | Known or by rule |
+|---|---|---|
+| The city's register, within 4 m | 736 | Known |
+| OpenStreetMap species, within 3 m | 4 | Known |
+| A street or square whose trees are known | 66 | Known |
+| The survey's type (conifer: pine, spruce or yew; red: copper beech or cherry plum) | 666 | By rule |
+| By the water | 632 | By rule |
+| A street's own species | 732 | By rule |
+| Woods and dense stands, in patches | 7,081 | By rule |
+| Parks and gardens, in groups | 2,497 | By rule |
+
+- **6.5% of the trees have a known species; 93.5% are plausible, not true tree by tree.** The register covers
+  the trees the city looks after, on streets and in parks. The wooded slopes and private gardens that fill most
+  of the test area are not in it. (Before the download I told the owner the register would name about four
+  trees in ten in the centre; that was wrong.)
+- Of the register's 1,062 trees in the area, 736 name a surveyed tree. 267 have no surveyed tree within 4 m,
+  about 100 of them under 5 m tall: the LiDAR survey missed them. They are not drawn.
+- 43 trees changed type because the register knows better (a pine the survey called a broadleaf, and the like).
+- The wood mix (sycamore and ash first, then oak, hornbeam, beech) rests on the city's forest service points in
+  the centre; the reading of their codes is ours, not the city's.
+
+### 33.4 The build and the painted area
+
+| | |
+|---|---|
+| Release | `9ebcda41bae8` (current) |
+| Stages | 60 of 60 (the register's download is the new one) |
+| Gate entries | 286 pass, 0 fail (285 and the new TE10) |
+| Tree layer | 103.4 MB (99.7 in section 32); the release 17.66 MB (17.54) |
+| Speed | 120 frames a second over the whole area, 94 at zoom 1 |
+| Painted area (`9ebcda41bae8_t4_0`) | 101 pictures, even light fails on 0; edges 96.5%, window rows 99.8%; no baked light 0 of 252, worst 4.0%; vehicle gates 0 |
+
+- No threshold was changed. 181 tests pass (6 new on the species rules, 1 on the species' shapes). Tree checks
+  TE1 to TE10, S-trees (seams: 0.0), D-trees (vehicle detector: 0) pass; no baked light in the code art: 0 of 252,
+  worst 3.2%.
+- New: TE10 (gate) no tree drawn as a species of another kind than its type; TE11 and TE12 (reports) the trees by
+  rule and by species.
+- The per-picture vehicle detector (not a gate) marks the same 2 of 101 paintings as before (highest score 0.15).
+
+![Section 32's trees and the trees by species, at 13:00: the park and Rue Vauban in code art, the Bock painted](img/test_trees_species.jpg)
+
+### 33.5 Not done
+
+- **Autumn colour and blossom by species.** The viewer still tints every tree alike by season; a horse
+  chestnut's candles, a cherry's blossom and a ginkgo's yellow are not drawn.
+- The weeping willow's hanging branches barely read.
+- The register's trees that the survey missed are not added.
+- The register states no licence. If the city objects, its rule is removed and those trees fall back to the
+  other rules (`DECISIONS.md`).
+- Only the test area is built. The register covers the whole commune and is already downloaded for it.
+- Looked at: the species sheet, four places as trials, and from the build the eight views of both viewers at
+  13:00, evening and night, and four close views. Not looked at: other seasons.
+
+### 33.6 Open questions
+
+44, 46, 60 and 61 stand. 65 stands, on these trees:
+
+| # | Question |
+|---|---|
+| 65 | Are the trees right now, drawn by species? |
+| 66 | Should the city's trees that the LiDAR survey missed (267 in the test area) be added from the register, at the register's height? |
+| 67 | Should autumn colour and blossom follow the species? |
