@@ -33,7 +33,7 @@ def _with(base, *keys):
 
 def graph() -> Graph:
     from v2.data.scene import buildings, entrances, facades, groundcover, places, structures, terrain, transit, transport, trees, water, scene
-    from v2.data.fetch import worship as fetch_worship
+    from v2.data.fetch import city_trees, worship as fetch_worship
     from v2.checks import data_checks as dc, repo_checks as rc
     from v2.build import report
 
@@ -46,6 +46,8 @@ def graph() -> Graph:
               kind="fetch", shared=True, doc="OSM land use, water, walls, cliffs, squares, lamps (Overpass)"),
         Stage("fetch_trees", fetch.fetch_trees, params=fetch.trees_params, code=GEO + ("v2.data.fetch.gpkg_stream", "v2.data.fetch.http"),
               kind="fetch", shared=True, doc="ACT LiDAR 2024 tree survey, streamed and cut to the commune"),
+        Stage("fetch_city_trees", city_trees.fetch_city_trees, params=city_trees.city_trees_params, code=("v2.data.geo", "v2.data.fetch.http"),
+              kind="fetch", shared=True, doc="the city's tree register: species, cultivar, height and crown of each tree"),
         Stage("fetch_osm_pois", entrances.fetch_osm_pois, params=fetch.extent_params,
               code=GEO + ("v2.data.fetch.overpass", "v2.data.fetch.http"), kind="fetch", shared=True,
               doc="OSM entrances, shops, crafts and amenities (Overpass)"),
@@ -72,7 +74,7 @@ def graph() -> Graph:
               doc="facade layout per wall: floors, windows, doors and shop fronts; the church rule on places of worship; "
                   "the openings of landmarks as they are"),
         Stage("scene_trees", trees.build, deps=("fetch_trees", "scene_buildings", "scene_water", "scene_terrain",
-                                                "fetch_osm_ground", "fetch_osm_transport"),
+                                                "fetch_osm_ground", "fetch_osm_transport", "fetch_city_trees"),
               params=_p("trees"), code=GEO + ("v2.data.scene.tree_species",),
               raw=lambda area: [REPO / "v2/config/tree_species.json"],
               doc="LiDAR trees, each given a species by rule, thinned over water and buildings"),

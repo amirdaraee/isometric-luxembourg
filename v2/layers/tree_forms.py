@@ -7,7 +7,8 @@ from functools import lru_cache
 
 import numpy as np
 
-from v2.config import params, tree_species
+from v2.config import params
+from v2.data.scene.tree_species import config as tree_species
 from v2.layers.common import pal
 
 

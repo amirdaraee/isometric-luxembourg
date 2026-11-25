@@ -70,6 +70,9 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | TE7 | yes | Thinning only narrows a crown |
 | TE8 | info | Median drawn height over crown width |
 | TE9 | yes | Every tree is drawn at the stated share (0.7) of its measured height, within 1 cm |
+| TE10 | yes | Every tree has one of the drawn species, of its type's kind (no conifer drawn as a broadleaf, no red-leaved tree as a green one) |
+| TE11 | info | Trees by what set their species (register, osm, named: known; type, water, street, wood, park: by rule), and the share known |
+| TE12 | info | Trees by species |
 | **Transport profiles** | | |
 | P1 | yes | Every sample has a height |
 | P2 | yes | Edge ends at their node's height (≤ 0.3 m): continuous across junctions |

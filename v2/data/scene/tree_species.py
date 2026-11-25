@@ -2,6 +2,8 @@
 
 The survey gives a place, a height, a crown and one of four types for every tree, never a species. So the species
 is set by rule, in this order (v2/config/tree_species.json, assign); the first that applies decides:
+  0. register: a tree of the city's register (Ville de Luxembourg, Service Parcs) within register_m of the tree:
+     its species (the nearest drawn species), and its type with it;
   1. osm: an OpenStreetMap tree with a species or genus within osm_m of the tree: that species (mapped to the
      nearest drawn species by its genus);
   2. named: a street or square whose trees are known (assign.named): that species;
@@ -19,6 +21,8 @@ place, so a rebuild, and the commune, give the same species to the same tree.
 from __future__ import annotations
 
 import json
+from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 import shapely
@@ -28,7 +32,14 @@ from shapely.ops import unary_union
 
 from v2.data.geo import osm_area_en, way_en
 
-RULES = ("osm", "named", "type", "water", "street", "wood", "park")
+RULES = ("register", "osm", "named", "type", "water", "street", "wood", "park")
+CONFIG = Path(__file__).resolve().parents[2] / "config" / "tree_species.json"
+
+
+@lru_cache(maxsize=None)
+def config() -> dict:
+    """The city's tree species (v2/config/tree_species.json): how each is drawn, and the rules of this module."""
+    return json.loads(CONFIG.read_text())
 
 
 def _hash(a, b, salt=0):
@@ -43,6 +54,26 @@ def _name_hash(s: str) -> int:
     for ch in s.encode():
         h = ((h ^ ch) * 16777619) & 0xFFFFFFFF
     return h
+
+
+def drawn_as(latin: str, cultivar: str, A) -> str | None:
+    """The drawn species of a tree known by its Latin name and cultivar (assign.cultivars, then assign.genus)."""
+    words = (latin or "").split(" ")
+    genus = words[0].capitalize() if words and words[0] else ""
+    text = f"{latin} {cultivar}".lower()
+    for c in A["cultivars"]:
+        if genus in c["genus"] and any(h in text for h in c["has"]):
+            return c["as"]
+    return A["genus"].get(genus)
+
+
+def load_register(path, S):
+    """The city's register (fetch/city_trees.py) as (e, n, drawn species) of the trees whose species is drawn."""
+    rows = json.loads(path.read_text())["trees"]
+    keys = [drawn_as(r["latin"], r["cultivar"], S["assign"]) for r in rows]
+    ok = [i for i, k in enumerate(keys) if k]
+    return {"e": np.array([rows[i]["e"] for i in ok]), "n": np.array([rows[i]["n"] for i in ok]),
+            "key": [keys[i] for i in ok], "trees": len(rows), "drawn": len(ok)}
 
 
 def species_table(S):
@@ -78,8 +109,7 @@ def context(osm_ground, osm_transport, S):
         tg = el.get("tags", {})
         if el["type"] == "node":
             if tg.get("natural") == "tree":
-                latin = tg.get("species") or tg.get("taxon") or tg.get("genus") or ""
-                key = A["genus"].get(latin.split(" ")[0].capitalize()) if latin else None
+                key = drawn_as(tg.get("species") or tg.get("taxon") or tg.get("genus") or "", "", A)
                 if key:
                     trees.append((el["lon"], el["lat"], key))
             continue
@@ -105,7 +135,7 @@ def context(osm_ground, osm_transport, S):
     return {"woods": woods, "squares": squares, "lines": lines, "line_names": line_names, "osm_trees": trees}
 
 
-def assign(e, n, typ, h, type_names, S, ctx, water=()):
+def assign(e, n, typ, h, type_names, S, ctx, water=(), register=None):
     """Each tree's species (row of species_table) and the rule that set it (index into RULES)."""
     from scipy.spatial import cKDTree
 
@@ -129,6 +159,16 @@ def assign(e, n, typ, h, type_names, S, ctx, water=()):
         m = m & (sp < 0)
         sp[m] = np.broadcast_to(s, (N,))[m]; rule[m] = RULES.index(r)
 
+    # 0. the city's register: each register tree to the surveyed tree nearest to it, each surveyed tree to the
+    # register tree nearest to it
+    if register is not None and len(register["e"]):
+        d, j = cKDTree(np.column_stack([e, n])).query(np.column_stack([register["e"], register["n"]]))
+        best = np.full(N, np.inf)
+        np.minimum.at(best, j, d)
+        win = (d <= A["register_m"]) & (d == best[j])
+        s = np.full(N, -1)
+        s[j[win]] = np.array([names.index(k) for k in register["key"]])[win]
+        put(s >= 0, np.maximum(s, 0), "register")
     # 1. OpenStreetMap trees with a species
     if ctx["osm_trees"]:
         oe, on = lonlat_to_en(np.array([t[0] for t in ctx["osm_trees"]]), np.array([t[1] for t in ctx["osm_trees"]]))

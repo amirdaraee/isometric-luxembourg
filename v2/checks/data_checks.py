@@ -470,13 +470,33 @@ def check_trees(ctx):
     names = [str(s) for s in t["type_names"]]
     cr = t["crown_r"].astype(float)
     if len(h):
-        _, allo = shape_radius(hm, np.zeros(len(h)), t["type"], t["e"], t["n"], p, names)
+        from v2.data.scene import tree_species
+        S = tree_species.config()
+        sp_names = [str(k) for k in t["species_names"]]
+        sp = t["species"].astype(int)
+        widths = np.array([{**S["defaults"], **S["list"][k]}["width"] for k in sp_names], float)[sp]
+        _, allo = shape_radius(hm, np.zeros(len(h)), t["type"], t["e"], t["n"], p, names, width=widths)
         cap = np.maximum(allo, t["crown_r_measured"].astype(float) * p["crown_scale"])
         over = cr - cap
         r.at_most("TE6", "crowns wider than their species' and age's shape (or the survey's width, if that is wider), m",
                   round(float(over.max()), 3), 0.01, [str(u) for u in t["uuid"][over > 0.01][:5]])
         shape = t["crown_r_shape"].astype(float) if "crown_r_shape" in t.files else cr
         r.add("TE7", "no crown wider than before thinning (thinning only narrows)", bool((cr <= shape + 1e-4).all()))
+        # TE10-TE12: every tree has one of the drawn species, of its type's kind and for its height (scene.md,
+        # "Tree species"); how each got it is reported, never hidden: most are set by rule, not known
+        A = S["assign"]
+        kind = np.where(np.isin(sp_names, A["conifers"]), names.index("conifer"),
+                        np.where(np.isin(sp_names, A["red"]), names.index("deciduous_red"), names.index("deciduous_green")))
+        typ = np.where(t["type"] == names.index("other"), names.index("deciduous_green"), t["type"])
+        bad = (kind[sp] != typ) | (sp < 0) | (sp >= len(sp_names)) | ~np.isin(sp_names, list(S["list"]))[sp]
+        r.at_most("TE10", "trees whose species is not of their type's kind (a conifer drawn as a broadleaf, a red-leaved tree as a green one, or the other way)",
+                  int(bad.sum()), 0, [str(u) for u in t["uuid"][bad][:5]])
+        rules = [str(k) for k in t["species_rules"]]
+        by_rule = {k: int((t["species_rule"] == i).sum()) for i, k in enumerate(rules)}
+        known = sum(by_rule.get(k, 0) for k in ("register", "osm", "named"))
+        r.info("TE11", "trees by what set their species (register, osm, named: known; the others: by rule), and the share known",
+               {**by_rule, "known_share": round(known / len(h), 4)})
+        r.info("TE12", "trees by species", {k: int((sp == i).sum()) for i, k in enumerate(sp_names)})
         tall = h >= 8
         r.info("TE8", "drawn height over crown width, median (all trees; trees drawn 8 m or more)",
                [round(float(np.median(h / np.maximum(2 * cr, 1e-3))), 2),

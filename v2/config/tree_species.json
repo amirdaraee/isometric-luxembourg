@@ -16,7 +16,7 @@
  "defaults": {"foot": 0.27, "clump": [0.50, 2.4], "open": 0.0, "lobes": 0.0, "squash": 0.85, "hang": 1.0, "h": [2.0, 50.0], "trunk": "trunk", "trunk_w_m": 0.35},
  "by_type": {"deciduous_green": "maple", "deciduous_red": "copper_beech", "conifer": "spruce", "other": "maple"},
  "assign": {
-  "about": "Which species a surveyed tree is drawn as (v2/data/scene/tree_species.py; the rules in order: osm, named, type, water, street, wood, park). A mix given as a list takes the species' register shares as weights; one given with numbers takes those. named: streets and squares whose trees are known (the city's register, by place, 24 Nov 2026). wood: the wooded valley slopes are mixed broadleaves, mostly sycamore and ash, with oak and some beech (the city's forest service points in the centre; the reading of their codes is ours). water: by judgment (the register lists 92 weeping willows in the city, among them those of the Pétrusse and the Alzette).",
+  "about": "Which species a surveyed tree is drawn as (v2/data/scene/tree_species.py; in order: register, osm, named, type, water, street, wood, park). register: the tree of the city's register nearest to the surveyed tree, within register_m of it (the register's point is the trunk, the survey's the crown's top); such a tree also takes its type (conifer, red-leaved, green) from its species. A mix given as a list takes the species' register shares as weights; one given with numbers takes those. named: streets and squares whose trees are known (the city's register, by place, 24 Nov 2026). wood: the wooded valley slopes are mixed broadleaves, mostly sycamore and ash, with oak and some beech (the city's forest service points in the centre; the reading of their codes is ours). water: by judgment (the register lists 92 weeping willows in the city, among them those of the Pétrusse and the Alzette).",
   "osm_m": 3.0, "street_m": 9.0, "square_m": 4.0, "water_m": 9.0,
   "stand_m": 9.0, "stand_trees": 6,
   "street_cell_m": 60.0, "street_mixed_share": 0.15,
@@ -25,7 +25,18 @@
   "street_classes": ["primary", "secondary", "tertiary", "unclassified", "residential", "living_street", "pedestrian", "primary_link", "secondary_link", "tertiary_link"],
   "conifers": ["pine", "spruce", "yew"],
   "red": ["copper_beech", "cherry_plum_red"],
-  "genus": {"Tilia": "lime", "Platanus": "plane", "Acer": "maple", "Quercus": "oak", "Castanea": "oak", "Juglans": "oak", "Fraxinus": "ash", "Alnus": "ash", "Carpinus": "hornbeam", "Aesculus": "chestnut", "Ulmus": "elm", "Prunus": "cherry", "Malus": "cherry", "Cydonia": "cherry", "Sorbus": "cherry", "Fagus": "beech", "Betula": "birch", "Robinia": "robinia", "Gleditsia": "robinia", "Salix": "willow", "Ginkgo": "ginkgo", "Liquidambar": "ginkgo", "Pinus": "pine", "Picea": "spruce", "Pseudotsuga": "spruce", "Abies": "spruce", "Sequoiadendron": "spruce", "Taxus": "yew"},
+  "register_m": 4.0,
+  "genus": {"Acer": "maple", "Tilia": "lime", "Liriodendron": "lime", "Cercidiphyllum": "lime", "Nyssa": "lime", "Quercus": "oak", "Castanea": "oak", "Juglans": "oak", "Carya": "oak", "Fraxinus": "ash", "Populus": "ash", "Salix": "ash", "Ailanthus": "ash", "Pterocarya": "ash", "Platanus": "plane", "Catalpa": "plane", "Paulownia": "plane", "Carpinus": "hornbeam", "Ostrya": "hornbeam", "Alnus": "hornbeam", "Pyrus": "hornbeam_column", "Aesculus": "chestnut", "Ulmus": "elm", "Zelkova": "elm", "Celtis": "elm", "Eucommia": "elm", "Prunus": "cherry", "Malus": "cherry", "Sorbus": "cherry", "Crataegus": "cherry", "Amelanchier": "cherry", "Magnolia": "cherry", "Parrotia": "cherry", "Koelreuteria": "cherry", "Morus": "cherry", "Cornus": "cherry", "Cercis": "cherry", "Cydonia": "cherry", "Mespilus": "cherry", "Fagus": "beech", "Betula": "birch", "Robinia": "robinia", "Gleditsia": "robinia", "Styphnolobium": "robinia", "Sophora": "robinia", "Gymnocladus": "robinia", "Ginkgo": "ginkgo", "Gingko": "ginkgo", "Liquidambar": "ginkgo", "Corylus": "ginkgo", "Pinus": "pine", "Cedrus": "pine", "Picea": "spruce", "Pseudotsuga": "spruce", "Abies": "spruce", "Larix": "spruce", "Metasequoia": "spruce", "Taxodium": "spruce", "Sequoiadendron": "spruce", "Sequoia": "spruce", "Chamaecyparis": "spruce", "Thuja": "spruce", "Calocedrus": "spruce", "Juniperus": "spruce", "Taxus": "yew", "Ilex": "yew", "Buxus": "yew"},
+  "genus_about": "A tree whose species is known (the city's register, OpenStreetMap) is drawn as the nearest of the drawn species: by its genus here, unless a line of `cultivars` applies first.",
+  "cultivars": [
+   {"genus": ["Populus"], "has": ["italica"], "as": "poplar"},
+   {"genus": ["Salix"], "has": ["sepulcralis", "babylonica", "chrysocoma", "tristis", "pendula"], "as": "willow"},
+   {"genus": ["Quercus"], "has": ["fastigiat", "koster", "columna"], "as": "oak_column"},
+   {"genus": ["Carpinus"], "has": ["fastigiat", "frans fontaine", "lucas", "columnaris"], "as": "hornbeam_column"},
+   {"genus": ["Acer", "Fagus", "Tilia", "Ulmus", "Fraxinus", "Betula", "Liriodendron", "Prunus", "Sorbus", "Malus", "Crataegus"], "has": ["columnar", "fastigiat", "dawyck", "columella", "pyramidal", "erect", "amanogawa", "obelisk"], "as": "maple_column"},
+   {"genus": ["Fagus", "Acer"], "has": ["purpure", "atropunicea", "riversii", "purple", "crimson", "royal red", "faassen"], "as": "copper_beech"},
+   {"genus": ["Prunus", "Malus"], "has": ["nigra", "pissardii", "royalty", "atropurpure"], "as": "cherry_plum_red"}
+  ],
   "named": {
    "Place d'Armes": "plane", "Place Guillaume II": "plane", "Place de Paris": "plane", "Place de la Gare": "plane",
    "Place du Théâtre": "lime", "Allée Scheffer": "lime", "Place des Martyrs": "lime", "Montée du Grund": "lime",

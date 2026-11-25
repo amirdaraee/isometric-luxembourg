@@ -7,7 +7,14 @@
   "lidar_mnt": "https://download.data.public.lu/resources/bd-l-lidar2024-releve-3d-du-territoire-luxembourgeois/20241223-093912/MNT_Lidar2024.tif",
   "lidar_mns": "https://download.data.public.lu/resources/bd-l-lidar2024-releve-3d-du-territoire-luxembourgeois/20241223-093912/MNS_Lidar2024.tif",
   "lidar_aggregate": {"mnt": "mean", "mns": "max"},
-  "trees": "https://download.data.public.lu/resources/lidar-2024-arbres/20261001-130836/act2024-lidar-trees-points.zip"
+  "trees": "https://download.data.public.lu/resources/lidar-2024-arbres/20261001-130836/act2024-lidar-trees-points.zip",
+  "city_trees": {
+   "about": "The city's tree register (Ville de Luxembourg, Service Parcs: \"Arbres (Service Parcs)\", the layer behind maps.vdl.lu/maps/cadastre_trees): species, cultivar, height and crown of every tree the city looks after. Published for consultation with no licence stated; used for each tree's species by the owner's decision (25 Nov 2026).",
+   "url": "https://maps.vdl.lu/arcgis/rest/services/DYNDATA/SCENERY/FeatureServer/0/query",
+   "fields": ["BAUMART", "SORTE", "BAUMART_GROUP", "GA_NAME", "BAUMHOEHE", "KRONENDURCHMESSER"],
+   "page": 2000,
+   "snapshot": "2026-11-25"
+  }
  },
  "areas": {
   "test": {"terrain_step_m": 0.5, "margin_m": 150},

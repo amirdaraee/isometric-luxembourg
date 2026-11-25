@@ -22,7 +22,6 @@ import shapely
 from shapely import STRtree
 from shapely.ops import unary_union
 
-from v2.config import tree_species as tree_species_cfg
 from v2.data.geo import area_polygon
 from v2.data.scene import tree_species
 from v2.data.scene.buildings import footprints, load
@@ -103,13 +102,22 @@ def build(ctx):
     names = [str(s) for s in T["type_names"]]
     r_survey = r_meas * p["crown_scale"]
     # the species each tree is drawn as (by rule: tree_species.py), and its crown's width from it
-    S = tree_species_cfg()
+    S = tree_species.config()
+    register = tree_species.load_register(ctx.dep("fetch_city_trees") / "city_trees.json", S)
     sp, rule, sp_names = tree_species.assign(
         e[idx], n[idx], T["type"][idx], T["h"][idx], names, S,
         tree_species.context(ctx.dep("fetch_osm_ground") / "ground.json", ctx.dep("fetch_osm_transport") / "transport.json", S),
-        water=water)
+        water=water, register=register)
+    # a tree the register names takes its type from its species (the register knows a pine from a lime; the
+    # survey's type is a guess from the LiDAR colours)
+    typ = np.asarray(T["type"][idx]).copy()
+    known = rule == tree_species.RULES.index("register")
+    kind = np.where(np.isin(sp_names, S["assign"]["conifers"]), names.index("conifer"),
+                    np.where(np.isin(sp_names, S["assign"]["red"]), names.index("deciduous_red"), names.index("deciduous_green")))
+    retyped = int((known & (kind[sp] != typ) & ~((typ == names.index("other")) & (kind[sp] == names.index("deciduous_green")))).sum())
+    typ[known] = kind[sp][known]
     widths = np.array([{**S["defaults"], **S["list"][k]}["width"] for k in sp_names], float)[sp]
-    r, _ = shape_radius(T["h"][idx], r_survey, T["type"][idx], e[idx], n[idx], p, names, width=widths)
+    r, _ = shape_radius(T["h"][idx], r_survey, typ, e[idx], n[idx], p, names, width=widths)
     r_shape = r.copy()
     widened = int((r > r_survey + 1e-6).sum())
     blockers = list(fps) + list(water)
@@ -132,13 +140,16 @@ def build(ctx):
                         height=drawn_height(T["h"][idx], p), height_measured=T["h"][idx].astype(np.float32),
                         crown_r=r.astype(np.float32), crown_r_shape=r_shape.astype(np.float32),
                         crown_r_measured=r_meas.astype(np.float32),
-                        type=T["type"][idx], uuid=T["uuid"][idx], type_names=T["type_names"],
+                        type=typ, type_survey=T["type"][idx], uuid=T["uuid"][idx], type_names=T["type_names"],
                         species=sp.astype(np.int8), species_names=np.array(sp_names), species_rule=rule.astype(np.int8),
                         species_rules=np.array(tree_species.RULES))
     hw = drawn_height(T["h"][idx], p) / np.maximum(2 * r, 1e-3)
     return {"trees": int(len(idx)), "dropped": dropped, "crowns_thinned": thinned, "crowns_widened": widened,
             "height_over_width_median": float(np.median(hw)) if len(idx) else 0,
-            "by_type": {names[t]: int((T["type"][idx] == t).sum()) for t in range(len(names))},
+            "by_type": {names[t]: int((typ == t).sum()) for t in range(len(names))},
+            "register": {"trees": register["trees"], "with_a_drawn_species": register["drawn"],
+                         "in_the_area": int(shapely.contains_xy(poly, register["e"], register["n"]).sum()),
+                         "matched": int(known.sum()), "type_changed": retyped},
             "by_species": {k: int((sp == i).sum()) for i, k in enumerate(sp_names)},
             "by_species_rule": {k: int((rule == i).sum()) for i, k in enumerate(tree_species.RULES)},
             "height_m": {"median": float(np.median(T["h"][idx])) if len(idx) else 0,
