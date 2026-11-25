@@ -14,12 +14,15 @@ of sun positions per season, or rendered in the viewer from the depth buffer for
 1. Lambert shading of albedo from the normal and sun direction, softened (wrap lighting) to stay "drawn".
 2. Cast shadows: a pixel is in shadow when the shadow map from the sun sees a nearer surface; shadows are tinted
    (palette `shadow_tint`), never black.
-   The shadow height map (0.5 m cells) is read between its cells' centres (owner, 26 Nov 2026: shadows are not
+   The shadow height map (0.5 m cells) is read between its cells' centres (owner, 25 Nov 2026: shadows are not
    smooth, a weird pattern on some buildings): the terrain bilinear; a building, a tree or a structure where more
    than half of the four cells around the point have one, at those cells' mean heights. So the edge of what casts
    a shadow is a line and not steps of half a metre. The march starts 0.5 m off the surface along its normal's
    level part (`march.normal_m`), so a sunlit wall is not shadowed by its own cells (that drew dotted lines down
    walls). The viewer's shader (`hmAt`, `marchTo`) and the reference (`light.py` `hm_at`, `shadow_ref`) do the same.
+   The viewer keeps, for blocks of 4 x 4 cells, a height nothing in the block reaches and whether the block has a
+   tree or a structure (`heightmap.ts`); it reads the cells only where a ray is below that height, and their
+   second texture only where the block has one: the same shadows with far fewer reads (C2b).
 3. Sky grade by sun elevation: golden hour 0–6°, blue hour −6–0°, night below −6° (sun.json presets). The numbers
    are `v2/config/light.json` "grade"; the viewer turns them into the light pass's inputs in
    `v2/web/src/gl/grade.ts`. Nothing of this is in any layer's tiles: layers 1–7 stay evenly lit (L5.1, L9.2).

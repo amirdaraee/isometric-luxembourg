@@ -194,6 +194,7 @@ uniform sampler2D uNormal;
 uniform highp sampler2D uDepth;
 uniform sampler2D uHmA;
 uniform sampler2D uHmB;
+uniform highp sampler2D uHmTop;   // the height map's coarse tops (heightmap.ts): nothing in a block reaches r; g: it has a tree or a structure
 ${CAM_GLSL}
 ${VIEW_GLSL}
 ${OCT_GLSL}
@@ -203,6 +204,7 @@ uniform ivec2 uHmSize;
 uniform vec3 uHmUnits;         // building, tree, structure units (m)
 uniform vec4 uMarch;           // t0, growth, steps, bias
 uniform float uNormalOff;      // the march starts this far (m) off the surface, along its normal's level part
+uniform float uHmTopCells;     // cells along a block of uHmTop
 uniform float uZTop;
 uniform vec4 uSun;             // sun vector (E, N, up), elevation (deg)
 uniform vec4 uSources;         // terrain, buildings, trees, structures cast shadows (1/0)
@@ -232,7 +234,8 @@ out vec4 oColor;
 // building, a tree or a structure where more than half of the four cells around q have one (their weights), at
 // those cells' mean heights. So the edge of what casts a shadow is a line, not steps of a cell.
 // Returns T (terrain), b (building top above it), t (tree top, bottom), s (structure top, bottom); 0 = none.
-void hmAt(vec2 q, out float T, out float b, out vec2 t, out vec2 s) {
+// second: read uHmB too (false where the block has no tree and no structure: t and s are then 0 anyway).
+void hmAt(vec2 q, bool second, out float T, out float b, out vec2 t, out vec2 s) {
   vec2 g = (q - uHm.xy) / uHm.z - 0.5;
   ivec2 c0 = ivec2(floor(g));
   vec2 f = g - vec2(c0);
@@ -244,7 +247,7 @@ void hmAt(vec2 q, out float T, out float b, out vec2 t, out vec2 s) {
     ivec2 c = clamp(c0 + o, ivec2(0), uHmSize - 1);
     float w = (o.x == 1 ? f.x : 1.0 - f.x) * (o.y == 1 ? f.y : 1.0 - f.y);
     vec4 A = texelFetch(uHmA, c, 0);
-    vec4 B = texelFetch(uHmB, c, 0);
+    vec4 B = second ? texelFetch(uHmB, c, 0) : vec4(0.0);
     T += w * (uHm.w + (floor(A.r * 255.0 + 0.5) + floor(A.g * 255.0 + 0.5) * 256.0) / 100.0);
     float bt = floor(A.b * 255.0 + 0.5) * uHmUnits.x;
     if (bt > 0.0) { pb += w; hb += w * bt; }
@@ -273,9 +276,13 @@ float marchTo(vec3 P, vec3 L, vec3 n) {
     vec2 q = p0 + h * t;
     float zr = P.z + tz * t + uMarch.w;
     if (zr > uZTop) break;
-    if (q.x >= lo.x && q.y >= lo.y && q.x < hi.x && q.y < hi.y) {
+    // the cells are read only where something in the block could be in the ray's way (the same shadows, fewer reads)
+    vec2 top = vec2(-1e9, 0.0);
+    if (q.x >= lo.x && q.y >= lo.y && q.x < hi.x && q.y < hi.y)
+      top = texelFetch(uHmTop, ivec2(floor((q - uHm.xy) / (uHm.z * uHmTopCells))), 0).rg;
+    if (top.r > zr) {
       float T, bt; vec2 tr, st;
-      hmAt(q, T, bt, tr, st);
+      hmAt(q, top.g > 0.5, T, bt, tr, st);
       if (uSources.x > 0.5 && T > zr) return t;
       if (uSources.y > 0.5 && bt > 0.0 && T + bt > zr) return t;
       if (uSources.z > 0.5 && tr.x > 0.0 && T + tr.y < zr && T + tr.x > zr) return t;

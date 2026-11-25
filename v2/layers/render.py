@@ -651,15 +651,30 @@ class Renderer:
             out = np.where(on[..., None], np.array(_c("transport.lane_dash"), np.uint8), out)
         return out, np.asarray(ids), np.asarray(has)
 
+    @cached_property
+    def _centre_lines(self):
+        """Every way's centre line as points every 0.25 m (a tree to ask how far the nearest one is)."""
+        from scipy.spatial import cKDTree
+        pts = []
+        for e in self.edges:
+            en, s0 = np.asarray(e["en"], float), np.asarray(e["s"], float)
+            if len(en) < 2 or s0[-1] <= 0:
+                continue
+            s = np.arange(0.0, s0[-1] + 0.25, 0.25).clip(max=s0[-1])
+            pts.append(np.column_stack([np.interp(s, s0, en[:, 0]), np.interp(s, s0, en[:, 1])]))
+        return cKDTree(np.concatenate(pts) if pts else np.zeros((1, 2)))
+
     def _off_the_way(self, edge, e, n, z):
         """For points (e, n, z) on the surface of ways `edge` (indices into self.edges): True where the ground is
-        more than WAY_FACE_M above or below the way's own height at the nearest point of its centre line."""
+        more than WAY_FACE_M above or below the way's own height next to it: the ground under the nearest point of
+        its centre line, as a ground way is drawn on the terrain. Never on a centre line itself (within
+        WAY_CENTRE_M of any way's): a way that climbs a face is drawn along its line (L4.1)."""
         out = np.zeros(len(edge), bool)
         for k in np.unique(edge):
-            if k < 0 or k >= len(self.edges) or "z" not in self.edges[k]:
+            if k < 0 or k >= len(self.edges):
                 continue
             m = edge == k
-            en, zz = np.asarray(self.edges[k]["en"], float), np.asarray(self.edges[k]["z"], float)
+            en = np.asarray(self.edges[k]["en"], float)
             a, b = en[:-1], en[1:]
             ab = b - a
             L2 = np.maximum((ab ** 2).sum(1), 1e-9)
@@ -667,8 +682,11 @@ class Renderer:
             u = np.clip(((P[:, None, :] - a[None]) * ab[None]).sum(2) / L2[None], 0, 1)
             d = np.linalg.norm(P[:, None, :] - (a[None] + u[..., None] * ab[None]), axis=2)
             j = d.argmin(1)
-            uj = u[np.arange(len(j)), j]
-            out[m] = np.abs(z[m] - (zz[j] * (1 - uj) + zz[j + 1] * uj)) > WAY_FACE_M
+            near = a[j] + u[np.arange(len(j)), j][:, None] * ab[j]
+            out[m] = np.abs(z[m] - self.hf.sample(near[:, 0], near[:, 1])) > WAY_FACE_M
+        if out.any():
+            d, _ = self._centre_lines.query(np.column_stack([e[out], n[out]]))
+            out[np.flatnonzero(out)[d <= WAY_CENTRE_M]] = False
         return out
 
     def transport(self, tile) -> LayerTile:
@@ -1237,6 +1255,7 @@ def crown_lobes(C, r, b, typ, form=None):
 
 # ------------------------------------------------------------------------------------------------ transport style
 WAY_FACE_M = 1.0                     # on a cliff cell, a way's surface is drawn only within this of the way's own height (m)
+WAY_CENTRE_M = 0.5                   # and always within this of a way's centre line (m): the line itself is never cut
 LANE_LINE_M = 0.25                   # a lane line as drawn (wider than the paint: it must read at 0.125 m a pixel)
 KERB_M = 0.3                         # a kerbstone as drawn
 ZEBRA_BAR_M, ZEBRA_WIDTH_M = 0.5, 3.0   # a crossing's bars and gaps along the walking line; its least width

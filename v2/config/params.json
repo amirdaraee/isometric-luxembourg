@@ -160,7 +160,7 @@
   "crown_scale": 0.85,
   "max_overlap_share": 0.3,
   "off_faces": {
-   "about": "A trunk cannot stand on the face of a wall or a cliff (owner, 26 Nov 2026: trees where they should not be). The survey's point is the crown's top, which can hang over a face. Such a tree's trunk is put on the nearest ground that is not a face (terrain class cliff), within its measured crown's radius plus margin_m (min_reach_m at least, max_reach_m at most): above the point if there is such ground (a tree leans out over a drop from its top), else below it. The crown's top stays at its measured height above the sea, so the tree's own height is its top above its new foot; a tree with no such ground in reach, or whose height would leave the survey's range, is left out.",
+   "about": "A trunk cannot stand on the face of a wall or a cliff (owner, 25 Nov 2026: trees where they should not be). The survey's point is the crown's top, which can hang over a face. Such a tree's trunk is put on the nearest ground that is not a face (terrain class cliff), within its measured crown's radius plus margin_m (min_reach_m at least, max_reach_m at most): above the point if there is such ground (a tree leans out over a drop from its top), else below it. The crown's top stays at its measured height above the sea, so the tree's own height is its top above its new foot; a tree with no such ground in reach, or whose height would leave the survey's range, is left out.",
    "margin_m": 1.0, "min_reach_m": 1.5, "max_reach_m": 4.0
   },
   "crown_shape": {

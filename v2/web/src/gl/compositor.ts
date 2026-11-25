@@ -20,6 +20,7 @@
 import type { LightConfig, ReleaseIndex } from "../data.ts";
 import { fetchBin, fetchImage } from "../data.ts";
 import { grade, litShare, nightFactor } from "./grade.ts";
+import { coarseTops, TOP_CELLS } from "../heightmap.ts";
 import { CUT_LAYER_FS, FULL_VS, GROUND_FS, LAMP_FS, LAMP_VS, LAYER_FS, LIGHT_CUT_FS, LIGHT_FS, LOOK_FADE_FS, LOOK_FS, TILE_VS, TUN_FS, TUN_VS, VEH_FS,
   VEH_VS, WIN_CUT_VS, WIN_FS, WIN_VS, XVEH_FS } from "./shaders.ts";
 import { sliceHalfPlanes, tileMeets, type CutLandmark } from "../cutaways.ts";
@@ -92,6 +93,7 @@ export class Compositor {
   private tiles = new Map<string, TileTex>();
   private frameNo = 0;
   private hmA: WebGLTexture | null = null; private hmB: WebGLTexture | null = null;
+  private hmTop: WebGLTexture | null = null;
   private cube: { buf: WebGLBuffer; n: number }; private vehBuf: WebGLBuffer; private vehSize: WebGLBuffer;
   private winBuf: WebGLBuffer | null = null; private winCount = 0;
   private lampBuf: WebGLBuffer | null = null; private lampCount = 0;
@@ -369,6 +371,15 @@ export class Compositor {
       return t;
     };
     this.hmA = up(A); this.hmB = up(B);
+    // the coarse tops the light pass asks before it reads the cells (heightmap.ts)
+    const E = L.encoding;
+    const C = coarseTops(A, B, L.width, L.height, L.zbase, [E.building_unit_m, E.tree_unit_m, E.structure_unit_m]);
+    this.hmTop = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, this.hmTop);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, C.width, C.height, 0, gl.RG, gl.FLOAT, C.data);
+    for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, p, gl.NEAREST);
+    for (const p of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, p, gl.CLAMP_TO_EDGE);
+    this.zTop = C.zTop;
   }
 
   setWindows(data: Float32Array) {
@@ -686,8 +697,8 @@ export class Compositor {
       gl.useProgram(p.p);
       this.setView(p, view); this.setCam(p);
       this.bindQuad(p);
-      const tex = [this.gbuf.albedo, this.gbuf.normal, this.gbuf.depth, this.hmA, this.hmB];
-      ["uAlbedo", "uNormal", "uDepth", "uHmA", "uHmB"].forEach((n, i) => {
+      const tex = [this.gbuf.albedo, this.gbuf.normal, this.gbuf.depth, this.hmA, this.hmB, this.hmTop];
+      ["uAlbedo", "uNormal", "uDepth", "uHmA", "uHmB", "uHmTop"].forEach((n, i) => {
         gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, tex[i]); p.i(n, i);
       });
       const L = this.idx.light, o = this.idx.camera.origin_en;
@@ -696,6 +707,7 @@ export class Compositor {
       p.f("uHmUnits", L.encoding.building_unit_m, L.encoding.tree_unit_m, L.encoding.structure_unit_m);
       p.f("uMarch", cfg.march.t0_m, cfg.march.growth, cfg.march.steps, cfg.march.bias_m);
       p.f("uNormalOff", cfg.march.normal_m ?? 0);
+      p.f("uHmTopCells", TOP_CELLS);
       p.f("uZTop", this.zTop);
       p.f("uSun", st.sun[0], st.sun[1], st.sun[2], st.el);
       const lightOn = !st.off.has("light");

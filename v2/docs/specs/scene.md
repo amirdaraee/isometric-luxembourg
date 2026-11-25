@@ -40,7 +40,7 @@ See facades.md. Checks F1–F7.
 - **Input:** ACT LiDAR 2024 tree survey (CC0, crown centroids with height, crown widths and type), cut to the
   commune while streaming (`fetch_trees`).
 - **Rules:** keep trees in the area 2–50 m tall (taller are survey spikes: cranes, masts); drop trees centred in a
-  building footprint or in water; a trunk cannot stand on the face of a wall or a cliff (owner, 26 Nov 2026):
+  building footprint or in water; a trunk cannot stand on the face of a wall or a cliff (owner, 25 Nov 2026):
   the survey's point is the crown's top, which can hang over a face, so a tree whose point is on a cliff cell
   gets its trunk on the nearest ground that is not one, within its measured crown's radius plus 1 m (1.5 to 4 m):
   above the point if there is such ground, else below it; its top keeps its height above the sea, so its own
