@@ -410,7 +410,7 @@ def transfer(code, painting, g: dict, have=None, p: dict = P, colours=None, cast
 def photo_shadow(g: dict, meta: dict, rel: Path | None = None) -> np.ndarray:
     """Where the 3D model puts a cast shadow for the aerial photo's sun (params g1.shadow_photo_sun, the sun the
     paintings' input was photographed under), per pixel of a window: layers/light.py's reference on the release's
-    own shadow height map."""
+    own shadow height map, from each surface's normal (layer-09-light.md rule 2)."""
     from v2.checks.g1_checks import _when
     from v2.config import params
     from v2.layers.common import unpack_bin, unproject
@@ -427,7 +427,8 @@ def photo_shadow(g: dict, meta: dict, rel: Path | None = None) -> np.ndarray:
     ok = g["depth"] < 1e8
     cast = np.zeros(ok.shape, bool)
     e, nn, z = unproject(PX[ok], PY[ok], g["depth"][ok])
-    cast[ok] = shadow_ref(hm, e, nn, z, az, el) > 0
+    # with the surfaces' normals, as the build's shadow check and the viewer read it: the shadow line is the same one
+    cast[ok] = shadow_ref(hm, e, nn, z, az, el, normal=np.asarray(g["normal"], float)[ok]) > 0
     return cast
 
 
