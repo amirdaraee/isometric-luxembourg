@@ -141,8 +141,8 @@ def check_shadows(ctx):
             if ok.sum() < 100:
                 continue
             e, n, z = unproject(PX[ok], PY[ok], t["depth"][ok])
-            cast = shadow_ref(hm, e, n, z, az, el)
             nrm = t["normal"][ok]
+            cast = shadow_ref(hm, e, n, z, az, el, normal=nrm)
             away = (nrm @ sv) < 0
             sh = np.zeros(ok.shape, bool)
             sh[ok] = (cast > 0) | away
@@ -812,8 +812,14 @@ def check_viewer(ctx):
         okd = np.isfinite(dep)
         e, n, z = unproject(PX[okd], PY[okd], dep[okd])
         src = ("terrain", "trees", "structures") if "nobuildings" in name else ("terrain", "buildings", "trees", "structures")
+        # the surfaces' normals, as the viewer has them (layer 8), for the march's start off the surface; with the
+        # buildings off the viewer shows other layers' surfaces there, whose normals this check does not read
+        nrm = None
+        if "nobuildings" not in name:
+            up = np.array([0.0, 0.0, 1.0])
+            nrm = np.array([up if v is None else v for v in bt.lookup(PX[okd], PY[okd], "normal")], float)
         ref = np.zeros(PX.shape, bool)
-        ref[okd] = shadow_ref(hm, e, n, z, az, el, sources=src) > 0
+        ref[okd] = shadow_ref(hm, e, n, z, az, el, sources=src, normal=nrm) > 0
         got = m < 128
         match = float((got[okd] == ref[okd]).mean())
         if name == "16_nobuildings":

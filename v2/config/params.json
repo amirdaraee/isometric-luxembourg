@@ -159,6 +159,10 @@
     "drawn_height_about": "Every tree is drawn at this share of its measured height; its width and place are kept (owner, 24 Nov 2026: at the measured height the trees were too big beside the buildings; of three sizes shown, 70% of the height with the width kept). The filters and the crown's shape by age use the measured height.",
   "crown_scale": 0.85,
   "max_overlap_share": 0.3,
+  "off_faces": {
+   "about": "A trunk cannot stand on the face of a wall or a cliff (owner, 26 Nov 2026: trees where they should not be). The survey's point is the crown's top, which can hang over a face. Such a tree's trunk is put on the nearest ground that is not a face (terrain class cliff), within its measured crown's radius plus margin_m (min_reach_m at least, max_reach_m at most): above the point if there is such ground (a tree leans out over a drop from its top), else below it. The crown's top stays at its measured height above the sea, so the tree's own height is its top above its new foot; a tree with no such ground in reach, or whose height would leave the survey's range, is left out.",
+   "margin_m": 1.0, "min_reach_m": 1.5, "max_reach_m": 4.0
+  },
   "crown_shape": {
    "about": "Drawn crown width by species and age (owner, 9 Nov 2026: rounder crowns, measured height kept). Width = height x a ratio that grows from young (height <= young_h_m) to mature (>= mature_h_m), at most max_width_m, at most neighbour_factor x the distance to the nearest tree each side, never under the survey's width. Height is the age proxy.",
    "young_h_m": 6.0,

@@ -66,7 +66,8 @@ on top; a crown under 1.2 m radius stays one shape.
   ran from [33, 40, 24] to [120, 138, 68].
 
 **Rules.**
-1. Position comes from the survey and is never changed. **Height: every tree is drawn at 0.7 of its measured
+1. Position comes from the survey; it is changed only to take a trunk off the face of a wall or a cliff (scene.md,
+   Trees; TE13). **Height: every tree is drawn at 0.7 of its measured
    height** (`params.json` `trees.drawn_height_scale`; owner decision, 24 Nov 2026). The measured heights are right
    (they agree with the LiDAR surface to 1.7 m at the median) and the trees here are tall (median 16.8 m against
    13.4 m to the ridge for the median building), but drawn so they were too big beside the buildings. Of three

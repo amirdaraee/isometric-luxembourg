@@ -202,6 +202,7 @@ uniform vec4 uHm;              // e0, n0 (local, relative to the camera origin),
 uniform ivec2 uHmSize;
 uniform vec3 uHmUnits;         // building, tree, structure units (m)
 uniform vec4 uMarch;           // t0, growth, steps, bias
+uniform float uNormalOff;      // the march starts this far (m) off the surface, along its normal's level part
 uniform float uZTop;
 uniform vec4 uSun;             // sun vector (E, N, up), elevation (deg)
 uniform vec4 uSources;         // terrain, buildings, trees, structures cast shadows (1/0)
@@ -227,30 +228,58 @@ uniform vec3 uTrunk;
 uniform int uDebug;            // 0 normal, 1 albedo, 2 layer, 3 shadow, 4 depth, 5 normal
 out vec4 oColor;
 
+// The shadow height map at q, read between its cells' centres (v2/layers/light.py hm_at): the terrain bilinear; a
+// building, a tree or a structure where more than half of the four cells around q have one (their weights), at
+// those cells' mean heights. So the edge of what casts a shadow is a line, not steps of a cell.
+// Returns T (terrain), b (building top above it), t (tree top, bottom), s (structure top, bottom); 0 = none.
+void hmAt(vec2 q, out float T, out float b, out vec2 t, out vec2 s) {
+  vec2 g = (q - uHm.xy) / uHm.z - 0.5;
+  ivec2 c0 = ivec2(floor(g));
+  vec2 f = g - vec2(c0);
+  T = 0.0;
+  float pb = 0.0, pt = 0.0, ps = 0.0, hb = 0.0;
+  vec2 ht = vec2(0.0), hs = vec2(0.0);
+  for (int k = 0; k < 4; k++) {
+    ivec2 o = ivec2(k & 1, k >> 1);
+    ivec2 c = clamp(c0 + o, ivec2(0), uHmSize - 1);
+    float w = (o.x == 1 ? f.x : 1.0 - f.x) * (o.y == 1 ? f.y : 1.0 - f.y);
+    vec4 A = texelFetch(uHmA, c, 0);
+    vec4 B = texelFetch(uHmB, c, 0);
+    T += w * (uHm.w + (floor(A.r * 255.0 + 0.5) + floor(A.g * 255.0 + 0.5) * 256.0) / 100.0);
+    float bt = floor(A.b * 255.0 + 0.5) * uHmUnits.x;
+    if (bt > 0.0) { pb += w; hb += w * bt; }
+    float tt = floor(A.a * 255.0 + 0.5) * uHmUnits.y;
+    if (tt > 0.0) { pt += w; ht += w * vec2(tt, floor(B.r * 255.0 + 0.5) * uHmUnits.y); }
+    float st = floor(B.g * 255.0 + 0.5) * uHmUnits.z;
+    if (st > 0.0) { ps += w; hs += w * vec2(st, floor(B.b * 255.0 + 0.5) * uHmUnits.z); }
+  }
+  b = pb > 0.5 ? hb / pb : 0.0;
+  t = pt > 0.5 ? ht / pt : vec2(0.0);
+  s = ps > 0.5 ? hs / ps : vec2(0.0);
+}
+
 // The march of v2/layers/light.py shadow_ref towards a light at direction L (above the horizon): the distance along
-// the ground to the first thing in the way, or -1 where the light arrives.
-float marchTo(vec3 P, vec3 L) {
+// the ground to the first thing in the way, or -1 where the light arrives. The march starts a little off the
+// surface along its normal's level part (uNormalOff), so a wall is not shadowed by its own cells.
+float marchTo(vec3 P, vec3 L, vec3 n) {
   vec2 h = normalize(L.xy);
   float tz = L.z / length(L.xy);
   float t = uMarch.x;
   int steps = int(uMarch.z);
+  vec2 p0 = P.xy + n.xy * uNormalOff;
+  vec2 lo = uHm.xy, hi = uHm.xy + vec2(uHmSize) * uHm.z;
   for (int k = 0; k < 256; k++) {
     if (k >= steps) break;
-    vec2 q = P.xy + h * t;
+    vec2 q = p0 + h * t;
     float zr = P.z + tz * t + uMarch.w;
     if (zr > uZTop) break;
-    ivec2 c = ivec2(floor((q - uHm.xy) / uHm.z));
-    if (c.x >= 0 && c.y >= 0 && c.x < uHmSize.x && c.y < uHmSize.y) {
-      vec4 A = texelFetch(uHmA, c, 0);
-      vec4 B = texelFetch(uHmB, c, 0);
-      float T = uHm.w + (floor(A.r * 255.0 + 0.5) + floor(A.g * 255.0 + 0.5) * 256.0) / 100.0;
+    if (q.x >= lo.x && q.y >= lo.y && q.x < hi.x && q.y < hi.y) {
+      float T, bt; vec2 tr, st;
+      hmAt(q, T, bt, tr, st);
       if (uSources.x > 0.5 && T > zr) return t;
-      float bt = floor(A.b * 255.0 + 0.5) * uHmUnits.x;
       if (uSources.y > 0.5 && bt > 0.0 && T + bt > zr) return t;
-      float tt = floor(A.a * 255.0 + 0.5) * uHmUnits.y, tb = floor(B.r * 255.0 + 0.5) * uHmUnits.y;
-      if (uSources.z > 0.5 && tt > 0.0 && T + tb < zr && T + tt > zr) return t;
-      float st = floor(B.g * 255.0 + 0.5) * uHmUnits.z, sb = floor(B.b * 255.0 + 0.5) * uHmUnits.z;
-      if (uSources.w > 0.5 && st > 0.0 && T + sb < zr && T + st > zr) return t;
+      if (uSources.z > 0.5 && tr.x > 0.0 && T + tr.y < zr && T + tr.x > zr) return t;
+      if (uSources.w > 0.5 && st.x > 0.0 && T + st.y < zr && T + st.x > zr) return t;
     }
     t *= uMarch.y;
   }
@@ -306,7 +335,7 @@ void main() {
   float far = -1.0;      // how far away the thing casting it is (m along the ground)
   if (uLightOn > 0.5 || uDebug == 3) {
     if (uSun.w <= 0.0) sh = 1.0;
-    else { far = marchTo(P, uSun.xyz); sh = far >= 0.0 ? 1.0 : 0.0; }
+    else { far = marchTo(P, uSun.xyz, n); sh = far >= 0.0 ? 1.0 : 0.0; }
   }
   if (uDebug == 3) { oColor = vec4(vec3(1.0 - sh), 1.0); return; }
   if (uLightOn < 0.5) { oColor = vec4(c, 1.0); return; }
@@ -323,7 +352,7 @@ void main() {
     light += uFillTint * (uFill.w * clamp((dot(n, uFill.xyz) + uLightK.x) / (1.0 + uLightK.x), 0.0, 1.0));
   if (uMoon.w > 0.0) {                       // night: moonlight from one side, so roofs, walls and ground differ
     float Lm = clamp((dot(n, uMoon.xyz) + uLightK.x) / (1.0 + uLightK.x), 0.0, 1.0);
-    float shm = marchTo(P, uMoon.xyz) >= 0.0 ? uMoonTint.a : 0.0;
+    float shm = marchTo(P, uMoon.xyz, n) >= 0.0 ? uMoonTint.a : 0.0;
     light += uMoonTint.rgb * (uMoon.w * Lm * (1.0 - shm));
     c = mix(c, vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), uSoft.w);
   }

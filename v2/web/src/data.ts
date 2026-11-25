@@ -25,7 +25,7 @@ export interface ReleaseIndex {
   cutaways?: CutawaysIndex;
 }
 export interface LightConfig {
-  march: { t0_m: number; growth: number; steps: number; bias_m: number };
+  march: { t0_m: number; growth: number; steps: number; bias_m: number; normal_m?: number };
   sun: { wrap: number; ambient: number; direct: number; shadow_keep: number };
   grade: { golden_deg: [number, number]; golden_full_deg: number; blue_deg: [number, number]; night_deg: number;
     day_tint: number[]; golden_tint: number[]; golden_sun_gain: number; golden_amb_tint: number[]; golden_amb_gain: number;

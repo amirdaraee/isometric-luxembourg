@@ -40,13 +40,17 @@ See facades.md. Checks F1–F7.
 - **Input:** ACT LiDAR 2024 tree survey (CC0, crown centroids with height, crown widths and type), cut to the
   commune while streaming (`fetch_trees`).
 - **Rules:** keep trees in the area 2–50 m tall (taller are survey spikes: cranes, masts); drop trees centred in a
-  building footprint or in water; crown radius = 0.85 × crown_mean / 2 (the POC's "measured crowns read too big"),
+  building footprint or in water; a trunk cannot stand on the face of a wall or a cliff (owner, 26 Nov 2026):
+  the survey's point is the crown's top, which can hang over a face, so a tree whose point is on a cliff cell
+  gets its trunk on the nearest ground that is not one, within its measured crown's radius plus 1 m (1.5 to 4 m):
+  above the point if there is such ground, else below it; its top keeps its height above the sea, so its own
+  height is its top above its new foot; a tree with no such ground in reach is left out (`trees.off_faces`); crown radius = 0.85 × crown_mean / 2 (the POC's "measured crowns read too big"),
   widened to the tree's shape by species and age (layer-07 rule 1, by the measured height), then
   reduced (bisection) until ≤ 30% of the crown disc lies over buildings or water; base height = LiDAR terrain;
   drawn height = 0.7 × the measured height (layer-07 rule 1; owner, 24 Nov 2026).
 - **Output:** `trees.npz` (e, n, base_z, height as drawn, height_measured, crown_r, crown_r_shape,
   crown_r_measured, type, type_survey, uuid, species, species_names, species_rule, species_rules).
-- **Checks:** TE1–TE12.
+- **Checks:** TE1–TE13.
 
 ### Tree species (`v2/data/scene/tree_species.py`, `v2/config/tree_species.json`)
 

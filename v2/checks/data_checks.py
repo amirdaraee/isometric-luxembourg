@@ -464,6 +464,15 @@ def check_trees(ctx):
               int((off > 0.01).sum()), 0, [str(u) for u in t["uuid"][off > 0.01][:5]])
     T = np.load(ctx.dep("scene_terrain") / "terrain.npz") if "scene_terrain" in ctx.deps else None
     r.info("TE5", "trees", int(len(h)))
+    # TE13: no trunk on the face of a wall or a cliff (scene.md, Trees: the survey's point is the crown's top)
+    if T is not None and len(h):
+        cj = np.clip(np.floor((t["e"] - float(T["e0"])) / float(T["step"])).astype(int), 0, T["cls"].shape[1] - 1)
+        ci = np.clip(np.floor((t["n"] - float(T["n0"])) / float(T["step"])).astype(int), 0, T["cls"].shape[0] - 1)
+        on_face = T["cls"][ci, cj] == 2
+        r.at_most("TE13", "trees whose trunk stands on a cliff cell (the face of a wall or a cliff)", int(on_face.sum()), 0,
+                  [str(u) for u in t["uuid"][on_face][:5]])
+        r.info("TE13b", "trees whose trunk was put on the nearest ground off a face",
+               int(t["moved_off_a_face"].sum()) if "moved_off_a_face" in t.files else 0)
     # TE6-TE8: the drawn crown follows the tree's shape by species and age (layer-07 rule 1): never wider than that
     # shape allows, never narrower than surveyed unless thinned for a building or water; heights are the survey's
     from v2.data.scene.trees import shape_radius

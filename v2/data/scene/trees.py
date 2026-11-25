@@ -69,6 +69,39 @@ def shape_radius(h, r_survey, typ, e, n, p, names, width=None):
     return np.maximum(r_survey, np.minimum(allo, room)), allo
 
 
+def off_faces(e, n, h, r_meas, mnt, cls, e0, n0, step, p):
+    """Trunks off the faces of walls and cliffs (params trees.off_faces): for each tree whose point lies on a cliff
+    cell (terrain class 2) the nearest cell that is not one, within reach: above the point if there is one that
+    leaves the tree at least the least height, else below it (at most the greatest height). The crown's top keeps
+    its height above the sea. Returns (keep, e, n, h, moved): trees with no such ground are not kept."""
+    f = p["off_faces"]
+    e, n, h = np.asarray(e, float).copy(), np.asarray(n, float).copy(), np.asarray(h, float).copy()
+    H, W = cls.shape
+    jj = np.clip(np.floor((e - e0) / step).astype(int), 0, W - 1)
+    ii = np.clip(np.floor((n - n0) / step).astype(int), 0, H - 1)
+    keep, moved = np.ones(len(e), bool), np.zeros(len(e), bool)
+    for k in np.flatnonzero(cls[ii, jj] == 2):
+        reach = float(np.clip(r_meas[k] + f["margin_m"], f["min_reach_m"], f["max_reach_m"]))
+        R = int(np.ceil(reach / step))
+        i0, i1, j0, j1 = max(ii[k] - R, 0), min(ii[k] + R + 1, H), max(jj[k] - R, 0), min(jj[k] + R + 1, W)
+        ce = e0 + (np.arange(j0, j1) + 0.5) * step
+        cn = n0 + (np.arange(i0, i1) + 0.5) * step
+        d = np.hypot(ce[None, :] - e[k], cn[:, None] - n[k])
+        z = mnt[i0:i1, j0:j1].astype(float)
+        z0 = float(mnt[ii[k], jj[k]])
+        ok = (cls[i0:i1, j0:j1] != 2) & np.isfinite(z) & (d <= reach)
+        hn = h[k] + z0 - z                                   # the tree's height above each candidate foot
+        up = ok & (z >= z0) & (hn >= p["min_height_m"])
+        down = ok & (z < z0) & (hn <= p["max_height_m"])
+        cand = up if up.any() else down
+        if not np.isfinite(z0) or not cand.any():
+            keep[k] = False
+            continue
+        a, b = np.unravel_index(np.argmin(np.where(cand, d, np.inf)), d.shape)
+        e[k], n[k], h[k], moved[k] = ce[b], cn[a], hn[a, b], True
+    return keep, e, n, h, moved
+
+
 def drawn_height(h, p):
     """The height a tree is drawn at: a fixed share of the measured one (params trees.drawn_height_scale)."""
     return np.asarray(h, np.float32) * np.float32(p["drawn_height_scale"])
@@ -98,6 +131,16 @@ def build(ctx):
         in_w = np.asarray(shapely.contains_xy(unary_union(water), e[idx], n[idx])) & ~in_b
     dropped["in_building"] = int(in_b.sum()); dropped["in_water"] = int(in_w.sum())
     idx = idx[~in_b & ~in_w]
+    # trunks off the faces of walls and cliffs (the survey's point is the crown's top); a tree whose new foot would
+    # be in a building or in water is left out
+    tz = np.load(ctx.dep("scene_terrain") / "terrain.npz")
+    keep, E, N, Hm, moved = off_faces(e[idx], n[idx], T["h"][idx], T["cmean"][idx] / 2, tz["mnt"], tz["cls"],
+                                      float(tz["e0"]), float(tz["n0"]), float(tz["step"]), p)
+    for geoms in (fps, water):
+        if geoms and moved.any():
+            keep &= ~(moved & np.asarray(shapely.contains_xy(unary_union(geoms), E, N)))
+    dropped["on_a_face"] = int((~keep).sum())
+    idx, E, N, Hm, moved = idx[keep], E[keep], N[keep], Hm[keep], moved[keep]
     r_meas = (T["cmean"][idx] / 2).astype(np.float64)
     names = [str(s) for s in T["type_names"]]
     r_survey = r_meas * p["crown_scale"]
@@ -105,7 +148,7 @@ def build(ctx):
     S = tree_species.config()
     register = tree_species.load_register(ctx.dep("fetch_city_trees") / "city_trees.json", S)
     sp, rule, sp_names = tree_species.assign(
-        e[idx], n[idx], T["type"][idx], T["h"][idx], names, S,
+        E, N, T["type"][idx], Hm, names, S,
         tree_species.context(ctx.dep("fetch_osm_ground") / "ground.json", ctx.dep("fetch_osm_transport") / "transport.json", S),
         water=water, register=register)
     # a tree the register names takes its type from its species (the register knows a pine from a lime; the
@@ -117,34 +160,34 @@ def build(ctx):
     retyped = int((known & (kind[sp] != typ) & ~((typ == names.index("other")) & (kind[sp] == names.index("deciduous_green")))).sum())
     typ[known] = kind[sp][known]
     widths = np.array([{**S["defaults"], **S["list"][k]}["width"] for k in sp_names], float)[sp]
-    r, _ = shape_radius(T["h"][idx], r_survey, typ, e[idx], n[idx], p, names, width=widths)
+    r, _ = shape_radius(Hm, r_survey, typ, E, N, p, names, width=widths)
     r_shape = r.copy()
     widened = int((r > r_survey + 1e-6).sum())
     blockers = list(fps) + list(water)
     tree = STRtree(blockers) if blockers else None
     thinned = 0
     if tree is not None:
-        share = overlap_share(e[idx], n[idx], r, blockers, tree)
+        share = overlap_share(E, N, r, blockers, tree)
         k = np.flatnonzero(share > p["max_overlap_share"])
         thinned = len(k)
         lo, hi = np.zeros(len(k)), r[k].copy()
         for _ in range(12):  # the largest radius whose overlap is within the limit (bisection, all at once)
             mid = (lo + hi) / 2
-            ok = overlap_share(e[idx][k], n[idx][k], mid, blockers, tree) <= p["max_overlap_share"]
+            ok = overlap_share(E[k], N[k], mid, blockers, tree) <= p["max_overlap_share"]
             lo = np.where(ok, mid, lo); hi = np.where(ok, hi, mid)
         r[k] = lo
     terrain = Grid.load(ctx.dep("scene_terrain") / "terrain.npz", "mnt")
-    base = terrain.sample(e[idx], n[idx])
+    base = terrain.sample(E, N)
     base = np.where(np.isfinite(base), base, T["terrain"][idx])
-    np.savez_compressed(ctx.out / "trees.npz", e=e[idx], n=n[idx], base_z=base.astype(np.float32),
-                        height=drawn_height(T["h"][idx], p), height_measured=T["h"][idx].astype(np.float32),
+    np.savez_compressed(ctx.out / "trees.npz", e=E, n=N, base_z=base.astype(np.float32),
+                        height=drawn_height(Hm, p), height_measured=Hm.astype(np.float32),
                         crown_r=r.astype(np.float32), crown_r_shape=r_shape.astype(np.float32),
                         crown_r_measured=r_meas.astype(np.float32),
                         type=typ, type_survey=T["type"][idx], uuid=T["uuid"][idx], type_names=T["type_names"],
                         species=sp.astype(np.int8), species_names=np.array(sp_names), species_rule=rule.astype(np.int8),
-                        species_rules=np.array(tree_species.RULES))
-    hw = drawn_height(T["h"][idx], p) / np.maximum(2 * r, 1e-3)
-    return {"trees": int(len(idx)), "dropped": dropped, "crowns_thinned": thinned, "crowns_widened": widened,
+                        species_rules=np.array(tree_species.RULES), moved_off_a_face=moved)
+    hw = drawn_height(Hm, p) / np.maximum(2 * r, 1e-3)
+    return {"trees": int(len(idx)), "dropped": dropped, "moved_off_a_face": int(moved.sum()), "crowns_thinned": thinned, "crowns_widened": widened,
             "height_over_width_median": float(np.median(hw)) if len(idx) else 0,
             "by_type": {names[t]: int((typ == t).sum()) for t in range(len(names))},
             "register": {"trees": register["trees"], "with_a_drawn_species": register["drawn"],
@@ -152,7 +195,7 @@ def build(ctx):
                          "matched": int(known.sum()), "type_changed": retyped},
             "by_species": {k: int((sp == i).sum()) for i, k in enumerate(sp_names)},
             "by_species_rule": {k: int((rule == i).sum()) for i, k in enumerate(tree_species.RULES)},
-            "height_m": {"median": float(np.median(T["h"][idx])) if len(idx) else 0,
-                         "max": float(T["h"][idx].max()) if len(idx) else 0},
+            "height_m": {"median": float(np.median(Hm)) if len(idx) else 0,
+                         "max": float(Hm.max()) if len(idx) else 0},
             "drawn_height_m": {"scale": p["drawn_height_scale"],
-                               "median": float(np.median(drawn_height(T["h"][idx], p))) if len(idx) else 0}}
+                               "median": float(np.median(drawn_height(Hm, p))) if len(idx) else 0}}

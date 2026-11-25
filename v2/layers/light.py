@@ -160,40 +160,70 @@ def march_steps():
     return np.array(out)
 
 
+def hm_at(hm: HeightMap, e, n):
+    """The height map at (e, n), read between its cells' centres (as the viewer's shader, hmAt): the terrain
+    bilinear; a building, a tree or a structure where more than half of the four cells around the point have one
+    (by their weights), at those cells' mean heights. So the edge of what casts a shadow is a line, not steps of
+    a cell. Returns terrain, building top, tree top, tree bottom, structure top, structure bottom, and the
+    building index of the heaviest cell that has one (-1: none)."""
+    h, w = hm.shape
+    gx, gy = (np.asarray(e, float) - hm.e0) / hm.step - 0.5, (np.asarray(n, float) - hm.n0) / hm.step - 0.5
+    j0, i0 = np.floor(gx).astype(np.int64), np.floor(gy).astype(np.int64)
+    fx, fy = gx - j0, gy - i0
+    T = np.zeros(gx.shape)
+    acc = {k: np.zeros(gx.shape) for k in ("pb", "hb", "pt", "ht", "hbt", "ps", "hs", "hbs")}
+    by, best = np.full(gx.shape, -1, np.int64), np.zeros(gx.shape)
+    for oi in (0, 1):
+        for oj in (0, 1):
+            ii, jj = np.clip(i0 + oi, 0, h - 1), np.clip(j0 + oj, 0, w - 1)
+            wt = (fx if oj else 1 - fx) * (fy if oi else 1 - fy)
+            T += wt * hm.terrain[ii, jj]
+            b = hm.b_top[ii, jj]
+            acc["pb"] += wt * (b > 0); acc["hb"] += wt * b
+            more = (b > 0) & (wt > best)
+            by, best = np.where(more, hm.b_id[ii, jj], by), np.where(more, wt, best)
+            t = hm.t_top[ii, jj]
+            acc["pt"] += wt * (t > 0); acc["ht"] += wt * t; acc["hbt"] += wt * np.where(t > 0, hm.t_bot[ii, jj], 0)
+            st = hm.s_top[ii, jj]
+            acc["ps"] += wt * (st > 0); acc["hs"] += wt * st; acc["hbs"] += wt * np.where(st > 0, hm.s_bot[ii, jj], 0)
+    on = lambda p, v: np.where(acc[p] > 0.5, acc[v] / np.maximum(acc[p], 1e-9), 0.0)
+    return T, on("pb", "hb"), on("pt", "ht"), on("pt", "hbt"), on("ps", "hs"), on("ps", "hbs"), np.where(acc["pb"] > 0.5, by, -1)
+
+
 def shadow_ref(hm: HeightMap, e, n, z, az_deg, el_deg, sources=("terrain", "buildings", "trees", "structures"),
-               who=False):
+               who=False, normal=None):
     """1 where (e, n, z) is in a cast shadow for the sun at (az, el), else 0 (as the viewer's shader).
-    With who=True also returns the building index that cast it (-1: something else or nothing)."""
+    With who=True also returns the building index that cast it (-1: something else or nothing). `normal` (the
+    surfaces' unit normals, as the viewer has them): the march starts march.normal_m off the surface along the
+    normal's level part, so a wall is not shadowed by its own cells."""
     e, n, z = (np.asarray(a, float) for a in (e, n, z))
     if el_deg <= 0:
         return (np.ones(e.shape), np.full(e.shape, -1)) if who else np.ones(e.shape)
     a = math.radians(az_deg)
     dx, dy, tz = math.sin(a), math.cos(a), math.tan(math.radians(el_deg))
     bias = LIGHT["march"]["bias_m"]
+    if normal is not None:
+        off = LIGHT["march"].get("normal_m", 0.0)
+        e, n = e + np.asarray(normal)[..., 0] * off, n + np.asarray(normal)[..., 1] * off
     sh = np.zeros(e.shape, bool)
     by = np.full(e.shape, -1, np.int64)
     h, w = hm.shape
+    e1, n1 = hm.e0 + w * hm.step, hm.n0 + h * hm.step
     for t in march_steps():
         ee, nn, zr = e + dx * t, n + dy * t, z + tz * t + bias
-        j = np.floor((ee - hm.e0) / hm.step).astype(np.int64)
-        i = np.floor((nn - hm.n0) / hm.step).astype(np.int64)
-        inside = (i >= 0) & (i < h) & (j >= 0) & (j < w)
-        ii, jj = np.clip(i, 0, h - 1), np.clip(j, 0, w - 1)
-        T = hm.terrain[ii, jj]
+        inside = (ee >= hm.e0) & (nn >= hm.n0) & (ee < e1) & (nn < n1)
+        T, bt, tt, tb, st, sb, bid = hm_at(hm, ee, nn)
         occ = np.zeros(e.shape, bool)
         if "terrain" in sources:
             occ |= T > zr
         if "buildings" in sources:
-            bt = hm.b_top[ii, jj]
             hitb = (bt > 0) & (T + bt > zr)
             if who:
-                by = np.where(hitb & ~sh & ~occ, hm.b_id[ii, jj], by)
+                by = np.where(hitb & ~sh & ~occ & inside, bid, by)
             occ |= hitb
         if "trees" in sources:
-            tt, tb = hm.t_top[ii, jj], hm.t_bot[ii, jj]
             occ |= (tt > 0) & (T + tb < zr) & (T + tt > zr)
         if "structures" in sources:
-            st, sb = hm.s_top[ii, jj], hm.s_bot[ii, jj]
             occ |= (st > 0) & (T + sb < zr) & (T + st > zr)
         sh |= occ & inside
         if zr.min() > hm.terrain.max() + 80:

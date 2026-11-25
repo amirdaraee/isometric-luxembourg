@@ -651,6 +651,26 @@ class Renderer:
             out = np.where(on[..., None], np.array(_c("transport.lane_dash"), np.uint8), out)
         return out, np.asarray(ids), np.asarray(has)
 
+    def _off_the_way(self, edge, e, n, z):
+        """For points (e, n, z) on the surface of ways `edge` (indices into self.edges): True where the ground is
+        more than WAY_FACE_M above or below the way's own height at the nearest point of its centre line."""
+        out = np.zeros(len(edge), bool)
+        for k in np.unique(edge):
+            if k < 0 or k >= len(self.edges) or "z" not in self.edges[k]:
+                continue
+            m = edge == k
+            en, zz = np.asarray(self.edges[k]["en"], float), np.asarray(self.edges[k]["z"], float)
+            a, b = en[:-1], en[1:]
+            ab = b - a
+            L2 = np.maximum((ab ** 2).sum(1), 1e-9)
+            P = np.column_stack([e[m], n[m]])
+            u = np.clip(((P[:, None, :] - a[None]) * ab[None]).sum(2) / L2[None], 0, 1)
+            d = np.linalg.norm(P[:, None, :] - (a[None] + u[..., None] * ab[None]), axis=2)
+            j = d.argmin(1)
+            uj = u[np.arange(len(j)), j]
+            out[m] = np.abs(z[m] - (zz[j] * (1 - uj) + zz[j + 1] * uj)) > WAY_FACE_M
+        return out
+
     def transport(self, tile) -> LayerTile:
         self._guard("transport")
         t = self.terrain(tile)
@@ -667,6 +687,15 @@ class Renderer:
             crgb, cids, chas = self._draw_transport(cv, bridge=False)
             on = np.zeros(m.shape, bool)
             on[m] = cv.sample(chas, t["u"][m], t["f"][m]) > 0
+            # a way's surface is at the way's own height: where its width in plan reaches over the face of a cliff
+            # or a wall (the scene's cliff cells) the ground there is metres above or below the way, and the face
+            # stays rock (a metre of plan is many metres of face). Steps and paths cut into a face are at their
+            # own height and stay.
+            face = on & (self.terrain_class(t) == 2)
+            if face.any():
+                fid = cv.sample(cids, t["u"][face], t["f"][face]).astype(np.uint32)
+                off = self._off_the_way((fid >> 8).astype(np.int64) - 1, t["e"][face], t["n"][face], t["z"][face])
+                on.reshape(-1)[np.flatnonzero(face.ravel())[off]] = False
             rgb[on] = cv.sample(crgb, t["u"][on], t["f"][on])
             ids[on] = cv.sample(cids, t["u"][on], t["f"][on]).astype(np.uint32)
             depth[on] = t["depth"][on]
@@ -1207,6 +1236,7 @@ def crown_lobes(C, r, b, typ, form=None):
 
 
 # ------------------------------------------------------------------------------------------------ transport style
+WAY_FACE_M = 1.0                     # on a cliff cell, a way's surface is drawn only within this of the way's own height (m)
 LANE_LINE_M = 0.25                   # a lane line as drawn (wider than the paint: it must read at 0.125 m a pixel)
 KERB_M = 0.3                         # a kerbstone as drawn
 ZEBRA_BAR_M, ZEBRA_WIDTH_M = 0.5, 3.0   # a crossing's bars and gaps along the walking line; its least width

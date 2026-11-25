@@ -695,6 +695,7 @@ export class Compositor {
       p.i("uHmSize", L.width, L.height);
       p.f("uHmUnits", L.encoding.building_unit_m, L.encoding.tree_unit_m, L.encoding.structure_unit_m);
       p.f("uMarch", cfg.march.t0_m, cfg.march.growth, cfg.march.steps, cfg.march.bias_m);
+      p.f("uNormalOff", cfg.march.normal_m ?? 0);
       p.f("uZTop", this.zTop);
       p.f("uSun", st.sun[0], st.sun[1], st.sun[2], st.el);
       const lightOn = !st.off.has("light");
