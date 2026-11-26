@@ -128,16 +128,19 @@ def width_lanes(tg, cls, mode, p):
 
 
 def crossing_marking(tg) -> str:
-    """"zebra" where OSM says a way is a foot or cycle crossing marked on the road, else "". `crossing:markings`
-    decides where it is given (anything but "no" is a marking); without it, `crossing` = marked, zebra, uncontrolled
-    (OSM's older word for a marked crossing without signals) or traffic_signals (signal crossings in Luxembourg are
-    striped). An unmarked or untagged crossing gets nothing."""
+    """"zebra" where a way OSM maps as a foot or cycle crossing is marked on the road, else "". `crossing:markings`
+    decides where it is given (anything but "no" is a marking); else `crossing` = unmarked, no or informal is no
+    marking; every other mapped crossing is marked, also one OSM says no more about. Measured on the crossings of
+    the fetch that OSM does describe (23 Nov 2026): 99% of those over a primary, secondary or tertiary road are
+    marked (288 of 290) and 80% of those over a residential street (334 of 418); and on the 2023 orthophoto the
+    crossings OSM does not describe are as much brighter than the asphalt beside them as the marked ones (24% at
+    the median, both; the unmarked ones 4%)."""
     if "crossing" not in (tg.get("footway"), tg.get("cycleway"), tg.get("path")):
         return ""
     mk = tg.get("crossing:markings")
     if mk is not None:
         return "" if mk == "no" else "zebra"
-    return "zebra" if tg.get("crossing") in ("marked", "zebra", "uncontrolled", "traffic_signals") else ""
+    return "" if tg.get("crossing") in ("unmarked", "no", "informal") else "zebra"
 
 
 def ways_to_edges(elements, grid: Grid, select, p):

@@ -60,12 +60,16 @@ tunnel (car-park aisles and ramps), a car park's 2.5 m; else the mode's (road 4.
 at G0). Stored per edge as `clearance_m`; P7–P9 use it.
 
 **Marked crossings.** A way OSM maps as a crossing (`footway`, `cycleway` or `path` = crossing) carries
-`crossing`: "zebra" where OSM says it is marked on the road: by `crossing:markings` where that is given (anything
-but "no"), else by `crossing` = marked, zebra, uncontrolled (OSM's older word for a marked crossing without
-signals) or traffic_signals (signal crossings in Luxembourg are striped). An unmarked crossing, or one OSM says
-nothing about, has no `crossing`: no marking is drawn that the data does not give. Layer 4 draws the stripes
-(layer-04-transport.md rule 3; check L4.7). In the test area: 96 crossing edges, 22 of them marked, 71 with no word
-either way.
+`crossing`: "zebra" unless OSM says it is unmarked: `crossing:markings` decides where it is given (anything but "no"
+is a marking); else `crossing` = unmarked, no or informal is no marking; every other mapped crossing is marked, also
+one OSM says no more about (the owner, 23 Nov 2026: "we have to fix crossings", after 71 of the test area's 96
+crossing edges stayed plain). Why the rule holds, measured on the fetch's crossings that OSM does describe: over a
+primary, secondary or tertiary road 288 of 290 are marked (99%), over a residential street 334 of 418 (80%); and on
+the 2023 orthophoto the crossings OSM does not describe are as much brighter than the asphalt beside them as the
+marked ones (24% at the median for both, 4% for the unmarked). So about one undescribed crossing in five on a
+residential street is striped where there is none; the photo did not tell them apart well enough to decide each
+one (81% right against 77% for the rule alone). Layer 4 draws the stripes (layer-04-transport.md rule 3; check
+L4.7).
 
 ## Output
 `graph.json`: nodes (OSM id, e, n, z, kind ground/abutment/deck/tunnel/mixed, degree, boundary), edges (as above,

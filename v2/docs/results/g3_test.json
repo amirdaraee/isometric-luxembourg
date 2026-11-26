@@ -162,7 +162,7 @@
     },
     {
      "id": "L4.7",
-     "title": "marked crossings (OSM) with 2 m or more on a carriageway that are not striped there (of 9)",
+     "title": "marked crossings (OSM) with 2 m or more on a carriageway that are not striped there (of 41)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -174,9 +174,9 @@
      "title": "marked crossings: metres on a carriageway, and the share of it striped (bars and gaps are equal)",
      "passed": true,
      "value": {
-      "crossings": 9,
-      "metres": 37.8,
-      "striped": 0.397
+      "crossings": 41,
+      "metres": 162.1,
+      "striped": 0.453
      },
      "threshold": null,
      "severity": "report",
@@ -503,7 +503,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 77.7
+      "audit_s": 75.6
      },
      "threshold": null,
      "severity": "report",
@@ -689,7 +689,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 217.3,
+     "value": 211.5,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -878,7 +878,7 @@
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
       "images": 965,
-      "seconds": 347.0,
+      "seconds": 315.9,
       "queries": [
        "a car",
        "a parked car",
@@ -1138,24 +1138,24 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.1535,
-      "first_view_warm_s": 0.09140000003576279,
+      "first_view_cold_s": 0.148,
+      "first_view_warm_s": 0.0915,
       "pan_whole_area": {
-       "fps": 120.02495321272613,
+       "fps": 120.14787430755473,
        "frame_ms_median": 0.5,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 92.44915296614414,
-       "frame_ms_median": 0.19999998807907104,
+       "fps": 94.14408790111125,
+       "frame_ms_median": 0.3999999761581421,
        "tiles_missing": 0
       },
-      "pan_fps": 92.44915296614414,
+      "pan_fps": 94.14408790111125,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 120.12686995757748,
-        "frame_ms_median": 0.800000011920929,
+        "fps": 120.00099792715538,
+        "frame_ms_median": 0.8000000715255737,
         "tiles_missing": 0
        }
       },
@@ -1178,7 +1178,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 92.4,
+     "value": 94.1,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1190,8 +1190,8 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 120.12686995757748,
-       "frame_ms_median": 0.800000011920929,
+       "fps": 120.00099792715538,
+       "frame_ms_median": 0.8000000715255737,
        "tiles_missing": 0
       }
      },
@@ -3111,69 +3111,69 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 8.899999976158142
+        "ms": 8
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 9.199999988079071
+        "ms": 9.299999952316284
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 8.200000047683716
+        "ms": 7.100000023841858
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8.300000011920929
+        "ms": 7.699999928474426
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 8.300000011920929
+        "ms": 7.899999976158142
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8.5
+        "ms": 7.799999952316284
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 8.899999976158142
+        "ms": 9.699999928474426
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8.400000035762787
+        "ms": 9.100000023841858
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 8.300000011920929
+        "ms": 8.300000071525574
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 7.800000011920929
+        "ms": 8.300000071525574
        }
       ],
       "pan_whole_area": {
-       "fps": 120.0938779590112,
-       "frame_ms_median": 0.5,
+       "fps": 120.13587092047734,
+       "frame_ms_median": 0.5999999046325684,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
       "pan_zoom1": {
-       "fps": 95.19764129757004,
+       "fps": 95.73803274590676,
        "frame_ms_median": 0.3999999761581421,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
-      "pan_fps": 95.19764129757004,
+      "pan_fps": 95.73803274590676,
       "viewport": "1600x1000 CSS px, device pixel ratio 1"
      },
      "threshold": null,
@@ -3182,7 +3182,7 @@
     },
     {
      "id": "X8a",
-     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 9.2 ms at most)",
+     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 9.7 ms at most)",
      "passed": true,
      "value": 1,
      "threshold": "<= 1",
@@ -3193,7 +3193,7 @@
      "id": "X8b",
      "title": "panning in tunnel view, desktop (frames per second, the whole area and 1:1)",
      "passed": true,
-     "value": 95.2,
+     "value": 95.7,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -3202,7 +3202,7 @@
      "id": "X9",
      "title": "seconds",
      "passed": true,
-     "value": 109.3,
+     "value": 107.5,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -4732,7 +4732,7 @@
      "id": "K6v-far-on",
      "title": "far zoom: pixels the cutaways change when on",
      "passed": true,
-     "value": 832664,
+     "value": 832565,
      "threshold": ">= 1",
      "severity": "gate",
      "examples": []
@@ -4750,28 +4750,28 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.1535,
-  "first_view_warm_s": 0.09140000003576279,
+  "first_view_cold_s": 0.148,
+  "first_view_warm_s": 0.0915,
   "pan_whole_area": {
-   "fps": 120.02495321272613,
+   "fps": 120.14787430755473,
    "frame_ms_median": 0.5,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 92.44915296614414,
-   "frame_ms_median": 0.19999998807907104,
+   "fps": 94.14408790111125,
+   "frame_ms_median": 0.3999999761581421,
    "tiles_missing": 0
   },
-  "pan_fps": 92.44915296614414,
+  "pan_fps": 94.14408790111125,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 120.12686995757748,
-    "frame_ms_median": 0.800000011920929,
+    "fps": 120.00099792715538,
+    "frame_ms_median": 0.8000000715255737,
     "tiles_missing": 0
    }
   },
   "viewport": "1600x1000 CSS px, device pixel ratio 1"
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/21b51c727efe"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/cce0dd0cb290"
 }
