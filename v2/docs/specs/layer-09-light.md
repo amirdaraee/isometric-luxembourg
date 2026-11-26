@@ -32,12 +32,17 @@ of sun positions per season, or rendered in the viewer from the depth buffer for
    are `v2/config/light.json` "grade"; the viewer turns them into the light pass's inputs in
    `v2/web/src/gl/grade.ts`. Nothing of this is in any layer's tiles: layers 1–7 stay evenly lit (L5.1, L9.2).
 4. **Day** (sun above 6°) is one constant: `sun.ambient` 0.58 of white sky light, `sun.direct` 0.62 of the sun's
-   tint (`grade.day_tint`, warm: lit, a white surface is 1.18, 1.12, 0.97; in a cast shadow on the ground 0.17,
+   tint (`grade.day_tint`, a little warm: lit, a white surface is 1.20, 1.17, 1.10; in a cast shadow on the ground 0.17,
    0.20, 0.34), hard cast shadows. The golden hour and the night change nothing here. A colour lit past the
    screen's white keeps its hue: it is scaled back to white's level and mixed towards white by `sun.toon.pale`
    (1.8) times how far over it was. Cut off channel by channel, a sunlit cream wall (red over first, then
    green) turned lemon, 247, 247, 178; now it is 247, 231, 183, and v1's sunlit walls are 246, 216, 166 to
    251, 230, 187.
+   The sun was yellower in the first cartoon build (a white surface 1.18, 1.12, 0.97): it turned asphalt beige,
+   slate grey and the river pale, where v1 keeps each surface's own colour. Since the owner's "other colors can be
+   more cartoonish" (26 Nov 2026) the warmth of a wall is in the wall's colour and the sun is nearly white. An
+   upright wall out of the sun is `sun.wall_shade` 1.15, 1.07, 0.96 of the ambient (0.67, 0.62, 0.56 of white):
+   a little warm, so a blue or a green house keeps its colour in shade.
 5. **Golden hour** (owner, 10 Nov 2026: brighter and warmer, long soft shadows, buildings readable). Full from 3.5°
    down to the horizon, easing into day between 3.5° and 6°:
    - the sun is orange (`golden_tint`) and 1.3 times as strong;

@@ -152,6 +152,24 @@
   "share": 0.35,
   "min_area_m2": 20.0
  },
+ "roofs": {
+  "about": "Each building's roof covering, classed from the orthophoto (v2/data/scene/roofs.py; the photo classes, it never colours). inset_m: the footprint is drawn in by this before the photo is read. crown_grow_m: not read within this of a surveyed crown. min_lum: darker points are shadow. min_px: fewer readable points and the roof is not read (the art's rule decides). Warmth is (r - b) / (r + g + b). tile_warm, tile_share: a pitched roof is tile where its median warmth and this share of its points reach tile_warm; tile_bright: bright tile from here, brown tile under. slate_dark_lum, slate_blue, slate_warm: a slate roof's shade by its median luminance and warmth (the quartiles of the test area's roofs). flat_green: a flat roof is planted from this median excess green; flat_gravel: under gravel from this warmth.",
+  "ortho_dir": "ortho2023",
+  "zoom": 18,
+  "step_m": 0.4,
+  "inset_m": 1.2,
+  "crown_grow_m": 1.0,
+  "min_lum": 45.0,
+  "min_px": 20,
+  "tile_warm": 0.07,
+  "tile_share": 0.5,
+  "tile_bright": 0.15,
+  "slate_dark_lum": 117.0,
+  "slate_blue": -0.048,
+  "slate_warm": -0.022,
+  "flat_green": 0.07,
+  "flat_gravel": 0.03
+ },
  "trees": {
   "min_height_m": 2.0,
   "max_height_m": 50.0,
@@ -237,6 +255,7 @@
   "facade_window_min_gap_m": 0.3,
   "trees_max_inside": 0,
   "groundcover_min_photo": 0.99,
+  "roofs_min_read": 0.85,
   "groundcover_paved_max": 0.15,
   "groundcover_garden_min": 0.70,
   "scene_outside_tol_m": 1.0,

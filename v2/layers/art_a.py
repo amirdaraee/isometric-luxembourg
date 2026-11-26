@@ -2,13 +2,14 @@
 
 Everything here is albedo (layer-05 rule 1): flat material colours, generated detail and ink, never light. Detail is
 computed per pixel from the pixel's world position on its surface (from the depth), so it is fixed to the 3D model:
-  walls       one facade colour per building in the building's own tone: v1's family of cream, gold and tan
-              (FACADE_SHARES; the owner's decision of 26 Nov 2026), a sandstone plinth, a cornice line at every floor
+  walls       one facade colour per building (palette buildings.facade_*) in the building's own tone, a sandstone
+              plinth, a cornice line at every floor
               line of the facade layout, an eave cornice, quoins on some buildings; coursed ashlar on stone
               buildings, a banded (rusticated) ground floor on some rendered ones; a stone surround, lintel with a
               keystone and sill round every window, a surround and a lintel round every door (phase 3)
-  roofs       slate in four tones, in the building's own tone: a light stroke down the slope every 0.9 m (v1's roof
-              lines) and faint courses parallel to the eave; flat roofs plain
+  roofs       the covering the orthophoto shows (scene/roofs.py: slate in four shades, tile, a flat roof grey,
+              under gravel or planted), in the building's own tone: a light stroke down the slope every 0.9 m (v1's
+              roof lines) and faint courses parallel to the eave; flat roofs plain
   fills       clean, as a cartoon's: no paper grain, no mottle, no stone-to-stone or slate-to-slate tone (GRAIN)
   openings    windows with a white frame, glazing bars (a cross, or six panes) and a sill line, each window's glass
               its own tone; shutters on some buildings; doors with a frame, panels and a fanlight; garage doors with
@@ -46,16 +47,14 @@ from v2.layers.common import CLASS, RIGHT, UP, VIEW, pal
 from v2.layers.detail import band, gp, ihash, slabs, soft_band, vnoise
 from v2.layers.geometry import Mesh, h01, tri_normals
 
-# a house's facade colour by rule: v1's family (palette colour, share of the buildings). v1 took its colours from the
-# aerial photo: the old town's lime render and sandstone, cream to tan (the owner's decision of 26 Nov 2026)
-FACADE_SHARES = [("facade_honey", 0.26), ("facade_ivory", 0.2), ("facade_sand", 0.2), ("facade_gold", 0.16),
-                 ("facade_tan", 0.1), ("facade_chalk", 0.05), ("facade_brick", 0.03)]
-# every facade colour a building can have: the rule's, and the ones a well-known building names (landmark_styles.json)
-FACADES = [n for n, _ in FACADE_SHARES] + [
-    "facade_cream", "facade_ochre", "facade_pink", "facade_yellow", "facade_blue", "facade_sage", "facade_white",
-    "facade_apricot", "facade_rose", "facade_green", "facade_terracotta", "facade_grey", "facade_butter"]
-# pitched roofs: (palette colour, courses, share of the buildings). Slate is the city's roof, and v1's; tile only
-# where a well-known building names it
+# a house's facade colour by rule: one of these by the building's id (the owner, 26 Nov 2026: the different colours
+# are back, in the cartoon look). No data says what colour a house is: the photo is from above
+FACADES = ["facade_cream", "facade_ochre", "facade_pink", "facade_yellow", "facade_blue", "facade_sage",
+           "facade_white", "facade_apricot", "facade_rose", "facade_green", "facade_terracotta", "facade_grey",
+           "facade_butter"]
+# pitched roofs: (palette colour, courses, share of the buildings the photo does not read). A roof's covering is read
+# from the orthophoto (scene/roofs.py); where it is not read the roof is slate, as 99.7% of the test area's roofs
+# that are read; tile where the photo shows it or a well-known building names it
 ROOFS = [("roof_tile_old", "tile", 0.0), ("roof_tile", "tile", 0.0), ("roof_tile_brown", "tile", 0.0),
          ("roof_slate_dark", "slate", 0.25), ("roof_slate_blue", "slate", 0.3), ("roof_slate_warm", "slate", 0.15),
          ("roof_slate", "slate", 0.3)]
@@ -64,6 +63,7 @@ GRAIN = 0.0
 # v1's roof lines: a light stroke down the slope every `every` m along the eave, `width` m wide, `gain` times the slate;
 # and the courses parallel to the eave, darker by `course`
 ROOF_STROKE = {"every": 0.9, "width": 0.14, "gain": 1.22, "course": 0.14}
+FLAT_ROOFS = ("roof_flat", "roof_flat_gravel", "roof_flat_green")
 SHUTTERS = ["shutter_green", "shutter_blue", "shutter_red", "shutter_grey"]
 DOORS = ["door_green", "door_red", "door_blue", "door_wood"]
 AWNINGS = ["awning_red", "awning_green", "awning_blue", "awning_yellow"]
@@ -128,10 +128,11 @@ def arch_outline(u0, v0, u1, v1, pointed, n=6, circle=False):
 class Style:
     """One building's materials, chosen once from its id (deterministic)."""
 
-    def __init__(self, bid: str, roof_shape: str, known: dict | None = None, church: bool = False):
+    def __init__(self, bid: str, roof_shape: str, known: dict | None = None, church: bool = False, roof: str | None = None):
         known = known or {}                    # a well-known building's own materials (landmark_styles.json)
+        # `roof`: the covering the orthophoto shows (scene/roofs.py), or None where it is not read
         self.church = church                   # the walls of a place of worship
-        self.facade = known.get("facade") or by_share(FACADE_SHARES, h01(bid + "facade"))
+        self.facade = known.get("facade") or FACADES[int(h01(bid + "facade") * len(FACADES)) % len(FACADES)]
         stone = known["stone"] if "stone" in known else (h01(bid + "w") < 0.18 and "facade" not in known)
         # the building's own tone: every house a little lighter or darker than its neighbour of the same colour
         self.stone = stone
@@ -141,12 +142,13 @@ class Style:
         self.panes = "six" if h01(bid + "p") < 0.4 else "cross"
         rt = 0.93 + 0.12 * h01(bid + "rt")
         if roof_shape == "flat":
-            self.roof, self.courses, self.roof_name = B("roof_flat") * rt, None, "roof_flat"
+            name = next((n for n in (known.get("roof"), roof) if n in FLAT_ROOFS), "roof_flat")
+            self.roof, self.courses, self.roof_name = B(name) * rt, None, name
         else:
-            name = by_share([(n, s) for n, _, s in ROOFS], h01(bid + "r"))
+            pitched = [n for n, _, _ in ROOFS]
+            name = next((n for n in (known.get("roof"), roof) if n in pitched),            # known, then the photo,
+                        by_share([(n, s) for n, _, s in ROOFS], h01(bid + "r")))            # then the rule
             courses = next(c for n, c, _ in ROOFS if n == name)
-            if known.get("roof"):
-                name, courses = next((n, c) for n, c, _ in ROOFS if n == known["roof"])
             self.roof, self.courses, self.roof_name = B(name) * rt, courses, name
         self.quoins = bool(known["quoins"]) if "quoins" in known else h01(bid + "q") < 0.35
         self.shutters = h01(bid + "s") < 0.45
@@ -165,7 +167,8 @@ class ArtA:
     def __init__(self, scene, bmesh):
         self.scene = scene
         known = landmark_styles()
-        self.styles = [Style(b["id"], b.get("roof_shape", ""), known.get(b["id"])) for b in scene.buildings]
+        photo = scene.roofs                    # the roofs' coverings as the orthophoto shows them
+        self.styles = [Style(b["id"], b.get("roof_shape", ""), known.get(b["id"]), roof=photo.get(b["id"])) for b in scene.buildings]
         walls = scene.facades["walls"]
         self.walls = walls
         # places of worship: the style of their church walls; a building that is mostly church is that style all over
@@ -177,7 +180,7 @@ class ArtA:
                 continue
             own = known.get(b["id"], {})
             mat = own if ("facade" in own or "stone" in own) else {**kind, **own}
-            self.church[bi] = Style(b["id"], b.get("roof_shape", ""), mat, church=True)
+            self.church[bi] = Style(b["id"], b.get("roof_shape", ""), mat, church=True, roof=photo.get(b["id"]))
             if rec.get("share", 1.0) >= 0.5:
                 self.styles[bi] = self.church[bi]
         self.w_church = np.array([bool(w.get("worship")) for w in walls], bool)
@@ -207,7 +210,7 @@ class ArtA:
         self.stone_parts = {bi: ([Polygon(c["outline"]).buffer(0.15) for c in known[b["id"]]["stone_parts"]],
                                  Style(b["id"], b.get("roof_shape", ""),
                                        {**{k: v for k, v in known[b["id"]].items() if k != "facade"}, "stone": True},
-                                       church=bi in self.church))
+                                       church=bi in self.church, roof=photo.get(b["id"])))
                             for bi, b in enumerate(scene.buildings) if known.get(b["id"], {}).get("stone_parts")}
         self.materials = None        # method B: {name: (image (H, W, 3) float, (width_m, height_m))}
 

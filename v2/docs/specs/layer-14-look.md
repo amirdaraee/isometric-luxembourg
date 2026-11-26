@@ -9,7 +9,7 @@ hour (grade per time of day).
 **Output.** The final pixel. No tiles.
 
 **Rules.**
-1. Grade: saturation, contrast and gamma towards the palette, the same on every layer (no per-layer tweaks).
+1. Grade: saturation, contrast and gamma towards the palette, the same on every layer (no per-layer tweaks). The most saturation a pixel may have is `look.sat_max` 0.76 (0.68 until 26 Nov 2026: v1's river, 24, 78, 92, is 0.74).
 2. Ink: edges found on layer 8's depth and normal discontinuities (not on colour) darkened to ink with a fixed
    weight at each zoom, so line weight is the same on code and painted pixels. The line is v1's blue-black
    (palette `ink.outline`; owner, 26 Nov 2026). A silhouette's line is 1 px on its nearer side; from a scale of

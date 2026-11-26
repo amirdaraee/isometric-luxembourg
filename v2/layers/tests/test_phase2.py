@@ -207,7 +207,7 @@ def test_a_part_in_sheet_metal_is_one_palette_colour_inside_its_cylinder_and_now
     bid, own = next((k, v) for k, v in landmark_styles().items() if v.get("clad"))
     c = own["clad"][0]
     assert set(c) == {"name", "centre", "radius", "above", "colour"} and c["radius"] > 0
-    scene = SimpleNamespace(buildings=[{"id": bid, "roof_shape": "gable"}, {"id": "B1", "roof_shape": "gable"}],
+    scene = SimpleNamespace(roofs={}, buildings=[{"id": bid, "roof_shape": "gable"}, {"id": "B1", "roof_shape": "gable"}],
                             facades={"walls": [], "worship": {}})
     empty = {"V": np.zeros((0, 3)), "T": np.zeros((0, 3), np.int64), "kind": np.zeros(0, np.int64), "obj": np.zeros(0, np.int64)}
     A = ArtA(scene, empty)
@@ -228,7 +228,7 @@ def test_a_rendered_buildings_part_in_bare_stone_is_stone_inside_its_outline_and
     bid, own = next((k, v) for k, v in landmark_styles().items() if v.get("stone_parts"))
     part = own["stone_parts"][0]
     assert set(part) == {"name", "outline"} and len(part["outline"]) >= 3 and "facade" in own and not own.get("stone")
-    scene = SimpleNamespace(buildings=[{"id": bid, "roof_shape": "gable"}, {"id": "B1", "roof_shape": "gable"}],
+    scene = SimpleNamespace(roofs={}, buildings=[{"id": bid, "roof_shape": "gable"}, {"id": "B1", "roof_shape": "gable"}],
                             facades={"walls": [], "worship": {}})
     empty = {"V": np.zeros((0, 3)), "T": np.zeros((0, 3), np.int64), "kind": np.zeros(0, np.int64), "obj": np.zeros(0, np.int64)}
     A = ArtA(scene, empty)
@@ -245,7 +245,7 @@ def test_a_rendered_buildings_part_in_bare_stone_is_stone_inside_its_outline_and
 def _scene(walls, worship=None, n_buildings=3):
     """The least of a scene the art needs: buildings by id and the facade layout."""
     from types import SimpleNamespace
-    return SimpleNamespace(buildings=[{"id": f"B{i}", "roof_shape": "gable"} for i in range(n_buildings)],
+    return SimpleNamespace(roofs={}, buildings=[{"id": f"B{i}", "roof_shape": "gable"} for i in range(n_buildings)],
                            facades={"walls": walls, "worship": worship or {}})
 
 
@@ -474,20 +474,22 @@ def test_a_described_walls_opening_has_its_own_head_and_a_flat_one_is_its_rectan
     assert (cls2[edge] == CLASS["trim"]).all()
 
 
-def test_houses_by_rule_are_in_v1s_colours():
-    """The owner's decision of 26 Nov 2026: a house's colour by rule is one of v1's family, its roof slate."""
-    from v2.layers.art_a import FACADE_SHARES, GRAIN, ROOF_STROKE, by_share
-    family = [n for n, _ in FACADE_SHARES]
-    assert abs(sum(s for _, s in FACADE_SHARES) - 1) < 1e-9 and set(family) <= set(FACADES)
+def test_houses_by_rule_have_their_colours_and_a_roof_is_the_photos():
+    """The owner, 26 Nov 2026: the houses' different colours are back, in the cartoon look; a roof's covering is the
+    one the orthophoto shows (scene/roofs.py), else slate."""
+    from v2.layers.art_a import FLAT_ROOFS, GRAIN, ROOF_STROKE, by_share
     styles = [Style(f"ACT_{i}", "gable") for i in range(400)]
-    assert {s.facade for s in styles} <= set(family) and len({s.facade for s in styles}) >= 5
-    assert all(s.roof_name.startswith("roof_slate") and s.courses == "slate" for s in styles)
-    # every colour of the family is warm: red over green over blue
-    for n in family:
-        r, g, b = pal("buildings", n)
-        assert r > g > b
+    assert {s.facade for s in styles} == set(FACADES)                    # every colour is used
+    assert all(s.roof_name.startswith("roof_slate") and s.courses == "slate" for s in styles)   # not read: slate
     assert by_share([("a", 0.5), ("b", 0.5), ("c", 0.0)], 0.999999) == "b" and by_share([("a", 1.0)], 0.0) == "a"
-    # a well-known building keeps the colours its entry names
-    k = Style("ACT_z", "gable", {"facade": "facade_pink", "roof": "roof_tile"})
+    # the photo's covering wins over the rule, a well-known building's own over the photo
+    t = Style("ACT_1", "gable", roof="roof_tile_brown")
+    assert t.roof_name == "roof_tile_brown" and t.courses == "tile"
+    k = Style("ACT_z", "gable", {"facade": "facade_pink", "roof": "roof_tile"}, roof="roof_slate_blue")
     assert k.facade == "facade_pink" and k.roof_name == "roof_tile" and k.courses == "tile"
+    # a flat roof takes a flat roof's covering only; a pitched roof never a flat roof's
+    assert Style("ACT_2", "flat", roof="roof_flat_gravel").roof_name == "roof_flat_gravel"
+    assert Style("ACT_2", "flat", roof="roof_tile").roof_name == "roof_flat" and Style("ACT_2", "flat").courses is None
+    assert Style("ACT_3", "hip", roof="roof_flat_green").roof_name.startswith("roof_slate")
+    assert set(FLAT_ROOFS) == {"roof_flat", "roof_flat_gravel", "roof_flat_green"}
     assert GRAIN == 0.0 and ROOF_STROKE["gain"] > 1

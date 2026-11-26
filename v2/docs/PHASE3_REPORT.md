@@ -3338,3 +3338,124 @@ of v1's contrast) is answered by this style. New:
 |---|---|
 | 70 | May the detector's model be downloaded again, so the two checks and the gates can run? |
 | 71 | Should cast shadows be lighter when the sun is low, so the evening stays readable? |
+
+## 36. The colours in the cartoon look: real roofs, the houses' colours back (26 November, $0)
+
+Shown section 35's build, the owner asked: "why all roofs are gray? was it like this before?". Told that sample C
+makes every roof slate as v1 does, and that the build before had about 23% tile by a rule and not from data, the
+owner chose the real roofs from the photo and v1's darker, bluer slate, then said: "also other colors can be more
+cartoonish not just the gray", "not just the roof, bring back diffrent bulding colors as well" and "but the art
+style remains, remember that". The art style is unchanged in this section: clean fills, light in steps, deep blue
+shadows, the bold line, the strokes down the roofs. Only colours changed.
+
+![Four views, before the cartoon look (left) and now (right): the old town, the cathedral, the Grund and the Bock, Clausen, at 13:00](img/test_cartoon_colours.jpg)
+
+### 36.1 Roofs from the orthophoto
+
+A new part of the scene, `scene_roofs` (`v2/data/scene/roofs.py`; spec: scene.md, "Roofs"), reads each building's
+roof covering from the 2023 orthophoto. The photo classes the roof and never colours it. Result on the test area:
+
+| | Roofs |
+|---|---|
+| Buildings | 1,135 |
+| Read by the photo | 1,111 (97.9%) |
+| Slate (plain 407, warm grey 240, dark 233, blue 116) | 996 |
+| Tile (brown 2, bright 1) | 3 |
+| Flat: grey 84, under gravel 25, planted 3 | 112 |
+| Not read (too small, under trees, in shadow): slate by rule | 24 |
+
+So the real pitched roofs of the test area are slate: tile is 0.3% of those read. Asked whether some tile should
+come back by rule all the same, the owner said "yes show me results"; shown the old town with the real roofs, with
+12% and with 23% of roofs in tile, the owner chose "Real roofs only". There is no tile rule.
+
+Not known: whether the photo moves a tall building's roof off its footprint. The inset of 1.2 m and the median
+guard against it; on the 40 warmest roofs looked at, the footprint's centre lay on the roof.
+
+### 36.2 Colours measured in v1's art
+
+v1's own colour of each surface was measured in v1's art over five windows, by the built release's surface kinds:
+
+| Surface (its commonest colour) | v1 | Section 35's build | This build |
+|---|---|---|---|
+| Slate roof | 106, 115, 129 | 148, 152, 149 | 115, 125, 144 (lit), 102, 112, 132 (half lit) |
+| River | 24, 78, 92 | 61, 125, 116 | 24, 78, 92 |
+| Asphalt | 146, 136, 131 | 163, 151, 125 | 151, 144, 133 |
+| Sunlit wall | 247, 211, 152 | 247, 214, 148 | by the house's colour |
+| Lawn | 142, 148, 57 | 137, 143, 62 | 136, 146, 68 |
+
+The river is v1's exactly. The slate is a little lighter and bluer than v1's and the asphalt a little lighter;
+neither was tuned further.
+
+The cause of the grey slate, the beige asphalt and the pale river was one thing: the sun of section 35 was yellow
+(a white surface lit 1.18, 1.12, 0.97), and it took the blue out of everything. v1 keeps each surface's own
+colour. Now the sun is nearly white (`grade.day_tint` 1.0, 0.95, 0.84: a white surface lit 1.20, 1.17, 1.10), and
+the palette holds v1's slate, river and asphalt. An upright wall out of the sun is a little warm only
+(`sun.wall_shade` 1.15, 1.07, 0.96), so a blue or a green house keeps its colour in shade. The most saturation a
+pixel may have went from 0.68 to 0.76 (`look.sat_max`): v1's river is 0.74.
+
+### 36.3 The houses' colours
+
+The 13 facade colours by the building's id are back, as before the cartoon look, each stronger (saturation about
+1.3 times and a little more; pink and rose kept pink). No data says what colour a house is (the photo is from
+above), so this stays a rule. Section 35's family of seven creams is gone.
+
+### 36.4 A seam in the ground, found by the darker river and fixed at its cause
+
+The first build of these colours failed S-ground: a step of 3.18 against a limit of 3.0, at one tile border on a
+riverbank (2.64 in every build before, just under the limit). It was not the tile's coding (that leaves about 1.0
+there at any quality). The ground's classes are rasterised per tile, and the image library's polygon fill rounds
+each vertex to a whole pixel, a negative one (a vertex left of or above the tile's canvas) towards zero. So an
+edge that leaves the canvas moved by up to a pixel with the tile, and on a steep bank the border between water
+and rock moved by several screen pixels: 738 pixels differed between the two tiles and one render across their
+border. The darker river made the old difference larger in colour.
+
+Fixed in `render.py` (`fill_mask`): an even-odd scanline fill on the pixels' centres, every crossing worked out
+from the polygon's own edges. On 2,000 random polygons it gives the same pixels after any whole-pixel shift and
+the same as the exact test of each centre; a unit test holds it. At the failing border 0 pixels now differ.
+S-ground is 1.17, S-water 0.0 (0.98 before: the water's areas had the same fault), S-transport 1.11. The limit was
+not touched.
+
+Not done: the transport layer's lines (rails, lane dashes) are still drawn by the image library's line; its seam
+figure is 1.11.
+
+### 36.5 The build
+
+Release `d81df90323dd`. All 62 stages ran and passed (2 new: `scene_roofs`, `check_roofs`): 293 gate entries
+pass, none fails; gates G1 and G3 pass. The detector's model was downloaded again with the owner's word ("do it":
+`google/owlv2-base-patch16-ensemble`, 620 MB, to the local cache, with no account token sent), so the two checks
+that could not run in section 35 ran here.
+
+| Check | Result | Limit |
+|---|---|---|
+| No painted vehicles (detector, 951 tiles, 7 layers) | 0 detections | 0 |
+| L5.1 / L9.2 no baked light (201 materials) | 0 fail; worst: transport 3.0%, buildings 1.6%, ground 1.3% | 5% |
+| L5.2 building edges within 1 px | 96.9% | 95% |
+| L5.2 window rows within 1 px | 99.7% | 95% |
+| L5.8 church tracery within 1 px | 99.3% | 95% |
+| S seams: ground, water, transport | 1.17, 0.0, 1.11 | 3.0 |
+| RF1 roofs read by the photo | 97.9% | 85% |
+| V2 shadows without buildings match the reference | 99.2% | 97% |
+| V8 hue of what is lit to the top (49,592 px) | 0.0%; largest turn 4.6° | 0.1% over 6° |
+| C2b panning, desktop | 73.9 fps | 60 |
+| X8b panning in tunnel view | 83.4 fps | 60 |
+
+191 Python tests (5 new: four on the roofs' classing, one on the fill) and 27 web tests pass.
+
+The building edges' score fell from 97.3% to 96.9%. Not looked into: the limit is 95%.
+
+### 36.6 Seen, and left for the owner
+
+- At 20:30 most of the ground still lies in long, almost black-blue shadow (question 71).
+- The riverbank where the seam was has a jagged edge of rock into the water. It is the same in every build; it
+  belongs to the rivers' step (point 9 of the review).
+
+### 36.7 Not done
+
+- Cliffs, the rivers' edges, bare winter trees: each its own step. For the cliffs the owner said: "I have so much
+  input so at that point ask me questions".
+- The painted area is not remade.
+- Looked at: the eight views and the cathedral at 16:30, in summer. Not looked at: other seasons, a phone.
+
+### 36.8 Open questions
+
+44, 46, 65, 66, 67, 68, 69 and 71 stand. 70 (the detector's model) is answered: downloaded, the checks ran.

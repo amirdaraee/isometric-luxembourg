@@ -11,7 +11,7 @@
  "march": {"about": "The shadow march. The height map is read between its cells' centres (an edge of what casts a shadow is a line, not steps of a cell). normal_m: the march starts this far off the surface along its normal's level part, so a wall is not shadowed by its own cells.", "t0_m": 0.35, "growth": 1.055, "steps": 110, "bias_m": 0.3, "normal_m": 0.5},
  "sun": {"about": "The day's light, a cartoon's (v1's look; the owner's decision of 26 Nov 2026). A face is lit by the sun (its wrapped Lambert term above toon.bands[1]), half lit (toon.mid, above bands[0]) or not; a cast shadow takes the sun away. Where the sun does not reach, the ambient is multiplied by shade (ground, roofs, trees: v1's deep blue shadow) or wall_shade (an upright face of a building or a structure: the light off the ground reaches it, so it stays warm). A roof or a crown never gets less than toon.floor of the sun, so it keeps its colour in shadow. Lit: ambient + direct x the hour's sun colour. A colour lit past the screen's white keeps its hue: it is scaled back to white's level and mixed towards white by toon.pale x how far over it was (so a sunlit cream wall is a paler cream, as v1's, not lemon).",
          "wrap": 0.35, "ambient": 0.58, "direct": 0.62,
-         "shade": [0.293, 0.345, 0.586], "wall_shade": [1.24, 1.07, 0.86],
+         "shade": [0.293, 0.345, 0.586], "wall_shade": [1.15, 1.07, 0.96],
          "toon": {"bands": [0.15, 0.5], "mid": 0.7, "floor": 0.22, "pale": 1.8}},
  "grade": {
   "about": "The hour's light (layer-09 rule 3, layer-10 rule 4), by the sun's elevation. Day (above golden_deg[1]) is the sun and ambient above, untouched. Each gain multiplies sun.direct or sun.ambient.",
@@ -19,7 +19,7 @@
   "golden_full_deg": 3.5,
   "blue_deg": [-6.0, 0.0],
   "night_deg": -6.0,
-  "day_tint": [0.97, 0.87, 0.63],
+  "day_tint": [1.0, 0.95, 0.84],
   "golden_tint": [1.0, 0.76, 0.46],
   "golden_sun_gain": 1.30,
   "golden_amb_tint": [1.0, 0.88, 0.74],
@@ -56,7 +56,7 @@
   "snow_cos": 0.766
  },
  "look": {"about": "ink_wide_scale: the outline (palette ink.outline) is 1 px on the nearer side of a silhouette; from the first scale (screen px per map px) up it gets 1 px on the farther side too, from the second a second px on the nearer side.",
-          "sat_max": 0.68, "lum_min": 0.035, "lum_max": 0.97, "ink_depth_m": 1.2, "ink_normal_cos": 0.86, "ink_wide_scale": [0.4, 0.75]},
+          "sat_max": 0.76, "lum_min": 0.035, "lum_max": 0.97, "ink_depth_m": 1.2, "ink_normal_cos": 0.86, "ink_wide_scale": [0.4, 0.75]},
  "xray": {
   "about": "Tunnel view (v2/docs/specs/tunnel-view.md). opacity: layers 1-7 over the neutral ground (rule 3). The fill of a tunnel goes one step towards palette tunnel.deep per depth_step_m under the surface, depth_steps steps at most, reaching deep_share of the way. ink_px: the width of the edge lines (screen px). The centre line of a tunnel is its profile, axis_px wide (a little over 1, so that it has no gap), on a tunnel at least axis_min_px wide on screen. vehicle_side: the tone of a vehicle's sides in a tunnel (its roof is 1; no light there).",
   "opacity": 0.35,

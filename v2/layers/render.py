@@ -127,25 +127,58 @@ class Canvas:
         return img[i, j]
 
 
+def fill_mask(p, W: int, H: int):
+    """The pixels of a W x H canvas whose centre lies in polygon `p` (canvas coordinates; holes left out), as
+    (x0, y0, mask) for the part of the canvas the polygon's box covers, or None.
+
+    An even-odd scanline fill on the pixels' centres, every crossing worked out from the polygon's own edges: the
+    same pixels come out wherever the canvas begins, so a tile and its neighbour agree at their border. The image
+    library's polygon fill does not: it rounds a vertex to a whole pixel, and a negative one (a vertex left of or
+    above the canvas) towards zero, so an edge that leaves the canvas moved by up to a pixel with the tile, and
+    with it a class's border on a steep bank by several screen pixels (S-ground, 26 Nov 2026)."""
+    bx0, by0, bx1, by1 = p.bounds
+    x0, y0 = max(int(math.floor(bx0)), 0), max(int(math.floor(by0)), 0)
+    x1, y1 = min(int(math.ceil(bx1)) + 1, W), min(int(math.ceil(by1)) + 1, H)
+    if x1 <= x0 or y1 <= y0:
+        return None
+    rows, xs = [], []
+    for ring in [p.exterior, *p.interiors]:
+        a = np.asarray(ring.coords, float)
+        ax, ay, bx, by = a[:-1, 0], a[:-1, 1], a[1:, 0], a[1:, 1]
+        lo, hi = np.minimum(ay, by), np.maximum(ay, by)
+        r0 = np.maximum(np.ceil(lo - 0.5), y0).astype(np.int64)        # the rows whose centre lies in [lo, hi)
+        r1 = np.minimum(np.ceil(hi - 0.5), y1).astype(np.int64)
+        n = np.maximum(r1 - r0, 0)
+        if not n.any():
+            continue
+        e = np.repeat(np.arange(len(n)), n)
+        r = np.arange(n.sum()) - np.repeat(np.cumsum(n) - n, n) + r0[e]
+        rows.append(r)
+        xs.append(ax[e] + (r + 0.5 - ay[e]) / (by[e] - ay[e]) * (bx[e] - ax[e]))
+    if not rows:
+        return None
+    r, x = np.concatenate(rows), np.concatenate(xs)
+    j = np.clip(np.ceil(x - 0.5), x0, x1).astype(np.int64) - x0        # the first pixel whose centre is right of a crossing
+    o = np.lexsort((x, r))                                              # along each row the crossings pair up: in, out
+    r, j = r[o] - y0, j[o]
+    start = np.r_[0, np.flatnonzero(np.diff(r)) + 1]
+    nth = np.arange(len(r)) - np.repeat(start, np.diff(np.r_[start, len(r)]))
+    d = np.zeros((y1 - y0, x1 - x0 + 1), np.int32)
+    np.add.at(d, (r, j), np.where(nth % 2 == 0, 1, -1))
+    return x0, y0, np.cumsum(d, axis=1)[:, :-1] > 0
+
+
 def fill_geom(img: Image.Image, g, value):
-    """Fill a (canvas-space) polygon or multipolygon, holes left as they were."""
+    """Fill a (canvas-space) polygon or multipolygon, holes left as they were (fill_mask: the same wherever the
+    canvas begins)."""
     for p in getattr(g, "geoms", [g]):
         if p.geom_type != "Polygon" or p.is_empty:
             continue
-        x0, y0, x1, y1 = p.bounds
-        x0, y0 = max(int(math.floor(x0)), 0), max(int(math.floor(y0)), 0)
-        x1, y1 = min(int(math.ceil(x1)) + 1, img.width), min(int(math.ceil(y1)) + 1, img.height)
-        if x1 <= x0 or y1 <= y0:
+        m = fill_mask(p, img.width, img.height)
+        if m is None:
             continue
-        if not p.interiors:
-            ImageDraw.Draw(img).polygon([(x, y) for x, y in p.exterior.coords], fill=value)
-            continue
-        m = Image.new("1", (x1 - x0, y1 - y0), 0)
-        d = ImageDraw.Draw(m)
-        d.polygon([(x - x0, y - y0) for x, y in p.exterior.coords], fill=1)
-        for r in p.interiors:
-            d.polygon([(x - x0, y - y0) for x, y in r.coords], fill=0)
-        img.paste(value, (x0, y0, x1, y1), m)
+        x0, y0, mask = m
+        img.paste(value, (x0, y0, x0 + mask.shape[1], y0 + mask.shape[0]), Image.fromarray(mask))
 
 
 # ------------------------------------------------------------------------------------------------ renderer

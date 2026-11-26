@@ -96,6 +96,35 @@ Vegetated ground where OSM classes nothing (owner, 23 Nov 2026: v1's ground; lay
 straw-coloured lawn is not told from paving and stays paved; the photo on disk covers v1's extent, not yet the
 whole commune (GC1 fails where it does not).
 
+## Roofs (`scene_roofs`)
+
+Each building's roof covering, read from the orthophoto (`v2/data/scene/roofs.py`; the owner, 26 Nov 2026: the
+real roofs, not a share by rule). The 3D buildings give a roof's shape, not what covers it. The photo classes the
+roof and never colours it: a roof gets one of the palette's roof colours, so no shadow and nothing lying on a roof
+can reach a layer.
+
+1. The photo is read at a grid of 0.4 m inside the footprint drawn in by 1.2 m, not within 1 m of a surveyed
+   tree's crown and not in deep shadow. A roof with fewer than 20 such points is not read; the art's rule decides.
+2. A point's warmth is (r − b) / (r + g + b): fired clay is red over blue, slate and zinc blue over red.
+3. A pitched roof is tile where its median warmth and half its points reach 0.07 (bright tile from 0.15, else
+   brown); every other pitched roof is slate, in the shade the photo shows: dark under a median luminance of 117,
+   else blue at −0.048 or less, warm grey at −0.022 or more, else plain.
+4. A flat roof is planted where its median excess green is 0.07 or more, under gravel where its warmth is 0.03 or
+   more, else grey.
+
+The tile threshold lies in an empty stretch of the test area's roofs (three pitched roofs at 0.09 and over, the
+next at 0.03); the slate shades' thresholds are the quartiles of what the photo shows there. Test area: of 1,135
+buildings 1,111 are read; slate 996 (plain 407, warm 240, dark 233, blue 116), tile 3, flat grey 84, gravel 25,
+planted 3.
+
+Checks (`check_roofs`, in G0): RF0 every building has a record; RF1 the photo reads at least 85% of the roofs; RF2
+a flat roof never gets slate or tile, a pitched one never a flat roof's covering; RF3 every covering is a palette
+colour. Unit tests: `v2/data/tests/test_roofs.py`.
+
+Not known: whether the photo's roofs are moved off their footprints by the building's height (the photo is not
+stated to be a true orthophoto). The inset and the median guard against it; on the 40 warmest roofs looked at, the
+footprint's centre lay on the roof.
+
 ## Places (`scene_places`)
 v1's 129 landmark cards and 1,035 places, streets and pins, from v1 pixels back to LUREF by the ray inversion on
 v1's own terrain (camera.md), then given the LiDAR 2024 height and v2 pixels; v1 pixels are kept for links.

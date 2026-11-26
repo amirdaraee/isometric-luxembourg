@@ -18,12 +18,18 @@ Chosen by `params.json` art.method (or `V2_ART`); each method builds into its ow
 - **A, v1's cartoon look (owner, 26 Nov 2026: "can't we move toward the cartoonish style of v1?", and of four
   samples of the cathedral the one closest to v1).** This replaces the colours and the surface texture of the two
   entries above; the drawing (plinths, cornices, surrounds, windows, doors) stays.
-  - A house's colour by rule is one of v1's family of cream, gold and tan (`FACADE_SHARES`: seven palette colours,
-    `buildings.facade_honey` to `facade_brick`), in the building's own tone. v1 took its colours from the aerial
-    photo, so this is also nearer the real old town than the 13 colours by rule were. A well-known building keeps
-    the colour its entry in `landmark_styles.json` names.
-  - Every roof by rule is slate, in four tones, lighter and bluer than before (v1's); tile only where a well-known
-    building names it. Flat roofs are a plain grey-blue.
+  - A house's colour (owner, 26 Nov 2026, seeing the area all in v1's cream: "bring back diffrent bulding colors
+    as well", "other colors can be more cartoonish", "but the art style remains"): one of the 13 facade colours by
+    the building's id, as before the cartoon look, each stronger (`buildings.facade_*`), in the building's own
+    tone. No data says what colour a house is (the photo is from above), so this stays a rule. A well-known
+    building keeps the colour its entry in `landmark_styles.json` names. The first cartoon build's family of seven
+    creams (`FACADE_SHARES`) is gone.
+  - A roof's covering is the one the orthophoto shows (owner, 26 Nov 2026, asked why all roofs were grey: "Real,
+    from the photo"; scene.md, "Roofs"): slate in four shades, bright or brown tile, a flat roof grey, under gravel
+    or planted. A roof the photo does not read is slate by rule; a well-known building's own roof wins over the
+    photo. In the test area 3 of 999 pitched roofs read are tile: the real roofs are slate. Slate is v1's, measured
+    in v1's art (106, 115, 129 lit): darker and bluer than the first cartoon build's (owner: "Darker and bluer, as
+    v1").
   - Roofs carry v1's lines: a light stroke down the slope every 0.9 m (`ROOF_STROKE`), drawn by coverage as the
     courses are and fading out on a face too small to hold them, so no face of a roof differs in tone from another
     (L5.1); the courses parallel to the eave stay, fainter; the staggered joints are gone.
