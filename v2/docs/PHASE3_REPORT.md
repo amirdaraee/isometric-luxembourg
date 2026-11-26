@@ -3688,3 +3688,63 @@ it) and 27 web tests pass.
 
 Question 72 is answered: the openings, without the wall. 44, 46, 65, 66, 67, 68, 69 and 71 stand. No new
 question.
+
+## 39. The evening's light: the golden hour begins earlier; winter trees chosen (26 November, $0)
+
+Questions 71 (the evening is too dark) and 68 (trees in winter) were shown as small trial pictures, made without
+a build: the viewer with trial light settings, and a trial drawing of the trees in a preview window.
+
+![The abbey at 20:30 on 24 June as it was (top left) and with the golden hour begun (top right); winter as it is, brown crowns (bottom left), and the trial of bare trees (bottom right)](img/test_evening_winter.jpg)
+
+### 39.1 What the owner chose
+
+1. To merge pull request 32 (section 38) into `v2`. Done.
+2. The evening, of three samples at 20:30 on 24 June (as it was; cast shadows lighter when the sun is low; the
+   golden hour beginning earlier): the golden hour beginning earlier.
+3. Trees in winter, of two samples (as now: every crown brown; broadleaved trees bare, evergreens green): bare
+   branches. It is its own step and is not built here (39.4).
+
+### 39.2 The evening
+
+On 24 June at 20:30 the sun is 10° up and sets at about 21:45. The golden hour's light (warm sun, the sky light
+1.5 times day's, a fill light, long shadows that fade with their length) began only under 6°, at about 21:00.
+Until then the long shadows were as dark as noon's, and they cover most of the valley: the valley floor and the
+river were nearly black.
+
+The golden hour now begins at 14° and is full from 6° (`light.json`: `grade.golden_deg` [0, 14],
+`golden_full_deg` 6; before: [0, 6] and 3.5). On 24 June that is from about 20:00. Nothing else of the light is
+changed, and the light above 14° is the day's as before. The mornings change the same way.
+
+The unit tests of the hour's light read the day's threshold from the settings, and a new one holds that at 10°
+the sky light is lifted and the shadows are soft. 28 web tests and 203 Python tests pass.
+
+### 39.3 The build
+
+Not finished when this section was written. The layers' stages take the light settings as an input, so all 62
+stages run again (about 95 minutes). The build's results are to be added here; until then only the unit tests
+above stand for this change.
+
+### 39.4 Next: bare trees in winter (not built)
+
+The trial drew a broadleaved tree (every type but conifer) as its trunk, a branch from the trunk's line to the
+middle of each leaf clump the tree has in summer (`crown_lobes`: the clumps of one tree share a group), a twig
+from there to each of the clump's tufts, and the trunk's line on up to the highest clump; a small tree (one
+shape) as five short branches. Branches are flat strips turned to the camera, 0.16 to 0.34 m wide at the trunk
+and 0.13 m at the tip, twigs 0.11 to 0.13 m, in the species' bark colour. Conifers keep their crowns, a little
+duller. Seen in the trial:
+
+- With the map's black outline the branches came out as black scribbles; without an outline on or beside a
+  branch they read as bark.
+- The bare trees cast no shadow in the trial (the shadow height map takes crowns only).
+- It needs a second set of tree tiles for winter, which the viewer shows in that season. How much longer the
+  build is and how much larger the winter download was not measured.
+
+### 39.5 Not done
+
+- Bare winter trees (39.4).
+- Not looked at with the new evening: other dates than 24 June, the morning, a phone.
+
+### 39.6 Open questions
+
+71 is answered (the golden hour begins earlier) and 68 is answered (bare branches, evergreens green; to be
+built). 44, 46, 65, 66, 67 and 69 stand. No new question.

@@ -14,9 +14,9 @@
          "shade": [0.293, 0.345, 0.586], "wall_shade": [1.15, 1.07, 0.96],
          "toon": {"bands": [0.15, 0.5], "mid": 0.7, "floor": 0.22, "pale": 1.8}},
  "grade": {
-  "about": "The hour's light (layer-09 rule 3, layer-10 rule 4), by the sun's elevation. Day (above golden_deg[1]) is the sun and ambient above, untouched. Each gain multiplies sun.direct or sun.ambient.",
-  "golden_deg": [0.0, 6.0],
-  "golden_full_deg": 3.5,
+  "about": "The hour's light (layer-09 rule 3, layer-10 rule 4), by the sun's elevation. Day (above golden_deg[1]) is the sun and ambient above, untouched. The golden hour begins at 14 degrees and is full from 6 (the owner, 26 Nov 2026, of three samples at 20:30 on 24 June: with it beginning at 6 degrees the long shadows before it were as dark as noon's and the valley floor was nearly black). Each gain multiplies sun.direct or sun.ambient.",
+  "golden_deg": [0.0, 14.0],
+  "golden_full_deg": 6.0,
   "blue_deg": [-6.0, 0.0],
   "night_deg": -6.0,
   "day_tint": [1.0, 0.95, 0.84],
