@@ -17,7 +17,8 @@ walls from `walls.json`.
    piers and arches.
 3. Albedo only, as layer 5.
 4. A raised approach (a ground way drawn as a deck, layer 4 rule 1) stands on an abutment: its two sides from the
-   deck's edges down into the terrain, in stone. A tunnel portal under a deck is cut to the deck's underside (layer 4).
+   deck's edges down into the terrain, in stone; not on or within 5 m of a rock face, where a side would hang down
+   the cliff as a sheet of masonry (the owner, 26 Nov 2026: "does not make sense"; layer 1 rule 1). A tunnel portal under a deck is cut to the deck's underside (layer 4).
 
 **Checks.**
 - L6.1 (gate) Every bridge edge of the graph in the area has its deck sides drawn (≥ 95% of its length), and

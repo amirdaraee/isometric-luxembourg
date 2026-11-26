@@ -30,9 +30,10 @@ from v2.layers.common import (C30, CLASS, R2, S30, VIEW, cam, grain, pal, projec
 from v2.layers.raster import HeightField, bary, raster_ellipsoids, raster_tris, terrain_scan
 
 # ground classes, lowest priority first (layer-01-ground.md rule 1); k byte = index
-# "rock" is not an OSM class: it is the scene's cliff cells (terrain class 2), whatever the land use says of them
+# "rock" and "drystone" are not OSM classes: they are a rock face (cliffs.rock_zone, from the scene's cliff cells) and
+# a low face on it (a terrace's wall), whatever the land use says of them
 GROUND_CLASSES = ["none", "paved", "buildsite", "railground", "parking", "square", "grass", "cemetery", "garden",
-                  "meadow", "scrub", "wood", "pitch", "water", "rock"]
+                  "meadow", "scrub", "wood", "pitch", "water", "rock", "drystone"]
 GREEN = {"grass", "cemetery", "garden", "meadow", "scrub", "wood", "pitch"}
 URBAN = {"residential", "commercial", "retail", "industrial", "construction", "railway", "education", "religious",
          "civic", "institutional", "garages", "military"}
@@ -283,6 +284,55 @@ class Renderer:
             self._tcache[key] = r
         return self._tcache[key]
 
+    @cached_property
+    def rock_grids(self):
+        """On the terrain's grid: where a rock face is (cliffs.rock_zone), and where the face is a low one."""
+        from v2.config import params
+        from v2.layers import cliffs
+        T = self.scene.terrain
+        step = float(T["step"])
+        zone = cliffs.rock_zone(T["cls"], T["slope"], step, params()["terrain"]["steep_deg"])
+        low = cliffs.face_height(T["mnt"], step) < cliffs.LOW_FACE_M
+        r = max(int(round(cliffs.ZONE["wall_reach_m"] / step)), 1)
+        yy, xx = np.ogrid[-r:r + 1, -r:r + 1]
+        near = ndimage.binary_dilation(zone, structure=xx * xx + yy * yy <= r * r)
+        return zone, zone & low, near
+
+    def near_rock(self, e, n):
+        """True at world points within cliffs.ZONE["wall_reach_m"] of a rock face (in plan): a wall there is part of
+        the face and is not drawn as a wall."""
+        near = self.rock_grids[2]
+        gi, gj = self.hf.ij(np.asarray(e, float), np.asarray(n, float))
+        ci = np.clip(np.round(np.nan_to_num(gi)).astype(int), 0, near.shape[0] - 1)
+        cj = np.clip(np.round(np.nan_to_num(gj)).astype(int), 0, near.shape[1] - 1)
+        return near[ci, cj]
+
+    @cached_property
+    def rock_soft(self):
+        """The rock face and the low faces as smooth fields on the terrain's grid (grid.soft_mask, over
+        cliffs.ZONE["edge_m"]): a face's border is a smooth line and not the grid's staircase (the owner, 26 Nov
+        2026, of a cliff's saw-toothed top: "what about the rough edges")."""
+        from v2.data.scene.grid import soft_mask
+        from v2.layers import cliffs
+        T = self.scene.terrain
+        step = float(T["step"])
+        s = cliffs.ZONE["edge_m"] / step
+        return (soft_mask(self.rock_grids[0], s),
+                soft_mask(cliffs.face_height(T["mnt"], step) < cliffs.LOW_FACE_M, s))
+
+    def rock_face_en(self, e, n):
+        """(rock face, low face) at world points, in plan."""
+        from v2.data.scene.grid import read_soft
+        zf, lf = self.rock_soft
+        gi, gj = self.hf.ij(np.asarray(e, float), np.asarray(n, float))
+        rock = read_soft(zf, gi, gj)
+        return rock, rock & read_soft(lf, gi, gj)
+
+    def rock_at(self, t):
+        """(rock face, low face) at each pixel of a terrain scan; False off the area."""
+        rock, low = self.rock_face_en(t["e"], t["n"])
+        return rock & t["inarea"], low & t["inarea"]
+
     def terrain_class(self, t):
         """The scene's terrain class (0 ground, 1 steep, 2 cliff) at each pixel of a terrain scan; 0 off the area."""
         T = self.scene.terrain
@@ -369,8 +419,12 @@ class Renderer:
             sub = k[un]
             sub[vegetated(gc, t["e"][un], t["n"][un])] = GROUND_CLASSES.index("grass")
             k[un] = sub
-        # bare rock: the scene's cliff cells (slope >= 60 degrees with a drop), except under water
-        k[m & (self.terrain_class(t) == 2) & (k != GROUND_CLASSES.index("water"))] = GROUND_CLASSES.index("rock")
+        # bare rock: a rock face from its top to its foot (cliffs.rock_zone: the scene's cliff cells, the steep cells
+        # beside them and the small gaps between them), except under water
+        rockface, lowface = self.rock_at(t)
+        rockface &= m & (k != GROUND_CLASSES.index("water"))
+        k[rockface] = GROUND_CLASSES.index("rock")
+        k[rockface & lowface] = GROUND_CLASSES.index("drystone")
         lut = np.zeros((len(GROUND_CLASSES), 3))
         for i, c in enumerate(GROUND_CLASSES[1:], 1):
             lut[i] = pal("water", "river") if c == "water" else pal("ground", c)
@@ -379,6 +433,13 @@ class Renderer:
         # the classes' drawn detail (paving, lawns, rock), from each pixel's place on the terrain: never from light
         PX, PY = np.meshgrid(px, py)
         rgb[m] = detail.ground_detail(rgb[m], k[m], GROUND_CLASSES, t["e"][m], t["n"][m], t["z"][m], PX[m], PY[m])
+        # rock: v1's blocky rock, uneven; a low face (a terrace's wall) is dry stone (cliffs.py)
+        from v2.layers import cliffs
+        hi_, lo_ = rockface & ~lowface, rockface & lowface
+        if hi_.any():
+            rgb[hi_] = cliffs.rock(t["e"][hi_], t["n"][hi_], t["z"][hi_])
+        if lo_.any():
+            rgb[lo_] = cliffs.dry_stone(t["e"][lo_], t["n"][lo_], t["z"][lo_])
         # class borders: 1 px soft ink (40%) where the class changes to the right or below
         edge = np.zeros(m.shape, bool)
         edge[:, :-1] |= (k[:, :-1] != k[:, 1:]) & m[:, :-1] & m[:, 1:]
@@ -397,7 +458,13 @@ class Renderer:
     def walls_geo(self):
         if "relief" in self.omit:
             return G.Mesh().done()
-        return G.wall_mesh(self.scene, poly=self.scene.polygon, ground=self.hf.sample)
+        return G.wall_mesh(self.scene, poly=self.scene.polygon, ground=self.hf.sample, on_face=self.wall_on_face)
+
+    def wall_on_face(self, e, n, step_m):
+        """Along one wall sampled every step_m: the samples that are part of a rock face and not drawn as a wall
+        (cliffs.wall_on_face)."""
+        from v2.layers import cliffs
+        return cliffs.wall_on_face(self.near_rock(e, n), step_m)
 
     def relief(self, tile) -> LayerTile:
         """A multiply layer: form shading from a fixed north-west light (never the sun), capped so flat ground is
@@ -419,6 +486,9 @@ class Renderer:
             slope = np.minimum(np.degrees(np.arccos(np.clip(n[..., 2], -1, 1))), raw)
             ramp = np.clip((slope - 3.5) / 9.0, 0, 1)        # flat (< 3 deg, with room for the normal's coding): 1
             f1 = np.clip(1 + 0.9 * (shade - light[2]) * ramp, 0.62, 1.0)
+            # a rock face carries its own form (its pillars' flanks, cliffs.py): no form shading on it
+            rockface = self.rock_at(t)[0]
+            f1 = np.where(rockface, 1.0, f1)
             fac *= f1[..., None]
             # steep and cliff classes of the scene (scene_terrain: slope >= 35 deg; cliff >= 60 deg with a drop)
             tcls = self.terrain_class(t)
@@ -434,7 +504,7 @@ class Renderer:
                 line = np.abs(phase - np.round(phase)) < 0.13
                 hatch = pal("relief", "hatch") / 255
                 rock = pal("relief", "rock") / 255
-                slope1 = steep & (tcls == 1)
+                slope1 = steep & (tcls == 1) & ~rockface         # ... and no hatching: a face is rock to its edge
                 fac = np.where(slope1[..., None], fac * (0.15 * rock + 0.85), fac)
                 h = slope1 & line
                 fac[h] = fac[h] * (0.45 + 0.55 * hatch)
@@ -455,6 +525,9 @@ class Renderer:
             got = tb >= 0
             tsel = sel[tb[got]]
             near = zb[got] < depth[got] + 1.0          # a wall stands on a step the 0.5 m terrain rounds off
+            # a wall on or beside a rock face is not drawn: the face is drawn, as rock, and is one thing (the owner,
+            # 26 Nov 2026: a wall's stonework, top and foot lines over the Bock's rock "does not make sense")
+            near &= ~self.rock_at(t)[0][got]
             gi = np.flatnonzero(got.ravel())[near]
             tt = tsel[near]
             nrm, _ = G.tri_normals(W3["V"], W3["T"])
@@ -470,9 +543,12 @@ class Renderer:
             face = np.abs(nn[:, 2]) < 0.3
             nat = natural[W3["obj"][tt]] & face
             wcol = cols[W3["col"][tt]].astype(float)
-            wcol[nat] = pal("ground", "rock") * detail.rock(wx[nat], wy[nat], wz[nat])[:, None]
+            from v2.layers import cliffs
+            if nat.any():
+                wcol[nat] = cliffs.rock(wx[nat], wy[nat], wz[nat])
             built = face & ~nat
-            wcol[built] *= detail.ashlar(np.column_stack([wx, wy, wz])[built], nn[built], seed=5)[:, None]
+            if built.any():
+                wcol[built] = cliffs.masonry(np.column_stack([wx, wy, wz])[built], nn[built])
             rgb.reshape(-1, 3)[gi] = np.clip(np.round(wcol), 0, 255)
             depth.reshape(-1)[gi] = zb.reshape(-1)[gi]
             normal.reshape(-1, 3)[gi] = nn
@@ -544,6 +620,26 @@ class Renderer:
         return [G.densify(e) for e in self.edges]
 
     @cached_property
+    def face_ways(self):
+        """The ids of the paths and steps that lie on a rock face (not a low one) along cliffs.ZONE["way_share"] or
+        more of their length. Such a way runs on a wall or a ledge the ground model does not hold; drawn on the model
+        it falls down the face or hangs before it. It is not drawn, in any layer (the owner, 26 Nov 2026, of the
+        lines and the footbridge across the Bock's rock: "what is this?"). From the terrain and the graph, which
+        every layer shares."""
+        from v2.layers.cliffs import ZONE
+        out = set()
+        for e, d in zip(self.edges, self.dense_edges):
+            if e["mode"] not in ("path", "steps") or e["structure"] in ("tunnel", "indoor", "elevator"):
+                continue
+            en = np.asarray(d["en"], float)
+            if len(en) < 2:
+                continue
+            rock, low = self.rock_face_en(en[:, 0], en[:, 1])
+            if (rock & ~low).mean() >= ZONE["way_share"]:
+                out.add(e["id"])
+        return out
+
+    @cached_property
     def surfaces(self):
         """Per drawn piece of an edge: (index, style, polygon of its surface, centre line, on a deck). Tunnels and
         indoor ways are not drawn. An edge is cut where it leaves the terrain for a deck (geometry.pieces)."""
@@ -551,7 +647,7 @@ class Renderer:
             return []
         out = []
         for i, e in enumerate(self.edges):
-            if e["structure"] in ("tunnel", "indoor", "elevator") or e["mode"] == "elevator":
+            if e["structure"] in ("tunnel", "indoor", "elevator") or e["mode"] == "elevator" or e["id"] in self.face_ways:
                 continue
             en = np.array(self.dense_edges[i]["en"], float)
             if len(en) < 2:
@@ -582,7 +678,8 @@ class Renderer:
     def decks(self):
         if "transport" in self.omit:
             return G.Mesh().done()
-        return G.deck_mesh(self.scene, masks=self.deck_masks, edges=self.dense_edges)
+        return G.deck_mesh(self.scene, masks=self.deck_masks, edges=self.dense_edges,
+                           edge_ok=lambda e: e["id"] not in self.face_ways)
 
     @cached_property
     def portals(self):
@@ -739,14 +836,21 @@ class Renderer:
             on = np.zeros(m.shape, bool)
             on[m] = cv.sample(chas, t["u"][m], t["f"][m]) > 0
             # a way's surface is at the way's own height: where its width in plan reaches over the face of a cliff
-            # or a wall (the scene's cliff cells) the ground there is metres above or below the way, and the face
-            # stays rock (a metre of plan is many metres of face). Steps and paths cut into a face are at their
-            # own height and stay.
-            face = on & (self.terrain_class(t) == 2)
+            # or a wall (a rock face, top to foot: rock_at) the ground there is metres above or below the way, and
+            # the face stays rock (a metre of plan is many metres of face). Steps and paths cut into a face are at
+            # their own height and stay.
+            face = on & self.rock_at(t)[0]
             if face.any():
                 fid = cv.sample(cids, t["u"][face], t["f"][face]).astype(np.uint32)
                 off = self._off_the_way((fid >> 8).astype(np.int64) - 1, t["e"][face], t["n"][face], t["z"][face])
                 on.reshape(-1)[np.flatnonzero(face.ravel())[off]] = False
+            # a path or steps on a rock face (not a low one) are not drawn: such a way runs on a wall or a ledge the
+            # ground model does not hold, and on the model it falls down the face (the Bock's top paths, 26 Nov 2026)
+            rockface, lowface = self.rock_at(t)
+            foot = on & rockface & ~lowface
+            if foot.any():
+                fc = cv.sample(cids, t["u"][foot], t["f"][foot]).astype(np.uint32) & 255
+                on.reshape(-1)[np.flatnonzero(foot.ravel())[np.isin(fc, [CLASS["path"], CLASS["steps"]])]] = False
             rgb[on] = cv.sample(crgb, t["u"][on], t["f"][on])
             ids[on] = cv.sample(cids, t["u"][on], t["f"][on]).astype(np.uint32)
             depth[on] = t["depth"][on]
@@ -1035,7 +1139,9 @@ class Renderer:
     def structure_meshes(self):
         if "structures" in self.omit:
             return []
-        return [G.structures_mesh(self.scene, masks=self.deck_masks, terrain=self.hf.sample, dense=self.dense_edges)]
+        return [G.structures_mesh(self.scene, masks=self.deck_masks, terrain=self.hf.sample, dense=self.dense_edges,
+                                  edge_ok=lambda e: e["id"] not in self.face_ways,
+                                  on_face=self.near_rock)]          # from the terrain, which every layer shares
 
     def structures(self, tile) -> LayerTile:
         """Placeholder for layer 6: bridge sides, parapets, the viaducts' slab, arches and piers, the lift."""

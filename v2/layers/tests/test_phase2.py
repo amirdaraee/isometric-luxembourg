@@ -77,19 +77,17 @@ def test_drawn_detail_is_even_and_knows_no_side():
     e, n, z = rng.uniform(0, 400, 200_000), rng.uniform(0, 400, 200_000), rng.uniform(250, 300, 200_000)
     t, j = detail.slabs(e, n, 1.5, 0.75, 0.2, joint=0.07, tone=0.035, seed=1)
     assert abs(np.median(t) - 1) < 0.005 and (j > 0.5).mean() < 0.25
-    r = detail.rock(e, n, z)
-    assert np.array_equal(r, detail.rock(e, n, z)) and (r <= 1.2).all() and (r > 0.3).all()
     assert abs(np.median(detail.vnoise(e, n, 3.0, 5)) - 0.5) < 0.02
     # a line 0.06 m wide seen by samples 0.125 m apart covers about half of the samples it passes through
     c = detail.soft_band(np.arange(0, 100, 0.125) + 0.01, 1.0, 0.06, 0.125)
     assert abs(c.mean() - 0.06) < 0.005 and c.max() <= 0.5 + 1e-9
-    # the ground's detail keeps each class's median within 3% of its colour (5% on rock, whose beds are drawn dark)
+    # the ground's detail keeps each class's median within 3% of its colour (rock is not drawn here: cliffs.py)
     names = ["none", "paved", "square", "grass", "garden", "rock", "wood"]
     px, py = rng.integers(0, 4000, 200_000), rng.integers(0, 4000, 200_000)
     for i, c in enumerate(names[1:], 1):
         rgb = np.full((len(e), 3), 180.0)
         out = detail.ground_detail(rgb, np.full(len(e), i), names, e, n, z, px, py)
-        assert abs(np.median(out[:, 1]) / 180 - 1) < (0.05 if c == "rock" else 0.03), c
+        assert abs(np.median(out[:, 1]) / 180 - 1) < (1e-9 if c == "rock" else 0.03), c
 
 
 def test_crown_lobes_stay_inside_the_measured_crown():

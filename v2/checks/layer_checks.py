@@ -189,7 +189,12 @@ def check_layers(ctx):
 
 
 def _l22(rep, R, rel, P):
+    """Every wall is drawn: as the relief layer's wall, or, where it stands on or beside a rock face (within
+    cliffs.ZONE["wall_reach_m"]), as the face (layer 1's rock or dry stone: a rock face is one thing,
+    layer-02-relief.md rule 2)."""
     relief = TileCache(rel, "relief")
+    ground = TileCache(rel, "ground")
+    FACE = (GROUND_CLASSES.index("rock"), GROUND_CLASSES.index("drystone"))
     sc = R.scene
     bad, total, ex = 0, 0, []
     for wi, w in enumerate(sc.walls):
@@ -220,13 +225,20 @@ def _l22(rep, R, rel, P):
         g = R.hf.sample(e, n)
         z = np.where(np.isfinite(g), np.maximum(z, g), z)            # as drawn: never under the terrain at the line
         px, py, d = project(e, n, z)
-        drawn = np.zeros(len(e), bool)
+        # on or beside a rock face, and a short piece left over there: drawn as the face (as the mesh decides it,
+        # on its own samples every half metre along the whole wall)
+        sm = np.r_[np.arange(0, L, 0.5), L]
+        face = R.wall_on_face(np.interp(sm, seg, en[:, 0]), np.interp(sm, seg, en[:, 1]), 0.5)
+        drawn = face[np.clip(np.rint(s[inside] / 0.5).astype(int), 0, len(face) - 1)].copy()
         seen = np.zeros(len(e), bool)
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 ks = relief.lookup(px + dx, py + dy, "k")
                 ds = relief.lookup(px + dx, py + dy, "depth")
+                gs = ground.lookup(px + dx, py + dy, "k")
                 for i in range(len(e)):
+                    if gs[i] is not None and gs[i] in FACE:
+                        drawn[i] = True
                     if ks[i] is None:
                         continue
                     if ks[i] == 3:
@@ -323,7 +335,7 @@ def abutment_samples(sc, span, step):
 
 
 def abutment_continuity(sc, get, terrain, span, step, max_px, graze_min=0.15, detail=False, ground_depth=None,
-                        skip_ways=()):
+                        skip_ways=(), not_drawn=None):
     """L4.6 on transport tiles (`get(tx, ty)` -> dict with depth and ids, or None; `terrain(e, n)` the drawn terrain).
 
     The drawn way at each sample is found where it can be: at its profile (a deck) or on the terrain (a drape); a
@@ -331,7 +343,8 @@ def abutment_continuity(sc, get, terrain, span, step, max_px, graze_min=0.15, de
     fails as a *gap* when neither is drawn (and no nearer transport surface covers both), and as a *step* when the
     drawn height changes faster than both the profile and the terrain by more than max_px pixels and stays changed
     (medians of 4 samples, 1 m, either side), or the ways meeting at the node are drawn at heights apart by more. Samples where the way's top is seen edge-on or not at all (cos < graze_min)
-    are not judged. Heights for the steps are read at the sample's own pixel only (a neighbouring pixel of a sloping
+    are not judged, nor are samples of a way the layer leaves out by its own rule (`not_drawn(rows)`: a path on a
+    rock face, layer-04-transport.md rule 1): they are counted apart. Heights for the steps are read at the sample's own pixel only (a neighbouring pixel of a sloping
     surface shows another point of it); the neighbours count for the gap test, as L4.1's edge rule."""
     from v2.config.camera import camera
     mpp = camera()["mpp"]
@@ -397,6 +410,8 @@ def abutment_continuity(sc, get, terrain, span, step, max_px, graze_min=0.15, de
     state[seen_any] = 1
     state[(state == 0) & covered] = 2
     state[(state == 0) & (rows[:, 7] < graze_min)] = 3
+    if not_drawn is not None and nrow:
+        state[(state == 0) & np.asarray(not_drawn(rows), bool)] = 4
     # steps: along each run (from the node outwards) the drawn height may rise or fall as fast as the way's profile or
     # the terrain it is draped on (it follows one or the other, and passes from one to the other where they meet);
     # a step is a change beyond both, that stays: medians of the next `w` samples against the previous `w` (one
@@ -439,7 +454,7 @@ def abutment_continuity(sc, get, terrain, span, step, max_px, graze_min=0.15, de
     ex.sort(key=lambda x: -(x["gaps"] + x["steps"]))
     if detail:
         return rows, state, step_bad, drawn
-    return {"samples": int((state != 2).sum() - (state == 3).sum()), "gaps": int((state == 0).sum()),
+    return {"samples": int(np.isin(state, (0, 1)).sum()), "gaps": int((state == 0).sum()), "ruled_out": int((state == 4).sum()),
             "edge_px": int(edge_px.sum()), "excepted": n_skipped,
             "steps": int(step_bad.sum()), "hidden": int((state == 2).sum()), "edge_on": int((state == 3).sum()),
             "worst_step_px": round(worst, 2), "nodes": len(np.unique(rows[:, 1])), "bad_nodes": len(ex), "examples": ex}
@@ -454,11 +469,22 @@ def _l46(rep, R, rel, P):
         return None if t is None else t["depth"]
     from v2.checks.data_checks import excepted
     skip = excepted("L4.6")
+    edges = R.scene.graph["edges"]
+
+    def on_a_face(rows):
+        """Samples the transport layer leaves out by rule: of a path or steps that lie on a rock face (not drawn at
+        all: Renderer.face_ways), or at a place on a rock face (a path's surface is not drawn down a face)."""
+        ee = [edges[int(i)] for i in rows[:, 0]]
+        foot = np.array([e["mode"] in ("path", "steps") for e in ee], bool)
+        whole = np.array([e["id"] in R.face_ways for e in ee], bool)
+        rock, low = R.rock_face_en(rows[:, 2], rows[:, 3])
+        return whole | (foot & rock & ~low)
     res = abutment_continuity(R.scene, tr.get, R.hf.sample, P["abutment_span_m"], P["abutment_step_m"],
-                              P["abutment_step_px"], ground_depth=ground_depth, skip_ways=set(skip))
+                              P["abutment_step_px"], ground_depth=ground_depth, skip_ways=set(skip), not_drawn=on_a_face)
     rep.at_most("L4.6", f"samples within {P['abutment_span_m']} m of the {res['nodes']} bridge ends in the area where the "
                 f"drawn way has a gap, or a step over {P['abutment_step_px']} px (of {res['samples']}; {res['hidden']} under "
-                f"another deck, {res['edge_on']} seen edge-on; largest step {res['worst_step_px']} px)",
+                f"another deck, {res['edge_on']} seen edge-on, {res['ruled_out']} of paths on a rock face, which are not "
+                f"drawn; largest step {res['worst_step_px']} px)",
                 res["gaps"] + res["steps"], 0, res["examples"])
     rep.info("L4.6b", "samples of ways excepted from L4.6 (v2/data/exceptions.json)",
              {"samples": res["excepted"], "ways": sorted(f"way/{w}" for w in skip)})

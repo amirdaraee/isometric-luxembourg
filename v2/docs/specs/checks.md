@@ -138,7 +138,7 @@ Stages of the build graph (`python -m v2.build test g1`), each a gate; threshold
 |---|---|---|
 | `check_layers` (`v2/checks/layer_checks.py`) | L1.1, L1.2, L2.1, L2.2, L3.1, L4.1, L4.3, L4.6, L4.7, L8.1-L8.3, P-1 | 7 |
 | `check_independence` (`g1_checks.py`) | C1a every layer re-rendered without each other layer's own inputs is identical; C1b/C1c the tiles are the renderer's | 4 |
-| `check_shadows` | L5.1/L9.2 shadow detector (median luminance of a material in the 3D shadow of the photo's sun vs lit next to it), L9.0, L9.1 (08, 13, 19 h), L2.3 | 5 |
+| `check_shadows` | L5.1/L9.2 shadow detector (median luminance of a material in the 3D shadow of the photo's sun vs lit next to it, inside surfaces: not within 2 px of a change of object, class, depth or, off the ground layer, direction), L9.0, L9.1 (08, 13, 19 h), L2.3 | 5 |
 | `check_seams` | v1's seam rule per colour layer at the tiles' scale; L8.4 depth across borders against the tiles' middle lines | seams |
 | `check_vehicles` | L4.2, L12.4 on drawn road/track over a simulated day; L12.1a none drawn in a tunnel past its portal; C4 probes at every portal, bridge and way under a deck vs the exact geometry; L12.2 heights between frames; L12.3 | 7, 8 |
 | `check_no_cars` (`owl_detect.py`) | OWLv2 (v1's detector, local cache, offline) on every colour layer tile: 0 vehicles >= 0.1 | 9 |

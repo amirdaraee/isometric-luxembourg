@@ -92,7 +92,8 @@ Vegetated ground where OSM classes nothing (owner, 23 Nov 2026: v1's ground; lay
    patches, a square keeps its planter, and a street tree's crown does not turn its pavement into lawn.
 4. Patches and holes under 20 m² are dropped.
 
-`groundcover.npz`: `veg`, `photo` (a tile there), `e0`, `n0`, `step`. Limits: the photo is of a dry summer, so a
+`groundcover.npz`: `veg`, `photo` (a tile there), `e0`, `n0`, `step`. `vegetated(grid, e, n)` reads a patch's
+border as a smooth line between the cells (layer-01-ground.md rule 2), not cell by cell. Limits: the photo is of a dry summer, so a
 straw-coloured lawn is not told from paving and stays paved; the photo on disk covers v1's extent, not yet the
 whole commune (GC1 fails where it does not).
 

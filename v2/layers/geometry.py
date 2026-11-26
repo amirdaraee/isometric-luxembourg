@@ -375,7 +375,8 @@ def box(M, c, ax, w, l, z0, z1, cls, obj, col):
         M.quad(lo[k], lo[(k + 1) % 4], hi[(k + 1) % 4], hi[k], cls, obj, col)
 
 
-def structures_mesh(scene, edge_ok=lambda e: True, thickness=1.0, parapet=1.0, masks=None, terrain=None, dense=None):
+def structures_mesh(scene, edge_ok=lambda e: True, thickness=1.0, parapet=1.0, masks=None, terrain=None, dense=None,
+                    on_face=None):
     import shapely
     st = scene.structures
     M = Mesh()
@@ -422,7 +423,12 @@ def structures_mesh(scene, edge_ok=lambda e: True, thickness=1.0, parapet=1.0, m
                 for A in (L, R):
                     B = A.copy()
                     B[:, 2] = np.minimum(terrain(A[:, 0], A[:, 1]), A[:, 2]) - 0.3
-                    strip(M, A, B, CLASS["structure"], i, "structures.stone")
+                    # not down a rock face (`on_face`): a way along a cliff's edge has the cliff under its side, and
+                    # the cliff is drawn as rock, not as a sheet of masonry hanging from the way
+                    keep = ~on_face(A[:, 0], A[:, 1]) if on_face is not None else np.ones(len(A), bool)
+                    for ok, j0, j1 in pieces(keep):
+                        if ok and j1 > j0:
+                            strip(M, A[j0:j1 + 1], B[j0:j1 + 1], CLASS["structure"], i, "structures.stone")
     for vi, v in enumerate(st["viaducts"]):
         if v.get("status") != "ok" or not v.get("deck"):
             continue
@@ -492,9 +498,10 @@ def wall_tops(w, P, top, ground=None):
     return np.where(np.isfinite(g), np.maximum(top, g), top)
 
 
-def wall_mesh(scene, min_drop=1.5, top_width=0.6, poly=None, ground=None):
+def wall_mesh(scene, min_drop=1.5, top_width=0.6, poly=None, ground=None, on_face=None):
     """OSM walls (retaining, city walls, cliffs, embankments) with a measured drop: vertical faces foot to top,
-    and a flat top band (the ink edge)."""
+    and a flat top band (the ink edge). `on_face(e, n, step_m)` marks the samples along a wall that are part of a
+    rock face: they are not built (layer-02-relief.md rule 2)."""
     import shapely
     M = Mesh()
     for wi, w in enumerate(scene.walls):
@@ -528,6 +535,8 @@ def wall_mesh(scene, min_drop=1.5, top_width=0.6, poly=None, ground=None):
         foot = np.minimum(foot, top - 0.2)
         top = wall_tops(w, P, top, ground)
         inside = shapely.contains_xy(poly, P[:, 0], P[:, 1]) if poly is not None else np.ones(len(P), bool)
+        if on_face is not None:
+            inside &= ~on_face(P[:, 0], P[:, 1], 0.5)
         # the stretches inside the area only
         k = 0
         while k < len(P):

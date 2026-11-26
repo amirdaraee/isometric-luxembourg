@@ -149,14 +149,20 @@ def check_shadows(ctx):
             near = ndimage.binary_dilation(sh, iterations=24) & ~sh & ok
             Lm = lum(t["rgb"])
             # surface edges carry the drawing's ink lines (and the coding's ringing): only the inside of a surface is
-            # its material's colour, so pixels within 2 px of a change of object, class, surface or depth are left out
+            # its material's colour, so pixels within 2 px of a change of object, class, surface or depth are left out.
+            # The ground is one surface whose direction changes at every pixel of a rough slope: there a change of
+            # direction is no edge (26 Nov 2026: by direction 0.9% of the rock's pixels were left, 16,000 of 1.7
+            # million, and the median of so few pixels of a material drawn in three flat tones fell on one tone in
+            # the shadow and on the next beside it, 7% apart; over all of them the two medians differ by 0.2%)
             idk = t["ids"].astype(np.int64) if "ids" in t else t["k"].astype(np.int64)
             dd = np.where(ok, t["depth"], 1e9)
             nz = np.round(t["normal"] * 20)
             edge = np.zeros(ok.shape, bool)
             for a_, b_ in (((slice(None), slice(None, -1)), (slice(None), slice(1, None))),
                            ((slice(None, -1), slice(None)), (slice(1, None), slice(None)))):
-                ch = (idk[a_] != idk[b_]) | (np.abs(dd[a_] - dd[b_]) > 0.5) | (nz[a_] != nz[b_]).any(-1) | (ok[a_] != ok[b_])
+                ch = (idk[a_] != idk[b_]) | (np.abs(dd[a_] - dd[b_]) > 0.5) | (ok[a_] != ok[b_])
+                if L != "ground":
+                    ch |= (nz[a_] != nz[b_]).any(-1)
                 edge[a_] |= ch
                 edge[b_] |= ch
             inner = ok & ~ndimage.binary_dilation(edge, iterations=2)
