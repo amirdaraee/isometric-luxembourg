@@ -28,6 +28,8 @@ needed (layer 5 covers them), but the ground is complete under them so a buildin
    stick to reality because you don't have enough data on the reality". So on or within 5 m of a rock face no
    wall is drawn (layer 2), no side of a raised way hangs down it (layer 6), and a way's surface is not painted
    down it (layer 4): the face is rock.
+   - **quay**, a river's stone edge: the outer 0.7 m of the river's own area, along every bank (layer 3 rule 4;
+     the owner, 26 Nov 2026). It is plain pale stone (`ground.quay`), on the water's level.
 2. Colour = the class's palette colour, with paper grain (±3% luminance, fixed seed per tile position, seamless),
    and the class's drawn detail (phase 3, `v2/layers/detail.py`): stone slabs on paved land, setts on squares,
    gravel on car parks, rail ground and building sites, patchy lawns with flecks of blades, flowers in gardens, mown
@@ -43,6 +45,14 @@ needed (layer 5 covers them), but the ground is complete under them so a buildin
    of the redraw from the photo the owner said "looks good", 26 Nov 2026.) Dry stone is level courses of small
    stones, patchy. Nothing green is drawn on a face by rule: plants are where the ground's classes and the tree
    survey put them.
+   **The casemates' openings** (the owner, 26 Nov 2026: of two samples, the openings without the wall on top).
+   The photo shows a row of dark openings in the Bock's face. An opening is drawn on a rock face where the line
+   of a gun branch of the casemates' hand model (`v2/data/structures/casemates.json`: 25 branches, 13 facing
+   south, as published) comes out of the rock: an arched hole 1.8 m wide, its sill 0.4 m over the branch's floor,
+   2.1 m high at its middle, in one dark brown (`relief.casemate_opening`), looked for from 3 m before the
+   branch's outer end to 12 m beyond it (`cliffs.gun_branches`, `cliffs.openings`). The model is placed by hand,
+   not surveyed, so an opening is about where a real one is, not exactly. The grey wall on top of the Bock in the
+   photo is not drawn: no data says where it is, and placed by rule it came out thin and uneven.
    **A border is a smooth line** (the owner, 26 Nov 2026, of a cliff's saw-toothed top: "what about the rough
    edges"). Where a class comes from a grid (the rock face and the low face from the terrain's 0.5 m cells, the
    photo's vegetated ground from its cells), the grid is read as a smooth field between its cells and cut at a
@@ -64,6 +74,7 @@ needed (layer 5 covers them), but the ground is complete under them so a buildin
   calls; it is pale, mostly flat tone, with no ink and with clefts few and far apart (a median of over 8 m
   along a level line), each opening and closing up the face; a face is rock from top to foot and a ledge stays;
   a low face is told from a cliff; a border read between the cells has no teeth, has not moved, and a face one
-  cell wide is kept.
+  cell wide is kept; a casemate's opening is an arch on its branch's line at its floor's height, and nowhere
+  else.
 - Unit test (phase 3): each pattern keeps its class's median within 3% of the class colour and is the
   same on every call (`test_drawn_detail_is_even_and_knows_no_side`). L1.2 and the shadow detector gate the result.

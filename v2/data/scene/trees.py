@@ -8,7 +8,11 @@ Rules, in order:
   3. crown radius: the survey's (crown_scale * crown_mean / 2; the POC found measured crowns read too big) widened to
      the tree's shape by species and age (shape_radius: the LiDAR crowns are a few metres wide on trees 15-25 m
      tall, which draws poplars; the owner asked for rounder crowns at the measured height, 9 Nov 2026); thin it so
-     that at most max_overlap_share of the crown disc lies over buildings or water: r is reduced until it does;
+     that at most max_overlap_share of the crown disc lies over buildings: r is reduced until it does, but never
+     under min_thin_share of the shaped radius (`thin`). Water does not thin a crown: a tree on a bank hangs over
+     the river. (Until 26 Nov 2026 water thinned crowns too, and with no least width: of the test area's 265
+     thinned trees 222 stood by the water and 51 were left with a crown under 0.6 m, drawn as bare poles; one
+     stood in the Alzette by Neumuenster Abbey. The owner, 25 Nov 2026: "the rivers are not good".)
   4. the base height is the terrain at the point (LiDAR ground); the tree is drawn at drawn_height_scale of its
      measured height (the owner, 24 Nov 2026: at the measured height the trees were too big beside the buildings;
      70% of the height, width and place kept). Rules 1 to 3 use the measured height.
@@ -42,6 +46,30 @@ def overlap_share(e, n, r, blockers, tree=None):
         a = shapely.area(shapely.intersection(discs[di], np.asarray(blockers, dtype=object)[bi]))
         out = np.bincount(di, weights=a, minlength=len(e)) / shapely.area(discs)
     return np.where(r > 0, out, 0.0)
+
+
+def thin(e, n, r, blockers, p):
+    """Crown radii thinned for the blocker polygons (buildings): the largest radius, at most r, with at most
+    max_overlap_share of the crown disc over them; never under min_thin_share of r (a crown thinned to nothing
+    is a pole: a tree against a wall keeps a crown, which leans over the roof). Returns (radius, thinned, held):
+    which crowns were narrowed, and which of them are held at their least width and still lie over a building by
+    more than the share."""
+    e, n, r = np.asarray(e, float), np.asarray(n, float), np.asarray(r, float).copy()
+    thinned, held = np.zeros(len(r), bool), np.zeros(len(r), bool)
+    if not len(r) or not len(blockers):
+        return r, thinned, held
+    tree = STRtree(blockers)
+    k = np.flatnonzero(overlap_share(e, n, r, blockers, tree) > p["max_overlap_share"])
+    lo, hi = np.zeros(len(k)), r[k].copy()
+    for _ in range(12):  # the largest radius whose overlap is within the limit (bisection, all at once)
+        mid = (lo + hi) / 2
+        ok = overlap_share(e[k], n[k], mid, blockers, tree) <= p["max_overlap_share"]
+        lo = np.where(ok, mid, lo); hi = np.where(ok, hi, mid)
+    least = p["min_thin_share"] * r[k]
+    thinned[k] = True
+    held[k] = lo < least
+    r[k] = np.maximum(lo, least)
+    return r, thinned, held
 
 
 def shape_radius(h, r_survey, typ, e, n, p, names, width=None):
@@ -163,19 +191,8 @@ def build(ctx):
     r, _ = shape_radius(Hm, r_survey, typ, E, N, p, names, width=widths)
     r_shape = r.copy()
     widened = int((r > r_survey + 1e-6).sum())
-    blockers = list(fps) + list(water)
-    tree = STRtree(blockers) if blockers else None
-    thinned = 0
-    if tree is not None:
-        share = overlap_share(E, N, r, blockers, tree)
-        k = np.flatnonzero(share > p["max_overlap_share"])
-        thinned = len(k)
-        lo, hi = np.zeros(len(k)), r[k].copy()
-        for _ in range(12):  # the largest radius whose overlap is within the limit (bisection, all at once)
-            mid = (lo + hi) / 2
-            ok = overlap_share(E[k], N[k], mid, blockers, tree) <= p["max_overlap_share"]
-            lo = np.where(ok, mid, lo); hi = np.where(ok, hi, mid)
-        r[k] = lo
+    r, was_thinned, held = thin(E, N, r, list(fps), p)
+    thinned = int(was_thinned.sum())
     terrain = Grid.load(ctx.dep("scene_terrain") / "terrain.npz", "mnt")
     base = terrain.sample(E, N)
     base = np.where(np.isfinite(base), base, T["terrain"][idx])
@@ -187,7 +204,7 @@ def build(ctx):
                         species=sp.astype(np.int8), species_names=np.array(sp_names), species_rule=rule.astype(np.int8),
                         species_rules=np.array(tree_species.RULES), moved_off_a_face=moved)
     hw = drawn_height(Hm, p) / np.maximum(2 * r, 1e-3)
-    return {"trees": int(len(idx)), "dropped": dropped, "moved_off_a_face": int(moved.sum()), "crowns_thinned": thinned, "crowns_widened": widened,
+    return {"trees": int(len(idx)), "dropped": dropped, "moved_off_a_face": int(moved.sum()), "crowns_thinned": thinned, "crowns_held_at_least_width": int(held.sum()), "crowns_widened": widened,
             "height_over_width_median": float(np.median(hw)) if len(idx) else 0,
             "by_type": {names[t]: int((typ == t).sum()) for t in range(len(names))},
             "register": {"trees": register["trees"], "with_a_drawn_species": register["drawn"],

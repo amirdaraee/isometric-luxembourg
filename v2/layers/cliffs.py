@@ -52,6 +52,48 @@ ZONE = {"reach_m": 2.5, "gap_m2": 60.0, "height_r_m": 2.5,
                                        # as a wall; way_share: a path lying on a face along this share of its length is not drawn
 
 
+# a casemate's opening in a rock face (metres): half its width, its sill over the gallery's floor, its upright sides'
+# height, its arch's rise; and how far before and beyond the branch's outer end its line is followed to the face
+OPENING = {"half_m": 0.9, "sill_m": 0.4, "side_m": 1.2, "arch_m": 0.9, "from_m": -3.0, "to_m": 12.0}
+
+
+def gun_branches(doc):
+    """The gun branches of a casemates hand model (v2/data/structures/casemates.json): for each, its outer end
+    (E, N), its direction outward (unit, in plan) and its floor's height. The outer end is the one farther from the
+    main gallery's line. The model is approximate, placed by hand against the terrain: so are the openings."""
+    G = doc.get("galleries", [])
+    main = [g for g in G if g.get("kind") == "gallery"]
+    if not main:
+        return []
+    m = np.asarray(main[0]["en"], float)
+    ax = (m[-1] - m[0]) / np.linalg.norm(m[-1] - m[0])
+    out = []
+    for g in G:
+        if g.get("kind") != "branch":
+            continue
+        en = np.asarray(g["en"], float)
+        d = [abs((p - m[0])[0] * ax[1] - (p - m[0])[1] * ax[0]) for p in (en[0], en[-1])]
+        far, near = (en[-1], en[0]) if d[1] > d[0] else (en[0], en[-1])
+        z = g["z"]
+        out.append((far, (far - near) / np.linalg.norm(far - near), float(z[0] if isinstance(z, list) else z)))
+    return out
+
+
+def openings(e, n, z, branches, p=OPENING):
+    """True at the world points (on a rock face) that lie in a casemate's opening: an arched hole on the line of
+    a gun branch, where that line comes out of the rock (the owner, 26 Nov 2026, of two samples: the openings,
+    without the wall on top). A function of the point's place only."""
+    e, n, z = (np.asarray(v, float) for v in (e, n, z))
+    hole = np.zeros(len(e), bool)
+    for far, u, zf in branches:
+        de, dn = e - far[0], n - far[1]
+        along, across = de * u[0] + dn * u[1], np.abs(de * u[1] - dn * u[0])
+        h = z - zf - p["sill_m"]
+        top = p["side_m"] + p["arch_m"] * np.sqrt(np.clip(1 - (across / p["half_m"]) ** 2, 0, 1))
+        hole |= (along > p["from_m"]) & (along < p["to_m"]) & (across < p["half_m"]) & (h > 0) & (h < top)
+    return hole
+
+
 def _tones(group, names):
     return np.array([pal(group, n) for n in names], float)
 

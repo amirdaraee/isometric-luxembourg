@@ -77,7 +77,7 @@ def graph() -> Graph:
                                                 "fetch_osm_ground", "fetch_osm_transport", "fetch_city_trees"),
               params=_p("trees"), code=GEO + ("v2.data.scene.tree_species",),
               raw=lambda area: [REPO / "v2/config/tree_species.json"],
-              doc="LiDAR trees, each given a species by rule, thinned over water and buildings"),
+              doc="LiDAR trees, each given a species by rule, thinned over buildings, never to a pole"),
         Stage("scene_groundcover", groundcover.build, deps=("scene_buildings", "scene_trees"), params=_p("groundcover"),
               raw=lambda area: [raw_dir() / params()["groundcover"]["ortho_dir"] / str(params()["groundcover"]["zoom"])],
               code=GEO, doc="vegetated ground where OSM is silent, classed from the orthophoto"),
@@ -158,7 +158,9 @@ def _art(area):
 
 def _layer_raw(area):
     from v2.config import CONFIG
-    return [CONFIG / "palette.json", CONFIG / "light.json", CONFIG / "camera.json", CONFIG / "tree_species.json"]
+    from v2.layers.tunnels import CASEMATES
+    return [CONFIG / "palette.json", CONFIG / "light.json", CONFIG / "camera.json", CONFIG / "tree_species.json",
+            CASEMATES]                          # the casemates' model: its gun branches' openings are drawn on the rock
 
 
 def _art_raw(area):
@@ -272,6 +274,6 @@ def phase3() -> list:
               params=lambda area: {**_art(area), "g3": params()["g3"], "tunnels": params()["tunnels"],
                                    "portal_max_from_end_m": params()["checks"]["portal_max_from_end_m"]},
               code=LAYER_CODE + ("v2.layers.tunnels", "v2.checks.framework", "v2.checks.layer_checks", "v2.checks.g1_checks"),
-              raw=lambda area: _layer_raw(area) + [T.CASEMATES] + web(area),
+              raw=lambda area: _layer_raw(area) + web(area),
               doc="tunnel view (x-ray): tubes in place and at depth, vehicles in tunnels only, the fade, toggles, portals, speed"),
     ]
