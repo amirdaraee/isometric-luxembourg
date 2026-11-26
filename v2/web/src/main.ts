@@ -106,10 +106,7 @@ async function main() {
     const L = idx.light;
     const [A, B] = await Promise.all([fetchBin("shadow_a.bin", L.height, 4), fetchBin("shadow_b.bin", L.height, 4)]);
     if (A && B) {
-      comp.setHeightMap(A, B);
-      let tmax = -1e9;
-      for (let i = 0; i < A.length; i += 4) tmax = Math.max(tmax, A[i] + A[i + 1] * 256);
-      comp.zTop = L.zbase + tmax / 100 + 80;
+      comp.setHeightMap(A, B);                 // also sets the height above which no ray is followed
       hooks.shadowsReady = true;
       dirty = true;
     }

@@ -141,8 +141,8 @@ def check_shadows(ctx):
             if ok.sum() < 100:
                 continue
             e, n, z = unproject(PX[ok], PY[ok], t["depth"][ok])
-            cast = shadow_ref(hm, e, n, z, az, el)
             nrm = t["normal"][ok]
+            cast = shadow_ref(hm, e, n, z, az, el, normal=nrm)
             away = (nrm @ sv) < 0
             sh = np.zeros(ok.shape, bool)
             sh[ok] = (cast > 0) | away
@@ -794,9 +794,11 @@ def check_viewer(ctx):
         px = meta["x0"] + np.arange(meta["W"]) + 0.5
         py = meta["y0"] + np.arange(meta["H"]) + 0.5
         PX, PY = np.meshgrid(px, py)
+        up = np.array([0.0, 0.0, 1.0])
         if "nobuildings" in name:
-            # the surface the viewer shows with the buildings off: the nearest of the other layers
+            # the surface the viewer shows with the buildings off: the nearest of the other layers, with its normal
             dep = np.full(PX.shape, np.inf)
+            nrm_all = np.tile(up, PX.shape + (1,))
             for L in COLOUR_LAYERS:
                 if L == "buildings":
                     continue
@@ -805,15 +807,22 @@ def check_viewer(ctx):
                 if L == "relief":
                     k = np.array([0 if v is None else v for v in tc.lookup(PX.ravel(), PY.ravel(), "k")]).reshape(PX.shape)
                     d = np.where(k == 3, d, np.inf)
+                nearer = np.isfinite(d) & ((d <= dep) if L == "relief" else (d < dep))     # a relief wall wins a tie (GROUND_FS)
+                if nearer.any():
+                    nrm_all[nearer] = np.array([up if v is None else v for v in tc.lookup(PX[nearer], PY[nearer], "normal")], float)
                 dep = np.minimum(dep, d)
+            okd = np.isfinite(dep)
+            nrm = nrm_all[okd]
         else:
             bt = TileCache(rel, "buffers", maxn=64)
             dep = np.array([np.inf if v is None else v for v in bt.lookup(PX.ravel(), PY.ravel(), "depth")]).reshape(PX.shape)
-        okd = np.isfinite(dep)
+            okd = np.isfinite(dep)
+            nrm = np.array([up if v is None else v for v in bt.lookup(PX[okd], PY[okd], "normal")], float)
         e, n, z = unproject(PX[okd], PY[okd], dep[okd])
         src = ("terrain", "trees", "structures") if "nobuildings" in name else ("terrain", "buildings", "trees", "structures")
+        # the surfaces' normals, as the viewer has them, are for the march's start off the surface
         ref = np.zeros(PX.shape, bool)
-        ref[okd] = shadow_ref(hm, e, n, z, az, el, sources=src) > 0
+        ref[okd] = shadow_ref(hm, e, n, z, az, el, sources=src, normal=nrm) > 0
         got = m < 128
         match = float((got[okd] == ref[okd]).mean())
         if name == "16_nobuildings":

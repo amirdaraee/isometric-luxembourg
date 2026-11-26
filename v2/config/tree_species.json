@@ -1,0 +1,78 @@
+{
+ "about": "The trees of Luxembourg City by species (owner, 24 Nov 2026: research the trees that grow here and model those). share: the species' share of the 23,940 trees of the city's tree register (Ville de Luxembourg, Service Parcs, counted 24 Nov 2026; cultivars with a shape of their own are split off). width: crown width over measured height, young and mature (the register's mean height and crown width by genus, and nursery figures for the cultivars), and the widest crown (m). form: the crown's outline (forms below). foot: the bare trunk under the crown, as a share of the tree's height. clump: a leaf clump's radius over the crown's (large leaves and heavy boughs: coarse; small leaves: fine), and its largest radius (m). open: the share of clumps left out (a see-through crown). lobes: how uneven the outline is. squash: a clump's half-height over its radius. hang: lower clumps drawn this much longer downwards (weeping). h: the measured heights (m) the species is given to. The survey says only green broadleaf, red-leaved, conifer or other for each tree: which species a tree gets is decided by rule (assign below), not measured.",
+ "forms": {
+  "about": "A crown's outline from its foot (0) to its top (1): widest at `widest`; above and below it a superellipse of that power (2 a round arc, 1 a straight taper, more a boxier side).",
+  "round":   {"widest": 0.50, "top": 2.0, "bottom": 2.0},
+  "egg":     {"widest": 0.33, "top": 1.55, "bottom": 2.0},
+  "flame":   {"widest": 0.34, "top": 1.45, "bottom": 2.2},
+  "column":  {"widest": 0.45, "top": 2.8, "bottom": 2.8},
+  "spire":   {"widest": 0.30, "top": 1.7, "bottom": 2.6},
+  "cone":    {"widest": 0.10, "top": 1.25, "bottom": 2.0},
+  "pyramid": {"widest": 0.22, "top": 1.3, "bottom": 2.0},
+  "dome":    {"widest": 0.30, "top": 2.2, "bottom": 2.6},
+  "vase":    {"widest": 0.66, "top": 2.2, "bottom": 1.5},
+  "weeping": {"widest": 0.62, "top": 2.0, "bottom": 5.0}
+ },
+ "defaults": {"foot": 0.27, "clump": [0.50, 2.4], "open": 0.0, "lobes": 0.0, "squash": 0.85, "hang": 1.0, "h": [2.0, 50.0], "trunk": "trunk", "trunk_w_m": 0.35},
+ "by_type": {"deciduous_green": "maple", "deciduous_red": "copper_beech", "conifer": "spruce", "other": "maple"},
+ "assign": {
+  "about": "Which species a surveyed tree is drawn as (v2/data/scene/tree_species.py; in order: register, osm, named, type, water, street, wood, park). register: the tree of the city's register nearest to the surveyed tree, within register_m of it (the register's point is the trunk, the survey's the crown's top); such a tree also takes its type (conifer, red-leaved, green) from its species. A mix given as a list takes the species' register shares as weights; one given with numbers takes those. named: streets and squares whose trees are known (the city's register, by place, 24 Nov 2026). wood: the wooded valley slopes are mixed broadleaves, mostly sycamore and ash, with oak and some beech (the city's forest service points in the centre; the reading of their codes is ours). water: by judgment (the register lists 92 weeping willows in the city, among them those of the Pétrusse and the Alzette).",
+  "osm_m": 3.0, "street_m": 9.0, "square_m": 4.0, "water_m": 9.0,
+  "stand_m": 9.0, "stand_trees": 6,
+  "street_cell_m": 60.0, "street_mixed_share": 0.15,
+  "wood_cell_m": 28.0, "wood_mixed_share": 0.45,
+  "park_cell_m": 18.0, "park_mixed_share": 0.5,
+  "street_classes": ["primary", "secondary", "tertiary", "unclassified", "residential", "living_street", "pedestrian", "primary_link", "secondary_link", "tertiary_link"],
+  "conifers": ["pine", "spruce", "yew"],
+  "red": ["copper_beech", "cherry_plum_red"],
+  "register_m": 4.0,
+  "genus": {"Acer": "maple", "Tilia": "lime", "Liriodendron": "lime", "Cercidiphyllum": "lime", "Nyssa": "lime", "Quercus": "oak", "Castanea": "oak", "Juglans": "oak", "Carya": "oak", "Fraxinus": "ash", "Populus": "ash", "Salix": "ash", "Ailanthus": "ash", "Pterocarya": "ash", "Platanus": "plane", "Catalpa": "plane", "Paulownia": "plane", "Carpinus": "hornbeam", "Ostrya": "hornbeam", "Alnus": "hornbeam", "Pyrus": "hornbeam_column", "Aesculus": "chestnut", "Ulmus": "elm", "Zelkova": "elm", "Celtis": "elm", "Eucommia": "elm", "Prunus": "cherry", "Malus": "cherry", "Sorbus": "cherry", "Crataegus": "cherry", "Amelanchier": "cherry", "Magnolia": "cherry", "Parrotia": "cherry", "Koelreuteria": "cherry", "Morus": "cherry", "Cornus": "cherry", "Cercis": "cherry", "Cydonia": "cherry", "Mespilus": "cherry", "Fagus": "beech", "Betula": "birch", "Robinia": "robinia", "Gleditsia": "robinia", "Styphnolobium": "robinia", "Sophora": "robinia", "Gymnocladus": "robinia", "Ginkgo": "ginkgo", "Gingko": "ginkgo", "Liquidambar": "ginkgo", "Corylus": "ginkgo", "Pinus": "pine", "Cedrus": "pine", "Picea": "spruce", "Pseudotsuga": "spruce", "Abies": "spruce", "Larix": "spruce", "Metasequoia": "spruce", "Taxodium": "spruce", "Sequoiadendron": "spruce", "Sequoia": "spruce", "Chamaecyparis": "spruce", "Thuja": "spruce", "Calocedrus": "spruce", "Juniperus": "spruce", "Taxus": "yew", "Ilex": "yew", "Buxus": "yew"},
+  "genus_about": "A tree whose species is known (the city's register, OpenStreetMap) is drawn as the nearest of the drawn species: by its genus here, unless a line of `cultivars` applies first.",
+  "cultivars": [
+   {"genus": ["Populus"], "has": ["italica"], "as": "poplar"},
+   {"genus": ["Salix"], "has": ["sepulcralis", "babylonica", "chrysocoma", "tristis", "pendula"], "as": "willow"},
+   {"genus": ["Quercus"], "has": ["fastigiat", "koster", "columna"], "as": "oak_column"},
+   {"genus": ["Carpinus"], "has": ["fastigiat", "frans fontaine", "lucas", "columnaris"], "as": "hornbeam_column"},
+   {"genus": ["Acer", "Fagus", "Tilia", "Ulmus", "Fraxinus", "Betula", "Liriodendron", "Prunus", "Sorbus", "Malus", "Crataegus"], "has": ["columnar", "fastigiat", "dawyck", "columella", "pyramidal", "erect", "amanogawa", "obelisk"], "as": "maple_column"},
+   {"genus": ["Fagus", "Acer"], "has": ["purpure", "atropunicea", "riversii", "purple", "crimson", "royal red", "faassen"], "as": "copper_beech"},
+   {"genus": ["Prunus", "Malus"], "has": ["nigra", "pissardii", "royalty", "atropurpure"], "as": "cherry_plum_red"}
+  ],
+  "named": {
+   "Place d'Armes": "plane", "Place Guillaume II": "plane", "Place de Paris": "plane", "Place de la Gare": "plane",
+   "Place du Théâtre": "lime", "Allée Scheffer": "lime", "Place des Martyrs": "lime", "Montée du Grund": "lime",
+   "Place de Clairefontaine": "robinia", "Boulevard Royal": "maple",
+   "Montée de Pfaffenthal": "chestnut", "Montée de la Pétrusse": "chestnut"
+  },
+  "pools": {
+   "street": ["maple", "maple_column", "lime", "plane", "oak", "oak_column", "ash", "hornbeam", "hornbeam_column", "chestnut", "elm", "cherry", "robinia", "ginkgo"],
+   "park": ["maple", "maple_column", "lime", "plane", "oak", "oak_column", "ash", "hornbeam", "hornbeam_column", "chestnut", "elm", "cherry", "beech", "birch", "robinia", "ginkgo"],
+   "wood": {"maple": 0.28, "ash": 0.20, "oak": 0.15, "hornbeam": 0.12, "beech": 0.08, "lime": 0.06, "robinia": 0.05, "birch": 0.04, "cherry": 0.02},
+   "water": {"maple": 0.34, "ash": 0.34, "lime": 0.10, "hornbeam": 0.08, "birch": 0.06, "willow": 0.04, "poplar": 0.04}
+  }
+ },
+ "list": {
+  "maple":           {"latin": "Acer platanoides, A. pseudoplatanus, A. campestre", "share": 0.145, "form": "round", "width": [0.50, 0.58, 14.0]},
+  "maple_column":    {"latin": "Acer platanoides 'Columnare'", "share": 0.020, "form": "column", "width": [0.30, 0.38, 9.0], "foot": 0.24},
+  "lime":            {"latin": "Tilia cordata, T. platyphyllos, T. x europaea", "share": 0.108, "form": "egg", "width": [0.46, 0.52, 14.0], "clump": [0.44, 2.0]},
+  "oak":             {"latin": "Quercus robur, Q. rubra", "share": 0.077, "form": "dome", "width": [0.54, 0.64, 18.0], "foot": 0.30, "clump": [0.56, 2.8], "lobes": 0.28, "trunk_w_m": 0.55},
+  "oak_column":      {"latin": "Quercus robur 'Fastigiata'", "share": 0.009, "form": "column", "width": [0.26, 0.31, 6.0], "foot": 0.18, "clump": [0.5, 1.6]},
+  "ash":             {"latin": "Fraxinus excelsior", "share": 0.064, "form": "round", "width": [0.48, 0.55, 14.0], "foot": 0.32, "clump": [0.40, 1.7], "open": 0.08, "lobes": 0.15},
+  "plane":           {"latin": "Platanus x hispanica", "share": 0.056, "form": "dome", "width": [0.58, 0.66, 18.0], "foot": 0.32, "clump": [0.58, 2.8], "open": 0.05, "lobes": 0.12, "trunk": "trunk_plane", "trunk_w_m": 0.55},
+  "hornbeam":        {"latin": "Carpinus betulus", "share": 0.024, "form": "egg", "width": [0.50, 0.56, 13.0], "clump": [0.42, 1.8]},
+  "hornbeam_column": {"latin": "Carpinus betulus 'Fastigiata'", "share": 0.021, "form": "flame", "width": [0.36, 0.46, 10.0], "foot": 0.16, "clump": [0.42, 1.6]},
+  "chestnut":        {"latin": "Aesculus hippocastanum, A. x carnea", "share": 0.042, "form": "round", "width": [0.56, 0.62, 16.0], "foot": 0.24, "clump": [0.60, 3.0], "trunk_w_m": 0.5},
+  "elm":             {"latin": "Ulmus x hollandica 'Commelin'", "share": 0.042, "form": "vase", "width": [0.38, 0.44, 11.0], "clump": [0.44, 1.8]},
+  "cherry":          {"latin": "Prunus avium, P. serrulata", "share": 0.029, "form": "vase", "width": [0.60, 0.68, 9.0], "foot": 0.3, "clump": [0.5, 1.6], "h": [2.0, 15.0]},
+  "cherry_plum_red": {"latin": "Prunus cerasifera 'Nigra'", "share": 0.007, "form": "round", "width": [0.60, 0.68, 7.0], "foot": 0.3, "clump": [0.5, 1.4], "h": [2.0, 11.0]},
+  "beech":           {"latin": "Fagus sylvatica", "share": 0.014, "form": "dome", "width": [0.52, 0.58, 18.0], "foot": 0.26, "clump": [0.46, 2.4], "trunk": "trunk_beech", "trunk_w_m": 0.5},
+  "copper_beech":    {"latin": "Fagus sylvatica f. purpurea", "share": 0.016, "form": "dome", "width": [0.52, 0.58, 18.0], "foot": 0.26, "clump": [0.46, 2.4], "trunk": "trunk_beech", "trunk_w_m": 0.5},
+  "birch":           {"latin": "Betula pendula", "share": 0.030, "form": "egg", "width": [0.34, 0.40, 9.0], "foot": 0.30, "clump": [0.36, 1.3], "open": 0.14, "lobes": 0.2, "hang": 1.35, "trunk": "trunk_birch", "trunk_w_m": 0.28},
+  "robinia":         {"latin": "Robinia pseudoacacia, Gleditsia triacanthos", "share": 0.022, "form": "round", "width": [0.46, 0.54, 13.0], "foot": 0.34, "clump": [0.38, 1.5], "open": 0.14, "lobes": 0.28},
+  "poplar":          {"latin": "Populus nigra 'Italica'", "share": 0.003, "form": "spire", "width": [0.19, 0.22, 6.0], "foot": 0.08, "clump": [0.5, 1.4], "h": [8.0, 50.0]},
+  "willow":          {"latin": "Salix x sepulcralis 'Chrysocoma'", "share": 0.004, "form": "weeping", "width": [0.62, 0.72, 16.0], "foot": 0.12, "clump": [0.36, 1.6], "squash": 1.0, "hang": 1.9, "h": [4.0, 26.0]},
+  "ginkgo":          {"latin": "Ginkgo biloba, Liquidambar styraciflua", "share": 0.023, "form": "pyramid", "width": [0.34, 0.42, 10.0], "foot": 0.22, "clump": [0.44, 1.5], "open": 0.05},
+  "pine":            {"latin": "Pinus nigra, P. sylvestris", "share": 0.030, "form": "dome", "width": [0.38, 0.46, 10.0], "foot": 0.50, "clump": [0.46, 1.8], "open": 0.08, "lobes": 0.3, "squash": 0.7, "trunk": "trunk_pine", "h": [5.0, 50.0]},
+  "spruce":          {"latin": "Picea abies, Pseudotsuga menziesii", "share": 0.012, "form": "cone", "width": [0.30, 0.33, 8.0], "foot": 0.07, "clump": [0.36, 1.2], "squash": 0.6, "hang": 1.2},
+  "yew":             {"latin": "Taxus baccata", "share": 0.009, "form": "dome", "width": [0.66, 0.76, 10.0], "foot": 0.08, "clump": [0.40, 1.3], "h": [2.0, 16.0]}
+ }
+}

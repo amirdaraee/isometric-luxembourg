@@ -25,6 +25,7 @@ from shapely.strtree import STRtree
 
 from v2.layers import detail
 from v2.layers import geometry as G
+from v2.layers import tree_forms
 from v2.layers.common import (C30, CLASS, R2, S30, VIEW, cam, grain, pal, project)
 from v2.layers.raster import HeightField, bary, raster_ellipsoids, raster_tris, terrain_scan
 
@@ -650,6 +651,44 @@ class Renderer:
             out = np.where(on[..., None], np.array(_c("transport.lane_dash"), np.uint8), out)
         return out, np.asarray(ids), np.asarray(has)
 
+    @cached_property
+    def _centre_lines(self):
+        """Every way's centre line as points every 0.25 m (a tree to ask how far the nearest one is)."""
+        from scipy.spatial import cKDTree
+        pts = []
+        for e in self.edges:
+            en, s0 = np.asarray(e["en"], float), np.asarray(e["s"], float)
+            if len(en) < 2 or s0[-1] <= 0:
+                continue
+            s = np.arange(0.0, s0[-1] + 0.25, 0.25).clip(max=s0[-1])
+            pts.append(np.column_stack([np.interp(s, s0, en[:, 0]), np.interp(s, s0, en[:, 1])]))
+        return cKDTree(np.concatenate(pts) if pts else np.zeros((1, 2)))
+
+    def _off_the_way(self, edge, e, n, z):
+        """For points (e, n, z) on the surface of ways `edge` (indices into self.edges): True where the ground is
+        more than WAY_FACE_M above or below the way's own height next to it: the ground under the nearest point of
+        its centre line, as a ground way is drawn on the terrain. Never on a centre line itself (within
+        WAY_CENTRE_M of any way's): a way that climbs a face is drawn along its line (L4.1)."""
+        out = np.zeros(len(edge), bool)
+        for k in np.unique(edge):
+            if k < 0 or k >= len(self.edges):
+                continue
+            m = edge == k
+            en = np.asarray(self.edges[k]["en"], float)
+            a, b = en[:-1], en[1:]
+            ab = b - a
+            L2 = np.maximum((ab ** 2).sum(1), 1e-9)
+            P = np.column_stack([e[m], n[m]])
+            u = np.clip(((P[:, None, :] - a[None]) * ab[None]).sum(2) / L2[None], 0, 1)
+            d = np.linalg.norm(P[:, None, :] - (a[None] + u[..., None] * ab[None]), axis=2)
+            j = d.argmin(1)
+            near = a[j] + u[np.arange(len(j)), j][:, None] * ab[j]
+            out[m] = np.abs(z[m] - self.hf.sample(near[:, 0], near[:, 1])) > WAY_FACE_M
+        if out.any():
+            d, _ = self._centre_lines.query(np.column_stack([e[out], n[out]]))
+            out[np.flatnonzero(out)[d <= WAY_CENTRE_M]] = False
+        return out
+
     def transport(self, tile) -> LayerTile:
         self._guard("transport")
         t = self.terrain(tile)
@@ -666,6 +705,15 @@ class Renderer:
             crgb, cids, chas = self._draw_transport(cv, bridge=False)
             on = np.zeros(m.shape, bool)
             on[m] = cv.sample(chas, t["u"][m], t["f"][m]) > 0
+            # a way's surface is at the way's own height: where its width in plan reaches over the face of a cliff
+            # or a wall (the scene's cliff cells) the ground there is metres above or below the way, and the face
+            # stays rock (a metre of plan is many metres of face). Steps and paths cut into a face are at their
+            # own height and stay.
+            face = on & (self.terrain_class(t) == 2)
+            if face.any():
+                fid = cv.sample(cids, t["u"][face], t["f"][face]).astype(np.uint32)
+                off = self._off_the_way((fid >> 8).astype(np.int64) - 1, t["e"][face], t["n"][face], t["z"][face])
+                on.reshape(-1)[np.flatnonzero(face.ravel())[off]] = False
             rgb[on] = cv.sample(crgb, t["u"][on], t["f"][on])
             ids[on] = cv.sample(cids, t["u"][on], t["f"][on]).astype(np.uint32)
             depth[on] = t["depth"][on]
@@ -982,25 +1030,34 @@ class Renderer:
         base, h = T["base_z"].astype(float), T["height"].astype(float)
         r = T["crown_r"].astype(float)
         typ = T["type"].astype(int)
-        b = np.where(typ == 2, np.clip(h * 0.42, 1.0, None), np.clip(np.minimum(h * 0.36, r * 1.7), 0.8, None))
-        if self.art != "plain":
-            # the crown fills the tree's measured height down to a trunk of a quarter of it (at least 2 m), as a
-            # crown does; its width is the scene's (the survey's, widened to the tree's shape by species and age:
-            # layer-07 rule 1, L7.1)
-            b = np.maximum(b, (h - np.maximum(2.0, h * 0.25)) / 2)
+        sp = tree_forms.species_index(T)
+        F = tree_forms.table()
+        if self.art == "plain":
+            b = np.where(typ == 2, np.clip(h * 0.42, 1.0, None), np.clip(np.minimum(h * 0.36, r * 1.7), 0.8, None))
+        else:
+            # the crown fills the tree's height (the scene's: as drawn) down to its species' bare trunk (a street
+            # tree's is 2 m at least, or nearly half of a small tree; a spruce, a yew or a willow reaches the
+            # ground); its width is the scene's (the survey's, widened to the species' shape: layer-07 rule 1, L7.1)
+            foot = F["foot"][sp]
+            trunk = np.maximum(foot * h, np.where(foot >= 0.2, np.minimum(2.0, 0.45 * h), 0.3))
+            b = np.maximum((h - trunk) / 2, 0.5)
         b = np.minimum(b, np.maximum(h / 2 - 0.2, 0.5))
         cz = base + h - b
         C = np.column_stack([e, n, cz])
-        owner = np.arange(len(e))
+        owner, kind = np.arange(len(e)), np.zeros(len(e), np.int64)
+        group, sky = owner * 1024, np.ones(len(e))
         if self.art != "plain":
-            C, r, b, owner = crown_lobes(C, r, b, typ)
-        # trunks: thin boxes from the ground to the crown's centre
+            C, r, b, owner, kind, group, sky = crown_lobes(C, r, b, typ, tree_forms.form_of(sp))
+        # trunks: thin boxes from the ground to the crown's centre, in the species' bark
         M = G.Mesh()
         for i in range(len(e)):
             if cz[i] - base[i] < 0.5:
                 continue
-            G.box(M, np.array([e[i], n[i]]), np.array([1.0, 0.0]), 0.35, 0.35, base[i], cz[i], CLASS["trunk"], i, "trees.trunk")
-        return {"C": C, "r": r, "b": b, "type": typ, "tree": owner, "trunks": M.done()}
+            w = F["trunk_w"][sp[i]] if self.art != "plain" else 0.35
+            G.box(M, np.array([e[i], n[i]]), np.array([1.0, 0.0]), w, w, base[i], cz[i], CLASS["trunk"], i,
+                  "trees." + (F["trunk"][sp[i]] if self.art != "plain" else "trunk"))
+        return {"C": C, "r": r, "b": b, "type": typ, "species": sp, "tree": owner, "kind": kind, "group": group,
+                "sky": sky, "trunks": M.done()}
 
     def trees(self, tile) -> LayerTile:
         """Layer 7 (code crowns for methods A and B, both with A's leaf clumps: owner, 10 Nov 2026): every surveyed tree at its measured place and size, a flat crown colour by type
@@ -1032,33 +1089,43 @@ class Renderer:
             # albedo: a per-tree mix of the type's light and dark ends, and a leaf texture (no light in it)
             mix = 0.5 + 0.12 * (np.sin(ib[crown] * 12.9898) * 0.5)
             if self.art != "plain":
-                # tree to tree variety: each tree's own depth of green, and a lean to a warm or a cool green
-                # (one colour per tree: nothing of it follows the sun)
+                # the species' own greens (tree_forms), and tree to tree variety within a species: each tree's own
+                # depth of green and a lean to a warmer or a cooler green (one colour per tree: nothing of it
+                # follows the sun)
+                F = tree_forms.table()
+                sp = g["species"][ib[crown]]
                 mix = 0.36 + 0.3 * detail.ihash(ib[crown], 31)
                 lean = detail.ihash(ib[crown], 32)[:, None]
                 broad = np.isin(typ, (0, 3))[:, None]
-                warm, cool = pal("trees", "summer_light_warm"), pal("trees", "summer_light_cool")
-                light = np.where(broad, np.where(lean < 0.5, light[typ] + (warm - light[typ]) * (1 - 2 * lean),
-                                                 light[typ] + (cool - light[typ]) * (2 * lean - 1)), light[typ])
-                dark = dark[typ]
+                ref = pal("trees", "summer_light")
+                warm, cool = pal("trees", "summer_light_warm") / ref, pal("trees", "summer_light_cool") / ref
+                turn = np.where(lean < 0.5, 1 + (warm - 1) * (1 - 2 * lean), 1 + (cool - 1) * (2 * lean - 1))
+                light = F["light"][sp] * np.where(broad, 1 + (turn - 1) * SPECIES_LEAN, 1.0)
+                dark = F["dark"][sp]
                 typ = np.arange(len(typ))              # light and dark are per pixel from here on
             px, py = tile.centres
             leaf = grain(px, py, 0.08, seed=7)[crown]
             col = (dark[typ] * (1 - mix[:, None]) + light[typ] * mix[:, None]) * leaf[:, None]
             if self.art in ("a", "b"):
-                # methods A and B: leaf clumps on the crown's surface (art_a.crown_rgb), from the pixel's world point
+                # methods A and B: the crown's colours by clump (art_a.crown_rgb), from the pixel's world point
                 from v2.layers.art_a import ArtA
                 from v2.layers.common import unproject
                 rr, cc = np.nonzero(crown)
                 X, Y = px[cc], py[rr]
                 wx, wy, wz = unproject(X, Y, zb[crown])
-                base = dark[typ] * (1 - mix[:, None]) + light[typ] * mix[:, None]
-                col = ArtA.crown_rgb(base, np.column_stack([wx, wy, wz]), ib[crown], X, Y)
+                col = ArtA.crown_rgb(light[typ], dark[typ], np.column_stack([wx, wy, wz]), nb[crown][:, 2], ib[crown],
+                                     g["group"][lobe[crown]], g["kind"][lobe[crown]], X, Y, g["r"][lobe[crown]],
+                                     tuft_id=lobe[crown], sky=g["sky"][lobe[crown]],
+                                     tall=(g["b"] / g["r"])[lobe[crown]])
             rgb[crown] = col
-            # crown outline: 1 px of soft ink where a crown meets anything else, and a lighter line where two
-            # lobes of one crown meet (the nearer lobe's edge), so a crown reads as a mass of foliage
-            ink = pal("trees", "summer_dark")
-            for idg, wgt, two_sided in ((np.where(crown, lobe, -1), 0.32, False), (np.where(crown, ib, -1), 0.5, True)):
+            # outlines (the nearer shape's edge): heavy ink where foliage meets anything else, nearly as heavy
+            # where two clumps meet, of one tree or of two (so a wood is one mass of clumps, not a row of crowns),
+            # and a faint one between the tufts of a clump
+            ink = pal("trees", "summer_dark") * CROWN_INK if self.art in ("a", "b") else pal("trees", "summer_dark")
+            w_tuft, w_lobe, w_out = CROWN_LINES if self.art in ("a", "b") else (0.32, 0.32, 0.5)
+            grp = np.where(crown, g["group"][np.maximum(lobe, 0)], -1)
+            edge = np.where(crown, 1, 0) if self.art in ("a", "b") else np.where(crown, ib, -1)
+            for idg, wgt, two_sided in ((np.where(crown, lobe, -1), w_tuft, False), (grp, w_lobe, False), (edge, w_out, True)):
                 dh, dv = idg[:, :-1] != idg[:, 1:], idg[:-1, :] != idg[1:, :]
                 e = np.zeros((H, W), bool)
                 if two_sided:
@@ -1082,44 +1149,113 @@ class Renderer:
 
 
 # ------------------------------------------------------------------------------------------------ crowns
-def crown_lobes(C, r, b, typ):
-    """A tree's crown as a few rounded shapes inside its measured size (centres C, radius r, half-height b, type):
-    a broadleaf is a core with lobes round it and one on top, a conifer three tiers narrowing upwards. No shape
-    reaches beyond the tree's crown radius, above its top or below its crown's foot, so the survey's size holds.
-    Each lobe's place and size is a hash of its tree's index. Returns (C, r, b, the tree of each shape)."""
+CROWN_INK = 0.55                      # the crown outlines' ink: the foliage's dark at this strength
+CROWN_LINES = (0.15, 0.75, 0.9)        # line weights: between the tufts of a clump, between clumps (of one tree or of two), around the foliage
+CLUMP_R_MIN = 0.6                    # a leaf clump's least radius (m); its share of the crown's and its most are the species'
+CLUMP_COVER = 1.5                    # the crown's surface over (clumps x a clump's footprint): fewer clumps when larger
+CLUMP_SPREAD = 0.6                   # clump to clump, the size varies by this share
+CROWN_CORE = 0.8                     # the crown's dark inside, as a share of its radius and half-height
+CLUMP_PETALS = 5                     # a clump is this many leaf tufts: one facing out, the others around it
+PETAL_R = 0.55                       # a tuft's radius over its clump's; tufts lie inside the clump
+TUFT_SKY = (0.3, 0.7)                # how much sky a tuft sees: by its clump's height on the crown, by its own place on the clump
+SPECIES_LEAN = 0.45                  # tree to tree, within a species: this share of the warm and cool leans
+CROWN_WHOLE, CROWN_CORE_KIND, CROWN_CLUMP = 0, 1, 2
+
+
+def crown_lobes(C, r, b, typ, form=None):
+    """A tree's crown as rounded shapes inside its size (centres C, radius r, half-height b) and its species'
+    outline (`form`: tree_forms.form_of; None: each type's species): a dark core with leaf clumps all over the
+    outline's surface, one of them on top (v1's trees: the owner, 23 Nov 2026), each clump a cluster of leaf tufts
+    (closer to v1: 24 Nov 2026). The species sets the outline (round, egg, column, cone, dome, vase, weeping), how
+    uneven it is, the clumps' size, how many are left out (a see-through crown) and whether the lower ones hang
+    (species: the owner, 24 Nov 2026). A small crown is one shape. No shape reaches beyond the tree's crown radius,
+    above its top or below its crown's foot, so the scene's size holds, and the top clump's outward tuft ends at
+    the tree's top. Each clump's and tuft's place and size is a hash of its tree's index. Returns, per shape: C, r,
+    b, its tree, its kind (CROWN_WHOLE a whole small crown, CROWN_CORE_KIND, CROWN_CLUMP a tuft), its group (tree x
+    1024 + the clump: the tufts of one clump share it), and how much sky it sees (0 to 1; 1 for all but tufts)."""
     n = len(r)
     idx = np.arange(n)
-    conifer = typ == 2
-    small = (r < 1.2) & ~conifer
-    oC, orr, ob, own = [], [], [], []
+    if form is None:
+        form = tree_forms.form_of(tree_forms.by_type(typ))
+    W, PT, PB = form["widest"], form["top"], form["bottom"]
+    prof = lambda zz: tree_forms.profile(zz, W, PT, PB)
+    small = r < 1.2
+    oC, orr, ob, own, kind, group, sky = [], [], [], [], [], [], []
 
-    def add(m, c, rr, bb):
-        oC.append(c[m]); orr.append(rr[m]); ob.append(bb[m]); own.append(idx[m])
-    add(small, C, r, b)
-    # conifers: three tiers from the crown's foot to the top
-    foot = C[:, 2] - b
-    for frac_r, zc, hb in ((1.0, 0.28, 0.28), (0.72, 0.55, 0.25), (0.45, 0.8, 0.2)):
-        add(conifer, np.column_stack([C[:, 0], C[:, 1], foot + 2 * b * zc]), r * frac_r, 2 * b * hb)
-    # broadleaves: the core, the top lobe, and five to seven lobes round the core reaching the measured width
-    lob = ~small & ~conifer
-    add(lob, C, r * 0.84, b * 0.9)
-    tb = b * 0.48
-    add(lob, np.column_stack([C[:, 0] + r * 0.12 * (detail.ihash(idx, 41) - 0.5), C[:, 1] + r * 0.12 * (detail.ihash(idx, 42) - 0.5),
-                              C[:, 2] + b - tb]), r * 0.6, tb)
-    count = np.where(r > 3.0, 7, 5)
-    a0 = detail.ihash(idx, 43) * 2 * np.pi
-    for j in range(7):
+    def add(m, c, rr, bb, k, grp=0, up=None):
+        oC.append(c[m]); orr.append(rr[m]); ob.append(bb[m]); own.append(idx[m]); kind.append(np.full(int(m.sum()), k))
+        group.append(idx[m] * 1024 + grp)
+        sky.append(np.ones(int(m.sum())) if up is None else np.clip(0.5 + 0.5 * up[m], 0, 1))
+    add(small, C, r, b, CROWN_WHOLE)
+    lob = ~small
+    # the dark inside: five shapes up the crown, together the outline at CROWN_CORE of its size (smaller in a
+    # see-through crown and in an uneven one, whose clumps sit further in)
+    core = CROWN_CORE * (1 - 0.5 * form["open"]) * (1 - 0.6 * form["lobes"])
+    for zc in (-0.7, -0.35, 0.0, 0.35, 0.7):
+        f = prof(zc)
+        add(lob & (f > 0.08), np.column_stack([C[:, 0], C[:, 1], C[:, 2] + b * core * zc]), r * core * f, b * core * 0.3,
+            CROWN_CORE_KIND)
+    # leaf clumps spread evenly over the outline's surface (golden angle), the first on top
+    cr = np.minimum(np.clip(form["clump"] * r, CLUMP_R_MIN, form["clump_max"]), r * 0.6)
+    cb = np.minimum(cr * form["squash"], b * 0.6)
+    area = 4 * np.pi * ((2 * (r * b) ** 1.6 + r ** 3.2) / 3) ** (1 / 1.6)            # a spheroid's surface (Thomsen)
+    area = area * tree_forms.surface_share(W, PT, PB)
+    count = np.clip(np.round(area / (np.pi * cr * cb * CLUMP_COVER)), 8, 120).astype(int)
+    golden = np.pi * (3 - 5 ** 0.5)
+    a0 = 2 * np.pi * detail.ihash(idx, 43)
+    waves, phase = 2 + (detail.ihash(idx, 44) > 0.5), 2 * np.pi * detail.ihash(idx, 45)
+    for j in range(int(count[lob].max()) if lob.any() else 0):
         m = lob & (j < count)
-        lr = r * (0.42 + 0.16 * detail.ihash(idx, 50 + j))
-        ang = a0 + 2 * np.pi * (j + 0.6 * (detail.ihash(idx, 60 + j) - 0.5)) / count
-        d = r - lr
-        lb = np.minimum(lr * np.clip(b / np.maximum(r, 1e-6), 0.8, 1.6) * 0.9, b * 0.7)
-        dz = np.clip(b * (-0.3 + 0.6 * detail.ihash(idx, 70 + j)), -(b - lb), b - lb)
-        add(m, np.column_stack([C[:, 0] + d * np.cos(ang), C[:, 1] + d * np.sin(ang), C[:, 2] + dz]), lr, lb)
-    return np.concatenate(oC), np.concatenate(orr), np.concatenate(ob), np.concatenate(own)
+        if j == 0:
+            zz, lr, lb = np.ones(n), cr, cb                                           # the top clump
+        else:
+            m = m & (detail.ihash(idx, 120 + j) >= form["open"])
+            zz = tree_forms.spread((j + 0.5) / count - (detail.ihash(idx, 70 + j) - 0.5) / (2 * count), W, PT, PB)
+            size = 1 - CLUMP_SPREAD / 2 + CLUMP_SPREAD * detail.ihash(idx, 50 + j)
+            lr, lb = np.minimum(cr * size, r * 0.6), np.minimum(cb * size, b * 0.6)
+        ang = a0 + golden * j + 0.5 * (detail.ihash(idx, 60 + j) - 0.5)
+        # an uneven outline: the crown reaches less far on some sides
+        reach = 1 - form["lobes"] * (0.5 + 0.5 * np.sin(waves * ang + phase))
+        # a clump is no wider than the crown where it sits (a cone's tip, a vase's foot)
+        fit = np.maximum(r * prof(zz * (1 - lb / b)) * reach, (0.5 if j == 0 else 0.3) * cr)
+        lb = lb * np.minimum(1, fit / lr)
+        lr = np.minimum(lr, fit)
+        lb = np.minimum(lb * np.where(zz < 0.1, form["hang"], 1.0), b * 0.6)         # the lower clumps of a weeping tree hang
+        rho = prof(zz) * reach
+        cc = np.column_stack([C[:, 0] + (r - lr) * rho * np.cos(ang), C[:, 1] + (r - lr) * rho * np.sin(ang),
+                              C[:, 2] + (b - lb) * zz])
+        if CLUMP_PETALS < 2:
+            add(m, cc, lr, lb, CROWN_CLUMP, 1 + j, zz)
+            continue
+        # the clump as leaf tufts, all inside it: one facing out of the crown (so the crown keeps its measured
+        # reach and top), the others around that one, each its own size. "Out" is the outline's normal there.
+        f0 = prof(zz)
+        slope = (prof(np.minimum(zz + 0.02, 1)) ** 2 - prof(np.maximum(zz - 0.02, -1)) ** 2) / 0.08
+        out = np.column_stack([f0 * np.cos(ang), f0 * np.sin(ang), -slope])
+        out = out / np.maximum(np.linalg.norm(out, axis=1, keepdims=True), 1e-9)
+        if j == 0:
+            out = np.tile([0.0, 0.0, 1.0], (n, 1))
+        t1 = np.column_stack([-np.sin(ang), np.cos(ang), np.zeros(n)])
+        t2 = np.cross(out, t1)
+        turn = 2 * np.pi * detail.ihash(idx, 90 + j)
+        for q in range(CLUMP_PETALS):
+            if q == 0:
+                d, pr = out, np.full(n, PETAL_R)
+            else:
+                psi = turn + 2 * np.pi * q / (CLUMP_PETALS - 1)
+                d = 0.3 * out + np.cos(psi)[:, None] * t1 + np.sin(psi)[:, None] * t2
+                d = d / np.linalg.norm(d, axis=1, keepdims=True)
+                pr = PETAL_R * (0.75 + 0.25 * detail.ihash(idx, 100 + j * 8 + q))
+            off = d * (1 - pr)[:, None]
+            add(m, cc + off * np.column_stack([lr, lr, lb]), lr * pr, lb * pr, CROWN_CLUMP, 1 + j,
+                TUFT_SKY[0] * zz + TUFT_SKY[1] * d[:, 2])
+    return (np.concatenate(oC), np.concatenate(orr), np.concatenate(ob), np.concatenate(own), np.concatenate(kind),
+            np.concatenate(group), np.concatenate(sky))
 
 
 # ------------------------------------------------------------------------------------------------ transport style
+WAY_FACE_M = 1.0                     # on a cliff cell, a way's surface is drawn only within this of the way's own height (m)
+WAY_CENTRE_M = 0.5                   # and always within this of a way's centre line (m): the line itself is never cut
 LANE_LINE_M = 0.25                   # a lane line as drawn (wider than the paint: it must read at 0.125 m a pixel)
 KERB_M = 0.3                         # a kerbstone as drawn
 ZEBRA_BAR_M, ZEBRA_WIDTH_M = 0.5, 3.0   # a crossing's bars and gaps along the walking line; its least width

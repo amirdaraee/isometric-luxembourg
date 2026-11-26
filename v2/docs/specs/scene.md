@@ -40,11 +40,43 @@ See facades.md. Checks F1–F7.
 - **Input:** ACT LiDAR 2024 tree survey (CC0, crown centroids with height, crown widths and type), cut to the
   commune while streaming (`fetch_trees`).
 - **Rules:** keep trees in the area 2–50 m tall (taller are survey spikes: cranes, masts); drop trees centred in a
-  building footprint or in water; crown radius = 0.85 × crown_mean / 2 (the POC's "measured crowns read too big"),
-  widened to the tree's shape by species and age (layer-07 rule 1; the height is never changed), then
-  reduced (bisection) until ≤ 30% of the crown disc lies over buildings or water; base height = LiDAR terrain.
-- **Output:** `trees.npz` (e, n, base_z, height, crown_r, crown_r_shape, crown_r_measured, type, uuid).
-- **Checks:** TE1–TE8.
+  building footprint or in water; a trunk cannot stand on the face of a wall or a cliff (owner, 25 Nov 2026):
+  the survey's point is the crown's top, which can hang over a face, so a tree whose point is on a cliff cell
+  gets its trunk on the nearest ground that is not one, within its measured crown's radius plus 1 m (1.5 to 4 m):
+  above the point if there is such ground, else below it; its top keeps its height above the sea, so its own
+  height is its top above its new foot; a tree with no such ground in reach is left out (`trees.off_faces`); crown radius = 0.85 × crown_mean / 2 (the POC's "measured crowns read too big"),
+  widened to the tree's shape by species and age (layer-07 rule 1, by the measured height), then
+  reduced (bisection) until ≤ 30% of the crown disc lies over buildings or water; base height = LiDAR terrain;
+  drawn height = 0.7 × the measured height (layer-07 rule 1; owner, 24 Nov 2026).
+- **Output:** `trees.npz` (e, n, base_z, height as drawn, height_measured, crown_r, crown_r_shape,
+  crown_r_measured, type, type_survey, uuid, species, species_names, species_rule, species_rules).
+- **Checks:** TE1–TE13.
+
+### Tree species (`v2/data/scene/tree_species.py`, `v2/config/tree_species.json`)
+
+The survey says only green broadleaf, red-leaved, conifer or other for a tree. Each tree is given one of the 23
+drawn species (layer-07, "Species"); the first of these that applies decides:
+
+0. **register**: the city's tree register (`fetch_city_trees`: Ville de Luxembourg, Service Parcs, 23,940 trees
+   with Latin name and cultivar). A register tree names the surveyed tree nearest to it, within 4 m (the register's
+   point is the trunk, the survey's the crown's top); where several are near one surveyed tree, the nearest. Its
+   species is drawn as the nearest of the 23 (`assign.cultivars`, then `assign.genus`: an alder as a hornbeam, a
+   pear as a columnar hornbeam, a cedar as a pine). Such a tree takes its type from its species. The register
+   states no licence; it is used by the owner's decision of 25 Nov 2026 (`DECISIONS.md`).
+1. **osm**: an OpenStreetMap tree with a species or genus within 3 m.
+2. **named**: a street or square whose trees are known (`assign.named`: Place d'Armes and Place Guillaume II
+   planes, Montée du Grund limes, Montée de Pfaffenthal horse chestnuts, Boulevard Royal maples, and others).
+3. **type**: a conifer is a pine, a spruce or a yew; a red-leaved tree a copper beech or a purple cherry plum.
+4. **water**: within 9 m of a river or a pond: the riverside mix.
+5. **street**: within 9 m of a street's centre line and not in a wood: one species per named street (drawn from
+   the street mix), but for 15% of its trees.
+6. **wood**: in an OSM wood or forest, or with 6 trees within 9 m: the wood mix, in patches of 28 m.
+7. **park**: the rest: the park mix, in groups of 18 m.
+
+A mix is weighted by the register's shares unless it gives its own weights; a species is only given to a tree
+whose measured height is within the species' range. Every draw is a hash of the tree's place: the same tree gets
+the same species in every build and in every area. **Rules 3 to 7 are plausible, not true tree by tree**; TE11
+reports how many trees each rule set.
 
 ## Ground cover (`scene_groundcover`)
 

@@ -8,7 +8,7 @@
   "tree_unit_m": 0.25,
   "structure_unit_m": 0.25
  },
- "march": {"t0_m": 0.35, "growth": 1.055, "steps": 110, "bias_m": 0.3},
+ "march": {"about": "The shadow march. The height map is read between its cells' centres (an edge of what casts a shadow is a line, not steps of a cell). normal_m: the march starts this far off the surface along its normal's level part, so a wall is not shadowed by its own cells.", "t0_m": 0.35, "growth": 1.055, "steps": 110, "bias_m": 0.3, "normal_m": 0.5},
  "sun": {"wrap": 0.35, "ambient": 0.58, "direct": 0.62, "shadow_keep": 0.42},
  "grade": {
   "about": "The hour's light (layer-09 rule 3, layer-10 rule 4), by the sun's elevation. Day (above golden_deg[1]) is the sun and ambient above, untouched. Each gain multiplies sun.direct or sun.ambient.",

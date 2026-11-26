@@ -2877,3 +2877,372 @@ residential street (stripes where there are none). That is the stated limit.
 ### 30.3 Open questions
 
 44, 46, 60 and 61 stand. 63 is answered (the roads are good enough). 64 is answered (this section).
+
+## 31. v1's trees: step 3 of three (24 November, $0)
+
+Branch `v2-phase3-trees`, on top of `v2-phase3-crossings` (PR #28, open). **Spent: $0.** No pod. The owner's
+"4- go ahead" of 23 November (section 30) asked for this step.
+
+### 31.1 What v1's trees have that v2's did not
+
+Measured on v1's art and on v2's tree layer, lit as the viewer lights it at 11:00 on 15 June (the hour of v1's
+aerial photo), at three places (the park by the boulevard, the Bock, Rue Vauban; 0.9 million tree pixels):
+
+| | Brightness of 255: 5th, 50th, 95th percentile | Darkest 5%, lightest 5% (mean colour) |
+|---|---|---|
+| v1's foliage (foliage only, as measured for `layer-07-trees.md`) | about 18 and 150 (5th, 95th) | [10,23,17], [156,176,43] |
+| v2 before (`cce0dd0cb290`) | 35, 88, 126 | [29,33,23], [125,150,71] |
+| v2 now (`1be22d28fd55`) | 14, 70, 158 | [9,13,8], [163,189,52] |
+
+v1 paints foliage as dark masses with bright yellow-green leaf highlights and heavy dark lines. v2 drew each
+crown as a few smooth, pale domes with a fine scale pattern: half of v1's range from dark to light, and a
+greyer green.
+
+### 31.2 What changed
+
+| | Before | Now |
+|---|---|---|
+| A broadleaf crown of 1.2 m radius or more | A few large lobes | A dark core (0.8 of the crown) covered in 8 to 120 leaf clumps on the measured crown's surface, the top one at the measured top |
+| A clump | – | A spheroid of 0.6 to 2.4 m radius (0.6 of the crown's radius at most), light on top, dark underneath, its tone ±11% of the tree's |
+| Lines | Fine, 0.32 and 0.5 | Heavy and dark green: 0.8 between the clumps of one crown, 0.9 around the crown |
+| Lit greens (palette) | [150,178,84], warm [176,186,76], cool [112,166,96] | [130,155,44], warm [150,163,40], cool [100,150,54]; the dark [28,44,24] is unchanged |
+| Small crowns and conifers | – | Shape unchanged; they take the new lines and the dark underside |
+
+- **Kept from the data:** every tree's place, measured height, crown width and trunk. A clump never reaches
+  outside the measured crown (unit test; TE6 and TE7 pass).
+- **No light is baked in.** The bright side of a clump is the viewer's sun on the clump's own normal, so it
+  moves with the hour. The dark underside and core follow "up", never the sun, and are a fixed colour. The
+  check that reads the tree layer for baked light (L5.1/L9.2) passes: 0 of 229, worst 4.0%.
+- Two trials that only repainted the old lobes' surface (a cracked mosaic, then dark dots) were dropped: the
+  crown still read as a smooth dome. The clumps are real shapes with their own depth and normals.
+
+### 31.3 The build and the painted area
+
+| | |
+|---|---|
+| Release | `1be22d28fd55` (current) |
+| Stages | 59 of 59 |
+| Gate entries | 284 pass, 0 fail |
+| Tree layer | 106.4 MB (96.8 before); the release 17.75 MB (17.63) |
+| Speed | 120 frames a second over the whole area, 95 at zoom 1 |
+| Painted area (`1be22d28fd55_t4_0`) | 101 pictures, even light fails on 0; edges 96.5%, window rows 99.8%; no baked light 0 of 229, worst 4.3%; vehicle gates 0 |
+
+- No threshold was changed. 173 tests pass. Tree checks TE1 to TE7, S-trees (seams: 0.0), D-trees (vehicle
+  detector: 0), V1-trees and V5 (season) pass.
+- The painted area is remade on this release, so it now has the striped crossings of section 30 as well.
+- The per-picture vehicle detector (not a gate) still marks the same 2 of 101 paintings as in section 29
+  (highest score 0.15): a row of house fronts and a shop front, not vehicles.
+
+![v1's trees, close up: the park by the boulevard, the Bock, Rue Vauban](img/test_trees_v1_closeups.jpg)
+
+![Before and now at 13:00: the park and Rue Vauban in code art, the Bock painted](img/test_trees_before_now.jpg)
+
+### 31.4 Not done
+
+- **A wood is still many round trees.** v1 paints a wood as one mass of foliage; v2 draws every surveyed tree
+  as its own crown, so from close up the clumps read as bunches of balls. Zoomed out the woods read much closer to v1's.
+- The clumps are all much the same size within a crown. No branches show, and no gaps to the sky.
+- The trunks, the autumn, winter and blossom colours and the conifers' shape were not touched. Only the summer
+  greens were measured against v1.
+- Looked at: the eight views of both viewers at 13:00, evening and night, and three close views. Not looked at:
+  other seasons, and the far north and south of the test area.
+
+### 31.5 Open questions
+
+44, 46, 60 and 61 stand.
+
+| # | Question |
+|---|---|
+| 65 | Are the trees right? If the clumps read as too round or too regular, the next thing to try is clumps of more varied size and a ragged outline. |
+
+## 32. The trees, second round: closer to v1, and 70% as tall (24 November, $0)
+
+Shown section 31's trees, the owner said they were better, could be more like v1's, and were too big beside the
+buildings. Both are done, built and checked. No money was spent; Phase 3 stands at $4.68 of $8.
+
+### 32.1 Too big: what was measured, and what was decided
+
+The trees were drawn at the height the 2024 LiDAR tree survey gives. Those heights were checked against the
+LiDAR surface itself (surface less terrain at each tree): they agree to 1.67 m at the median. The trees of the
+test area really are tall:
+
+| | 5th | 25th | 50th | 75th | 95th percentile |
+|---|---|---|---|---|---|
+| Trees, measured height (12,414) | 4.8 | 10.1 | 16.8 | 22.6 | 29.0 m |
+| Buildings, ridge height | 3.7 | 10.9 | 13.4 | 17.2 | 24.3 m |
+| Trees, as drawn now | 3.3 | 7.1 | 11.8 | 15.8 | 20.3 m |
+
+64% of the trees are measured taller than the median building. So "smaller" could only mean drawn smaller than
+measured, which is the owner's call. Three sizes were shown beside v1 as trial drawings: as measured, 80% of
+height and width, and 70% of height with the width kept. **The owner chose 70% of height, width kept
+(24 November).**
+
+- `trees.drawn_height_scale` = 0.7 in `params.json`. Every tree is drawn at 70% of its measured height. Its
+  place and its crown width are unchanged, so the woods stay closed.
+- The measured height is kept in the data (`height_measured`) and still decides which trees are kept and the
+  crown's shape by age. The shadows come from the trees as drawn, so they are shorter too.
+- New gate **TE9**: trees not drawn at 0.7 of their measured height, within 1 cm: 0 of 12,414.
+- 40% of the trees are still drawn taller than the median building (64% before).
+- This is a departure from the measurement, recorded in `DECISIONS.md` and in `layer-07-trees.md`.
+
+Tried and not applied: narrowing each crown to the LiDAR canopy around it. It would narrow 2,754 trees (7.1 to
+4.1 m at the median) and made the trees thinner and taller-looking, the opposite of what was asked.
+
+### 32.2 Closer to v1: what changed in the drawing
+
+| | Section 31 | Now |
+|---|---|---|
+| A leaf clump | One spheroid | A cluster of five leaf tufts inside the clump's shape: one facing out, four around it, so the outline is lobed |
+| A tuft's colour | Smooth from light to dark | Three flat tones: light on top, a mid green on the side, dark underneath, as v1's foliage is drawn |
+| Depth inside a crown | – | A tuft that sees less sky (low on the crown, or on the underside of its clump) is darker |
+| Lines | 0.8 between clumps, 0.9 around each crown | 0.15 between the tufts of a clump, 0.75 between clumps, 0.9 around the foliage as a whole |
+| Between two neighbouring trees | The heavy outline | The same line as between two clumps of one tree, so a wood reads as one mass of leaves |
+
+- **No light is baked in.** The tones and the darkening by sky follow "up" and the tuft's place on the crown,
+  never the sun; the sunlit side still comes from the viewer's sun on each tuft's own normal. L5.1/L9.2 passes:
+  0 of 255 compared.
+- Three earlier trials (smaller tufts, smooth shading) read duller and finer than v1 and were dropped.
+- Lit as the viewer lights them at 11:00 on 15 June, at the same three places as section 31: brightness
+  13, 71, 165 (5th, 50th, 95th percentile of 255) against 14, 70, 158 in section 31; the lightest 5% is
+  [170,199,56]. The trees cover 20% fewer pixels there (0.72 million against 0.90).
+
+### 32.3 The build and the painted area
+
+| | |
+|---|---|
+| Release | `8e04abbcca4d` (current) |
+| Stages | 59 of 59 |
+| Gate entries | 285 pass, 0 fail (284 and the new TE9) |
+| Tree layer | 99.7 MB (106.4 in section 31); the release 17.54 MB (17.75) |
+| Speed | 120 frames a second over the whole area, 94 at zoom 1 |
+| Painted area (`8e04abbcca4d_t4_0`) | 101 pictures, even light fails on 0; edges 96.5%, window rows 99.8%; no baked light 0 of 255, worst 4.0%; vehicle gates 0 |
+
+- No threshold was changed. 174 tests pass. Tree checks TE1 to TE9, S-trees (seams: 0.0), D-trees (vehicle
+  detector: 0) pass. TE8 (report): drawn height over crown width 1.53 at the median.
+- The per-picture vehicle detector (not a gate) marks the same 2 of 101 paintings as before (highest score
+  0.15): house fronts and a shop front.
+
+![Section 31's trees and now, at 13:00: the park and Rue Vauban in code art, the Bock painted](img/test_trees_round2.jpg)
+
+### 32.4 Not done
+
+- Every surveyed tree is still its own crown. A wood now reads as one mass because no heavy line parts its
+  trees, but it is not painted as one shape the way v1's is.
+- The crown widths are as before: the drawn canopy still covers 8.7 ha of open ground and leaves 28% of the
+  LiDAR canopy bare (42.0 ha drawn against 46.1 ha measured).
+- With the width kept and the height at 70%, tall narrow trees are squatter than they are.
+- The trunks, the conifers' shape and the autumn, winter and blossom colours were not touched or looked at.
+- Looked at: the eight views of both viewers at 13:00, evening and night, and three close views.
+
+### 32.5 Open questions
+
+44, 46, 60 and 61 stand. 65 stands, on these trees:
+
+| # | Question |
+|---|---|
+| 65 | Are the trees right now, in drawing and in size? |
+
+## 33. The trees by species (24 and 25 November, $0)
+
+Shown section 32's trees, the owner said they were not that good and asked whether the trees that grow in
+Luxembourg could be researched and modelled. They are: built and checked. No money was spent; Phase 3 stands at
+$4.68 of $8.
+
+### 33.1 What grows in the city, and what data says so
+
+| Source | What it has | Licence | Used |
+|---|---|---|---|
+| ACT LiDAR 2024 tree survey (the trees we draw) | Place, height, crown; green broadleaf, red-leaved, conifer or other. No species | CC0 | Yes, as before |
+| The city's tree register (Ville de Luxembourg, Service Parcs) | 23,940 trees: Latin name, cultivar, height, crown, street or park | None stated | Yes, by the owner's decision of 25 Nov |
+| OpenStreetMap | 88 trees with a species or genus in the commune | ODbL | Yes |
+| Remarkable trees (ANF) | 238 trees nationally, about 14 in the commune | CC0 | No (too few; OSM has most) |
+
+The register's count by genus: Acer 16.5%, Tilia 10.8%, Quercus 8.6%, Fraxinus 6.4%, Platanus 5.6%, Carpinus
+4.5%, Aesculus 4.2%, Ulmus 4.2%, Prunus 3.6%, Pinus 3.2%, Fagus 3.0%, Betula 3.0%; 102 genera in all.
+
+### 33.2 The 23 species
+
+Each has its own outline, bare trunk, width, leaf texture, greens and bark (`v2/config/tree_species.json`,
+`layer-07-trees.md` "Species"): maple, columnar maple, lime, oak, columnar oak, ash, plane, hornbeam, columnar
+hornbeam, horse chestnut, elm, cherry, purple cherry plum, beech, copper beech, birch, robinia, Lombardy poplar,
+weeping willow, ginkgo, pine, spruce, yew.
+
+- Ten outlines: round, egg, flame, column, spire, cone, pyramid, dome, vase, weeping. A conifer is no longer
+  three stacked tiers: a spruce is a cone of tufts, a pine a crown on a bare red-brown trunk, a yew a dark dome.
+- Crown widths are the species' (the register's mean height and crown width by genus): a maple 0.50 to 0.58 of its
+  measured height, an oak up to 0.64, a columnar oak 0.31, a spruce 0.33.
+- The drawing of a crown (clumps of five tufts in flat tones) is section 32's; a round maple's tufts are the same
+  shapes as before.
+- A species not among the 23 is drawn as the nearest one (an alder as a hornbeam, a pear as a columnar hornbeam,
+  a cedar as a pine): 23,749 of the register's 23,940 trees map to one.
+
+![The 23 species, each at three ages beside a 10 m pole, at 70% of their height](img/test_trees_species_sheet.jpg)
+
+### 33.3 Which tree is which species
+
+The first rule that applies decides (`scene.md`, "Tree species"). In the test area (12,414 trees):
+
+| Rule | Trees | Known or by rule |
+|---|---|---|
+| The city's register, within 4 m | 736 | Known |
+| OpenStreetMap species, within 3 m | 4 | Known |
+| A street or square whose trees are known | 66 | Known |
+| The survey's type (conifer: pine, spruce or yew; red: copper beech or cherry plum) | 666 | By rule |
+| By the water | 632 | By rule |
+| A street's own species | 732 | By rule |
+| Woods and dense stands, in patches | 7,081 | By rule |
+| Parks and gardens, in groups | 2,497 | By rule |
+
+- **6.5% of the trees have a known species; 93.5% are plausible, not true tree by tree.** The register covers
+  the trees the city looks after, on streets and in parks. The wooded slopes and private gardens that fill most
+  of the test area are not in it. (Before the download I told the owner the register would name about four
+  trees in ten in the centre; that was wrong.)
+- Of the register's 1,062 trees in the area, 736 name a surveyed tree. 267 have no surveyed tree within 4 m,
+  about 100 of them under 5 m tall: the LiDAR survey missed them. They are not drawn.
+- 43 trees changed type because the register knows better (a pine the survey called a broadleaf, and the like).
+- The wood mix (sycamore and ash first, then oak, hornbeam, beech) rests on the city's forest service points in
+  the centre; the reading of their codes is ours, not the city's.
+
+### 33.4 The build and the painted area
+
+| | |
+|---|---|
+| Release | `9ebcda41bae8` (current) |
+| Stages | 60 of 60 (the register's download is the new one) |
+| Gate entries | 286 pass, 0 fail (285 and the new TE10) |
+| Tree layer | 103.4 MB (99.7 in section 32); the release 17.66 MB (17.54) |
+| Speed | 120 frames a second over the whole area, 94 at zoom 1 |
+| Painted area (`9ebcda41bae8_t4_0`) | 101 pictures, even light fails on 0; edges 96.5%, window rows 99.8%; no baked light 0 of 252, worst 4.0%; vehicle gates 0 |
+
+- No threshold was changed. 181 tests pass (6 new on the species rules, 1 on the species' shapes). Tree checks
+  TE1 to TE10, S-trees (seams: 0.0), D-trees (vehicle detector: 0) pass; no baked light in the code art: 0 of 252,
+  worst 3.2%.
+- New: TE10 (gate) no tree drawn as a species of another kind than its type; TE11 and TE12 (reports) the trees by
+  rule and by species.
+- The per-picture vehicle detector (not a gate) marks the same 2 of 101 paintings as before (highest score 0.15).
+
+![Section 32's trees and the trees by species, at 13:00: the park and Rue Vauban in code art, the Bock painted](img/test_trees_species.jpg)
+
+### 33.5 Not done
+
+- **Autumn colour and blossom by species.** The viewer still tints every tree alike by season; a horse
+  chestnut's candles, a cherry's blossom and a ginkgo's yellow are not drawn.
+- The weeping willow's hanging branches barely read.
+- The register's trees that the survey missed are not added.
+- The register states no licence. If the city objects, its rule is removed and those trees fall back to the
+  other rules (`DECISIONS.md`).
+- Only the test area is built. The register covers the whole commune and is already downloaded for it.
+- Looked at: the species sheet, four places as trials, and from the build the eight views of both viewers at
+  13:00, evening and night, and four close views. Not looked at: other seasons.
+
+### 33.6 Open questions
+
+44, 46, 60 and 61 stand. 65 stands, on these trees:
+
+| # | Question |
+|---|---|
+| 65 | Are the trees right now, drawn by species? |
+| 66 | Should the city's trees that the LiDAR survey missed (267 in the test area) be added from the register, at the register's height? |
+| 67 | Should autumn colour and blossom follow the species? |
+
+## 34. The owner's review of the species build, and what is fixed (25 and 26 November, $0)
+
+The owner looked at section 33's build and listed eleven points. Three were bugs and are fixed here; the others
+are answers or their own steps. Release `f65f00199984` (all 60 stages ran; 287 gate entries pass, 0 fail, 380
+entries in all). No threshold was changed.
+
+### 34.1 The eleven points
+
+| # | The owner's point | What it was | State |
+|---|---|---|---|
+| 1 | Trees where they should not be | 488 trunks stood on the face of a wall or a cliff: the survey gives a tree by its crown's top, which can hang over a drop | Fixed |
+| 2 | Are trees as tall as the buildings? | Yes, there. The trees in the picture are measured at 21 to 30 m and drawn at 15 to 21 m (70%); the houses' eaves are 8 to 12 m up and their ridges 21 to 32 m; the green house's ground is 6 m lower | Answer |
+| 3 | The cliffs | The look of the rock itself | Not done: its own step (question 46) |
+| 4 | Weird patches | A road at a cliff's foot painted metres up the rock | Fixed |
+| 5 | Is this the same in reality? | The picture did not arrive | Open |
+| 6 | Weird pattern on some buildings | The same bug as 10 | Fixed |
+| 7 | Things on cliffs | The picture did not arrive | Open |
+| 8 | What happens to the trees when the leaves fall? | Today a crown only turns brown in winter. Bare branches are not drawn | Not done: its own step (question 68) |
+| 9 | Rivers | The picture did not arrive | Open |
+| 10 | Shadows are not smooth | Shadows were worked out on a grid of 0.5 m cells | Fixed |
+| 11 | (empty) | | |
+
+Of the pictures only the ones for points 1 and 2 arrived; the others came as copies of the second.
+
+### 34.2 The three fixes
+
+- **Trunks off faces (point 1).** A trunk on a cliff cell is put on the nearest ground that is not a face, within
+  its crown's radius plus 1 m (1.5 m at least, 4 m at most); with none in reach the tree is left out
+  (`trees.off_faces`, `scene.md`). 480 moved, 8 left out. New check TE13 (gate): no trunk on a cliff cell, 0.
+- **Smooth shadows (points 6 and 10).** The height map is read between its cells (`hmAt` in the shader, `hm_at`
+  in `light.py`), and the march starts 0.5 m off the surface along the level part of its normal, so a wall no
+  longer catches lines from its own cells and a shadow's edge has no steps (`layer-09-light.md`).
+- **No way up a cliff face (point 4).** A way's surface on a cliff cell is drawn only where the ground is within
+  1 m of the ground under the nearest point of its centre line (`layer-04-transport.md` rule 1).
+
+### 34.3 The first rebuild failed three checks, each from these fixes
+
+Release `6001bad621ed` did not pass. The causes and what was done:
+
+| Check | Result | Cause | Fix |
+|---|---|---|---|
+| L4.1 centre lines drawn | 182 of 88,462 samples not drawn | The cut compared the ground with the way's profile, which is 2 to 6 m off the terrain where a few ways cross a cliff cell | Compare with the ground under the centre line; never cut within 0.5 m of any centre line |
+| V2 shadows, buildings off | 0.9677 (needs 0.97) | The check's reference had no normals for this view, the viewer does | The check reads the nearest surface's normal per pixel, as for the other views |
+| C2b and X8b pan speed | 46 fps (needs 60) | Reading between cells is 8 reads per step of the march | Per block of 4 × 4 cells the viewer keeps a height nothing in the block reaches, and whether it holds a tree or a structure; cells are read only below that height (`heightmap.ts`). The shadows are the same |
+
+Blocks of 16 cells gave 64.8 fps only, because 71 of the march's 110 steps fall within 16 m; blocks of 4 with the
+tree and structure flag gave 83.
+
+### 34.4 The build
+
+| Check | Species build | Now |
+|---|---|---|
+| Gate entries passing | 286 | 287 (TE13 new) |
+| L4.1 centre-line samples drawn | 1.0 | 1.0 |
+| V3 viewer shadows against the reference (three views) | | 0.9923, 0.9881, 0.9981 |
+| V2 the same, buildings off | | 0.9923 |
+| L9.1 shadow direction, median error at 08:00, 13:00, 19:00 | | 7.51°, 9.5°, 7.66° |
+| L5.1 no baked light, code art | 0 of 252, worst 3.2% | 0 of 201, worst 2.7% |
+| C2b pan at 1:1, and the whole area | 94 and 120 fps | 82.9 and 91.6 fps |
+| X8b pan in the tunnel view | | 94.2 fps |
+| Tree layer | | 102.76 MB |
+
+The viewer pans slower than before and passes with room: the price of the smooth shadows. 184 Python tests (3 new, on the
+fixes) and 27 web tests (2 new, on the block tops) pass.
+
+![The review's fixes, before and now: the wall pattern, the cliff patches, the trees on walls](img/test_review_fixes.jpg)
+
+### 34.5 The painted area does not pass on this build
+
+Painted release `f65f00199984_t4_0`, from the same 101 paintings ($0). Lines, seams and the vehicle detector
+pass as before. **L5.1/L9.2 (no baked light) fails on 1 of 201 materials**: building 684's roof reads 9.25%
+darker in shadow than lit (limit 5%); the other layers' worst is 2.1%.
+
+The cause is how the roof is now measured, and the paint under it. The same 93 shadow pixels (a small sunken
+flat piece of the roof, painted at 137, no darker than the roof around it at 136 to 139) used to be compared
+with 2,074 lit pixels spread over the whole roof, because the old shadows scattered specks of self-shadow
+everywhere; that gave 3.0%. With clean shadows the lit pixels beside it are 531, a lighter strip along the upper
+roof (149). The paint on that roof is uneven by about 9%, and the check now sees it.
+
+Tried: the painted method's own shadow line now uses the surfaces' normals, as the check and the viewer do
+(`detail.py`); the result did not change. Not done: the limit is not raised and the roof is not excepted. If the
+painted art is chosen (question 60), this roof needs evening out or a new painting before the painted area can
+pass.
+
+### 34.6 Not done
+
+- The cliffs (points 3 and 7), the rivers (point 9) and bare winter trees (point 8): each its own step, none
+  started.
+- Point 5 is not answered.
+- A short wavy patch of path on a cliff face at the right of the Bock view was seen and left.
+- Looked at: the three places of the fixes before and now, the eight views of both viewers. Not looked at: other
+  seasons, other hours than 13:00, evening and night.
+
+### 34.7 Open questions
+
+44, 46, 60, 61, 65, 66 and 67 stand. New:
+
+| # | Question |
+|---|---|
+| 68 | Should broadleaved trees be drawn bare in winter (branches, no crown), with evergreens kept green? |
+| 69 | Is the cliffs' look the next step? |

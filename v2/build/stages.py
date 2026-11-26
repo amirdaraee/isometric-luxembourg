@@ -33,7 +33,7 @@ def _with(base, *keys):
 
 def graph() -> Graph:
     from v2.data.scene import buildings, entrances, facades, groundcover, places, structures, terrain, transit, transport, trees, water, scene
-    from v2.data.fetch import worship as fetch_worship
+    from v2.data.fetch import city_trees, worship as fetch_worship
     from v2.checks import data_checks as dc, repo_checks as rc
     from v2.build import report
 
@@ -46,6 +46,8 @@ def graph() -> Graph:
               kind="fetch", shared=True, doc="OSM land use, water, walls, cliffs, squares, lamps (Overpass)"),
         Stage("fetch_trees", fetch.fetch_trees, params=fetch.trees_params, code=GEO + ("v2.data.fetch.gpkg_stream", "v2.data.fetch.http"),
               kind="fetch", shared=True, doc="ACT LiDAR 2024 tree survey, streamed and cut to the commune"),
+        Stage("fetch_city_trees", city_trees.fetch_city_trees, params=city_trees.city_trees_params, code=("v2.data.geo", "v2.data.fetch.http"),
+              kind="fetch", shared=True, doc="the city's tree register: species, cultivar, height and crown of each tree"),
         Stage("fetch_osm_pois", entrances.fetch_osm_pois, params=fetch.extent_params,
               code=GEO + ("v2.data.fetch.overpass", "v2.data.fetch.http"), kind="fetch", shared=True,
               doc="OSM entrances, shops, crafts and amenities (Overpass)"),
@@ -71,8 +73,11 @@ def graph() -> Graph:
                                 REPO / "v2/data/structures/landmark_facades.json"],
               doc="facade layout per wall: floors, windows, doors and shop fronts; the church rule on places of worship; "
                   "the openings of landmarks as they are"),
-        Stage("scene_trees", trees.build, deps=("fetch_trees", "scene_buildings", "scene_water", "scene_terrain"),
-              params=_p("trees"), code=GEO, doc="LiDAR trees, thinned over water and buildings"),
+        Stage("scene_trees", trees.build, deps=("fetch_trees", "scene_buildings", "scene_water", "scene_terrain",
+                                                "fetch_osm_ground", "fetch_osm_transport", "fetch_city_trees"),
+              params=_p("trees"), code=GEO + ("v2.data.scene.tree_species",),
+              raw=lambda area: [REPO / "v2/config/tree_species.json"],
+              doc="LiDAR trees, each given a species by rule, thinned over water and buildings"),
         Stage("scene_groundcover", groundcover.build, deps=("scene_buildings", "scene_trees"), params=_p("groundcover"),
               raw=lambda area: [raw_dir() / params()["groundcover"]["ortho_dir"] / str(params()["groundcover"]["zoom"])],
               code=GEO, doc="vegetated ground where OSM is silent, classed from the orthophoto"),
@@ -102,7 +107,8 @@ def graph() -> Graph:
         Stage("check_terrain", dc.check_terrain, deps=("scene_terrain", "scene_buildings"), **chk, doc="terrain complete; buildings sit on it"),
         Stage("check_buildings", dc.check_buildings, deps=("scene_buildings",), **chk, doc="closed, valid, non-overlapping footprints"),
         Stage("check_facades", dc.check_facades, deps=("scene_facades", "scene_buildings"), **chk, doc="facade layout sanity"),
-        Stage("check_trees", dc.check_trees, deps=("scene_trees", "scene_buildings", "scene_water"), **chk, doc="no trees inside buildings or water"),
+        Stage("check_trees", dc.check_trees, deps=("scene_trees", "scene_buildings", "scene_water", "scene_terrain"), **chk,
+              doc="no trees inside buildings or water or on a cliff's face; crowns, heights and species by their rules"),
         Stage("check_groundcover", dc.check_groundcover, deps=("scene_groundcover", "scene_buildings", "fetch_osm_ground"),
               **{**chk, "code": chk["code"] + ("v2.data.scene.groundcover",)},
               doc="the photo's vegetated ground agrees with the land OSM does class"),
@@ -134,7 +140,7 @@ def graph() -> Graph:
 
 LAYER_CODE = GEO + CAM + ("v2.layers.common", "v2.layers.raster", "v2.layers.geometry", "v2.layers.render", "v2.layers.detail",
                           "v2.layers.tiles", "v2.layers.light", "v2.layers.data", "v2.data.scene.facades",
-                          "v2.layers.art_a", "v2.layers.bakeoff", "v2.config.art")
+                          "v2.layers.art_a", "v2.layers.bakeoff", "v2.config.art", "v2.layers.tree_forms")
 
 
 def _art(area):
@@ -146,7 +152,7 @@ def _art(area):
 
 def _layer_raw(area):
     from v2.config import CONFIG
-    return [CONFIG / "palette.json", CONFIG / "light.json", CONFIG / "camera.json"]
+    return [CONFIG / "palette.json", CONFIG / "light.json", CONFIG / "camera.json", CONFIG / "tree_species.json"]
 
 
 def _art_raw(area):

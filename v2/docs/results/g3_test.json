@@ -34,7 +34,7 @@
        "class": "pitch",
        "north": 118.72,
        "south": 118.93,
-       "diff": 0.0018
+       "diff": 0.0017
       },
       {
        "class": "rock",
@@ -43,16 +43,16 @@
        "diff": 0.0017
       },
       {
+       "class": "square",
+       "north": 140.53,
+       "south": 140.68,
+       "diff": 0.0011
+      },
+      {
        "class": "meadow",
        "north": 125.39,
        "south": 125.25,
        "diff": 0.0011
-      },
-      {
-       "class": "square",
-       "north": 140.54,
-       "south": 140.68,
-       "diff": 0.001
       },
       {
        "class": "grass",
@@ -85,7 +85,7 @@
     },
     {
      "id": "L8.1",
-     "title": "pixels where a layer's depth differs from layer 8's by > 1.0 cm (of 51449006)",
+     "title": "pixels where a layer's depth differs from layer 8's by > 1.0 cm (of 51234208)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -94,7 +94,7 @@
     },
     {
      "id": "L8.2",
-     "title": "normals not unit or facing away from the camera (of 51449006)",
+     "title": "normals not unit or facing away from the camera (of 51234208)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -114,7 +114,7 @@
      "id": "L8.3b",
      "title": "buildings with at least one pixel in layer 8",
      "passed": true,
-     "value": "1033 of 1135",
+     "value": "1067 of 1135",
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -144,7 +144,7 @@
     },
     {
      "id": "L4.1",
-     "title": "road, rail and tram centre-line samples (every 0.5 m) inside the drawn surface (of 63236; 4079 behind the terrain; 179 within 1 px of the surface's edge)",
+     "title": "road, rail and tram centre-line samples (every 0.5 m) inside the drawn surface (of 63231; 4084 behind the terrain; 180 within 1 px of the surface's edge)",
      "passed": true,
      "value": 1.0,
      "threshold": ">= 1.0",
@@ -241,7 +241,7 @@
      "id": "C1c",
      "title": "mean colour difference of a built tile from the renderer (WebP: lossy for ground and transport; lossless for relief, water, layers 5-7)",
      "passed": true,
-     "value": 2.19,
+     "value": 1.73,
      "threshold": "<= 3.0",
      "severity": "gate",
      "examples": []
@@ -271,7 +271,7 @@
     },
     {
      "id": "L5.1/L9.2",
-     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 227 compared)",
+     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 201 compared)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -283,11 +283,11 @@
      "title": "worst relative difference by layer",
      "passed": true,
      "value": {
-      "ground": 0.0177,
-      "buildings": 0.04,
+      "ground": 0.0129,
+      "buildings": 0.0268,
       "water": 0.0,
-      "transport": 0.0293,
-      "structures": 0.0272
+      "structures": 0.0206,
+      "transport": 0.0205
      },
      "threshold": null,
      "severity": "report",
@@ -295,27 +295,27 @@
     },
     {
      "id": "L9.1-08",
-     "title": "shadow direction vs the sun at 08:00 on 2026-06-21 (az 78.3, el 21.3): median angle error over 863 buildings (deg; 90th pct 23.1)",
+     "title": "shadow direction vs the sun at 08:00 on 2026-06-21 (az 78.3, el 21.3): median angle error over 843 buildings (deg; 90th pct 22.7)",
      "passed": true,
-     "value": 7.71,
+     "value": 7.51,
      "threshold": "<= 10.0",
      "severity": "gate",
      "examples": []
     },
     {
      "id": "L9.1-13",
-     "title": "shadow direction vs the sun at 13:00 on 2026-06-21 (az 161.0, el 62.8): median angle error over 435 buildings (deg; 90th pct 43.4)",
+     "title": "shadow direction vs the sun at 13:00 on 2026-06-21 (az 161.0, el 62.8): median angle error over 404 buildings (deg; 90th pct 44.0)",
      "passed": true,
-     "value": 9.82,
+     "value": 9.5,
      "threshold": "<= 10.0",
      "severity": "gate",
      "examples": []
     },
     {
      "id": "L9.1-19",
-     "title": "shadow direction vs the sun at 19:00 on 2026-06-21 (az 279.1, el 23.6): median angle error over 836 buildings (deg; 90th pct 25.2)",
+     "title": "shadow direction vs the sun at 19:00 on 2026-06-21 (az 279.1, el 23.6): median angle error over 813 buildings (deg; 90th pct 25.2)",
      "passed": true,
-     "value": 7.63,
+     "value": 7.66,
      "threshold": "<= 10.0",
      "severity": "gate",
      "examples": []
@@ -399,7 +399,7 @@
     },
     {
      "id": "S-transport",
-     "title": "transport: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 55 chunks)",
+     "title": "transport: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 53 chunks)",
      "passed": true,
      "value": 1.008,
      "threshold": "<= 3.0",
@@ -408,7 +408,7 @@
     },
     {
      "id": "S-transport-v1",
-     "title": "transport: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 122",
+     "title": "transport: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 115",
      "passed": true,
      "value": {
       "borders": 0,
@@ -462,7 +462,7 @@
     },
     {
      "id": "S-trees",
-     "title": "trees: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 162 chunks)",
+     "title": "trees: largest LAB step of a 64 x 4 px band beside a border (its mean colour), built tiles vs one render across the border (24 borders, 158 chunks)",
      "passed": true,
      "value": 0.0,
      "threshold": "<= 3.0",
@@ -471,11 +471,11 @@
     },
     {
      "id": "S-trees-v1",
-     "title": "trees: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 813",
+     "title": "trees: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 636",
      "passed": true,
      "value": {
-      "borders": 0,
-      "middles": 0.0
+      "borders": 6,
+      "middles": 3.0
      },
      "threshold": null,
      "severity": "report",
@@ -483,9 +483,9 @@
     },
     {
      "id": "L8.4",
-     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (1338 of 192802 vs 1319 of 188696; a seam would make it larger)",
+     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (4243 of 191512 vs 4412 of 187025; a seam would make it larger)",
      "passed": true,
-     "value": 0.993,
+     "value": 0.939,
      "threshold": "<= 1.5",
      "severity": "gate",
      "examples": []
@@ -503,7 +503,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 75.6
+      "audit_s": 75.5
      },
      "threshold": null,
      "severity": "report",
@@ -531,7 +531,7 @@
      "id": "L4.2",
      "title": "car samples on drawn road (of 559671 in the area, out of tunnels)",
      "passed": true,
-     "value": 0.99974,
+     "value": 0.99973,
      "threshold": ">= 0.995",
      "severity": "gate",
      "examples": [
@@ -539,6 +539,11 @@
        "e": 77301.8,
        "n": 75795.2,
        "edge": "w159842128_1286"
+      },
+      {
+       "e": 78228.7,
+       "n": 75740.8,
+       "edge": "w50033553_486"
       },
       {
        "e": 77919.1,
@@ -556,6 +561,11 @@
        "edge": "w50786532_545"
       },
       {
+       "e": 77592.1,
+       "n": 74945.9,
+       "edge": "w32860655_269"
+      },
+      {
        "e": 77791.1,
        "n": 75450.7,
        "edge": "w26621044_203"
@@ -564,16 +574,6 @@
        "e": 77301.8,
        "n": 75795.2,
        "edge": "w159842128_1286"
-      },
-      {
-       "e": 77551.2,
-       "n": 75023.0,
-       "edge": "w1470921337_4348"
-      },
-      {
-       "e": 77430.9,
-       "n": 74843.8,
-       "edge": "w1423519225_4286"
       }
      ]
     },
@@ -590,7 +590,7 @@
      "id": "L12.3",
      "title": "share of car samples the v1 fade guard would act on (off the drawn road)",
      "passed": true,
-     "value": 0.00026,
+     "value": 0.00027,
      "threshold": "<= 0.001",
      "severity": "gate",
      "examples": []
@@ -620,7 +620,7 @@
     },
     {
      "id": "C4",
-     "title": "probe pixels where the viewer's depth test disagrees with the exact geometry (of 12516108; 1782 more on silhouettes, within 1 px of an edge)",
+     "title": "probe pixels where the viewer's depth test disagrees with the exact geometry (of 12516108; 1793 more on silhouettes, within 1 px of an edge)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -641,8 +641,8 @@
      "title": "probe pixels hidden (under decks or past portals)",
      "passed": true,
      "value": {
-      "deck_and_under": 1762332,
-      "portals": 2130226
+      "deck_and_under": 1377713,
+      "portals": 2125588
      },
      "threshold": null,
      "severity": "report",
@@ -689,7 +689,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 211.5,
+     "value": 221.5,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -877,8 +877,8 @@
      "value": {
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
-      "images": 965,
-      "seconds": 315.9,
+      "images": 953,
+      "seconds": 311.9,
       "queries": [
        "a car",
        "a parked car",
@@ -1054,27 +1054,27 @@
     },
     {
      "id": "V3-10",
-     "title": "shadows at 10:00 on 2026-06-21 match the Python reference (share of pixels; 17.0% in shadow)",
+     "title": "shadows at 10:00 on 2026-06-21 match the Python reference (share of pixels; 10.8% in shadow)",
      "passed": true,
-     "value": 0.986,
+     "value": 0.9923,
      "threshold": ">= 0.97",
      "severity": "gate",
      "examples": []
     },
     {
      "id": "V3-16",
-     "title": "shadows at 16:00 on 2026-06-21 match the Python reference (share of pixels; 40.3% in shadow)",
+     "title": "shadows at 16:00 on 2026-06-21 match the Python reference (share of pixels; 20.1% in shadow)",
      "passed": true,
-     "value": 0.9718,
+     "value": 0.9881,
      "threshold": ">= 0.97",
      "severity": "gate",
      "examples": []
     },
     {
      "id": "V3-13",
-     "title": "shadows at 13:00 on 2026-06-21 match the Python reference (share of pixels; 10.6% in shadow)",
+     "title": "shadows at 13:00 on 2026-06-21 match the Python reference (share of pixels; 6.3% in shadow)",
      "passed": true,
-     "value": 0.9963,
+     "value": 0.9981,
      "threshold": ">= 0.97",
      "severity": "gate",
      "examples": []
@@ -1083,7 +1083,7 @@
      "id": "V2",
      "title": "?off=buildings: the viewer's shadows equal the reference without buildings (share of pixels)",
      "passed": true,
-     "value": 0.9831,
+     "value": 0.9923,
      "threshold": ">= 0.97",
      "severity": "gate",
      "examples": []
@@ -1092,7 +1092,7 @@
      "id": "V3b",
      "title": "share of pixels whose shadow changes between 10:00 and 16:00 (shadows move with ?hour)",
      "passed": true,
-     "value": 0.4256,
+     "value": 0.2251,
      "threshold": ">= 0.02",
      "severity": "gate",
      "examples": []
@@ -1138,23 +1138,23 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.148,
-      "first_view_warm_s": 0.0915,
+      "first_view_cold_s": 0.155,
+      "first_view_warm_s": 0.08730000007152558,
       "pan_whole_area": {
-       "fps": 120.14787430755473,
+       "fps": 91.6148680701426,
        "frame_ms_median": 0.5,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 94.14408790111125,
+       "fps": 82.85500374344898,
        "frame_ms_median": 0.3999999761581421,
        "tiles_missing": 0
       },
-      "pan_fps": 94.14408790111125,
+      "pan_fps": 82.85500374344898,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 120.00099792715538,
+        "fps": 100.73992600799964,
         "frame_ms_median": 0.8000000715255737,
         "tiles_missing": 0
        }
@@ -1169,7 +1169,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.091,
+     "value": 0.087,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1178,7 +1178,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 94.1,
+     "value": 82.9,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1190,7 +1190,7 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 120.00099792715538,
+       "fps": 100.73992600799964,
        "frame_ms_median": 0.8000000715255737,
        "tiles_missing": 0
       }
@@ -2005,10 +2005,10 @@
     },
     {
      "id": "TE4",
-     "title": "heights within 2.0-50.0 m",
+     "title": "measured heights within 2.0-50.0 m",
      "passed": true,
      "value": [
-      2.3399999141693115,
+      2.0300145149230957,
       44.52000045776367
      ],
      "threshold": null,
@@ -2016,10 +2016,37 @@
      "examples": []
     },
     {
+     "id": "TE9",
+     "title": "trees not drawn at 0.7 of their measured height (within 1 cm)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
      "id": "TE5",
      "title": "trees",
      "passed": true,
-     "value": 12414,
+     "value": 12406,
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "TE13",
+     "title": "trees whose trunk stands on a cliff cell (the face of a wall or a cliff)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE13b",
+     "title": "trees whose trunk was put on the nearest ground off a face",
+     "passed": true,
+     "value": 480,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -2043,12 +2070,73 @@
      "examples": []
     },
     {
+     "id": "TE10",
+     "title": "trees whose species is not of their type's kind (a conifer drawn as a broadleaf, a red-leaved tree as a green one, or the other way)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE11",
+     "title": "trees by what set their species (register, osm, named: known; the others: by rule), and the share known",
+     "passed": true,
+     "value": {
+      "register": 734,
+      "osm": 4,
+      "named": 66,
+      "type": 666,
+      "water": 632,
+      "street": 733,
+      "wood": 7086,
+      "park": 2485,
+      "known_share": 0.0648
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "TE12",
+     "title": "trees by species",
+     "passed": true,
+     "value": {
+      "maple": 2950,
+      "maple_column": 79,
+      "lime": 1199,
+      "oak": 1539,
+      "oak_column": 23,
+      "ash": 1940,
+      "plane": 289,
+      "hornbeam": 965,
+      "hornbeam_column": 101,
+      "chestnut": 311,
+      "elm": 222,
+      "cherry": 186,
+      "cherry_plum_red": 20,
+      "beech": 664,
+      "copper_beech": 75,
+      "birch": 485,
+      "robinia": 573,
+      "poplar": 34,
+      "willow": 28,
+      "ginkgo": 106,
+      "pine": 320,
+      "spruce": 185,
+      "yew": 112
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
      "id": "TE8",
-     "title": "height over crown width, median (all trees; trees of 8 m or more)",
+     "title": "drawn height over crown width, median (all trees; trees drawn 8 m or more)",
      "passed": true,
      "value": [
-      2.19,
-      2.14
+      1.38,
+      1.37
      ],
      "threshold": null,
      "severity": "report",
@@ -2072,7 +2160,7 @@
      "id": "GC2",
      "title": "share of OSM's squares, car parks and rail ground (outside buildings, 210890 cells) the photo calls vegetated",
      "passed": true,
-     "value": 0.0526,
+     "value": 0.053,
      "threshold": "<= 0.15",
      "severity": "gate",
      "examples": []
@@ -2081,7 +2169,7 @@
      "id": "GC3",
      "title": "share of OSM's gardens (124522 cells) the photo calls vegetated",
      "passed": true,
-     "value": 0.7992,
+     "value": 0.8005,
      "threshold": ">= 0.7",
      "severity": "gate",
      "examples": []
@@ -2096,19 +2184,19 @@
        2507
       ],
       "railground": [
-       0.0588,
+       0.0597,
        107468
       ],
       "parking": [
-       0.0656,
+       0.0653,
        70911
       ],
       "square": [
-       0.0038,
+       0.004,
        32511
       ],
       "grass": [
-       0.3972,
+       0.3975,
        932354
       ],
       "cemetery": [
@@ -2116,27 +2204,27 @@
        12700
       ],
       "garden": [
-       0.7992,
+       0.8005,
        124522
       ],
       "meadow": [
-       0.5438,
+       0.5418,
        54684
       ],
       "scrub": [
-       0.7816,
+       0.7813,
        102441
       ],
       "wood": [
-       0.8906,
+       0.8907,
        1513106
       ],
       "pitch": [
-       0.2343,
+       0.2341,
        90023
       ],
       "water": [
-       0.5552,
+       0.5557,
        219411
       ]
      },
@@ -2150,7 +2238,7 @@
      "passed": true,
      "value": [
       1956452,
-      0.256
+      0.2564
      ],
      "threshold": null,
      "severity": "report",
@@ -2637,7 +2725,7 @@
      "id": "N3",
      "title": "stages in the build graph",
      "passed": true,
-     "value": 61,
+     "value": 62,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -2927,7 +3015,7 @@
      "id": "X4c",
      "title": "view on: largest colour step the fade adds at a tile border (LAB, the 4 px either side per 64 px, against the offline faded frame; 448 border chunks)",
      "passed": true,
-     "value": 0.088,
+     "value": 0.107,
      "threshold": "<= 3.0",
      "severity": "gate",
      "examples": []
@@ -2999,7 +3087,7 @@
      "id": "X5b",
      "title": "tunnel view with a layer off: largest difference of a city pixel from the plain frame without that layer, faded offline (in 1/255; the seven layers)",
      "passed": true,
-     "value": 0.6,
+     "value": 0.65,
      "threshold": "<= 1",
      "severity": "gate",
      "examples": []
@@ -3111,69 +3199,69 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 8
+        "ms": 7.600000023841858
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 9.299999952316284
+        "ms": 8.100000023841858
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 7.100000023841858
+        "ms": 7.299999952316284
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 7.699999928474426
+        "ms": 7
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 7.899999976158142
+        "ms": 6.600000023841858
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 7.799999952316284
+        "ms": 8.100000023841858
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 9.699999928474426
+        "ms": 9.5
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 9.100000023841858
+        "ms": 10.299999952316284
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 8.300000071525574
+        "ms": 7.299999952316284
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8.300000071525574
+        "ms": 8.5
        }
       ],
       "pan_whole_area": {
-       "fps": 120.13587092047734,
-       "frame_ms_median": 0.5999999046325684,
+       "fps": 118.66396862345529,
+       "frame_ms_median": 0.6000000238418579,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
       "pan_zoom1": {
-       "fps": 95.73803274590676,
-       "frame_ms_median": 0.3999999761581421,
+       "fps": 94.22879852089444,
+       "frame_ms_median": 0.2999999523162842,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
-      "pan_fps": 95.73803274590676,
+      "pan_fps": 94.22879852089444,
       "viewport": "1600x1000 CSS px, device pixel ratio 1"
      },
      "threshold": null,
@@ -3182,7 +3270,7 @@
     },
     {
      "id": "X8a",
-     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 9.7 ms at most)",
+     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 10.3 ms at most)",
      "passed": true,
      "value": 1,
      "threshold": "<= 1",
@@ -3193,7 +3281,7 @@
      "id": "X8b",
      "title": "panning in tunnel view, desktop (frames per second, the whole area and 1:1)",
      "passed": true,
-     "value": 95.7,
+     "value": 94.2,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -3202,7 +3290,7 @@
      "id": "X9",
      "title": "seconds",
      "passed": true,
-     "value": 107.5,
+     "value": 110.4,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -4108,7 +4196,7 @@
      "id": "K6v-on-cathedral-13",
      "title": "Notre-Dame Cathedral, 13:00: pixels the cutaway changes when on",
      "passed": true,
-     "value": 31569,
+     "value": 32692,
      "threshold": ">= 1000",
      "severity": "gate",
      "examples": []
@@ -4126,7 +4214,7 @@
      "id": "K6v-on-cathedral-23",
      "title": "Notre-Dame Cathedral, 23:00: pixels the cutaway changes when on",
      "passed": true,
-     "value": 31570,
+     "value": 32693,
      "threshold": ">= 1000",
      "severity": "gate",
      "examples": []
@@ -4144,7 +4232,7 @@
      "id": "K6v-xray-on-cathedral",
      "title": "Notre-Dame Cathedral: in tunnel view, pixels the cutaway changes when on (it shows through the fade)",
      "passed": true,
-     "value": 31568,
+     "value": 32691,
      "threshold": ">= 1",
      "severity": "gate",
      "examples": []
@@ -4160,7 +4248,7 @@
     },
     {
      "id": "K2v-cathedral",
-     "title": "Notre-Dame Cathedral: interior pixels drawn by the viewer outside the tiles' opening mask (of 31208 drawn; the mask holds 33325 px in the view)",
+     "title": "Notre-Dame Cathedral: interior pixels drawn by the viewer outside the tiles' opening mask (of 32315 drawn; the mask holds 33325 px in the view)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4169,7 +4257,7 @@
     },
     {
      "id": "K2v-frame-cathedral",
-     "title": "Notre-Dame Cathedral: pixels of the view whose layer, or class in layer 5, is not the tiles' nearest surface with the cutaway in place (of 1920000; 31208 of the opening seen)",
+     "title": "Notre-Dame Cathedral: pixels of the view whose layer, or class in layer 5, is not the tiles' nearest surface with the cutaway in place (of 1920000; 32315 of the opening seen)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4178,7 +4266,7 @@
     },
     {
      "id": "K2v-colour-cathedral",
-     "title": "Notre-Dame Cathedral: layer 5 pixels (the cutaway's and the other buildings', 788610) whose colour is not the tiles'",
+     "title": "Notre-Dame Cathedral: layer 5 pixels (the cutaway's and the other buildings', 820066) whose colour is not the tiles'",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4208,8 +4296,8 @@
      "title": "Notre-Dame Cathedral: probe pixels drawn; hidden behind the cutaway's own surfaces",
      "passed": true,
      "value": [
-      22419,
-      140160
+      28538,
+      147258
      ],
      "threshold": null,
      "severity": "report",
@@ -4217,7 +4305,7 @@
     },
     {
      "id": "K5v-labels-cathedral",
-     "title": "Notre-Dame Cathedral: label points (on and 3 m behind the cutaway's surfaces, 4248) that the viewer hides or shows against what the tiles say (2124 hidden)",
+     "title": "Notre-Dame Cathedral: label points (on and 3 m behind the cutaway's surfaces, 4470) that the viewer hides or shows against what the tiles say (2235 hidden)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4226,7 +4314,7 @@
     },
     {
      "id": "K3v-sky-even-cathedral-13",
-     "title": "Notre-Dame Cathedral, 13: opening pixels (of 31208 seen) that are not their unlit colour times the one sky light [0.853, 0.853, 0.853] (by more than 1 of 255): a shadow, or light by the face's direction",
+     "title": "Notre-Dame Cathedral, 13: opening pixels (of 32315 seen) that are not their unlit colour times the one sky light [0.853, 0.853, 0.853] (by more than 1 of 255): a shadow, or light by the face's direction",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4235,7 +4323,7 @@
     },
     {
      "id": "K3v-sky-outside-cathedral-13",
-     "title": "Notre-Dame Cathedral, 13: pixels the sky light rule changes outside the opening (it changes 31208 in it)",
+     "title": "Notre-Dame Cathedral, 13: pixels the sky light rule changes outside the opening (it changes 32315 in it)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4244,7 +4332,7 @@
     },
     {
      "id": "K3v-sky-even-cathedral-21.3",
-     "title": "Notre-Dame Cathedral, 21.3: opening pixels (of 31208 seen) that are not their unlit colour times the one sky light [0.94, 0.827, 0.695] (by more than 1 of 255): a shadow, or light by the face's direction",
+     "title": "Notre-Dame Cathedral, 21.3: opening pixels (of 32315 seen) that are not their unlit colour times the one sky light [0.94, 0.827, 0.695] (by more than 1 of 255): a shadow, or light by the face's direction",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4253,7 +4341,7 @@
     },
     {
      "id": "K3v-sky-outside-cathedral-21.3",
-     "title": "Notre-Dame Cathedral, 21.3: pixels the sky light rule changes outside the opening (it changes 31133 in it)",
+     "title": "Notre-Dame Cathedral, 21.3: pixels the sky light rule changes outside the opening (it changes 32232 in it)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4262,7 +4350,7 @@
     },
     {
      "id": "K3v-sky-even-cathedral-23.25",
-     "title": "Notre-Dame Cathedral, 23.25: opening pixels (of 31208 seen) that are not their unlit colour times the one sky light [0.244, 0.308, 0.522] (by more than 1 of 255): a shadow, or light by the face's direction",
+     "title": "Notre-Dame Cathedral, 23.25: opening pixels (of 32315 seen) that are not their unlit colour times the one sky light [0.244, 0.308, 0.522] (by more than 1 of 255): a shadow, or light by the face's direction",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4271,7 +4359,7 @@
     },
     {
      "id": "K3v-sky-outside-cathedral-23.25",
-     "title": "Notre-Dame Cathedral, 23.25: pixels the sky light rule changes outside the opening (it changes 29777 in it)",
+     "title": "Notre-Dame Cathedral, 23.25: pixels the sky light rule changes outside the opening (it changes 30667 in it)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4286,7 +4374,7 @@
       "13": {
        "interior": 0.853,
        "interior_lit_as_a_building": 0.494,
-       "kept_outside_stone": 0.838
+       "kept_outside_stone": 0.847
       },
       "21.3": {
        "interior": 0.845,
@@ -4296,7 +4384,7 @@
       "23.25": {
        "interior": 0.306,
        "interior_lit_as_a_building": 0.304,
-       "kept_outside_stone": 0.27
+       "kept_outside_stone": 0.273
       }
      },
      "threshold": null,
@@ -4334,7 +4422,7 @@
      "id": "K6v-on-palace-23",
      "title": "Grand Ducal Palace, 23:00: pixels the cutaway changes when on",
      "passed": true,
-     "value": 37121,
+     "value": 37126,
      "threshold": ">= 1000",
      "severity": "gate",
      "examples": []
@@ -4352,7 +4440,7 @@
      "id": "K6v-xray-on-palace",
      "title": "Grand Ducal Palace: in tunnel view, pixels the cutaway changes when on (it shows through the fade)",
      "passed": true,
-     "value": 30875,
+     "value": 30873,
      "threshold": ">= 1",
      "severity": "gate",
      "examples": []
@@ -4386,7 +4474,7 @@
     },
     {
      "id": "K2v-colour-palace",
-     "title": "Grand Ducal Palace: layer 5 pixels (the cutaway's and the other buildings', 1685225) whose colour is not the tiles'",
+     "title": "Grand Ducal Palace: layer 5 pixels (the cutaway's and the other buildings', 1701293) whose colour is not the tiles'",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4395,7 +4483,7 @@
     },
     {
      "id": "K5v-vehicles-palace",
-     "title": "Grand Ducal Palace: probe vehicle pixels where the viewer's depth test against the cut building disagrees with the tiles (of 173820 px of 360 cars; 4 more on silhouettes)",
+     "title": "Grand Ducal Palace: probe vehicle pixels where the viewer's depth test against the cut building disagrees with the tiles (of 173820 px of 360 cars; 6 more on silhouettes)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4406,7 +4494,7 @@
      "id": "K5v-silhouette-palace",
      "title": "Grand Ducal Palace: share of probe pixels on silhouettes (edge rounding)",
      "passed": true,
-     "value": 2e-05,
+     "value": 3e-05,
      "threshold": "<= 0.01",
      "severity": "gate",
      "examples": []
@@ -4416,8 +4504,8 @@
      "title": "Grand Ducal Palace: probe pixels drawn; hidden behind the cutaway's own surfaces",
      "passed": true,
      "value": [
-      42643,
-      114365
+      43264,
+      120810
      ],
      "threshold": null,
      "severity": "report",
@@ -4425,7 +4513,7 @@
     },
     {
      "id": "K5v-labels-palace",
-     "title": "Grand Ducal Palace: label points (on and 3 m behind the cutaway's surfaces, 3116) that the viewer hides or shows against what the tiles say (1558 hidden)",
+     "title": "Grand Ducal Palace: label points (on and 3 m behind the cutaway's surfaces, 3262) that the viewer hides or shows against what the tiles say (1631 hidden)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4494,7 +4582,7 @@
       "13": {
        "interior": 0.854,
        "interior_lit_as_a_building": 0.495,
-       "kept_outside_stone": 0.894
+       "kept_outside_stone": 0.902
       },
       "21.3": {
        "interior": 0.844,
@@ -4504,7 +4592,7 @@
       "23.25": {
        "interior": 0.305,
        "interior_lit_as_a_building": 0.304,
-       "kept_outside_stone": 0.29
+       "kept_outside_stone": 0.291
       }
      },
      "threshold": null,
@@ -4524,7 +4612,7 @@
      "id": "K6v-on-abbey-13",
      "title": "Neum\u00fcnster Abbey, 13:00: pixels the cutaway changes when on",
      "passed": true,
-     "value": 59224,
+     "value": 62001,
      "threshold": ">= 1000",
      "severity": "gate",
      "examples": []
@@ -4542,7 +4630,7 @@
      "id": "K6v-on-abbey-23",
      "title": "Neum\u00fcnster Abbey, 23:00: pixels the cutaway changes when on",
      "passed": true,
-     "value": 59217,
+     "value": 61994,
      "threshold": ">= 1000",
      "severity": "gate",
      "examples": []
@@ -4560,7 +4648,7 @@
      "id": "K6v-xray-on-abbey",
      "title": "Neum\u00fcnster Abbey: in tunnel view, pixels the cutaway changes when on (it shows through the fade)",
      "passed": true,
-     "value": 59208,
+     "value": 61985,
      "threshold": ">= 1",
      "severity": "gate",
      "examples": []
@@ -4576,7 +4664,7 @@
     },
     {
      "id": "K2v-abbey",
-     "title": "Neum\u00fcnster Abbey: interior pixels drawn by the viewer outside the tiles' opening mask (of 43691 drawn; the mask holds 46411 px in the view)",
+     "title": "Neum\u00fcnster Abbey: interior pixels drawn by the viewer outside the tiles' opening mask (of 46397 drawn; the mask holds 46411 px in the view)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4585,7 +4673,7 @@
     },
     {
      "id": "K2v-frame-abbey",
-     "title": "Neum\u00fcnster Abbey: pixels of the view whose layer, or class in layer 5, is not the tiles' nearest surface with the cutaway in place (of 1920000; 43691 of the opening seen)",
+     "title": "Neum\u00fcnster Abbey: pixels of the view whose layer, or class in layer 5, is not the tiles' nearest surface with the cutaway in place (of 1920000; 46397 of the opening seen)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4594,7 +4682,7 @@
     },
     {
      "id": "K2v-colour-abbey",
-     "title": "Neum\u00fcnster Abbey: layer 5 pixels (the cutaway's and the other buildings', 563614) whose colour is not the tiles'",
+     "title": "Neum\u00fcnster Abbey: layer 5 pixels (the cutaway's and the other buildings', 617834) whose colour is not the tiles'",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4624,8 +4712,8 @@
      "title": "Neum\u00fcnster Abbey: probe pixels drawn; hidden behind the cutaway's own surfaces",
      "passed": true,
      "value": [
-      81658,
-      203361
+      85829,
+      223011
      ],
      "threshold": null,
      "severity": "report",
@@ -4633,7 +4721,7 @@
     },
     {
      "id": "K5v-labels-abbey",
-     "title": "Neum\u00fcnster Abbey: label points (on and 3 m behind the cutaway's surfaces, 5038) that the viewer hides or shows against what the tiles say (2519 hidden)",
+     "title": "Neum\u00fcnster Abbey: label points (on and 3 m behind the cutaway's surfaces, 5496) that the viewer hides or shows against what the tiles say (2748 hidden)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4642,7 +4730,7 @@
     },
     {
      "id": "K3v-sky-even-abbey-13",
-     "title": "Neum\u00fcnster Abbey, 13: opening pixels (of 43691 seen) that are not their unlit colour times the one sky light [0.853, 0.853, 0.853] (by more than 1 of 255): a shadow, or light by the face's direction",
+     "title": "Neum\u00fcnster Abbey, 13: opening pixels (of 46397 seen) that are not their unlit colour times the one sky light [0.853, 0.853, 0.853] (by more than 1 of 255): a shadow, or light by the face's direction",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4651,7 +4739,7 @@
     },
     {
      "id": "K3v-sky-outside-abbey-13",
-     "title": "Neum\u00fcnster Abbey, 13: pixels the sky light rule changes outside the opening (it changes 43691 in it)",
+     "title": "Neum\u00fcnster Abbey, 13: pixels the sky light rule changes outside the opening (it changes 46397 in it)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4660,7 +4748,7 @@
     },
     {
      "id": "K3v-sky-even-abbey-21.3",
-     "title": "Neum\u00fcnster Abbey, 21.3: opening pixels (of 43691 seen) that are not their unlit colour times the one sky light [0.94, 0.827, 0.695] (by more than 1 of 255): a shadow, or light by the face's direction",
+     "title": "Neum\u00fcnster Abbey, 21.3: opening pixels (of 46397 seen) that are not their unlit colour times the one sky light [0.94, 0.827, 0.695] (by more than 1 of 255): a shadow, or light by the face's direction",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4669,7 +4757,7 @@
     },
     {
      "id": "K3v-sky-outside-abbey-21.3",
-     "title": "Neum\u00fcnster Abbey, 21.3: pixels the sky light rule changes outside the opening (it changes 43691 in it)",
+     "title": "Neum\u00fcnster Abbey, 21.3: pixels the sky light rule changes outside the opening (it changes 46397 in it)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4678,7 +4766,7 @@
     },
     {
      "id": "K3v-sky-even-abbey-23.25",
-     "title": "Neum\u00fcnster Abbey, 23.25: opening pixels (of 43691 seen) that are not their unlit colour times the one sky light [0.244, 0.308, 0.522] (by more than 1 of 255): a shadow, or light by the face's direction",
+     "title": "Neum\u00fcnster Abbey, 23.25: opening pixels (of 46397 seen) that are not their unlit colour times the one sky light [0.244, 0.308, 0.522] (by more than 1 of 255): a shadow, or light by the face's direction",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4687,7 +4775,7 @@
     },
     {
      "id": "K3v-sky-outside-abbey-23.25",
-     "title": "Neum\u00fcnster Abbey, 23.25: pixels the sky light rule changes outside the opening (it changes 43691 in it)",
+     "title": "Neum\u00fcnster Abbey, 23.25: pixels the sky light rule changes outside the opening (it changes 46397 in it)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -4702,7 +4790,7 @@
       "13": {
        "interior": 0.854,
        "interior_lit_as_a_building": 0.495,
-       "kept_outside_stone": 0.901
+       "kept_outside_stone": 0.9
       },
       "21.3": {
        "interior": 0.843,
@@ -4712,7 +4800,7 @@
       "23.25": {
        "interior": 0.309,
        "interior_lit_as_a_building": 0.29,
-       "kept_outside_stone": 0.289
+       "kept_outside_stone": 0.331
       }
      },
      "threshold": null,
@@ -4732,7 +4820,7 @@
      "id": "K6v-far-on",
      "title": "far zoom: pixels the cutaways change when on",
      "passed": true,
-     "value": 832565,
+     "value": 832363,
      "threshold": ">= 1",
      "severity": "gate",
      "examples": []
@@ -4750,28 +4838,28 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.148,
-  "first_view_warm_s": 0.0915,
+  "first_view_cold_s": 0.155,
+  "first_view_warm_s": 0.08730000007152558,
   "pan_whole_area": {
-   "fps": 120.14787430755473,
+   "fps": 91.6148680701426,
    "frame_ms_median": 0.5,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 94.14408790111125,
+   "fps": 82.85500374344898,
    "frame_ms_median": 0.3999999761581421,
    "tiles_missing": 0
   },
-  "pan_fps": 94.14408790111125,
+  "pan_fps": 82.85500374344898,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 120.00099792715538,
+    "fps": 100.73992600799964,
     "frame_ms_median": 0.8000000715255737,
     "tiles_missing": 0
    }
   },
   "viewport": "1600x1000 CSS px, device pixel ratio 1"
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/cce0dd0cb290"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/f65f00199984"
 }

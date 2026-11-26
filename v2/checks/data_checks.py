@@ -454,26 +454,60 @@ def check_trees(ctx):
         worst = float(share.max())
         ex = [str(u) for u in t["uuid"][share > p["max_overlap_share"] + 0.02][:5]]
     r.at_most("TE3", "largest share of a crown over buildings or water", round(worst, 3), p["max_overlap_share"] + 0.02, ex)
-    h = t["height"]
-    r.add("TE4", f"heights within {p['min_height_m']}-{p['max_height_m']} m",
-          bool(((h >= p["min_height_m"]) & (h <= p["max_height_m"])).all()), [float(h.min()), float(h.max())] if len(h) else None)
+    h = t["height"]                                             # as drawn
+    hm = t["height_measured"] if "height_measured" in t.files else h
+    r.add("TE4", f"measured heights within {p['min_height_m']}-{p['max_height_m']} m",
+          bool(((hm >= p["min_height_m"]) & (hm <= p["max_height_m"])).all()), [float(hm.min()), float(hm.max())] if len(hm) else None)
+    # TE9: every tree is drawn at the same stated share of its measured height (layer-07 rule 1), none taller
+    off = np.abs(h.astype(float) - hm.astype(float) * p["drawn_height_scale"])
+    r.at_most("TE9", f"trees not drawn at {p['drawn_height_scale']} of their measured height (within 1 cm)",
+              int((off > 0.01).sum()), 0, [str(u) for u in t["uuid"][off > 0.01][:5]])
     T = np.load(ctx.dep("scene_terrain") / "terrain.npz") if "scene_terrain" in ctx.deps else None
     r.info("TE5", "trees", int(len(h)))
+    # TE13: no trunk on the face of a wall or a cliff (scene.md, Trees: the survey's point is the crown's top)
+    if T is not None and len(h):
+        cj = np.clip(np.floor((t["e"] - float(T["e0"])) / float(T["step"])).astype(int), 0, T["cls"].shape[1] - 1)
+        ci = np.clip(np.floor((t["n"] - float(T["n0"])) / float(T["step"])).astype(int), 0, T["cls"].shape[0] - 1)
+        on_face = T["cls"][ci, cj] == 2
+        r.at_most("TE13", "trees whose trunk stands on a cliff cell (the face of a wall or a cliff)", int(on_face.sum()), 0,
+                  [str(u) for u in t["uuid"][on_face][:5]])
+        r.info("TE13b", "trees whose trunk was put on the nearest ground off a face",
+               int(t["moved_off_a_face"].sum()) if "moved_off_a_face" in t.files else 0)
     # TE6-TE8: the drawn crown follows the tree's shape by species and age (layer-07 rule 1): never wider than that
     # shape allows, never narrower than surveyed unless thinned for a building or water; heights are the survey's
     from v2.data.scene.trees import shape_radius
     names = [str(s) for s in t["type_names"]]
     cr = t["crown_r"].astype(float)
     if len(h):
-        _, allo = shape_radius(h, np.zeros(len(h)), t["type"], t["e"], t["n"], p, names)
+        from v2.data.scene import tree_species
+        S = tree_species.config()
+        sp_names = [str(k) for k in t["species_names"]]
+        sp = t["species"].astype(int)
+        widths = np.array([{**S["defaults"], **S["list"][k]}["width"] for k in sp_names], float)[sp]
+        _, allo = shape_radius(hm, np.zeros(len(h)), t["type"], t["e"], t["n"], p, names, width=widths)
         cap = np.maximum(allo, t["crown_r_measured"].astype(float) * p["crown_scale"])
         over = cr - cap
         r.at_most("TE6", "crowns wider than their species' and age's shape (or the survey's width, if that is wider), m",
                   round(float(over.max()), 3), 0.01, [str(u) for u in t["uuid"][over > 0.01][:5]])
         shape = t["crown_r_shape"].astype(float) if "crown_r_shape" in t.files else cr
         r.add("TE7", "no crown wider than before thinning (thinning only narrows)", bool((cr <= shape + 1e-4).all()))
+        # TE10-TE12: every tree has one of the drawn species, of its type's kind and for its height (scene.md,
+        # "Tree species"); how each got it is reported, never hidden: most are set by rule, not known
+        A = S["assign"]
+        kind = np.where(np.isin(sp_names, A["conifers"]), names.index("conifer"),
+                        np.where(np.isin(sp_names, A["red"]), names.index("deciduous_red"), names.index("deciduous_green")))
+        typ = np.where(t["type"] == names.index("other"), names.index("deciduous_green"), t["type"])
+        bad = (kind[sp] != typ) | (sp < 0) | (sp >= len(sp_names)) | ~np.isin(sp_names, list(S["list"]))[sp]
+        r.at_most("TE10", "trees whose species is not of their type's kind (a conifer drawn as a broadleaf, a red-leaved tree as a green one, or the other way)",
+                  int(bad.sum()), 0, [str(u) for u in t["uuid"][bad][:5]])
+        rules = [str(k) for k in t["species_rules"]]
+        by_rule = {k: int((t["species_rule"] == i).sum()) for i, k in enumerate(rules)}
+        known = sum(by_rule.get(k, 0) for k in ("register", "osm", "named"))
+        r.info("TE11", "trees by what set their species (register, osm, named: known; the others: by rule), and the share known",
+               {**by_rule, "known_share": round(known / len(h), 4)})
+        r.info("TE12", "trees by species", {k: int((sp == i).sum()) for i, k in enumerate(sp_names)})
         tall = h >= 8
-        r.info("TE8", "height over crown width, median (all trees; trees of 8 m or more)",
+        r.info("TE8", "drawn height over crown width, median (all trees; trees drawn 8 m or more)",
                [round(float(np.median(h / np.maximum(2 * cr, 1e-3))), 2),
                 round(float(np.median(h[tall] / np.maximum(2 * cr[tall], 1e-3))), 2) if tall.any() else None])
     return r.result()

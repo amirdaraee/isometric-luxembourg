@@ -16,6 +16,11 @@ lossless "drivable" id tile set (edge id per pixel) for the vehicle check.
    it, and from any bridge end it leaves): there it is a deck at its profile, so an approach the terrain model has
    cut away (ACT cuts bridges out past OSM's bridge tag) meets its bridge with no gap or step, and meets the terrain
    where the road does (`geometry.deck_mask`; phase 2, after the owner's "red bridge not connected" report).
+   A way's surface is at the way's own height: on the scene's cliff cells (the face of a cliff or a wall) it is
+   drawn only where the ground is within 1.0 m of the ground under the nearest point of the way's centre line
+   (owner, 25 Nov 2026: weird patches on cliffs), and always within 0.5 m of a centre line, so a way that itself
+   climbs a face keeps its line (L4.1). Where a road's width in plan reaches over a face, the face stays rock;
+   steps and paths cut into a face are at their own height and stay.
 2. Tunnels are not drawn; a portal is drawn at each found portal (`portals`), on the cliff face.
 3. Markings: lane dashes from `lanes` (drawn 0.25 m wide, so they read at 0.125 m a pixel), rails as two ink lines
    with sleepers, tram tracks as grooved lines, steps as treads across the width.

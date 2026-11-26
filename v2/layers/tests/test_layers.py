@@ -189,3 +189,33 @@ def test_asphalt_is_a_soft_wash_without_grain():
     f = detail.asphalt(e, n)
     assert abs(f.mean() - 1) < 0.01 and 0.01 < f.std() < 0.04
     assert np.abs(np.diff(f, axis=1)).max() < 0.004 and np.abs(np.diff(f, axis=0)).max() < 0.004   # pixel to pixel
+
+
+def test_the_shadow_height_map_is_read_between_its_cells():
+    from v2.layers.light import hm_at
+    hm = HeightMap(0.0, 0.0, 0.5, (40, 40), 240.0)
+    hm.terrain[:] = 250.0
+    hm.terrain[:, 20:] = 252.0
+    for i in range(40):                                   # a building whose edge runs askew to the grid
+        hm.b_top[i, : 8 + i // 3] = 9.0
+    T, bt, *_ = hm_at(hm, np.array([9.75, 10.0, 10.25]), np.array([5.25, 5.25, 5.25]))
+    assert np.allclose(T, [250.0, 251.0, 252.0])          # the ground between two cells, not a step
+    # along a row, the building's edge moves evenly with the row and not in steps of a cell
+    n = np.linspace(2.0, 18.0, 65)
+    e = np.linspace(0.0, 12.0, 961)
+    edge = np.array([e[np.flatnonzero(hm_at(hm, e, np.full(len(e), v))[1] > 0)[-1]] for v in n])
+    assert (np.diff(edge) >= -1e-9).all() and np.diff(edge).max() < 0.26
+    assert np.unique(np.round(edge, 2)).size > 20
+
+
+def test_a_wall_is_not_shadowed_by_its_own_cells():
+    hm = HeightMap(0.0, 0.0, 0.5, (60, 60), 240.0)
+    hm.terrain[:] = 250.0
+    hm.b_top[20:40, 20:40] = 10.0                          # a block from 10 to 20 m east and north
+    hm.b_id[20:40, 20:40] = 0
+    n = np.linspace(11.0, 19.0, 33)
+    wall = np.column_stack([np.full(33, 20.0), n])         # its east wall, lit by a sun in the south-east
+    out = np.tile([1.0, 0.0, 0.0], (33, 1))
+    for z in (252.0, 256.0, 259.0):
+        s = shadow_ref(hm, wall[:, 0], wall[:, 1], np.full(33, z), 120, 35, normal=out)
+        assert s.sum() == 0
