@@ -382,6 +382,38 @@ def check_facades(ctx):
     return r.result()
 
 
+# ------------------------------------------------------------------------------------------------ roofs
+def check_roofs(ctx):
+    """The roofs' coverings read from the orthophoto (scene/roofs.py): the photo reads most roofs, and every roof it
+    reads gets a covering of its own kind (a flat roof a flat roof's, a pitched roof slate or tile)."""
+    import json
+
+    from v2.data.scene.buildings import load
+    from v2.data.scene.roofs import FLATS, SLATES, TILES, is_flat
+    from v2.layers.common import pal
+    r = Report("roofs")
+    P = ctx.params["checks"]
+    d = json.loads((ctx.dep("scene_roofs") / "roofs.json").read_text())
+    B = load(ctx.dep("scene_buildings"))
+    R = d["roofs"]
+    r.at_most("RF0", "buildings without a roof record", len([b["id"] for b in B if b["id"] not in R]), 0)
+    read = [b for b in B if R.get(b["id"], {}).get("roof")]
+    r.at_least("RF1", f"share of the {len(B)} buildings whose roof the orthophoto reads", round(len(read) / max(len(B), 1), 4),
+               P["roofs_min_read"])
+    wrong = [b["id"] for b in read if R[b["id"]]["roof"] not in (FLATS if is_flat(b) else SLATES + TILES)]
+    r.at_most("RF2", "roofs with a covering of the other kind (a flat roof in slate or tile, a pitched one a flat roof's)",
+              len(wrong), 0, wrong[:10])
+    for n in SLATES + TILES + FLATS:
+        pal("buildings", n)                                              # every covering is a palette colour
+    other = sorted({v["roof"] for v in R.values() if v.get("roof")} - set(SLATES + TILES + FLATS))
+    r.at_most("RF3", "coverings that are not one of the palette's roofs", len(other), 0, other)
+    pitched = [R[b["id"]]["roof"] for b in read if not is_flat(b)]
+    r.info("RF4", "roofs by covering", d["counts"])
+    r.info("RF5", "tile's share of the pitched roofs read",
+           round(sum(n in TILES for n in pitched) / max(len(pitched), 1), 4))
+    return r.result()
+
+
 # ------------------------------------------------------------------------------------------------ trees
 def check_groundcover(ctx):
     """The photo's vegetated ground (scene/groundcover.py) against the land OSM does class: its paved classes must

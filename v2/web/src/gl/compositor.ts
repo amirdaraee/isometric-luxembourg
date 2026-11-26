@@ -715,7 +715,7 @@ export class Compositor {
       p.f("uSources", shadowsReady && !(st.off.has("ground") && st.off.has("relief") && st.off.has("water")) ? 1 : 0,
         shadowsReady && !st.off.has("buildings") ? 1 : 0, shadowsReady && !st.off.has("trees") ? 1 : 0,
         shadowsReady && !(st.off.has("structures") && st.off.has("transport")) ? 1 : 0);
-      p.f("uLightK", cfg.sun.wrap, cfg.sun.ambient, cfg.sun.direct, cfg.sun.shadow_keep);
+      p.f("uLightK", cfg.sun.wrap, cfg.sun.ambient, cfg.sun.direct, 0);
       const g = grade(cfg, st.el);
       if (skyLit) {
         p.i("uOpenMask", this.idx.cutaways!.opening_k.reduce((m, k) => m | (1 << k), 0));
@@ -731,9 +731,10 @@ export class Compositor {
       }
       p.f("uMoonTint", ...(cfg.grade.moon_tint as [number, number, number]), cfg.grade.moon_shadow);
       p.f("uSoft", g.soft, cfg.grade.shadow_soft_m[0], cfg.grade.shadow_soft_m[1], g.desat);
-      const sht = pal.light.shadow_tint.rgb.map((v) => v / 255);
-      const shm = Math.max(...sht);
-      p.f("uShadowTint", sht[0] / shm, sht[1] / shm, sht[2] / shm);
+      p.f("uShade", ...(cfg.sun.shade as [number, number, number]));
+      p.f("uWallShade", ...(cfg.sun.wall_shade as [number, number, number]));
+      p.f("uToon", cfg.sun.toon.bands[0], cfg.sun.toon.bands[1], cfg.sun.toon.mid, cfg.sun.toon.floor);
+      p.f("uPale", cfg.sun.toon.pale);
       p.f("uLightOn", lightOn ? 1 : 0);
       const seasonsOn = !st.off.has("seasons");
       const s = cfg.seasons[seasonsOn ? st.season : "summer"];
@@ -840,8 +841,10 @@ export class Compositor {
       p.f("uInkMin", 4 * this.idx.camera.mpp / view.scale);
       // the ink darkens with the light (one colour per frame, so the pass stays a fixed transform)
       const inkScale = 1 - 0.6 * nightFactor(cfg, st.el);
-      const ink = pal.ink.line.rgb.map((v) => (v / 255) * inkScale);
+      const ink = pal.ink.outline.rgb.map((v) => (v / 255) * inkScale);
       p.f("uInk", ink[0], ink[1], ink[2]);
+      // the outline is bold close up and thins as the view zooms out, so small buildings are not all line
+      p.i("uInkPx", view.scale >= lk.ink_wide_scale[1] ? 2 : 1, view.scale >= lk.ink_wide_scale[0] ? 1 : 0);
       p.f("uLookOn", st.off.has("look") ? 0 : 1);
       p.i("uDebug", st.debug);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

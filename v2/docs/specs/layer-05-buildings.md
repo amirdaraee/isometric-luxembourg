@@ -15,6 +15,27 @@ Chosen by `params.json` art.method (or `V2_ART`); each method builds into its ow
   on render; a stone surround with a lintel, keystone and sill round every window and a surround and lintel round
   every door; windows with a cross or six panes, each window's glass its own tone; gravel on flat roofs. All of it
   per pixel from the pixel's place on its wall, straight by construction.
+- **A, v1's cartoon look (owner, 26 Nov 2026: "can't we move toward the cartoonish style of v1?", and of four
+  samples of the cathedral the one closest to v1).** This replaces the colours and the surface texture of the two
+  entries above; the drawing (plinths, cornices, surrounds, windows, doors) stays.
+  - A house's colour (owner, 26 Nov 2026, seeing the area all in v1's cream: "bring back diffrent bulding colors
+    as well", "other colors can be more cartoonish", "but the art style remains"): one of the 13 facade colours by
+    the building's id, as before the cartoon look, each stronger (`buildings.facade_*`), in the building's own
+    tone. No data says what colour a house is (the photo is from above), so this stays a rule. A well-known
+    building keeps the colour its entry in `landmark_styles.json` names. The first cartoon build's family of seven
+    creams (`FACADE_SHARES`) is gone.
+  - A roof's covering is the one the orthophoto shows (owner, 26 Nov 2026, asked why all roofs were grey: "Real,
+    from the photo"; scene.md, "Roofs"): slate in four shades, bright or brown tile, a flat roof grey, under gravel
+    or planted. A roof the photo does not read is slate by rule; a well-known building's own roof wins over the
+    photo. In the test area 3 of 999 pitched roofs read are tile: the real roofs are slate. Slate is v1's, measured
+    in v1's art (106, 115, 129 lit): darker and bluer than the first cartoon build's (owner: "Darker and bluer, as
+    v1").
+  - Roofs carry v1's lines: a light stroke down the slope every 0.9 m (`ROOF_STROKE`), drawn by coverage as the
+    courses are and fading out on a face too small to hold them, so no face of a roof differs in tone from another
+    (L5.1); the courses parallel to the eave stay, fainter; the staggered joints are gone.
+  - Fills are clean (`GRAIN` 0): no paper grain, no mottle on render, no stone-to-stone or slate-to-slate tone, on
+    buildings and on structures' stone. Ashlar keeps its joints, fainter.
+  - Window glass is v1's dark blue (`buildings.window`); frames, cornices and quoins a warm white (`trim`).
 - **A, places of worship (owner, 13 Nov 2026):** the walls the facade layout marks as a church's (facades.md rules
   14-20) are drawn as a church, not as a house. Walls: stone (the kind "place_of_worship" of
   `v2/data/structures/landmark_styles.json`; a building's own entry there goes first), coursed ashlar, no cornice

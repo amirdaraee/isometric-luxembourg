@@ -219,3 +219,31 @@ def test_a_wall_is_not_shadowed_by_its_own_cells():
     for z in (252.0, 256.0, 259.0):
         s = shadow_ref(hm, wall[:, 0], wall[:, 1], np.full(33, z), 120, 35, normal=out)
         assert s.sum() == 0
+
+
+def test_a_polygon_is_filled_the_same_wherever_the_canvas_begins():
+    """A tile and its neighbour must draw the same border (S-ground): the fill is the exact test of each pixel's
+    centre, whatever lies off the canvas and whatever whole-pixel shift the canvas has."""
+    import shapely
+    from PIL import Image
+    from shapely.geometry import Polygon
+    from v2.layers.render import fill_geom
+    rng = np.random.default_rng(1)
+    X, Y = np.meshgrid(np.arange(64) + 0.5, np.arange(64) + 0.5)
+    n = 0
+    for it in range(300):
+        pts = rng.uniform(-300, 400, (int(rng.integers(3, 9)), 2)) if it % 2 else rng.uniform(-20, 90, (5, 2))
+        c = pts.mean(0)
+        pts = pts[np.argsort(np.arctan2(*(pts - c).T[::-1]))]
+        P = Polygon(pts, [Polygon((pts - c) * 0.4 + c).exterior.coords]) if it % 3 == 0 else Polygon(pts)
+        if not P.is_valid:
+            continue
+        sx, sy = int(rng.integers(0, 200)), int(rng.integers(0, 200))
+        A = Image.new("L", (64, 64), 0)
+        fill_geom(A, P, 1)
+        B = Image.new("L", (104 + sx, 104 + sy), 0)
+        fill_geom(B, shapely.transform(P, lambda a: a + [sx, sy]), 1)
+        assert (np.asarray(A) == np.asarray(B)[sy:sy + 64, sx:sx + 64]).all()
+        assert (shapely.contains_xy(P, X, Y) == (np.asarray(A) > 0)).all()
+        n += 1
+    assert n > 250

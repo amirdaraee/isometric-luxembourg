@@ -354,6 +354,14 @@ class Scene:
         return dict(np.load(self.part("trees") / "trees.npz"))
 
     @cached_property
+    def roofs(self):
+        """{building id: palette roof name} as the photo shows it (scene/roofs.py); empty in a scene built without it."""
+        from v2.data.scene.roofs import load_roofs
+        if "roofs" not in self.index["parts"]:
+            return {}
+        return load_roofs(self.part("roofs"))
+
+    @cached_property
     def groundcover(self):
         """The photo's vegetated ground as a grid (scene/groundcover.py), or None in a scene built without it."""
         from v2.data.scene.groundcover import load_grid

@@ -26,7 +26,8 @@ export interface ReleaseIndex {
 }
 export interface LightConfig {
   march: { t0_m: number; growth: number; steps: number; bias_m: number; normal_m?: number };
-  sun: { wrap: number; ambient: number; direct: number; shadow_keep: number };
+  sun: { wrap: number; ambient: number; direct: number; shade: number[]; wall_shade: number[];
+    toon: { bands: number[]; mid: number; floor: number; pale: number } };
   grade: { golden_deg: [number, number]; golden_full_deg: number; blue_deg: [number, number]; night_deg: number;
     day_tint: number[]; golden_tint: number[]; golden_sun_gain: number; golden_amb_tint: number[]; golden_amb_gain: number;
     golden_shadow_soft: number; golden_fill: number; golden_fill_tint: number[]; golden_fill_el_deg: number; shadow_soft_m: [number, number]; blue_tint: number[]; blue_level: number;
@@ -38,7 +39,7 @@ export interface LightConfig {
   /** The sky's light on a cutaway's opening: its level by day, at golden hour and at night (releases before it: none). */
   cutaway?: { sky_day: number; sky_golden: number; sky_night: number };
   seasons: Record<string, { tree: number[]; green: number[]; sat: number }> & { snow_cos: number };
-  look: { sat_max: number; lum_min: number; lum_max: number; ink_depth_m: number; ink_normal_cos: number };
+  look: { sat_max: number; lum_min: number; lum_max: number; ink_depth_m: number; ink_normal_cos: number; ink_wide_scale: number[] };
   vehicles: Record<string, number | number[]> & { depth_eps_m: number };
   xray?: { opacity: number; depth_step_m: number; depth_steps: number; deep_share: number; ink_px: number; axis_px: number;
     axis_min_px: number; vehicle_side: number };

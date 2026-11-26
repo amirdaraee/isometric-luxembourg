@@ -112,6 +112,11 @@ async function shot(q) { await go(`nosim&date=${DATE}&x=${x0 + W / 2}&y=${y0 + H
   res.night_by_day = n;
   // the day frame itself, for the look's idempotence (Python side)
   writeFileSync(join(out, "day_13.bin"), Uint8Array.from(a));
+  // the light pass alone (no look, labels, vehicles or night) and the surfaces' own colours, for the hue of what is lit
+  // to the top (Python side)
+  const quiet = async (q) => { await go(`nosim&date=${DATE}&x=${x0 + W / 2}&y=${y0 + H / 2}&z=1&off=look,labels,vehicles,night&${q}`, { vehicles: false }); return pixels(); };
+  writeFileSync(join(out, "lit_13.bin"), Uint8Array.from(await quiet("hour=13")));
+  writeFileSync(join(out, "albedo_13.bin"), Uint8Array.from(await quiet("hour=13&debug=albedo")));
 }
 {
   const cls = await shot("hour=13&debug=layer");

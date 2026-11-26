@@ -32,7 +32,7 @@ def _with(base, *keys):
 
 
 def graph() -> Graph:
-    from v2.data.scene import buildings, entrances, facades, groundcover, places, structures, terrain, transit, transport, trees, water, scene
+    from v2.data.scene import buildings, entrances, facades, groundcover, places, roofs, structures, terrain, transit, transport, trees, water, scene
     from v2.data.fetch import city_trees, worship as fetch_worship
     from v2.checks import data_checks as dc, repo_checks as rc
     from v2.build import report
@@ -81,6 +81,9 @@ def graph() -> Graph:
         Stage("scene_groundcover", groundcover.build, deps=("scene_buildings", "scene_trees"), params=_p("groundcover"),
               raw=lambda area: [raw_dir() / params()["groundcover"]["ortho_dir"] / str(params()["groundcover"]["zoom"])],
               code=GEO, doc="vegetated ground where OSM is silent, classed from the orthophoto"),
+        Stage("scene_roofs", roofs.build, deps=("scene_buildings", "scene_trees"), params=_p("roofs"),
+              raw=lambda area: [raw_dir() / params()["roofs"]["ortho_dir"] / str(params()["roofs"]["zoom"])],
+              code=GEO + ("v2.data.scene.groundcover",), doc="each building's roof covering, classed from the orthophoto"),
         Stage("scene_places", places.build, deps=("scene_terrain",), code=GEO + CAM,
               raw=lambda area: [REPO / "web/public/data/landmarks.json", REPO / "web/public/data/places.json",
                                 v1_work() / "terrain.npz"],
@@ -96,7 +99,7 @@ def graph() -> Graph:
               doc="GTFS trams and trains matched onto the rail graph"),
         Stage("scene", scene.build, deps=("scene_terrain", "scene_water", "scene_buildings", "scene_facades", "scene_trees",
                                           "scene_places", "scene_transport", "scene_structures", "scene_transit",
-                                          "scene_groundcover"),
+                                          "scene_groundcover", "scene_roofs"),
               code=GEO + CAM, doc="the scene index: every part, its files, counts and extent"),
     ]
     # ---------------------------------------------------------------- checks (gates)
@@ -112,6 +115,9 @@ def graph() -> Graph:
         Stage("check_groundcover", dc.check_groundcover, deps=("scene_groundcover", "scene_buildings", "fetch_osm_ground"),
               **{**chk, "code": chk["code"] + ("v2.data.scene.groundcover",)},
               doc="the photo's vegetated ground agrees with the land OSM does class"),
+        Stage("check_roofs", dc.check_roofs, deps=("scene_roofs", "scene_buildings"),
+              **{**chk, "code": chk["code"] + ("v2.data.scene.roofs",)},
+              doc="the photo reads most roofs, and each gets a covering of its own kind"),
         Stage("check_transport_profiles", dc.check_transport_profiles, deps=("scene_transport", "scene_terrain"), **chk,
               doc="continuous height profiles; tunnels below, decks above; portals"),
         Stage("check_transport_graph", dc.check_transport_graph, deps=("scene_transport",), **chk, doc="joined at junctions, connected"),
