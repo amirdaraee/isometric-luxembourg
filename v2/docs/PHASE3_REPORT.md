@@ -3459,3 +3459,122 @@ The building edges' score fell from 97.3% to 96.9%. Not looked into: the limit i
 ### 36.8 Open questions
 
 44, 46, 65, 66, 67, 68, 69 and 71 stand. 70 (the detector's model) is answered: downloaded, the checks ran.
+
+## 37. The cliffs: rock drawn from a photo of the Bock (26 November, $0)
+
+The cliffs were point 3 of the owner's review ("I don't like the cliffs at all"), and the owner had said: "about
+the cliffs I have so much input so at that point ask me questions". So the step began with questions, and each
+build was shown before the next. The art style is unchanged: flat colour, no light painted in, the map's own line.
+
+![The Bock before (top left) and now (top right), and the Corniche cliff and the Bock in the new build (below), at 13:00](img/test_cliffs.jpg)
+
+### 37.1 What the owner said, in order
+
+1. Asked first, the owner disliked the horizontal stripes, the colour, the green patches on the rock, and the
+   shape and edges; wanted built walls told apart from natural rock; and said: "first you need to do research to
+   see how luxembourg city cliffs and walls from the old castles looks likes" and "remember we want to retain the
+   cartoonish style".
+2. Shown the research, the owner asked for samples in v1's manner on a small cliff. Of four: "no, too unified and
+   repeated". Of three uneven ones the owner chose E (uneven pillars of stacked blocks), then: "but the green
+   patches are not good" and "the walls merging into cliffs are not good as well".
+3. Built with E, and with every built wall on a face drawn as a band of grey stonework from the wall data. The
+   owner: "nope not good at all. probably you need to simplify it and not stick to reality because you don't have
+   enough data on the realityt", and of the bands, sheets and lines over the Bock: "I am talking about these
+   things which does not make sense".
+4. With those gone, of the Bock still drawn in E's blocks: "no noo, what is this? find a real photo of this cliff
+   and compare".
+5. Shown the rock redrawn from the photo: "what about the rough edges". With the edges smooth: "looks good".
+
+### 37.2 The photo, and the rock drawn from it
+
+The photo is the Bock's south-east face seen from Neumünster Abbey (Paul Braun, Wikimedia Commons, CC BY 4.0). It
+was used to look at, on a private comparison page with its credit; it is not in the repository and no pixel of it
+is in the art.
+
+| In the photo | In E's blocks | Drawn now |
+|---|---|---|
+| One massive face, pale gold, nearly one colour | Four tones in stripes | One pale colour in three near tones, in broad patches |
+| Five or six big dark clefts across the face | A thin black cleft every 3 m | A big cleft about every 11 m, wandering, opening and closing up the face, its right side a tone darker |
+| No blocks: fine rough bedding | Blocks with black joints, like bricks | Short faint level strokes; no joints, no ink |
+| Dark stains running down | None that read | Faint stains |
+
+The rock's colour at a pixel comes from the pixel's place in the world only (`v2/layers/cliffs.py`, `rock`), so a
+tile and its neighbour agree and the light is still added by the viewer. Low faces (under 3.5 m: a terrace's or a
+garden's wall) are dry stone in the rock's colours.
+
+### 37.3 A rock face is one thing
+
+- **Where rock is.** The scene's cliff cells, the steep cells within 2.5 m of them, and the enclosed gaps between
+  them under 60 m²: no patch of lawn inside a face.
+- **Walls.** On or within 5 m of a rock face no wall is drawn; the face is drawn, as rock. The rule is applied
+  along each wall, and a piece under 15 m left over between or beside such stretches is not drawn either.
+- **Ways.** A path or steps lying on a high face along 30% or more of its length is not drawn, nor is the side of
+  a raised way hanging down a face. In the map's ground model the paths on the walls' tops fell down the face.
+- **No form shading and no slope hatching on rock.** The hatching was the speckle along the rim.
+
+### 37.4 The rough edges
+
+The saw teeth were the ground model's half-metre cells: the rock's border was read cell by cell. A yes/no grid is
+now turned into a smooth field and read between the cells, cut at one half (`grid.soft_mask`, `grid.read_soft`).
+A plain blur would wipe out a narrow upright face, so parts narrower than three cells keep their full value. The
+answer at a place is the same in any tile. Lawn borders had the same teeth and take the same reading
+(`groundcover.vegetated`), which changes the lawns' edges across the whole area. How far they moved was not
+measured.
+
+### 37.5 The first build of this version failed three checks
+
+Release `3c7dc05be562`: 57 of 62 stages. Each failure was looked into and fixed at its cause; no limit was
+changed.
+
+| Check | What it said | Cause | Fix |
+|---|---|---|---|
+| D-relief, no painted vehicles | One "bus", score 0.162 (limit 0.1), tile 117_69 | An 8 m piece of a long wall along the Corniche, left over by the 5 m rule, with its coping and foot line | The rule along each wall with the 15 m leftover rule; the coping and foot line drawn along a wall removed. That tile now has no wall pixel and scores 0.009 |
+| L4.6, bridge ends | 377 samples with a gap | The check counted the paths on rock faces that are left out on purpose | The check counts them apart (408 of 5,249 in the final build) and reports the number; 0 gaps |
+| L5.1 / L9.2, no baked light | Rock 8.0% brighter in the photo sun's shadow (limit 5%) | The check compares medians of "inside" pixels, and took a change of the surface's direction for an edge. On a cliff that left 0.9% of the rock's pixels, and the median of a surface drawn in three flat tones jumped a tone. Over all inside pixels (1.74 million in shadow, 1.58 million lit) the medians differ by 0.16% and the means by 0.64% | On the ground layer a change of direction is no longer an edge: the ground's colour does not depend on it (L1.2 checks that). Other layers are sampled as before |
+
+The third fix changes how the check samples every ground class. In the final build the ground's worst figure is
+1.0% (it was 1.3% in section 36's build).
+
+### 37.6 The build
+
+Release `e679f79eb121`. All 62 stages ran and passed: 293 gate entries pass, none fails; gates G1 and G3 pass.
+
+| Check | Result | Limit |
+|---|---|---|
+| No painted vehicles (detector, 7 layers) | 0 detections | 0 |
+| L5.1 / L9.2 no baked light (200 materials) | 0 fail; worst: transport 3.0%, buildings 1.6%, ground 1.0% | 5% |
+| L1.2 ground not shaded: rock, north against south slopes | 0.6% | 2% |
+| L2.2 walls drawn along under 90% of their length (of 340) | 0 | 0 |
+| L4.6 gaps at bridge ends (of 5,249 samples) | 0; 408 on rock faces counted apart | 0 |
+| L5.2 building edges within 1 px | 96.9% | 95% |
+| L5.2 window rows within 1 px | 99.7% | 95% |
+| S seams: ground, relief, transport | 1.16, 0.0, 1.11 | 3.0 |
+| L8.4 depth steps at tile borders against the tiles' middles | 0.94 | 1.5 |
+| V2 shadows without buildings match the reference | 99.2% | 97% |
+| C2b panning, desktop | 78.6 fps | 60 |
+| X8b panning in tunnel view | 95.7 fps | 60 |
+
+199 Python tests (8 new, on the rock, the two stoneworks, the rock zone, the smooth border and the leftover piece
+of wall) and 27 web tests pass.
+
+### 37.7 Seen, and left for the owner
+
+- The grey wall on top of the Bock and the casemates' dark openings are in the photo and not on the map. No data
+  says where they are. They could be placed by rule (question 72).
+- The terraces' dry-stone walls below the Bock read darker and busier than the rock above them.
+- At 20:30 the faces lie in near-black shadow, as the rest of the ground does (question 71).
+
+### 37.8 Not done
+
+- The rivers' edges and bare winter trees: each its own step.
+- The painted area is not remade.
+- Looked at: the Bock, the Corniche cliff, the Grund and the whole area at 13:00, the Bock at 20:30 and 23:00, in
+  summer. Not looked at: the cliffs of Clausen and Pfaffenthal close up, other seasons, a phone.
+
+### 37.9 Open questions
+
+44, 46, 65, 66, 67, 68, 69 and 71 stand. New:
+
+| # | Question |
+|---|---|
+| 72 | Should the grey wall on top of the Bock and the casemates' openings be drawn, placed by rule? |

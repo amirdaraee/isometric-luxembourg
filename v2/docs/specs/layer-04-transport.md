@@ -20,7 +20,8 @@ lossless "drivable" id tile set (edge id per pixel) for the vehicle check.
    drawn only where the ground is within 1.0 m of the ground under the nearest point of the way's centre line
    (owner, 25 Nov 2026: weird patches on cliffs), and always within 0.5 m of a centre line, so a way that itself
    climbs a face keeps its line (L4.1). Where a road's width in plan reaches over a face, the face stays rock;
-   steps and paths cut into a face are at their own height and stay.
+   steps and paths cut into a face are at their own height and stay. A face is layer 1's rock face, top to foot
+   (the scene's cliff cells until 26 Nov 2026, which left a way's surface on the steep ground between them).
 2. Tunnels are not drawn; a portal is drawn at each found portal (`portals`), on the cliff face.
 3. Markings: lane dashes from `lanes` (drawn 0.25 m wide, so they read at 0.125 m a pixel), rails as two ink lines
    with sleepers, tram tracks as grooved lines, steps as treads across the width.
@@ -50,7 +51,8 @@ lossless "drivable" id tile set (edge id per pixel) for the vehicle check.
   surface's edge), and its drawn height never changes faster than both the profile and the terrain by more than
   2 px, in a change that stays (medians of 1 m either side), along a way or between the ways meeting at the node.
   Samples hidden by a nearer surface (a deck over it, a way drawn over it at a junction, a hill) or whose top is seen
-  edge-on or not at all are counted apart. Exceptions per way in `v2/data/exceptions.json`. Phase 2 (the owner's
+  edge-on or not at all are counted apart, as are samples of a way the layer leaves out by rule 1 (a path or steps
+  on a rock face, 26 Nov 2026: 377 samples in the test area). Exceptions per way in `v2/data/exceptions.json`. Phase 2 (the owner's
   report "the red bridge is not connected to the road": 54 of the test area's 121 bridge ends failed it before the
   fix, 0 after).
 - L4.7 (gate) Every crossing the graph marks, with 2 m or more on a carriageway, is striped on 20% or more of that

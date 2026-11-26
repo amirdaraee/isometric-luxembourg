@@ -20,6 +20,7 @@
   "railground":  {"rgb": [150, 136, 118], "src": "FALLBACK[RAILGROUND]"},
   "buildsite":   {"rgb": [162, 142, 108], "src": "v2 phase 3 (v1's ground tone, measured on v1's art and the T4 paintings; owner 23 Nov 2026)"},
   "rock":        {"rgb": [216, 188, 138], "src": "v2 phase 3 (bare Luxembourg sandstone: the Bock and the valley cliffs)"},
+  "drystone":    {"rgb": [158, 134, 100], "src": "v2 phase 3 (a low wall of dry stone on a rock face; drawn by cliffs.py; owner 26 Nov 2026)"},
   "flower_red":    {"rgb": [200, 72, 64],   "src": "v2 phase 3 (garden flowers)"},
   "flower_yellow": {"rgb": [236, 200, 80],  "src": "v2 phase 3 (garden flowers)"},
   "flower_white":  {"rgb": [244, 240, 228], "src": "v2 phase 3 (garden flowers)"},
@@ -27,7 +28,20 @@
  },
  "relief": {
   "rock":        {"rgb": [176, 160, 132], "src": "v2 (Luxembourg sandstone, to tune on the Bock)"},
-  "hatch":       {"rgb": [92, 78, 64],    "src": "v2 (ink at 70%)"}
+  "hatch":       {"rgb": [92, 78, 64],    "src": "v2 (ink at 70%)"},
+  "rock_1": {"rgb": [224, 194, 142], "src": "v2 phase 3 (the Bock's sandstone as the photo shows it, pale gold: the lightest of three near tones; owner 26 Nov 2026)"},
+  "rock_2": {"rgb": [212, 180, 128], "src": "v2 phase 3 (the rock, the middle tone)"},
+  "rock_3": {"rgb": [200, 166, 114], "src": "v2 phase 3 (the rock, the darkest tone)"},
+  "rock_cleft": {"rgb": [92, 70, 52], "src": "v2 phase 3 (a big cleft in the rock: dark brown, not ink)"},
+  "drystone_1": {"rgb": [172, 148, 112], "src": "v2 phase 3 (a low wall of dry stone, in the rock's colours; owner 26 Nov 2026)"},
+  "drystone_2": {"rgb": [158, 134, 100], "src": "v2 phase 3 (dry stone)"},
+  "drystone_3": {"rgb": [144, 122, 92], "src": "v2 phase 3 (dry stone)"},
+  "drystone_joint": {"rgb": [98, 80, 62], "src": "v2 phase 3 (dry stone: the joints)"},
+  "masonry_1": {"rgb": [184, 174, 152], "src": "v2 phase 3 (a built wall's stone: greyer than the rock it stands on; owner 26 Nov 2026)"},
+  "masonry_2": {"rgb": [170, 160, 140], "src": "v2 phase 3 (a built wall's stone)"},
+  "masonry_3": {"rgb": [156, 146, 128], "src": "v2 phase 3 (a built wall's stone)"},
+  "masonry_joint": {"rgb": [108, 100, 88], "src": "v2 phase 3 (a built wall: the joints)"},
+  "coping": {"rgb": [208, 198, 176], "src": "v2 phase 3 (a built wall's coping)"}
  },
  "water": {
   "river":       {"rgb": [20, 67, 84],  "src": "v2 phase 3 (v1's river, measured in v1's art: 24, 78, 92 lit; owner 26 Nov 2026)"},

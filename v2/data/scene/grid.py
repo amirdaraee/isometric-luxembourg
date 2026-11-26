@@ -57,3 +57,21 @@ class Grid:
         e = self.e0 + (np.arange(w) + 0.5) * self.step
         n = self.n0 + (np.arange(h) + 0.5) * self.step
         return e, n
+
+
+def soft_mask(mask, sigma_cells: float) -> np.ndarray:
+    """A yes/no grid as a smooth field (0..1). Read between the cells (read_soft) and cut at a half, an area's border
+    is a smooth line and not the grid's staircase, which shows as saw teeth in the picture. The field is the grid
+    smoothed over sigma_cells; a part narrower than three cells would be smoothed away, so it keeps its cells."""
+    mask = np.asarray(mask, bool)
+    f = ndimage.gaussian_filter(mask.astype(np.float32), sigma_cells) if sigma_cells > 0 else mask.astype(np.float32)
+    thin = mask & ~ndimage.binary_opening(mask, structure=np.ones((3, 3), bool))
+    return np.maximum(f, thin.astype(np.float32))
+
+
+def read_soft(field: np.ndarray, i, j) -> np.ndarray:
+    """Whether a soft_mask field is a half or more at grid places (i, j), which need not be whole; False off the
+    grid. A place has one answer whoever asks, so tiles agree."""
+    i, j = np.nan_to_num(np.asarray(i, float)), np.nan_to_num(np.asarray(j, float))
+    v = ndimage.map_coordinates(field, [i.ravel(), j.ravel()], order=1, mode="constant", cval=0.0, prefilter=False)
+    return (v >= 0.5).reshape(i.shape)

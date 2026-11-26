@@ -13,10 +13,17 @@ cliffs, embankments with their measured top and foot).
 **Rules.**
 1. Relief shading is a *form* shading from a fixed north-west light, not the sun: it does not move with the time of
    day (layer 9 does that), and its strength is capped so flat ground is untouched.
-2. Steep faces get hatching along the fall line and a rock tint. Cliffs are layer 1's bare rock (its beds and
-   joints are drawn there), so here they get the form shading only (phase 3). Walls are drawn as vertical faces
-   between their measured top and foot with an ink top edge: built walls (retaining and city walls) as coursed
-   masonry, OSM cliffs and embankments as bedded rock, both from each pixel's place on the face.
+2. Steep faces get hatching along the fall line and a rock tint. A rock face (layer 1's rock and dry stone
+   classes) gets no form shading and no hatching: it carries its own form, its clefts' darker sides, and
+   hatching on it showed as speckles along a cliff's rim (26 Nov 2026). Walls are drawn as
+   vertical faces between their measured top and foot with an ink top edge: built walls (retaining and city
+   walls) as coursed grey masonry, OSM cliffs and
+   embankments as layer 1's rock (`cliffs.py`), both from each pixel's place on the face. **No wall is drawn on or
+   within 5 m (in plan) of a rock face** (the owner, 26 Nov 2026, of walls drawn over the Bock's rock: "does not
+   make sense"): there the face is drawn, as rock, and is one thing. The rule is applied along each wall
+   (`cliffs.wall_on_face`), and a piece of the wall shorter than 15 m left over between or beside such stretches
+   is not drawn either: left standing alone it reads as a thing of its own (the vehicle detector took one of
+   8 m, left of a long wall along the Corniche's cliff, for a bus). L2.2 counts such a wall as drawn by the face.
 3. Cliff and wall faces are seen only where the camera sees them (depth test against the terrain).
 
 **Checks.**

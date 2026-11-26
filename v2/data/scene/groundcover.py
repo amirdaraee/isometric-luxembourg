@@ -36,7 +36,7 @@ from scipy import ndimage as ndi
 from v2.config import raw_dir
 from v2.data.geo import area_polygon, en_to_lonlat
 from v2.data.scene.buildings import footprints, load
-from v2.data.scene.grid import Grid
+from v2.data.scene.grid import Grid, read_soft, soft_mask
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -135,12 +135,12 @@ def load_grid(folder) -> Grid:
     return Grid(d["veg"].astype(np.float32), d["e0"], d["n0"], d["step"])
 
 
+SOFT_CELLS = 1.0        # a vegetated patch's border is smoothed over this many cells where it is read (grid.soft_mask)
+
+
 def vegetated(grid: Grid, e, n) -> np.ndarray:
-    """Whether the ground at LUREF points is vegetated by the photo (False outside the grid)."""
-    i, j = grid.ij(e, n)
-    i, j = np.rint(i).astype(np.int64), np.rint(j).astype(np.int64)
-    h, w = grid.shape
-    ok = (i >= 0) & (i < h) & (j >= 0) & (j < w)
-    out = np.zeros(np.shape(i), bool)
-    out[ok] = grid.z[i[ok], j[ok]] > 0.5
-    return out
+    """Whether the ground at LUREF points is vegetated by the photo (False outside the grid). A patch's border is
+    read as a smooth line between the cells, not as the grid's staircase."""
+    if not hasattr(grid, "_soft"):
+        grid._soft = soft_mask(grid.z > 0.5, SOFT_CELLS)
+    return read_soft(grid._soft, *grid.ij(e, n))

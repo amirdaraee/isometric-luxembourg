@@ -87,25 +87,6 @@ def ashlar(P, nrm, course=0.45, length=0.95, tone=0.06, joint=0.22, seed=0):
     return np.where(h > 0.7, t * (1 - joint * j), 1.0)
 
 
-def rock(e, n, z, seed=3):
-    """Bedded sandstone (the Bock, the valley cliffs): level beds that undulate gently, each with its own tone, some
-    of them ledges; upright joints at each bed's own spacing; a tone per block. Returns the factor on the rock colour."""
-    u = (np.asarray(e, float) + np.asarray(n, float)) * R2              # across the screen
-    f = (np.asarray(n, float) - np.asarray(e, float)) * R2
-    zz = np.asarray(z, float) + 0.7 * (vnoise(u, f, 7.0, seed) - 0.5)
-    bed_h = 0.9
-    bed = np.floor(zz / bed_h)
-    hb = ihash(bed, seed)
-    ledge = hb < 0.3
-    lines = soft_band(zz, bed_h, np.where(ledge, 0.2, 0.09), PX)
-    w = 1.3 + 2.4 * ihash(bed, seed + 1)
-    xs = u + 9.0 * ihash(bed, seed + 2)
-    col = np.floor(xs / w)
-    joints = soft_band(xs, w, 0.09, PX) * (ihash(bed, col, seed + 3) < 0.75)
-    tone = 1 + (ihash(bed, col, seed + 4) - 0.5) * 0.14 + (hb - 0.5) * 0.08 + (vnoise(u, zz, 5.0, seed + 5) - 0.5) * 0.08
-    return tone * (1 - np.where(ledge, 0.42, 0.26) * lines) * (1 - 0.24 * joints)
-
-
 # Ground classes' detail: smooth tone over (large, small) patches in metres with their strengths, and the share of
 # pixels drawn as darker and lighter flecks (blades, leaves, gravel).
 GREEN = {"grass": ((4.0, 0.9), (0.06, 0.04), 0.018, 0.014), "meadow": ((5.0, 1.1), (0.07, 0.05), 0.03, 0.025),
@@ -117,7 +98,8 @@ FLOWERS = ("flower_red", "flower_yellow", "flower_white", "flower_violet")
 
 def ground_detail(rgb, k, names, e, n, z, px, py):
     """The ground's drawn detail by class: stone slabs on paved land, setts on squares, gravel on car parks, rail
-    ground and building sites, patchy lawns with flecks, flowers in gardens, mown stripes on pitches, bedded rock.
+    ground and building sites, patchy lawns with flecks, flowers in gardens, mown stripes on pitches. Rock is drawn by
+    cliffs.py.
     rgb (m, 3) float, k (m,) class indexes into names; e, n, z world; px, py map pixels. In place."""
     def of(c):
         return k == names.index(c) if c in names else np.zeros(len(k), bool)
@@ -152,7 +134,4 @@ def ground_detail(rgb, k, names, e, n, z, px, py):
                 sub = rgb[m]
                 sub[fl] = cols[which[fl]]
                 rgb[m] = sub
-    m = of("rock")
-    if m.any():
-        rgb[m] *= rock(e[m], n[m], z[m])[:, None]
     return rgb
