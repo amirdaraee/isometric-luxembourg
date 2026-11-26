@@ -3720,9 +3720,27 @@ the sky light is lifted and the shadows are soft. 28 web tests and 203 Python te
 
 ### 39.3 The build
 
-Not finished when this section was written. The layers' stages take the light settings as an input, so all 62
-stages run again (about 95 minutes). The build's results are to be added here; until then only the unit tests
-above stand for this change.
+Release `50ac94ba529d`. The layers' stages take the light settings as an input, so all 62 stages ran again. All
+62 pass: 294 gate entries pass, none fails; gates G1 and G3 pass.
+
+- **The picture is the sample's.** The built view of the abbey at 20:30 on 24 June is the chosen sample pixel for
+  pixel (largest difference 0), and the same view at 13:00 is section 38's build pixel for pixel.
+- **The pan speed check failed twice before it passed, and not from this change.** C2b gave 50.7 and then 43.2
+  frames per second (limit 60) while another program's browser tests were loading the machine (load average 6 to
+  8). Measured back to back under the same load, the old and the new settings pan at the same speed: 73.9 and
+  71.2 against 69.5 and 70.4 at night, 69.1 and 68.4 against 69.0 and 69.1 at 20:30, a frame taking 0.1 to 0.2 ms
+  in each. Run again with the machine quieter, the check gave 75.1. The tunnel view's pan (X8b) passed at 61.2 in
+  the loaded run (95.9 in section 38's). No limit was changed.
+
+| Check | Result | Limit |
+|---|---|---|
+| No painted vehicles (detector, 7 layers) | 0 detections | 0 |
+| L5.1 / L9.2 no baked light (201 materials) | 0 fail; worst: transport 3.0%, buildings 1.6%, ground 1.0% | 5% |
+| L9.1 shadow direction at 08:00, 13:00, 19:00 (median error) | 7.5°, 9.5°, 7.7° | 10° |
+| V2 shadows without buildings match the reference | 99.3% | 97% |
+| K3v a cutaway's opening is its colour times the one sky light, at 13:00, 21:18 and 23:15 | 0 pixels off | 0 |
+| C2b panning, desktop | 75.1 fps | 60 |
+| X8b panning in tunnel view | 61.2 fps (machine loaded) | 60 |
 
 ### 39.4 Next: bare trees in winter (not built)
 
