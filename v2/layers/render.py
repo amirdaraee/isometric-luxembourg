@@ -31,9 +31,12 @@ from v2.layers.raster import HeightField, bary, raster_ellipsoids, raster_tris, 
 
 # ground classes, lowest priority first (layer-01-ground.md rule 1); k byte = index
 # "rock" and "drystone" are not OSM classes: they are a rock face (cliffs.rock_zone, from the scene's cliff cells) and
-# a low face on it (a terrace's wall), whatever the land use says of them
+# a low face on it (a terrace's wall), whatever the land use says of them. "quay" is a river's stone edge: the outer
+# strip of its area (EDGE_M; layer-03-water.md rule 4)
 GROUND_CLASSES = ["none", "paved", "buildsite", "railground", "parking", "square", "grass", "cemetery", "garden",
-                  "meadow", "scrub", "wood", "pitch", "water", "rock", "drystone"]
+                  "meadow", "scrub", "wood", "pitch", "water", "rock", "drystone", "quay"]
+EDGE_M = 0.7                           # a river's stone edge: the outer strip of the river's area, this wide (m)
+SHALLOW_M = 0.8                        # the paler band of shallows inside the drawn water's edge (m)
 GREEN = {"grass", "cemetery", "garden", "meadow", "scrub", "wood", "pitch"}
 URBAN = {"residential", "commercial", "retail", "industrial", "construction", "railway", "education", "religious",
          "civic", "institutional", "garages", "military"}
@@ -183,6 +186,47 @@ def fill_geom(img: Image.Image, g, value):
 
 
 # ------------------------------------------------------------------------------------------------ renderer
+def hold_water(mnt, e0, n0, step, polys):
+    """The terrain grid with every water area held at a flat level: the lowest terrain round it locally (a 25 m
+    minimum filter of the bank heights, so a reach is flat between weirs), never above the bank. Returns (heights,
+    the cells whose centre is in water).
+
+    The water's level is held on every cell whose centre is in the water or within a cell's diagonal of it (those
+    take the level of the water cell nearest to them), so the terrain read between the cells is as flat as the
+    water at every point of the water area, up to its edge: the water's edge
+    is the area's own line, and the bank rises outside it. (Held on the cells in the water only, the bank's
+    rise began inside the area, and the water drawn on it showed the grid's steps as teeth up the far bank:
+    the owner, 25 Nov 2026, "the rivers are not good".)"""
+    z = np.asarray(mnt).astype(np.float64).copy()
+    h, w = z.shape
+    mask = np.zeros(z.shape, bool)
+    held = np.zeros(z.shape, bool)
+    if polys:
+        ee = e0 + (np.arange(w) + 0.5) * step
+        nn = n0 + (np.arange(h) + 0.5) * step
+        E, N = np.meshgrid(ee, nn)
+        for p, into in [(q, mask) for q in polys] + [(q.buffer(step * 2 ** 0.5), held) for q in polys]:
+            x0, y0, x1, y1 = p.bounds
+            j0, j1 = np.searchsorted(ee, [x0, x1])
+            i0, i1 = np.searchsorted(nn, [y0, y1])
+            if j1 <= j0 or i1 <= i0:
+                continue
+            into[i0:i1, j0:j1] |= shapely.contains_xy(p, E[i0:i1, j0:j1], N[i0:i1, j0:j1])
+        if mask.any():
+            bank = ndimage.binary_dilation(mask, iterations=3) & ~mask
+            zb = np.where(bank, z, np.inf)
+            k = max(3, int(round(25 / step)) | 1)
+            lvl = ndimage.minimum_filter(zb, size=k)
+            # spread the bank levels into the water (nearest bank cell), then hold the water at that level
+            idx = ndimage.distance_transform_edt(~np.isfinite(lvl), return_distances=False, return_indices=True)
+            lvl = lvl[tuple(idx)]
+            z = np.where(mask, np.minimum(z, lvl), z)
+            # ... and the cells round it at the level of the water next to them (never raised)
+            idx = ndimage.distance_transform_edt(~mask, return_distances=False, return_indices=True)
+            z = np.where(held & ~mask, np.minimum(z, z[tuple(idx)]), z)
+    return z, mask
+
+
 class Renderer:
     """Draws any code layer's tile from a scene. `omit` names layers whose own inputs are left out (to prove the
     others never use them); `ground_osm` and `transport_osm` are the shared OSM fetches (paths)."""
@@ -215,42 +259,51 @@ class Renderer:
         return out
 
     @cached_property
-    def water_inner(self):
-        """The water areas drawn in by 0.8 m: outside them and inside the water lie the shallows along the banks."""
-        out = [p.buffer(-0.8) for p in self.water_polys]
+    def water_kinds(self):
+        """The kind (river, pond, ...) of each polygon of water_polys."""
+        return [a.get("kind") for a in self.scene.water["areas"] for _ in a["rings"]]
+
+    @cached_property
+    def water_rivers(self):
+        """The water areas that are rivers: they have a stone edge."""
+        return [p for kind, p in zip(self.water_kinds, self.water_polys) if kind == "river"]
+
+    @cached_property
+    def water_drawn(self):
+        """The areas drawn as water: a river's area drawn in by EDGE_M (the strip left along its banks is its stone
+        edge, drawn by the ground layer as "quay": the owner, 26 Nov 2026, of two samples chose the stone edge, as
+        v1's river has); every other water area to its own line."""
+        out = [p.buffer(-EDGE_M) if kind == "river" else p for kind, p in zip(self.water_kinds, self.water_polys)]
         return [p for p in out if not p.is_empty]
 
     @cached_property
+    def water_inner(self):
+        """The drawn water drawn in by SHALLOW_M: outside it and inside the water lie the shallows along the banks."""
+        out = [p.buffer(-SHALLOW_M) for p in self.water_drawn]
+        return [p for p in out if not p.is_empty]
+
+    @cached_property
+    def casemate_openings(self):
+        """The gun branches of the casemates' hand model (cliffs.gun_branches): where each comes out of a rock face
+        an opening is drawn on the face."""
+        from v2.layers import cliffs
+        from v2.layers.tunnels import CASEMATES
+        return cliffs.gun_branches(json.loads(CASEMATES.read_text())) if CASEMATES.exists() else []
+
+    def rock_rgb(self, e, n, z):
+        """A rock face's colours at world points: the rock (cliffs.rock) with the casemates' openings in it."""
+        from v2.layers import cliffs
+        c = cliffs.rock(e, n, z)
+        if self.casemate_openings:
+            c[cliffs.openings(e, n, z, self.casemate_openings)] = pal("relief", "casemate_opening")
+        return c
+
+    @cached_property
     def hf(self) -> HeightField:
-        """The LiDAR terrain, with every water area held at a flat level: the lowest terrain round it locally
-        (a 25 m minimum filter of the bank heights, so a reach is flat between weirs), never above the bank."""
+        """The LiDAR terrain, with every water area held at a flat level (hold_water)."""
         T = self.scene.terrain
-        z = T["mnt"].astype(np.float64).copy()
         e0, n0, step = float(T["e0"]), float(T["n0"]), float(T["step"])
-        h, w = z.shape
-        mask = np.zeros(z.shape, bool)
-        if self.water_polys:
-            ee = e0 + (np.arange(w) + 0.5) * step
-            nn = n0 + (np.arange(h) + 0.5) * step
-            E, N = np.meshgrid(ee, nn)
-            for p in self.water_polys:
-                x0, y0, x1, y1 = p.bounds
-                j0, j1 = np.searchsorted(ee, [x0, x1])
-                i0, i1 = np.searchsorted(nn, [y0, y1])
-                if j1 <= j0 or i1 <= i0:
-                    continue
-                sub = shapely.contains_xy(p, E[i0:i1, j0:j1], N[i0:i1, j0:j1])
-                mask[i0:i1, j0:j1] |= sub
-            if mask.any():
-                bank = ndimage.binary_dilation(mask, iterations=3) & ~mask
-                zb = np.where(bank, z, np.inf)
-                k = max(3, int(round(25 / step)) | 1)
-                lvl = ndimage.minimum_filter(zb, size=k)
-                # spread the bank levels into the water (nearest bank cell), then hold the water at that level
-                idx = ndimage.distance_transform_edt(~np.isfinite(lvl), return_distances=False, return_indices=True)
-                lvl = lvl[tuple(idx)]
-                z = np.where(mask, np.minimum(z, lvl), z)
-        self.water_grid = mask
+        z, self.water_grid = hold_water(T["mnt"], e0, n0, step, self.water_polys)
         return HeightField(z, e0, n0, step)
 
     @cached_property
@@ -421,8 +474,20 @@ class Renderer:
             k[un] = sub
         # bare rock: a rock face from its top to its foot (cliffs.rock_zone: the scene's cliff cells, the steep cells
         # beside them and the small gaps between them), except under water
+        # a river's stone edge: the outer strip of the river's area (whole polygons, the same in every tile)
+        if self.water_rivers:
+            ring = Image.new("L", (cv.W, cv.H), 0)
+            for p in self.water_rivers:
+                if p.intersects(footprint):
+                    fill_geom(ring, cv.geom(p), 1)
+            for p in self.water_drawn:
+                if p.intersects(footprint):
+                    fill_geom(ring, cv.geom(p), 0)
+            quay = np.zeros(m.shape, bool)
+            quay[m] = cv.sample(np.asarray(ring), t["u"][m], t["f"][m]) > 0
+            k[quay] = GROUND_CLASSES.index("quay")
         rockface, lowface = self.rock_at(t)
-        rockface &= m & (k != GROUND_CLASSES.index("water"))
+        rockface &= m & (k != GROUND_CLASSES.index("water")) & (k != GROUND_CLASSES.index("quay"))
         k[rockface] = GROUND_CLASSES.index("rock")
         k[rockface & lowface] = GROUND_CLASSES.index("drystone")
         lut = np.zeros((len(GROUND_CLASSES), 3))
@@ -433,11 +498,12 @@ class Renderer:
         # the classes' drawn detail (paving, lawns, rock), from each pixel's place on the terrain: never from light
         PX, PY = np.meshgrid(px, py)
         rgb[m] = detail.ground_detail(rgb[m], k[m], GROUND_CLASSES, t["e"][m], t["n"][m], t["z"][m], PX[m], PY[m])
-        # rock: v1's blocky rock, uneven; a low face (a terrace's wall) is dry stone (cliffs.py)
+        # rock: one pale face with a few big clefts, and the casemates' openings; a low face (a terrace's wall) is
+        # dry stone (cliffs.py)
         from v2.layers import cliffs
         hi_, lo_ = rockface & ~lowface, rockface & lowface
         if hi_.any():
-            rgb[hi_] = cliffs.rock(t["e"][hi_], t["n"][hi_], t["z"][hi_])
+            rgb[hi_] = self.rock_rgb(t["e"][hi_], t["n"][hi_], t["z"][hi_])
         if lo_.any():
             rgb[lo_] = cliffs.dry_stone(t["e"][lo_], t["n"][lo_], t["z"][lo_])
         # class borders: 1 px soft ink (40%) where the class changes to the right or below
@@ -545,7 +611,7 @@ class Renderer:
             wcol = cols[W3["col"][tt]].astype(float)
             from v2.layers import cliffs
             if nat.any():
-                wcol[nat] = cliffs.rock(wx[nat], wy[nat], wz[nat])
+                wcol[nat] = self.rock_rgb(wx[nat], wy[nat], wz[nat])
             built = face & ~nat
             if built.any():
                 wcol[built] = cliffs.masonry(np.column_stack([wx, wy, wz])[built], nn[built])
@@ -564,12 +630,12 @@ class Renderer:
         t = self.terrain(tile)
         out = empty(tile)
         m = t["inarea"]
-        if not m.any() or not self.water_polys:
+        if not m.any() or not self.water_drawn:
             return out
         cv = self._canvas(tile, t)
         img = Image.new("L", (cv.W, cv.H), 0)
         fp = cv.bounds_en()
-        for p in self.water_polys:
+        for p in self.water_drawn:
             if p.intersects(fp):
                 fill_geom(img, cv.geom(p), 1)
         wm = np.zeros(m.shape, bool)
@@ -578,7 +644,7 @@ class Renderer:
             return out
         rgb = np.zeros(m.shape + (3,))
         rgb[wm] = pal("water", "river")
-        # the shallows: a paler band along the bank, 0.8 m wide (the water areas drawn in by that much: whole
+        # the shallows: a paler band along the bank, SHALLOW_M wide (the drawn water drawn in by that much: whole
         # polygons, so the band is the same in every tile)
         deep = Image.new("L", (cv.W, cv.H), 0)
         for p in self.water_inner:

@@ -46,7 +46,10 @@ See facades.md. Checks F1–F7.
   above the point if there is such ground, else below it; its top keeps its height above the sea, so its own
   height is its top above its new foot; a tree with no such ground in reach is left out (`trees.off_faces`); crown radius = 0.85 × crown_mean / 2 (the POC's "measured crowns read too big"),
   widened to the tree's shape by species and age (layer-07 rule 1, by the measured height), then
-  reduced (bisection) until ≤ 30% of the crown disc lies over buildings or water; base height = LiDAR terrain;
+  reduced (bisection) until ≤ 30% of the crown disc lies over buildings, but never under half its shaped radius
+  (`trees.min_thin_share`: a crown thinned to nothing is drawn as a pole). Water does not thin a crown: a tree on a
+  bank hangs over the river (until 26 Nov 2026 it did, with no least width: 51 trees of the test area were poles,
+  one in the Alzette by Neumünster Abbey; the owner, 25 Nov 2026: "the rivers are not good"); base height = LiDAR terrain;
   drawn height = 0.7 × the measured height (layer-07 rule 1; owner, 24 Nov 2026).
 - **Output:** `trees.npz` (e, n, base_z, height as drawn, height_measured, crown_r, crown_r_shape,
   crown_r_measured, type, type_survey, uuid, species, species_names, species_rule, species_rules).

@@ -6,10 +6,15 @@ from the local Hugging Face cache; nothing is downloaded and nothing is paid for
     uv run --offline --no-project --with torch --with transformers --with pillow --with numpy \\
         python -I v2/checks/owl_detect.py jobs.json
 
-jobs.json: {"jobs": [{"layer", "path", "tile"}], "queries": [...], "queries_water": [...], "threshold": 0.1,
+jobs.json: {"jobs": [{"layer", "path", "tile", "under" (optional)}], "queries": [...], "queries_water": [...], "threshold": 0.1,
 "box_m": [3, 14], "mpp": 0.125, "out": "owl.json"}. As in v1, each tile (512 px = 64 m) is cut into overlapping
 256 px crops enlarged to the model's 960 px (a car is then about 130 px), and a detection counts when its box is
 3-14 m long. The water layer is also asked for boats.
+
+A job may name a tile to lay "under" the layer's own. The water layer is looked at in its bed, over the ground layer:
+its outline is the land's (a bank in front of the water cuts a gap in it), not a drawn thing's, and on black a gap
+reads as a dark thing on the water (26 Nov 2026: the end of a 3 m bank scored 0.108 as "a boat"; over the ground,
+under 0.03). The layer's own pixels are not changed, so anything painted in it is seen as before.
 
 v1 cut 0.25 m art into 256 px crops so a painted car was about 55 px at the model's 960 px; at v2's 0.125 m a whole
 512 px tile is the same scale (a car about 66 px), so each tile is one crop.
@@ -42,15 +47,18 @@ def main(path):
     lo_m, hi_m = spec["box_m"]
     for job in spec["jobs"]:
         im = np.asarray(Image.open(job["path"]).convert("RGB"))
+        own = im.sum(-1) > 0                     # the layer's own pixels (a tile is black where the layer is not)
+        if job.get("under"):
+            im = np.where(own[..., None], im, np.asarray(Image.open(job["under"]).convert("RGB")))
         H, W = im.shape[:2]
         crops = []
         for y0 in range(0, H, crop - overlap):
             for x0 in range(0, W, crop - overlap):
                 c = im[y0:y0 + crop, x0:x0 + crop]
+                if own[y0:y0 + crop, x0:x0 + crop].sum() < 0.1 * crop * crop:
+                    continue                     # nothing of the layer there
                 if c.shape[0] < crop or c.shape[1] < crop:
                     c = np.pad(c, ((0, crop - c.shape[0]), (0, crop - c.shape[1]), (0, 0)))
-                if (c.sum(-1) == 0).mean() > 0.9:
-                    continue                     # nothing of the layer there
                 crops.append((x0, y0, c))
         if not crops:
             continue

@@ -82,7 +82,8 @@ on top; a crown under 1.2 m radius stays one shape.
      at most 14 m; an oak 0.54 to 0.64, 18 m; a columnar oak 0.26 to 0.31, 6 m; a spruce 0.30 to 0.33, 8 m.
    - At most 1.25 × the distance to the nearest tree on each side, so a stand stays a stand of separate crowns.
    - Never narrower than the survey's width.
-   - Then thinned, as before, wherever more than 30% of the crown would lie over a building or water (scene rule).
+   - Then thinned wherever more than 30% of the crown would lie over a building, but never under half its shaped
+     radius (scene rule). Water does not thin a crown: a tree on a bank hangs over the river.
 2. Depth-tested per pixel against terrain, buildings and structures: a tree hides what is behind it, never what is
    in front.
 3. No shadow in the layer (layer 9 casts crown shadows from the same crowns).

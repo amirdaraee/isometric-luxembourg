@@ -735,7 +735,11 @@ def check_no_cars(ctx):
     jobs = []
     for L in COLOUR_LAYERS:
         for name in sorted(release_tiles(rel, L)):
-            jobs.append({"layer": L, "path": str(rel / L / "0" / f"{name}.c.webp"), "tile": name})
+            job = {"layer": L, "path": str(rel / L / "0" / f"{name}.c.webp"), "tile": name}
+            bed = rel / "ground" / "0" / f"{name}.c.webp"
+            if L == "water" and bed.exists():
+                job["under"] = str(bed)          # the water is looked at in its bed (owl_detect.py)
+            jobs.append(job)
     spec = {"jobs": jobs, "queries": P["detector_queries"], "queries_water": P["detector_queries_water"],
             "threshold": P["detector_score"], "box_m": P["detector_box_m"], "mpp": 0.125, "out": str(ctx.out / "owl.json")}
     (ctx.out / "owl_jobs.json").write_text(json.dumps(spec))

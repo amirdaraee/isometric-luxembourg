@@ -3,7 +3,7 @@ drawn at one stated share of its measured height."""
 import numpy as np
 
 from v2.config import params
-from v2.data.scene.trees import drawn_height, shape_radius
+from v2.data.scene.trees import drawn_height, shape_radius, thin
 
 P = params()["trees"]
 NAMES = P["types"]
@@ -67,3 +67,20 @@ def test_a_trunk_on_a_face_is_put_on_the_nearest_ground_that_can_hold_it():
     # no ground in reach: the tree is left out
     cls[:] = 2
     assert not off_faces(e, n, h, r, mnt, cls, 0.0, 0.0, 0.5, P)[0].any()
+
+
+def test_a_crown_over_a_building_is_thinned_but_never_to_a_pole():
+    from shapely.geometry import box
+    house = [box(0, 0, 20, 20)]
+    #        far from the house   1 m from its wall (34% of the crown over it)   0.2 m from its wall (47%)
+    e, n, r = np.array([60.0, 21.0, 20.2]), np.array([10.0, 10.0, 10.0]), np.array([4.0, 4.0, 4.0])
+    out, thinned, held = thin(e, n, r, house, P)
+    assert out[0] == 4.0 and not thinned[0]
+    assert thinned[1] and not held[1] and P["min_thin_share"] * 4.0 < out[1] < 4.0     # narrowed to fit
+    assert thinned[2] and held[2] and out[2] == P["min_thin_share"] * 4.0             # held: a crown, not a pole
+    assert (out >= P["min_thin_share"] * r - 1e-9).all()
+
+
+def test_no_blockers_no_thinning():
+    out, thinned, held = thin(np.array([0.0]), np.array([0.0]), np.array([3.0]), [], P)
+    assert out[0] == 3.0 and not thinned.any() and not held.any()

@@ -478,14 +478,26 @@ def check_trees(ctx):
     in_w = int(shapely.contains_xy(uw, t["e"], t["n"]).sum()) if uw is not None else 0
     r.at_most("TE1", "trees standing inside a building", in_b, ctx.params["checks"]["trees_max_inside"])
     r.at_most("TE2", "trees standing in water", in_w, ctx.params["checks"]["trees_max_inside"])
+    # TE3: a crown lies over buildings by at most the share, unless it is held at its least width (a crown is never
+    # thinned to a pole: scene.md, Trees); water does not thin a crown. TE3b, TE3c: the held ones, and no pole
     from v2.data.scene.trees import overlap_share
-    worst, ex = 0.0, []
-    blockers = list(fps) + list(water)
-    if blockers and len(t["e"]):
-        share = overlap_share(t["e"], t["n"], t["crown_r"].astype(float), blockers)
-        worst = float(share.max())
-        ex = [str(u) for u in t["uuid"][share > p["max_overlap_share"] + 0.02][:5]]
-    r.at_most("TE3", "largest share of a crown over buildings or water", round(worst, 3), p["max_overlap_share"] + 0.02, ex)
+    worst, ex, n_held, poles = 0.0, [], 0, 0
+    cr0 = t["crown_r"].astype(float)
+    shape0 = t["crown_r_shape"].astype(float) if "crown_r_shape" in t.files else cr0
+    if len(t["e"]):
+        at_least = cr0 <= p["min_thin_share"] * shape0 + 1e-3
+        poles = int((cr0 < p["min_thin_share"] * shape0 - 1e-3).sum())
+        if fps:
+            share = overlap_share(t["e"], t["n"], cr0, list(fps))
+            free = ~at_least
+            worst = float(share[free].max()) if free.any() else 0.0
+            ex = [str(u) for u in t["uuid"][free & (share > p["max_overlap_share"] + 0.02)][:5]]
+            n_held = int((at_least & (share > p["max_overlap_share"] + 0.02)).sum())
+    r.at_most("TE3", "largest share of a crown over buildings (crowns held at their least width apart: TE3b)", round(worst, 3),
+              p["max_overlap_share"] + 0.02, ex)
+    r.info("TE3b", f"crowns held at {p['min_thin_share']} of their shaped radius that lie over a building by more than the share", n_held)
+    r.at_most("TE3c", f"crowns narrower than {p['min_thin_share']} of their shaped radius (a pole)", poles, 0,
+              [str(u) for u in t["uuid"][cr0 < p["min_thin_share"] * shape0 - 1e-3][:5]] if len(t["e"]) else [])
     h = t["height"]                                             # as drawn
     hm = t["height_measured"] if "height_measured" in t.files else h
     r.add("TE4", f"measured heights within {p['min_height_m']}-{p['max_height_m']} m",
@@ -506,7 +518,7 @@ def check_trees(ctx):
         r.info("TE13b", "trees whose trunk was put on the nearest ground off a face",
                int(t["moved_off_a_face"].sum()) if "moved_off_a_face" in t.files else 0)
     # TE6-TE8: the drawn crown follows the tree's shape by species and age (layer-07 rule 1): never wider than that
-    # shape allows, never narrower than surveyed unless thinned for a building or water; heights are the survey's
+    # shape allows, never narrower than surveyed unless thinned for a building; heights are the survey's
     from v2.data.scene.trees import shape_radius
     names = [str(s) for s in t["type_names"]]
     cr = t["crown_r"].astype(float)

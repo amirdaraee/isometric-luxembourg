@@ -3578,3 +3578,113 @@ of wall) and 27 web tests pass.
 | # | Question |
 |---|---|
 | 72 | Should the grey wall on top of the Bock and the casemates' openings be drawn, placed by rule? |
+
+## 38. The rivers' edges, riverside trees and the casemates' openings (26 November, $0)
+
+The rivers were point 9 of the owner's review ("the rivers are not good"; the picture sent with it did not
+arrive). The Bock's top wall and openings were question 72. Each was shown as a small sample first, and the owner
+chose. The art style is unchanged.
+
+![The Alzette by Neumünster Abbey before (top left) and now (top right), and the Bock with the casemates' openings (below), at 13:00](img/test_rivers.jpg)
+
+### 38.1 What the owner chose, in order
+
+1. To merge pull requests 28 to 31 (crossings, trees, the cartoon look and its colours, the cliffs) into `v2`.
+   Done.
+2. For the Bock's wall and openings: "Show a small sample first". Of two samples, the openings without the wall.
+3. For the next step: the rivers' edges. Of two samples, the one with a pale stone edge along every bank, as v1's
+   river has.
+
+### 38.2 Two faults in the rivers
+
+Looked at close, the river had two faults.
+
+| Fault | Cause | Fix |
+|---|---|---|
+| The far bank was saw-toothed | The terrain held the water's level only on the 0.5 m cells whose centre is in the water. Read between the cells, the bank's rise began inside the water area, and the water drawn up it showed the cells as teeth | The level is held on every cell in the water or within a cell's diagonal of it, each taking the level of the nearest water cell (`render.hold_water`). The ground is flat at every point of the water area and the bank rises outside it. The water's edge is the area's own line |
+| Trees by the water were bare poles | A crown was narrowed until at most 30% of its disc lay over buildings or water, with no least width. In the test area 265 crowns were narrowed, 222 of them by the water; 51 were under 0.6 m in radius and 131 under 45% of their shape. A poplar at E 77659, N 75100 was drawn 0.18 m in radius for a shape of 2.6 m: a pole in the Alzette | Water no longer narrows a crown (a crown hangs over a river). Over buildings a crown is never narrowed under half its shaped radius (`trees.thin`, `min_thin_share`). 44 crowns are narrowed now, 24 of them held at half width. New check TE3c (gate): no crown under half its shape, 0 |
+
+The flat ground reaches 0.71 m outside the water's line. In the test area that lowers the ground under 41
+half-metre samples of paths' centre lines and near 5 bridge ends; the bridge-end check (L4.6) finds no gap and no
+step over 1.28 px.
+
+### 38.3 The stone edge
+
+The outer 0.7 m of a river's own area is drawn as plain pale stone on the water's level (ground class `quay`,
+`ground.quay`); the water is the area drawn in by that much, with its paler shallows inside. In the test area
+that is 5,360 m² of stone along 7.6 km of bank, of 53,200 m² of river.
+
+- **Why inside the river's area.** The bank's line stays where OSM has it. The other way, flat stone 1.5 m outside
+  the water, was measured and turned down: it would sink 672 samples of riverside paths and 22 bridge ends (the
+  bank rises a median of 0.64 m over 1.5 m; a tenth of it more than 2.14 m).
+- **Every bank of a river gets it.** The data does not say which bank is walled and which is a meadow's. On the
+  meadow banks there is no stone in reality.
+- **Ponds, pools, basins and the fish pass get none.** They are water to their own line.
+
+### 38.4 The casemates' openings
+
+The photo of the Bock shows a row of dark openings under the top wall. An opening is drawn where the line of a
+gun branch of the casemates' hand model (`v2/data/structures/casemates.json`: 25 branches, 13 facing south)
+comes out of the rock: an arch 1.8 m wide and 2.1 m high, its sill 0.4 m over the branch's floor, in one dark
+brown (`relief.casemate_opening`; `cliffs.gun_branches`, `cliffs.openings`). Eight show in the view of the
+south-east face. The model is placed by hand, not surveyed, so an opening is about where a real one is.
+
+The grey wall on top of the Bock is not drawn: placed by rule it came out thin and uneven, and the owner chose
+the sample without it.
+
+### 38.5 The first build failed one check
+
+Release `a77edb715d81`: 59 of 62 stages. No limit was changed.
+
+| Check | What it said | Cause | Fix |
+|---|---|---|---|
+| D-water, no painted vehicles | One "boat", score 0.108 (limit 0.1), tile 123_69 | Nothing is drawn there. At E 78017, N 74870 the end of a 3 m bank stands in front of the river and hides 4.6 m of it, which cuts a gap in the water layer. The detector looked at the layer alone on black, where the gap reads as a dark hull. The gap was in the last build too (score under 0.03); the water's line 0.7 m further in makes it stand out more | The detector looks at the water in its bed, over the ground layer (`owl_detect.py`, `under`). The layer's own pixels are unchanged, so anything painted in it is seen as before. The same tile then scores under 0.03 |
+
+### 38.6 The build
+
+Release `a77edb715d81` (the same layers; the checks run again with the fix). All 62 stages ran and passed: 294
+gate entries pass (TE3c new), none fails; gates G1 and G3 pass.
+
+| Check | Result | Limit |
+|---|---|---|
+| No painted vehicles (detector, 7 layers; the water in its bed) | 0 detections | 0 |
+| L3.1 drawn water against its area (1,335,821 water pixels) | 0 off | 0 |
+| L4.6 gaps at bridge ends (of 5,249 samples) | 0; largest step 1.28 px | 0; 2 px |
+| TE3 largest share of a crown over buildings | 0.30 | 0.32 |
+| TE3c crowns under half their shape | 0 | 0 |
+| L5.1 / L9.2 no baked light (201 materials) | 0 fail; worst: transport 3.0%, buildings 1.6%, ground 1.0% | 5% |
+| L1.2 ground not shaded, north against south slopes (worst class: dry stone) | 0.8% | 2% |
+| L5.2 building edges within 1 px | 96.9% | 95% |
+| L5.2 window rows within 1 px | 99.7% | 95% |
+| S seams: ground, relief, water, transport | 0.86, 0.0, 0.0, 1.11 | 3.0 |
+| L8.4 depth steps at tile borders against the tiles' middles | 0.95 | 1.5 |
+| V2 shadows without buildings match the reference | 99.3% | 97% |
+| C2b panning, desktop | 81.2 fps | 60 |
+| X8b panning in tunnel view | 95.9 fps | 60 |
+
+TE3b (report only): 23 crowns held at half width still lie over a building by more than 30% of their disc.
+
+203 Python tests (4 new: a crown over a building is narrowed but never to a pole; no blockers, no narrowing; an
+opening is an arch on its branch's line at its floor; water is flat up to its own edge and the bank rises outside
+it) and 27 web tests pass.
+
+### 38.7 Seen, and left for the owner
+
+- The stone edge runs along the meadow banks too, where there is none in reality.
+- At the map's overview scales the stone edge is a thin pale line, hardly seen.
+- Eight openings show on the Bock's south-east face. At night they are dark holes; nothing lights them.
+- Looked at: the Alzette by the abbey close up and wide, the lock, Clausen, the Bock, the Corniche stretch and
+  twelve overviews of the whole area at 13:00; the abbey, the Bock and the stretch at 23:00; in summer. Not looked
+  at: every reach close up, other seasons, a phone.
+
+### 38.8 Not done
+
+- The grey wall on top of the Bock (the owner's choice).
+- Walled banks told from meadow banks: no data.
+- Bare winter trees (question 68) and the evening's shadows (question 71): each its own step.
+- The painted area is not remade.
+
+### 38.9 Open questions
+
+Question 72 is answered: the openings, without the wall. 44, 46, 65, 66, 67, 68, 69 and 71 stand. No new
+question.

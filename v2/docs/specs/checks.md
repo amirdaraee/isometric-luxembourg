@@ -64,7 +64,8 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | GC4, GC5 | no | Share vegetated by OSM class; the land OSM does not class and the share of it vegetated |
 | TE1 | yes | No tree standing inside a building |
 | TE2 | yes | No tree standing in water |
-| TE3 | yes | No crown more than 30% (+2%) over buildings or water |
+| TE3 | yes | No crown more than 30% (+2%) over buildings, unless held at its least width (TE3b, report: how many) |
+| TE3c | yes | No crown narrower than half its shaped radius (a pole) |
 | TE4 | yes | Measured heights within 2–50 m |
 | TE6 | yes | No crown wider than its species' and age's shape allows (layer-07 rule 1), or than the survey's width where that is wider |
 | TE7 | yes | Thinning only narrows a crown |
@@ -141,7 +142,7 @@ Stages of the build graph (`python -m v2.build test g1`), each a gate; threshold
 | `check_shadows` | L5.1/L9.2 shadow detector (median luminance of a material in the 3D shadow of the photo's sun vs lit next to it, inside surfaces: not within 2 px of a change of object, class, depth or, off the ground layer, direction), L9.0, L9.1 (08, 13, 19 h), L2.3 | 5 |
 | `check_seams` | v1's seam rule per colour layer at the tiles' scale; L8.4 depth across borders against the tiles' middle lines | seams |
 | `check_vehicles` | L4.2, L12.4 on drawn road/track over a simulated day; L12.1a none drawn in a tunnel past its portal; C4 probes at every portal, bridge and way under a deck vs the exact geometry; L12.2 heights between frames; L12.3 | 7, 8 |
-| `check_no_cars` (`owl_detect.py`) | OWLv2 (v1's detector, local cache, offline) on every colour layer tile: 0 vehicles >= 0.1 | 9 |
+| `check_no_cars` (`owl_detect.py`) | OWLv2 (v1's detector, local cache, offline) on every colour layer tile: 0 vehicles >= 0.1. The water layer is also asked for boats, and is looked at over the ground layer: a gap a bank cuts in it is the land's shape, and alone on black it read as a boat (26 Nov 2026) | 9 |
 | `check_viewer` (`v2/web/scripts/viewer_checks.mjs`) | V1 layer off leaves no pixel; V2 no shadow of a layer that is off; V3 viewer shadows = Python reference at 10, 13, 16 h and they move; V4 no light by day; V5 seasons only on their masks; V6 labels never overlap; V7 look pass idempotent; C2 speed | 4, 5, speed |
 
 Exceptions: none were needed for G1 (`v2/data/exceptions.json` is unchanged).

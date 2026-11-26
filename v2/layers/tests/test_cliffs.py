@@ -141,3 +141,53 @@ def test_a_short_piece_of_wall_left_beside_a_face_is_part_of_the_face():
     assert out[:120].all()                             # the 10 m before the face and the 10 m between: left-overs
     assert not out[120:].any()                         # the 40 m after it is a wall
     assert not cliffs.wall_on_face(np.zeros(12, bool), 0.5).any()     # a short wall nowhere near a face stays
+
+
+def test_a_casemates_opening_is_an_arch_on_its_branchs_line_at_its_floor():
+    doc = {"galleries": [{"id": "main", "kind": "gallery", "z": 100.0, "en": [[0.0, 0.0], [50.0, 0.0]]},
+                         {"id": "s1", "kind": "branch", "z": 100.0, "en": [[20.0, 0.0], [20.0, -10.0]]},
+                         {"id": "n1", "kind": "branch", "z": 100.0, "en": [[30.0, 8.0], [30.0, 0.0]]}]}
+    br = cliffs.gun_branches(doc)
+    assert len(br) == 2
+    assert np.allclose(br[0][0], (20, -10)) and np.allclose(br[0][1], (0, -1)) and br[0][2] == 100.0
+    assert np.allclose(br[1][0], (30, 8)) and np.allclose(br[1][1], (0, 1))        # whichever way the line was drawn
+    O = cliffs.OPENING
+    # a face 2 m beyond the south branch's end: points across the branch's line (e) and up the face (z)
+    e, z = np.meshgrid(np.linspace(17, 23, 121), np.linspace(99, 104, 101))
+    hole = cliffs.openings(e.ravel(), np.full(e.size, -12.0), z.ravel(), br).reshape(e.shape)
+    assert hole.any()
+    we, wz = e[hole], z[hole]
+    assert abs(we.min() - (20 - O["half_m"])) < 0.06 and abs(we.max() - (20 + O["half_m"])) < 0.06
+    assert abs(wz.min() - (100 + O["sill_m"])) < 0.06
+    assert abs(wz.max() - (100 + O["sill_m"] + O["side_m"] + O["arch_m"])) < 0.06
+    top = np.array([z[hole[:, j], j].max() for j in np.flatnonzero(hole.any(0))])
+    assert top[len(top) // 2] > top[0] + 0.5 and top[len(top) // 2] > top[-1] + 0.5      # arched: highest in the middle
+    # nowhere else: not behind the branch's end, not far beyond it, not on the other branch's side
+    assert not cliffs.openings(np.array([20.0, 20.0, 20.0]), np.array([-5.0, -30.0, 12.0]), np.full(3, 101.0), br).any()
+    assert cliffs.gun_branches({"galleries": []}) == []
+
+
+def test_water_is_flat_up_to_its_own_edge_and_the_bank_rises_outside_it():
+    import shapely
+    from shapely.geometry import Polygon
+    from v2.layers.raster import HeightField
+    from v2.layers.render import hold_water
+    step = 0.5
+    jj, ii = np.meshgrid(np.arange(160), np.arange(120))
+    e, n = (jj + 0.5) * step, (ii + 0.5) * step
+    river = Polygon([(10, 20), (70, 31), (70, 43), (10, 32)])           # a slanted reach, 12 m wide
+    d = shapely.distance(shapely.points(e, n), river.exterior)
+    inside = shapely.contains_xy(river, e, n)
+    mnt = np.where(inside, 200.0, 200.5 + np.minimum(d, 4.0) * 1.5)      # a bank half a metre high, then rising
+    z, mask = hold_water(mnt, 0.0, 0.0, step, [river])
+    hf = HeightField(z, 0.0, 0.0, step)
+    rng = np.random.default_rng(1)
+    pe, pn = rng.uniform(10, 70, 20000), rng.uniform(20, 43, 20000)
+    w = shapely.contains_xy(river, pe, pn)
+    lvl = hf.sample(pe[w], pn[w])
+    assert np.ptp(lvl) < 1e-4 and abs(lvl.max() - 200.0) < 1e-4              # flat at every point of the area, at the water's level
+    old = HeightField(mnt, 0.0, 0.0, step).sample(pe[w], pn[w])
+    assert np.ptp(old) > 0.3                                                 # held on the cells in the water only: the teeth
+    out = ~w & (shapely.distance(shapely.points(pe, pn), river.exterior) > 1.5)
+    assert np.allclose(hf.sample(pe[out], pn[out]), HeightField(mnt, 0.0, 0.0, step).sample(pe[out], pn[out]))
+

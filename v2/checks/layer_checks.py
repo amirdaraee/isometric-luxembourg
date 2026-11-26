@@ -261,7 +261,7 @@ def _l22(rep, R, rel, P):
 def _l31(rep, R, rel, P):
     water = release_tiles(rel, "water")
     tol = P["water_px_tol"] * 0.125 * 2.5          # 1 px of screen is up to ~0.3 m of plan on the ground
-    polys = R.water_polys
+    polys = R.water_drawn                       # a river's water is its area drawn in by its stone edge (rule 4)
     if not polys:
         rep.info("L3.1", "water areas", 0)
         return
