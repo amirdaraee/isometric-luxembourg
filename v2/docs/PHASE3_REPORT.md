@@ -3246,3 +3246,95 @@ pass.
 |---|---|
 | 68 | Should broadleaved trees be drawn bare in winter (branches, no crown), with evergreens kept green? |
 | 69 | Is the cliffs' look the next step? |
+
+## 35. v1's cartoon look in the code art (26 November, $0)
+
+The owner set the painted version aside ("don't need the painted version for now"), asked whether the code art can
+move toward v1's cartoon style, and asked for samples of the cathedral to confirm the point. Four samples were
+shown (today's colours as a cartoon; the same in v1's colours; that drawn harder, the closest to v1; a bright
+toy-like one). The owner chose the third, C, and asked for the test area in it. This section is that build.
+
+![Four views, before (left) and in v1's look (right): the old town, the cathedral, the Grund and the Bock at 13:00, the old town at 20:30](img/test_cartoon.jpg)
+
+### 35.1 What changed
+
+| Part | Before | Now |
+|---|---|---|
+| Houses by rule | many colours (pink, green, blue, ochre), red tile and slate | v1's family: honey, ivory, sand, gold, tan, a little chalk and brick, by fixed shares; every roof by rule is slate. A building with a known colour or roof keeps it (the cathedral's copper spire stays green) |
+| Fills | grain, mottle and toned slabs on walls, roofs and stone | clean (`GRAIN` 0); stone joints stay |
+| Roofs | courses and staggered joints | a light stroke down the slope every 0.9 m, and the courses |
+| Windows, trim, plinth | grey-blue glass (59, 74, 90), near-white trim | v1's dark glass (38, 48, 70), cream trim, tan plinth |
+| Light | soft Lambert, a near-white sun, a cast shadow keeping 0.42 of the sun | in steps: a face is lit, half lit (0.7) or not; a cast shadow on ground, roofs and trees is v1's deep blue (0.17, 0.20, 0.34 of white); an upright wall out of the sun stays warm (0.72, 0.62, 0.50); a roof or a crown never gets less than 0.22 of the sun |
+| Line | 1 px, the palette's line colour | blue-black (22, 24, 40); from scale 0.4 one more pixel on the far side of a silhouette, from 0.75 a second on the near side |
+
+Nothing of the light is in any tile: the layers stay evenly lit, shadows move with the hour, windows and lines
+stay where the model has them, and no vehicle is in the art. The constants are in `palette.json` and `light.json`;
+the rules in `art_a.py`, the light and look shaders, and the specs of layers 5, 9 and 14.
+
+### 35.2 The first build, and the lemon walls
+
+The first build (release `8b3cb3971729`) matched the approved sample at 16:30. At 13:00 it showed a flaw the sample
+could not: walls in full sun were lemon (247, 247, 178), not v1's cream (246, 216, 166 to 251, 230, 187, measured
+in v1's art of the old town). The cause: a cream wall lit by a warm sun goes past the screen's white, red first,
+then green, and each channel was cut off on its own, so the hue moved towards yellow-green.
+
+The fix is in the light pass: a colour lit past white keeps its hue. It is scaled back to white's level and mixed
+towards white by `sun.toon.pale` (1.8) times how far over it was. Sunlit walls are now 247, 231, 183; half-lit
+walls 247, 206, 136. A new gate keeps it so: V8 (L9.6), of the coloured pixels lit to the top at 13:00, at most
+0.1% may be more than 6° of hue from the surface's own colour. A unit test shows the measure sees the old
+behaviour (a turn of 16° on honey) and passes the new (under 4°).
+
+### 35.3 The build
+
+Release `cb3a620877b9`. 56 of 60 stages ran and passed: 157 gate entries pass, none fails.
+
+| Check | Result | Limit |
+|---|---|---|
+| L5.1 / L9.2 no baked light (201 materials) | 0 fail; worst: buildings 4.7%, transport 2.1%, ground 1.3% | 5% |
+| L5.2 building edges within 1 px | 97.3% | 95% |
+| L5.2 window rows within 1 px | 99.7% | 95% |
+| L5.8 church tracery within 1 px | 99.5% | 95% |
+| V2 shadows without buildings match the reference | 99.2% | 97% |
+| V7 look pass applied twice | 0 of 255 | 1 |
+| V8 hue of what is lit to the top (62,475 px) | 0.0%; largest turn 4.4° | 0.1% over 6° |
+| C2b panning, desktop | 76.5 fps | 60 |
+| X8b panning in tunnel view | 93.6 fps | 60 |
+
+186 Python tests (2 new: the houses' colours by rule, the hue measure) and 27 web tests pass.
+
+### 35.4 Two checks did not run: gates G1 and G3 are not passed for this release
+
+`check_no_cars` (brief 9, no vehicle painted into the art) and `check_cutaways` (its detector part) stopped with an
+error, in both builds: the detector's model, `google/owlv2-base-patch16-ensemble`, is no longer in the laptop's
+Hugging Face cache. The cache folder was emptied at 00:44 on 26 November, before the first build started; no
+command of this work did it. The checks run offline on purpose and download nothing. With them not run, G1 and G3
+are skipped, so this release has no gate result. Nothing was worked around. The model has to be downloaded again
+(about 620 MB, free), which needs the owner's word; then the two checks and the gates run in a few minutes, with
+no rebuild.
+
+There is no reason to expect a painted car: the art code draws none. That is an expectation, not a result.
+
+### 35.5 Seen, and left for the owner
+
+- At 20:30 most of the ground lies in long cast shadows and is almost black-blue; squares and streets are hard to
+  read. This is the cost of C's deep shadow, as the samples page said. Not changed.
+- L5.1's worst figure for buildings is 4.7% against a limit of 5%: close.
+- Cliffs, ground, roads, water and trees are drawn as before; only the light and the line changed on them.
+
+### 35.6 Not done
+
+- The two detector checks and the gates (35.4).
+- The painted area was not remade and is not in this style.
+- Looked at: eight views (the whole area, the old town, the cathedral, the Grund, Clausen, streets close up, all
+  at 13:00; the old town at 20:30; the Grund at 23:00) and the cathedral at 16:30, in summer. Not looked at: other
+  seasons, a phone.
+
+### 35.7 Open questions
+
+44, 46, 65, 66, 67, 68 and 69 stand. 60 (which art for the city) is set aside with the painted version; 61 (more
+of v1's contrast) is answered by this style. New:
+
+| # | Question |
+|---|---|
+| 70 | May the detector's model be downloaded again, so the two checks and the gates can run? |
+| 71 | Should cast shadows be lighter when the sun is low, so the evening stays readable? |

@@ -208,10 +208,13 @@ uniform float uHmTopCells;     // cells along a block of uHmTop
 uniform float uZTop;
 uniform vec4 uSun;             // sun vector (E, N, up), elevation (deg)
 uniform vec4 uSources;         // terrain, buildings, trees, structures cast shadows (1/0)
-uniform vec4 uLightK;          // wrap, ambient, direct, shadow keep
+uniform vec4 uLightK;          // wrap, ambient, direct
 uniform vec3 uSunTint;
 uniform vec3 uAmbTint;
-uniform vec3 uShadowTint;
+uniform vec3 uShade;           // the sky's light where the sun does not reach, as a share of the ambient: ground, roofs, trees
+uniform vec3 uWallShade;       // the same on an upright face of a building or a structure (light off the ground reaches it)
+uniform vec4 uToon;            // the sun's light in steps: lit above .y, half lit (.z) above .x, else none; .w the least on a roof or a tree
+uniform float uPale;           // how fast a colour brighter than the screen's white turns pale
 uniform vec4 uMoon;            // the night's moon: vector (E, N, up), strength (0 with the sun up)
 uniform vec4 uMoonTint;        // colour, and how much of the moon's light its cast shadows take away
 uniform vec4 uFill;            // the low sun's light coming back from the sky opposite it: vector, strength (0 by day)
@@ -351,9 +354,13 @@ void main() {
   if (far >= 0.0) sh = 1.0 - uSoft.x * smoothstep(uSoft.y, uSoft.z, far);
   vec3 sv = uSun.xyz;
   float L = clamp((dot(n, sv) + uLightK.x) / (1.0 + uLightK.x), 0.0, 1.0);
+  L = L > uToon.y ? 1.0 : (L > uToon.x ? uToon.z : 0.0);     // a cartoon's light: a face is lit, half lit or not
   float up = clamp(uSun.w / 2.0, 0.0, 1.0);          // the sun's own light is gone at the horizon
-  float direct = uLightK.z * L * (1.0 - sh) * up;
-  vec3 amb = uLightK.y * uAmbTint * mix(vec3(1.0), uShadowTint, 0.45 * (1.0 - L * (1.0 - sh)) * up);
+  bool upright = abs(n.z) < 0.5 && (layer == 5 || layer == 6);
+  float t = L * (1.0 - sh);
+  if ((layer == 5 && !upright) || layer == 7) t = max(t, uToon.w);     // a roof or a crown in shadow keeps its colour
+  float direct = uLightK.z * t * up;
+  vec3 amb = uLightK.y * uAmbTint * mix(vec3(1.0), upright ? uWallShade : uShade, (1.0 - t) * up);
   vec3 light = amb + uSunTint * direct;
   if (uFill.w > 0.0)                         // golden hour: the faces turned away from the sun are not left flat
     light += uFillTint * (uFill.w * clamp((dot(n, uFill.xyz) + uLightK.x) / (1.0 + uLightK.x), 0.0, 1.0));
@@ -363,7 +370,12 @@ void main() {
     light += uMoonTint.rgb * (uMoon.w * Lm * (1.0 - shm));
     c = mix(c, vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), uSoft.w);
   }
-  oColor = vec4(c * light, 1.0);
+  // a colour brighter than the screen can show keeps its hue: it is brought back to white's level and turned paler by
+  // how far over it was (cut off channel by channel, a sunlit cream wall would turn lemon)
+  vec3 lit = c * light;
+  float top = max(lit.r, max(lit.g, lit.b));
+  if (top > 1.0) lit = mix(lit / top, vec3(1.0), clamp((top - 1.0) * uPale, 0.0, 1.0));
+  oColor = vec4(lit, 1.0);
 }`;
 
 /** The light pass while a cutaway is on (landmark-cutaways.md rule 3, the owner's decision of 13 Nov 2026): as
@@ -551,6 +563,7 @@ uniform sampler2D uAlbedo;
 ${CAM_GLSL}
 ${OCT_GLSL}
 uniform vec4 uLook;        // sat max, lum min, lum max, ink depth (m)
+uniform ivec2 uInkPx;      // the outline's width (px): on the nearer side of a silhouette, and on the farther side
 uniform float uInkMin;     // the depth step one screen pixel can hold on steep ground (m)
 uniform float uInkCos;
 uniform vec3 uInk;
@@ -582,6 +595,8 @@ void main() {
       ivec2 q = p + nb[i];
       float dq = dAt(q);
       if (dq - d > max(uLook.w, uInkMin)) ink = true;                    // a silhouette: the line on the nearer side
+      if (uInkPx.x > 1 && dAt(p + 2 * nb[i]) - d > max(uLook.w, uInkMin)) ink = true;       // ... two pixels of it
+      if (uInkPx.y > 0 && d - dq > max(uLook.w, uInkMin)) ink = true;                       // and one on the farther side
       if (i < 2 && (lay == 5 || lay == 6) && dq < 1e8 && abs(dq - d) < uLook.w) {
         vec3 nq = octDecode(texelFetch(uNormal, q, 0).rg);
         if (dot(n, nq) < uInkCos) ink = true;            // a crease

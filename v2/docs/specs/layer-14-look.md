@@ -11,7 +11,11 @@ hour (grade per time of day).
 **Rules.**
 1. Grade: saturation, contrast and gamma towards the palette, the same on every layer (no per-layer tweaks).
 2. Ink: edges found on layer 8's depth and normal discontinuities (not on colour) darkened to ink with a fixed
-   weight at each zoom, so line weight is the same on code and painted pixels.
+   weight at each zoom, so line weight is the same on code and painted pixels. The line is v1's blue-black
+   (palette `ink.outline`; owner, 26 Nov 2026). A silhouette's line is 1 px on its nearer side; from a scale of
+   0.4 screen px per map px it gets 1 px on the farther side too, and from 0.75 a second px on the nearer side
+   (`look.ink_wide_scale`), so it is bold close up and small buildings far out are not all line. A crease's line
+   is 1 px at every zoom.
 3. Paper grain and a slight edge wobble are allowed only if the line score (L5.2) still passes.
 
 **Checks.**

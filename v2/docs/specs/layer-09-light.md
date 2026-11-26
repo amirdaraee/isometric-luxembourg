@@ -11,9 +11,14 @@ of sun positions per season, or rendered in the viewer from the depth buffer for
 **Output.** A multiply/screen pass in the compositor; optional pre-baked shadow-map tiles per sun position.
 
 **Rules.**
-1. Lambert shading of albedo from the normal and sun direction, softened (wrap lighting) to stay "drawn".
-2. Cast shadows: a pixel is in shadow when the shadow map from the sun sees a nearer surface; shadows are tinted
-   (palette `shadow_tint`), never black.
+1. Lambert shading of albedo from the normal and sun direction, softened (wrap lighting), **in steps, as a
+   cartoon's** (owner, 26 Nov 2026: v1's look): a face is lit by the sun (its term above `sun.toon.bands[1]`),
+   half lit (`toon.mid`, above `bands[0]`) or not. The moon's light and the golden hour's fill are not stepped.
+2. Cast shadows: a pixel is in shadow when the shadow map from the sun sees a nearer surface; shadows are tinted,
+   never black. Where the sun does not reach, the sky's light is multiplied by `sun.shade` (v1's deep blue shadow)
+   on the ground, on roofs and on trees, and by `sun.wall_shade` on an upright face of a building or a structure:
+   light off the ground reaches a wall, so it stays warm and its windows readable. A roof or a tree's crown never
+   gets less than `toon.floor` of the sun, so it keeps its colour inside a shadow.
    The shadow height map (0.5 m cells) is read between its cells' centres (owner, 25 Nov 2026: shadows are not
    smooth, a weird pattern on some buildings): the terrain bilinear; a building, a tree or a structure where more
    than half of the four cells around the point have one, at those cells' mean heights. So the edge of what casts
@@ -27,7 +32,12 @@ of sun positions per season, or rendered in the viewer from the depth buffer for
    are `v2/config/light.json` "grade"; the viewer turns them into the light pass's inputs in
    `v2/web/src/gl/grade.ts`. Nothing of this is in any layer's tiles: layers 1–7 stay evenly lit (L5.1, L9.2).
 4. **Day** (sun above 6°) is one constant: `sun.ambient` 0.58 of white sky light, `sun.direct` 0.62 of the sun's
-   tint, hard cast shadows. The golden hour and the night change nothing here.
+   tint (`grade.day_tint`, warm: lit, a white surface is 1.18, 1.12, 0.97; in a cast shadow on the ground 0.17,
+   0.20, 0.34), hard cast shadows. The golden hour and the night change nothing here. A colour lit past the
+   screen's white keeps its hue: it is scaled back to white's level and mixed towards white by `sun.toon.pale`
+   (1.8) times how far over it was. Cut off channel by channel, a sunlit cream wall (red over first, then
+   green) turned lemon, 247, 247, 178; now it is 247, 231, 183, and v1's sunlit walls are 246, 216, 166 to
+   251, 230, 187.
 5. **Golden hour** (owner, 10 Nov 2026: brighter and warmer, long soft shadows, buildings readable). Full from 3.5°
    down to the horizon, easing into day between 3.5° and 6°:
    - the sun is orange (`golden_tint`) and 1.3 times as strong;
@@ -56,3 +66,6 @@ of sun positions per season, or rendered in the viewer from the depth buffer for
   is brighter and warmer than day's sky light; no value jumps by more than 0.012 per 0.01° from 8° to −9°. A
   cutaway's opening: 0.85 by day, about 0.84 and warm at golden hour, about 0.31 and blue at night, always the
   sky's own colour.
+- L9.6 (gate, V8 of the viewer check) What the sun lights to the screen's white keeps its hue: of the coloured
+  pixels at the top at 13:00 (at least 1,000 in the reference view), at most 0.1% are more than 6° of hue from the
+  surface's own colour.

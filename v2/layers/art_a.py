@@ -2,13 +2,14 @@
 
 Everything here is albedo (layer-05 rule 1): flat material colours, generated detail and ink, never light. Detail is
 computed per pixel from the pixel's world position on its surface (from the depth), so it is fixed to the 3D model:
-  walls       one facade colour per building (palette buildings.facade_*) in the building's own tone, a sandstone
-              plinth, a cornice line at every floor line of the facade layout, an eave cornice, quoins on some
-              buildings; coursed ashlar on stone buildings, a banded (rusticated) ground floor on some rendered ones,
-              a faint mottle on render; a stone surround, lintel with a keystone and sill round every window, a
-              surround and a lintel round every door (phase 3)
-  roofs       slate or tile courses parallel to the eave with staggered joints, tile-to-tile tone (a hash per tile),
-              seven roof colours in the building's own tone; gravel on flat roofs
+  walls       one facade colour per building in the building's own tone: v1's family of cream, gold and tan
+              (FACADE_SHARES; the owner's decision of 26 Nov 2026), a sandstone plinth, a cornice line at every floor
+              line of the facade layout, an eave cornice, quoins on some buildings; coursed ashlar on stone
+              buildings, a banded (rusticated) ground floor on some rendered ones; a stone surround, lintel with a
+              keystone and sill round every window, a surround and a lintel round every door (phase 3)
+  roofs       slate in four tones, in the building's own tone: a light stroke down the slope every 0.9 m (v1's roof
+              lines) and faint courses parallel to the eave; flat roofs plain
+  fills       clean, as a cartoon's: no paper grain, no mottle, no stone-to-stone or slate-to-slate tone (GRAIN)
   openings    windows with a white frame, glazing bars (a cross, or six panes) and a sill line, each window's glass
               its own tone; shutters on some buildings; doors with a frame, panels and a fanlight; garage doors with
               panels; shop fronts with glazing bars and a striped awning band
@@ -45,13 +46,24 @@ from v2.layers.common import CLASS, RIGHT, UP, VIEW, pal
 from v2.layers.detail import band, gp, ihash, slabs, soft_band, vnoise
 from v2.layers.geometry import Mesh, h01, tri_normals
 
-FACADES = ["facade_cream", "facade_ochre", "facade_pink", "facade_yellow", "facade_blue", "facade_sage",
-           "facade_white", "facade_apricot", "facade_rose", "facade_green", "facade_terracotta", "facade_grey",
-           "facade_butter"]
-# pitched roofs: (palette colour, courses, share of the buildings); slate is the city's roof
-ROOFS = [("roof_tile_old", "tile", 0.1), ("roof_tile", "tile", 0.08), ("roof_tile_brown", "tile", 0.05),
-         ("roof_slate_dark", "slate", 0.27), ("roof_slate_blue", "slate", 0.17), ("roof_slate_warm", "slate", 0.08),
-         ("roof_slate", "slate", 0.25)]
+# a house's facade colour by rule: v1's family (palette colour, share of the buildings). v1 took its colours from the
+# aerial photo: the old town's lime render and sandstone, cream to tan (the owner's decision of 26 Nov 2026)
+FACADE_SHARES = [("facade_honey", 0.26), ("facade_ivory", 0.2), ("facade_sand", 0.2), ("facade_gold", 0.16),
+                 ("facade_tan", 0.1), ("facade_chalk", 0.05), ("facade_brick", 0.03)]
+# every facade colour a building can have: the rule's, and the ones a well-known building names (landmark_styles.json)
+FACADES = [n for n, _ in FACADE_SHARES] + [
+    "facade_cream", "facade_ochre", "facade_pink", "facade_yellow", "facade_blue", "facade_sage", "facade_white",
+    "facade_apricot", "facade_rose", "facade_green", "facade_terracotta", "facade_grey", "facade_butter"]
+# pitched roofs: (palette colour, courses, share of the buildings). Slate is the city's roof, and v1's; tile only
+# where a well-known building names it
+ROOFS = [("roof_tile_old", "tile", 0.0), ("roof_tile", "tile", 0.0), ("roof_tile_brown", "tile", 0.0),
+         ("roof_slate_dark", "slate", 0.25), ("roof_slate_blue", "slate", 0.3), ("roof_slate_warm", "slate", 0.15),
+         ("roof_slate", "slate", 0.3)]
+# clean fills (v1's cartoon look): the share kept of every grain, mottle and stone-to-stone or slate-to-slate tone
+GRAIN = 0.0
+# v1's roof lines: a light stroke down the slope every `every` m along the eave, `width` m wide, `gain` times the slate;
+# and the courses parallel to the eave, darker by `course`
+ROOF_STROKE = {"every": 0.9, "width": 0.14, "gain": 1.22, "course": 0.14}
 SHUTTERS = ["shutter_green", "shutter_blue", "shutter_red", "shutter_grey"]
 DOORS = ["door_green", "door_red", "door_blue", "door_wood"]
 AWNINGS = ["awning_red", "awning_green", "awning_blue", "awning_yellow"]
@@ -71,6 +83,16 @@ def B(name):
 
 def mix(a, b, t):
     return a * (1 - t) + b * t
+
+
+def by_share(shares, r):
+    """The name whose share of 0..1 holds r: shares [(name, share)], summing to 1."""
+    acc = 0.0
+    for name, share in shares:
+        acc += share
+        if r < acc:
+            return name
+    return [n for n, s in shares if s > 0][-1]
 
 
 def landmark_styles(part="buildings") -> dict:
@@ -109,7 +131,7 @@ class Style:
     def __init__(self, bid: str, roof_shape: str, known: dict | None = None, church: bool = False):
         known = known or {}                    # a well-known building's own materials (landmark_styles.json)
         self.church = church                   # the walls of a place of worship
-        self.facade = known.get("facade") or FACADES[int(h01(bid + "facade") * len(FACADES)) % len(FACADES)]
+        self.facade = known.get("facade") or by_share(FACADE_SHARES, h01(bid + "facade"))
         stone = known["stone"] if "stone" in known else (h01(bid + "w") < 0.18 and "facade" not in known)
         # the building's own tone: every house a little lighter or darker than its neighbour of the same colour
         self.stone = stone
@@ -121,11 +143,8 @@ class Style:
         if roof_shape == "flat":
             self.roof, self.courses, self.roof_name = B("roof_flat") * rt, None, "roof_flat"
         else:
-            r, acc = h01(bid + "r"), 0.0
-            for name, courses, share in ROOFS:
-                acc += share
-                if r < acc:
-                    break
+            name = by_share([(n, s) for n, _, s in ROOFS], h01(bid + "r"))
+            courses = next(c for n, c, _ in ROOFS if n == name)
             if known.get("roof"):
                 name, courses = next((n, c) for n, c, _ in ROOFS if n == known["roof"])
             self.roof, self.courses, self.roof_name = B(name) * rt, courses, name
@@ -363,10 +382,10 @@ class ArtA:
             # the wall's own surface: coursed ashlar on stone buildings; on render a faint mottle and, on some
             # buildings, a banded ground floor
             stone_w = np.array([x.stone for x in sty], bool)
-            t, j = slabs(u[stone_w], v[stone_w], 0.8, 0.36, joint=0.05, tone=0.05, seed=31)
-            c[stone_w] *= (t * (1 - 0.16 * j))[:, None]
+            t, j = slabs(u[stone_w], v[stone_w], 0.8, 0.36, joint=0.05, tone=0.05 * GRAIN, seed=31)
+            c[stone_w] *= (t * (1 - 0.1 * j))[:, None]
             rend = ~stone_w
-            c[rend] *= (1 + (vnoise(u[rend] + 13.0 * w[rend], v[rend], 1.6, 33) - 0.5) * 0.05)[:, None]
+            c[rend] *= (1 + (vnoise(u[rend] + 13.0 * w[rend], v[rend], 1.6, 33) - 0.5) * 0.05 * GRAIN)[:, None]
             rus = np.array([x.rustic for x in sty], bool) & (v > 0.82) & (v < 3.42)
             c[rus] *= (1 - 0.16 * soft_band(v[rus], 0.45, 0.07))[:, None]
             plinth = v < 0.7
@@ -456,7 +475,7 @@ class ArtA:
                 sub = cls_out[has]
                 sub[stone] = CLASS["trim"]
                 cls_out[has] = sub
-        return rgb * gp(px, py, 0.02, 11)[:, None] if n else rgb
+        return rgb * gp(px, py, 0.02 * GRAIN, 11)[:, None] if n else rgb
 
     def in_stone_part(self, bi, P):
         """Which pixels of a rendered building stand in one of its parts of bare stone (landmark_styles.json,
@@ -478,7 +497,7 @@ class ArtA:
                 q = (bi == b) & (P[:, 2] >= z0) & (np.hypot(P[:, 0] - ce, P[:, 1] - cn) <= r)
                 rgb[q] = col
                 m |= q
-        return m, rgb[m] * gp(px[m], py[m], 0.03, 17)[:, None]
+        return m, rgb[m] * gp(px[m], py[m], 0.03 * GRAIN, 17)[:, None]
 
     def roofs_rgb(self, bi, P, nrm, px, py):
         n = len(bi)
@@ -500,7 +519,7 @@ class ArtA:
         width = np.where(kind == 2, 0.34, 0.4)
         row = np.floor(down / course)
         col = np.floor((along + (row % 2) * width / 2) / width)
-        tone = 1 + (ihash(row, col, bi) - 0.5) * np.where(kind == 2, 0.09, 0.06)
+        tone = 1 + (ihash(row, col, bi) - 0.5) * np.where(kind == 2, 0.09, 0.06) * GRAIN
         rgb = base * np.where(slope_ok, tone, 1.0)[:, None]
         # courses and joints by coverage, at the spacing the camera samples this roof face with (one map pixel
         # across or up the screen, measured on the face). They fade out before a line and its pixel fill half a
@@ -520,9 +539,12 @@ class ArtA:
         px_down, px_along = np.maximum(px_down, 0.125), np.maximum(px_along, 0.125)
         keep_c = np.clip((0.4 * course - px_down) / (0.1 * course), 0, 1) * slope_ok
         keep_j = np.clip((0.4 * width - px_along) / (0.1 * width), 0, 1) * keep_c
-        lines = 1 - 0.26 * keep_c * soft_band(down, course, 0.10 * course, px_down)
-        lines *= 1 - 0.12 * keep_j * soft_band(along + (row % 2) * width / 2, width, 0.08 * width, px_along)
-        rgb *= lines[:, None]
+        RS = ROOF_STROKE
+        lines = 1 - RS["course"] * keep_c * soft_band(down, course, 0.10 * course, px_down)
+        # the strokes down the slope: by coverage too, fading out before a stroke and its pixel fill half the gap
+        keep_s = np.clip((0.4 * RS["every"] - px_along) / (0.1 * RS["every"]), 0, 1) * slope_ok
+        lines *= 1 + (RS["gain"] - 1) * keep_s * soft_band(along, RS["every"], RS["width"], px_along)
+        rgb = np.minimum(rgb * lines[:, None], 255.0)
         if self.materials:
             names = np.array([self.styles[b].roof_name for b in bi])
             for nm in np.unique(names):
@@ -531,7 +553,7 @@ class ArtA:
                 if t is not None:
                     rgb[mm] = t
         flat = ~slope_ok
-        rgb[flat] = base[flat] * gp(px[flat], py[flat], 0.09, 13)[:, None] if flat.any() else rgb[flat]   # gravel
+        rgb[flat] = base[flat] * gp(px[flat], py[flat], 0.09 * GRAIN, 13)[:, None] if flat.any() else rgb[flat]   # gravel
         return rgb
 
     def openings_rgb(self, O, ti, P, bi):
@@ -741,13 +763,13 @@ class ArtA:
         along = P[:, 0] * -d[:, 1] + P[:, 1] * d[:, 0]
         row = np.floor(P[:, 2] / 0.5)
         stone = vertical & (cls != CLASS["parapet"]) & (cls != CLASS["lift"])
-        tone = 1 + (ihash(row, np.floor((along + (row % 2) * 0.45) / 0.9)) - 0.5) * 0.08
+        tone = 1 + (ihash(row, np.floor((along + (row % 2) * 0.45) / 0.9)) - 0.5) * 0.08 * GRAIN
         rgb[stone] *= tone[stone, None]
         joint = stone & (band(P[:, 2], 0.5, 0.06) | band(along + (row % 2) * 0.45, 0.9, 0.06))
-        rgb[joint] *= 0.8
+        rgb[joint] *= 0.86
         bars = vertical & ((cls == CLASS["parapet"]) | (cls == CLASS["lift"])) & band(along, 0.25, 0.06)
         rgb[bars] *= 0.72
-        return rgb * gp(px, py, 0.02, 17)[:, None]
+        return rgb * gp(px, py, 0.02 * GRAIN, 17)[:, None]
 
     @staticmethod
     def crown_rgb(light, dark, P, nz, tree_id, shape_id, kind, px, py, shape_r=None, tuft_id=None, sky=None, tall=None):

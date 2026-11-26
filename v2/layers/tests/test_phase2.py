@@ -472,3 +472,22 @@ def test_a_described_walls_opening_has_its_own_head_and_a_flat_one_is_its_rectan
     cls2 = cls2.reshape(xs.shape)
     edge = (xs2 > 21.0) & (xs2 < 21.08) & (zs > 304.6) & (zs < 304.8)
     assert (cls2[edge] == CLASS["trim"]).all()
+
+
+def test_houses_by_rule_are_in_v1s_colours():
+    """The owner's decision of 26 Nov 2026: a house's colour by rule is one of v1's family, its roof slate."""
+    from v2.layers.art_a import FACADE_SHARES, GRAIN, ROOF_STROKE, by_share
+    family = [n for n, _ in FACADE_SHARES]
+    assert abs(sum(s for _, s in FACADE_SHARES) - 1) < 1e-9 and set(family) <= set(FACADES)
+    styles = [Style(f"ACT_{i}", "gable") for i in range(400)]
+    assert {s.facade for s in styles} <= set(family) and len({s.facade for s in styles}) >= 5
+    assert all(s.roof_name.startswith("roof_slate") and s.courses == "slate" for s in styles)
+    # every colour of the family is warm: red over green over blue
+    for n in family:
+        r, g, b = pal("buildings", n)
+        assert r > g > b
+    assert by_share([("a", 0.5), ("b", 0.5), ("c", 0.0)], 0.999999) == "b" and by_share([("a", 1.0)], 0.0) == "a"
+    # a well-known building keeps the colours its entry names
+    k = Style("ACT_z", "gable", {"facade": "facade_pink", "roof": "roof_tile"})
+    assert k.facade == "facade_pink" and k.roof_name == "roof_tile" and k.courses == "tile"
+    assert GRAIN == 0.0 and ROOF_STROKE["gain"] > 1

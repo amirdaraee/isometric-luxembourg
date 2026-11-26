@@ -762,6 +762,17 @@ def look_grade(c):
     return np.where(over, mx - (mx - c) * (k["sat_max"] / np.maximum(s, 1e-6)), c)
 
 
+def _sat(c):
+    mx, mn = c.max(-1), c.min(-1)
+    return (mx - mn) / np.maximum(mx, 1e-6)
+
+
+def _hue_deg(c):
+    """Hue in degrees (0 red, 120 green, 240 blue); 0 for a grey."""
+    r, g, b = c[..., 0], c[..., 1], c[..., 2]
+    return np.degrees(np.arctan2(np.sqrt(3.0) * (g - b), 2 * r - g - b)) % 360
+
+
 def check_viewer(ctx):
     """Runs the viewer headless (v2/web/scripts/viewer_checks.mjs) against this release, then compares its shadow
     masks with the Python reference at the same pixels."""
@@ -840,6 +851,16 @@ def check_viewer(ctx):
     once = look_grade(day)
     rep.at_most("V7", "the look pass applied again to the viewer's output: largest channel change (L14.1, in 1/255)",
                 int(round(float(np.abs(once - day).max()) * 255)), 1)
+    # L9.6: what the sun lights past the screen's white keeps its hue (cut off channel by channel, a cream wall turns lemon)
+    lit = np.frombuffer((out / "lit_13.bin").read_bytes(), np.uint8).reshape(-1, 4)[:, :3].astype(float) / 255
+    alb = np.frombuffer((out / "albedo_13.bin").read_bytes(), np.uint8).reshape(-1, 4)[:, :3].astype(float) / 255
+    top = (lit.max(-1) >= 0.99) & (_sat(lit) >= 0.15) & (_sat(alb) >= 0.15)
+    turn = np.abs((_hue_deg(lit[top]) - _hue_deg(alb[top]) + 180) % 360 - 180)
+    rep.at_least("V8n", "coloured pixels lit to the screen's white at 13:00 (what V8 looks at)", int(top.sum()), 1000)
+    rep.at_most("V8", "share of them whose hue is more than 6 degrees from the surface's own (L9.6)",
+                round(float((turn > 6).mean()) if top.any() else 1.0, 4), 0.001)
+    rep.info("V8b", "their hue against the surface's own (degrees: median, 99th percentile, largest)",
+             [round(float(v), 2) for v in (np.median(turn), np.percentile(turn, 99), turn.max())] if top.any() else [])
     S = V["speed"]
     rep.info("C2", "speed (desktop, this machine's GPU)", S)
     rep.at_most("C2a", "first view, warm (s)", round(S["first_view_warm_s"], 3), P["speed_first_view_s"])
