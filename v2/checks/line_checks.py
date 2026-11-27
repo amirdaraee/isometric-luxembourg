@@ -199,6 +199,22 @@ def check_lines(ctx):
         rep.at_least("L5.8-tracery" if name == "tracery" else f"L5.2-{name}", f"line score, {what}: share of {n} seen samples (every 0.25 m, of {len(Ps)}) whose "
                      f"drawn line is within {P['line_score_px']} px of the model's", round(share, 4), P["line_score_share"], ex)
     worship_pixels(rep, rel, sc)
+    # L5.9: no building stands in the air. ACT's walls end at the model's own ground surface; where the LiDAR ground
+    # at the outline lies lower, the walls are continued down to it (geometry.wall_skirts)
+    from v2.config import params
+    sk = params()["buildings"]["skirt"]
+    _, st, _, gaps = G.scene_skirts(sc)
+    walls = bm["kind"] == 2
+    foot = np.full(len(sc.buildings), np.inf)
+    np.minimum.at(foot, bm["obj"][walls], bm["V"][bm["T"][walls]][:, :, 2].min(1))
+    base = np.array([b["ground_z"] for b in sc.buildings], float)
+    lowest_ground = base - gaps
+    in_air = np.flatnonzero((gaps > sk["min_gap_m"]) & (foot > lowest_ground + 0.01))
+    rep.at_most("L5.9", f"buildings whose base stands more than {sk['min_gap_m']} m over the lowest ground at their outline and "
+                "whose walls do not reach that ground", len(in_air), 0, [sc.buildings[i]["id"] for i in in_air[:5]])
+    rep.info("L5.9b", "buildings whose walls were continued down; of them by more than 0.5 m and by more than 2 m; the largest (m); "
+             "faces added", [int((gaps > sk["min_gap_m"]).sum()), int((gaps > 0.5).sum()), int((gaps > 2).sum()),
+                             round(float(gaps.max()), 2) if len(gaps) else 0, len(st) // 2])
     return rep.result()
 
 

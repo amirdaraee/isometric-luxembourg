@@ -3879,3 +3879,80 @@ panning 88.7 fps (limit 60); X8b 111.6 fps (limit 60). 38 web tests (5 new) and 
 ### 41.5 Open questions
 
 44, 46, 65, 66, 67 and 69 stand. No new question.
+
+## 42. The owner's first notes: a floating building, a tree at a wall, pits in a square (27 November, $0)
+
+The owner left nine notes on the map with the notes tool of section 41. Each was looked at in the build's data.
+Three had one clear cause and a rule that fixes it everywhere; they are fixed in this step. The other six need
+the owner's choice between samples first.
+
+### 42.1 The nine notes
+
+| # | The note | Where | Cause | In this step |
+|---|---|---|---|---|
+| 1 | "this is totally wrong" | Terrace above the Corniche's footbridge | Paths and steps drawn over the rock face, ragged wall tops, rock patches where the ground model is steep | no (cliffs) |
+| 2 | "seems wrong, building inside cliff" | Below the Corniche | Building 580: base at 287.8 m, ground at its outline up to 297.6 m; the rock is drawn in front of its lower floors | no (cliffs) |
+| 3 | "top surface of bridges for train tracks seems wrong" | Railway viaduct | The deck is one plain slab: no ballast, no parapet | no (bridges) |
+| 4 | "what are the holes inside the yard for?" | Place Guillaume II | Pits 2 to 4 m deep in the LiDAR ground | **fixed** |
+| 5 | "top of flat buildings look dull" | Kirchberg side | A flat roof is one plain colour | no (roofs) |
+| 6 | "building is floating" | Pfaffenthal | Building 240: base at 246.9 m, ground at its outline 243.8 m | **fixed** |
+| 7 | "tree in the building" | Pfaffenthal | Birch 9832 stood 0.40 m from the wall of a building whose eave is 2.4 m high | **fixed** |
+| 8 | "where are the legs of the bridge?" | Red Bridge | Only the hand-modelled railway viaducts have piers; every other bridge is a deck with sides | no (bridges) |
+| 9 | "bridge is floating" | Béinchen | The same | no (bridges) |
+
+### 42.2 What was built
+
+- **Walls reach the ground** (`geometry.wall_skirts`, `buildings.skirt`). ACT gives each building one ground
+  height; the LiDAR ground at its outline can lie lower. Along every outline edge the ground is sampled each
+  0.5 m, on the edge and 0.5 m outside it. Where the base is more than 0.1 m over the lowest ground, the wall is
+  continued down to 0.5 m under it. The added face lies in its wall's plane and is drawn as the wall's plinth.
+- **Trunks keep off walls** (`trees.off_walls`, `trees.wall_clear`). A trunk nearer than 1.5 m to a building's
+  outline is put straight out from the wall, 1.5 m from it. It is left out where that place is nearer than 1.5 m
+  to any building, in water, or on a cliff cell.
+- **Pits in paved squares are filled** (`terrain.fill_pits`, `terrain.square_pits`; the owner chose "fill them
+  flat"). Inside an OSM pedestrian area, a dip more than 1 m under the square's level and at most 150 m² is put
+  at that level. Larger dips are kept as the square's own shape.
+- **New gate checks.** L5.9: no building's base stands over the ground at its outline without walls down to
+  it. TE3d: no trunk nearer than 1.5 m to an outline. TR8: filling the pits a second time fills nothing.
+
+![The square (note 4), the building (note 6) and the tree (note 7), before and after, at 13:00](img/test_a_notes_square_pits.jpg)
+![Note 6: the building in Pfaffenthal, before and after](img/test_a_notes_floating_building.jpg)
+![Note 7: the birch at the wall, before and after](img/test_a_notes_tree_at_wall.jpg)
+
+### 42.3 Results
+
+All 62 stages pass; 300 gate entries pass (L5.9, TE3d and TR8 new), none fails; gates G1 and G3 pass. New
+release `69f5cda59fc8`.
+
+| | Count |
+|---|---|
+| Buildings whose walls were continued down (of 1,135) | 331 |
+| … by more than 0.5 m | 91 |
+| … by more than 2 m | 16 |
+| Largest continuation | 8.84 m |
+| Faces added | 914 |
+| Trees moved off a wall (of 12,396 kept) | 141 |
+| Trees left out for want of room | 10 |
+| Paved squares | 80 |
+| Pits filled | 47 (328 m²) |
+
+The note in `params.json` counts 49 buildings more than 0.5 m over their ground: that was measured on the
+outline alone. The rule also looks 0.5 m outside the outline, which gives the 91 above.
+
+Speed is as before: C2a first view 0.09 s (limit 0.5); C2b panning 91.6 fps (limit 60); X8b 113.1 fps (limit
+60); C5 0 requests refused; C6 0 faults. 207 Python tests pass (skirts, `off_walls` and `fill_pits` new).
+
+### 42.4 Not done
+
+- A wall continued down is plain plinth stone, with no door or window. On the 16 buildings continued by more
+  than 2 m that is a tall blank base.
+- Building 580 (note 2) is the opposite case: ground higher than the base. It is not changed.
+- The tree of note 7 now stands 1.5 m in front of the wall; its crown still hangs over the low roof, as a real
+  crown would.
+- Pits are filled only in OSM pedestrian areas. A pit in a street, a yard or a park is kept.
+- Notes 1, 2, 3, 5, 8 and 9 are not worked on. The owner chose the bridges (3, 8, 9) as the next samples; flat
+  roofs (5) and the cliff-side cases (1, 2) follow.
+
+### 42.5 Open questions
+
+44, 46, 65, 66, 67 and 69 stand. No new question.

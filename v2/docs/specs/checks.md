@@ -22,6 +22,8 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | TR3 | yes | Surface below ground by > 0.5 m on ≤ 0.1% of cells |
 | TR4 | yes | Buildings sit on the terrain: median \|ACT ground − LiDAR ground\| ≤ 1.5 m |
 | TR5–7 | report | 90th percentile of TR4; steep and cliff area; OSM walls measured |
+| TR8 | yes | No small deep pit left in a paved square (filling the pits again fills nothing) |
+| TR8b | report | Paved squares, pits filled in them, cells filled |
 | **Buildings** | | |
 | B1 | yes | Every footprint ring closed |
 | B2 | yes | No invalid or empty footprint |
@@ -66,6 +68,7 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | TE2 | yes | No tree standing in water |
 | TE3 | yes | No crown more than 30% (+2%) over buildings, unless held at its least width (TE3b, report: how many) |
 | TE3c | yes | No crown narrower than half its shaped radius (a pole) |
+| TE3d | yes | No trunk nearer than 1.5 m to a building's outline |
 | TE4 | yes | Measured heights within 2–50 m |
 | TE6 | yes | No crown wider than its species' and age's shape allows (layer-07 rule 1), or than the survey's width where that is wider |
 | TE7 | yes | Thinning only narrows a crown |
@@ -171,4 +174,5 @@ and the rule changes 0 pixels outside the opening; the interior's lit level besi
 
 `check_lines` also holds L5.7 (layer-05-buildings.md): no shutter, shop front or house window glass pixel on a
 building that is a church all over; and L5.8: the mullions of traceried church windows are straight lines (the
-line score, the same 95%).
+line score, the same 95%). And L5.9: no building's base stands over the ground at its outline without its walls
+reaching that ground.

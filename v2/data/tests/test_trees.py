@@ -3,7 +3,7 @@ drawn at one stated share of its measured height."""
 import numpy as np
 
 from v2.config import params
-from v2.data.scene.trees import drawn_height, shape_radius, thin
+from v2.data.scene.trees import drawn_height, off_walls, shape_radius, thin
 
 P = params()["trees"]
 NAMES = P["types"]
@@ -84,3 +84,17 @@ def test_a_crown_over_a_building_is_thinned_but_never_to_a_pole():
 def test_no_blockers_no_thinning():
     out, thinned, held = thin(np.array([0.0]), np.array([0.0]), np.array([3.0]), [], P)
     assert out[0] == 3.0 and not thinned.any() and not held.any()
+
+
+def test_a_trunk_against_a_wall_is_put_clear_of_it_or_left_out():
+    from shapely.geometry import box
+    houses = [box(0, 0, 10, 10), box(12, 0, 22, 10)]                      # a 2 m gap between them
+    #          against the south wall   far away    in the gap     1.5 m off already
+    e = np.array([5.0, 5.0, 11.0, 5.0])
+    n = np.array([-0.4, -30.0, 5.0, -1.5])
+    E, N, moved, keep = off_walls(e, n, houses, 1.5)
+    assert list(moved) == [True, False, False, False]
+    assert list(keep) == [True, True, False, True]                        # no room in the gap: left out
+    assert np.allclose([E[0], N[0]], [5.0, -1.5])                         # straight out from the wall
+    assert np.allclose([E[1], N[1], E[3], N[3]], [5.0, -30.0, 5.0, -1.5])
+    assert off_walls(e, n, [], 1.5)[3].all()
