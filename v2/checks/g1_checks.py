@@ -877,6 +877,15 @@ def check_viewer(ctx):
     rep.at_least("C2b", "panning, desktop (frames per second, all layers on, vehicles moving)", round(S["pan_fps"], 1),
                  P["speed_pan_fps_desktop"])
     rep.info("C2c", "mid phone: not measured on a device (see the report); 4x CPU throttle", S.get("throttled", {}))
+    # C5: a large window asks for some 2,000 files at once; a browser refuses what it will not hold, and a tile it
+    # refused was never asked for again (the view kept holes: no trees, no bridges, no shadows)
+    L = V["large"]
+    rep.at_most("C5", f"a large window's first view ({L['viewport']}): requests the browser refused or the network failed",
+                L["requests_failed"], 0)
+    rep.at_most("C5b", "the same view: its tiles not loaded, the shadow map counted as one",
+                L["view_tiles_missing"] + L["tiles_waiting"] + (0 if L["shadows"] else 1) + (1 if L["timed_out"] or L["error"] else 0), 0)
+    rep.info("C5c", "the same view: requests made, tiles loaded, seconds to the first whole view (this machine)",
+             {"requests": L["requests"], "tiles": L["tiles"], "first_view_s": L["first_view_s"]})
     return rep.result()
 
 

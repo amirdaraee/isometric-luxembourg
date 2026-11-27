@@ -19,6 +19,7 @@
 
 import type { LightConfig, ReleaseIndex } from "../data.ts";
 import { fetchBin, fetchImage } from "../data.ts";
+import { retryWaitMs, Stale } from "../loadq.ts";
 import { grade, litShare, nightFactor } from "./grade.ts";
 import { coarseTops, TOP_CELLS } from "../heightmap.ts";
 import { CUT_LAYER_FS, FULL_VS, GROUND_FS, LAMP_FS, LAMP_VS, LAYER_FS, LIGHT_CUT_FS, LIGHT_FS, LOOK_FADE_FS, LOOK_FS, TILE_VS, TUN_FS, TUN_VS, VEH_FS,
@@ -28,6 +29,7 @@ import { tubeMesh, VERTEX_FLOATS, type TunnelsData } from "../tunnels.ts";
 
 export const LAYER_ID: Record<string, number> = { ground: 1, relief: 2, water: 3, transport: 4, buildings: 5, structures: 6, trees: 7 };
 const DRAW_ORDER = ["water", "transport", "buildings", "structures", "trees"];
+const STALE_FRAMES = 8;      // a waiting tile no frame has asked for in this many frames is not loaded
 
 export interface View { cx: number; cy: number; scale: number }
 export interface LightState {
@@ -106,6 +108,7 @@ export class Compositor {
   private cutProg: { layer: Prog; win: Prog; light: Prog } | null = null;
   private idTiles = new Map<string, { tex?: WebGLTexture; ready: boolean; used: number }>();
   pending = 0;
+  private failures = new Map<string, number>();     // tile key -> loads the network failed in a row
   onTile: () => void = () => {};
   stats = { tilesDrawn: 0, tilesMissing: 0, tunnelVehicles: 0 };
 
@@ -430,16 +433,29 @@ export class Compositor {
       const tt = t;
       const base = `${layer}/${z}/${name}`;
       const hasK = li.files.includes("k.bin");
-      Promise.all([layer === "buffers" ? Promise.resolve(null) : fetchImage(`${base}.c.webp`), fetchBin(`${base}.g.bin`, 512, 4),
-        hasK ? fetchBin(`${base}.k.bin`, 512, 1) : Promise.resolve(null)])
+      // a tile whose turn to load comes when no frame has asked for it lately is not loaded (the view moved on)
+      const wanted = () => this.frameNo - tt.used <= STALE_FRAMES;
+      Promise.all([layer === "buffers" ? Promise.resolve(null) : fetchImage(`${base}.c.webp`, wanted), fetchBin(`${base}.g.bin`, 512, 4, wanted),
+        hasK ? fetchBin(`${base}.k.bin`, 512, 1, wanted) : Promise.resolve(null)])
         .then(([c, g, k]) => {
           if (c) tt.c = this.texFrom(c, "rgba", true);
           if (g) tt.g = this.texFrom(g, "rgba", false);
           if (k) tt.k = this.texFrom(k, "r", false);
           tt.ready = true;
+          this.failures.delete(key);
           if (c) c.close();
         })
-        .catch(() => { tt.failed = true; })
+        .catch((e) => {
+          // Not loaded. The tile is forgotten, so that the next frame that needs it asks for it again: at once if
+          // it was dropped as no longer wanted, after a wait if the network failed (it was never asked for again
+          // before, and the view kept its hole).
+          const forget = () => { if (this.tiles.get(key) === tt) this.tiles.delete(key); };
+          if (e instanceof Stale) return forget();
+          tt.failed = true;
+          const n = (this.failures.get(key) ?? 0) + 1;
+          this.failures.set(key, n);
+          setTimeout(() => { forget(); this.onTile(); }, retryWaitMs(n));
+        })
         .finally(() => { this.pending--; this.onTile(); });
     }
     t.used = this.frameNo;

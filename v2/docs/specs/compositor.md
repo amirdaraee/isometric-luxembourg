@@ -13,6 +13,13 @@ test parameters `?hour`, `?season`, `?seed`, screenshot and speed harness).
    pass; labels and pins (15) as DOM/canvas over it, hidden when their ground point is behind a nearer surface.
 4. Draw only on change (TOR); one frame clock (v1); nearest-neighbour above 1:1.
 5. Every layer can be switched off (`?off=trees` etc.), which is how the layer-off checks run.
+6. Every file of the release is loaded through one queue (`src/loadq.ts`): at most 32 at a time, in the order
+   asked. A tile whose turn comes when no frame has asked for it in 8 frames is not loaded (the view moved on). A
+   request the network fails is made again (three times, 0.25 s and 0.5 s apart); a tile that still fails is asked
+   for again by the next frame that needs it after 1 s, then 2 s, doubling to 30 s. Why: a 2552 x 1278 window at two
+   device pixels a pixel asks for 1,947 files in its first view; asked all at once, Chrome refused 549 of them
+   (`net::ERR_INSUFFICIENT_RESOURCES`), the tiles were never asked for again, and because the shadow map waits for
+   the first whole view, the view also had no shadows (the owner's picture of the Corniche, 27 Nov 2026).
 
 **Checks.**
 - C1 (gate) Switching any layer off leaves no trace of it (pixel diff against the composite rendered without it).
@@ -20,3 +27,5 @@ test parameters `?hour`, `?season`, `?seed`, screenshot and speed harness).
 - C3 (gate) Same pixels as an offline reference render of the same view (± rounding), so what is checked offline is
   what is seen.
 - C4 (gate) Depth test at every portal and bridge of the test area (brief 8; with L12.1).
+- C5 (gate) A large window's first view (2552 x 1278 at two device pixels a pixel, zoom 0.5 over the old town): no
+  request refused or failed, every tile of the view loaded, the shadow map loaded.

@@ -143,7 +143,7 @@ Stages of the build graph (`python -m v2.build test g1`), each a gate; threshold
 | `check_seams` | v1's seam rule per colour layer at the tiles' scale; L8.4 depth across borders against the tiles' middle lines | seams |
 | `check_vehicles` | L4.2, L12.4 on drawn road/track over a simulated day; L12.1a none drawn in a tunnel past its portal; C4 probes at every portal, bridge and way under a deck vs the exact geometry; L12.2 heights between frames; L12.3 | 7, 8 |
 | `check_no_cars` (`owl_detect.py`) | OWLv2 (v1's detector, local cache, offline) on every colour layer tile: 0 vehicles >= 0.1. The water layer is also asked for boats, and is looked at over the ground layer: a gap a bank cuts in it is the land's shape, and alone on black it read as a boat (26 Nov 2026) | 9 |
-| `check_viewer` (`v2/web/scripts/viewer_checks.mjs`) | V1 layer off leaves no pixel; V2 no shadow of a layer that is off; V3 viewer shadows = Python reference at 10, 13, 16 h and they move; V4 no light by day; V5 seasons only on their masks; V6 labels never overlap; V7 look pass idempotent; C2 speed | 4, 5, speed |
+| `check_viewer` (`v2/web/scripts/viewer_checks.mjs`) | V1 layer off leaves no pixel; V2 no shadow of a layer that is off; V3 viewer shadows = Python reference at 10, 13, 16 h and they move; V4 no light by day; V5 seasons only on their masks; V6 labels never overlap; V7 look pass idempotent; C2 speed; C5 a large window's first view loses no file (every tile and the shadow map loaded) | 4, 5, speed |
 
 Exceptions: none were needed for G1 (`v2/data/exceptions.json` is unchanged).
 
