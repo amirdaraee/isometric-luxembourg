@@ -3915,7 +3915,7 @@ the owner's choice between samples first.
 - **New gate checks.** L5.9: no building's base stands over the ground at its outline without walls down to
   it. TE3d: no trunk nearer than 1.5 m to an outline. TR8: filling the pits a second time fills nothing.
 
-![The square (note 4), the building (note 6) and the tree (note 7), before and after, at 13:00](img/test_a_notes_square_pits.jpg)
+![Note 4: Place Guillaume II, before and after, at 13:00](img/test_a_notes_square_pits.jpg)
 ![Note 6: the building in Pfaffenthal, before and after](img/test_a_notes_floating_building.jpg)
 ![Note 7: the birch at the wall, before and after](img/test_a_notes_tree_at_wall.jpg)
 
