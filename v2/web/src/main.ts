@@ -460,6 +460,7 @@ async function main() {
         del.addEventListener("click", () => { notes.splice(i, 1); keep(); show(); });
         return li;
       }));
+      placeNotes();                                               // the pins now, not at the next frame
       dirty = true;
     };
     placeNotes = () => {
