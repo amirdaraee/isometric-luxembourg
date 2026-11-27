@@ -31,6 +31,18 @@ function notesFile(): string {
   return join(root, "v2", process.env.V2_AREA ?? "test", "review_notes.json");
 }
 
+// The notes are this machine's: a request is answered only when it names this server as a local host and, if a page
+// sent it, when that page is this server's own. Another site's page, or one reaching here under another name
+// (DNS rebinding), gets 403.
+const LOCAL = new Set(["localhost", "127.0.0.1", "[::1]"]);
+function ownRequest(headers: { host?: string; origin?: string }): boolean {
+  let host: URL;
+  try { host = new URL(`http://${headers.host ?? ""}`); } catch { return false; }
+  if (!LOCAL.has(host.hostname)) return false;
+  if (headers.origin === undefined) return true;
+  try { return new URL(headers.origin).host === host.host; } catch { return false; }
+}
+
 function sendFile(dir: string, url: string, res: any, next: () => void) {
   const p = resolve(dir, "." + url);
   if (!(p === dir || p.startsWith(dir + sep))) { res.statusCode = 403; res.end(); return; }
@@ -62,6 +74,7 @@ function serveRelease(): Plugin {
         sendFile(resolve(rel), m[2], res, next);
       });
       server.middlewares.use("/notes", (req, res) => {
+        if (!ownRequest(req.headers)) { res.statusCode = 403; res.end(); return; }
         const file = notesFile();
         if (req.method === "GET") {
           res.setHeader("Content-Type", "application/json");
