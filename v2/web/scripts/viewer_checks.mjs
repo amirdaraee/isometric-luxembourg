@@ -69,6 +69,32 @@ const pixels = () => page.evaluate(() => {
   res.speed.viewport = "1600x1000 CSS px, device pixel ratio 1";
   await ctx2.close();
 }
+// ---------------------------------------------------------------- a large window (C5)
+// A 2552 x 1278 window at two device pixels a pixel asks for some 2,000 files in its first view. A browser refuses
+// requests beyond what it will hold (net::ERR_INSUFFICIENT_RESOURCES): the viewer has to load them a few at a time
+// (src/loadq.ts) and lose none, or the view keeps holes and never gets its shadows.
+{
+  const ctx3 = await browser.newContext({ viewport: { width: 2552, height: 1278 }, deviceScaleFactor: 2 });
+  const p3 = await ctx3.newPage();
+  let requests = 0, failed = 0;
+  p3.on("request", () => requests++);
+  p3.on("requestfailed", () => failed++);
+  await p3.goto(base + `?noui&nosim&x=62900&y=33750&z=0.5&hour=13&date=${DATE}`);
+  let timed_out = false;
+  try {
+    await p3.waitForFunction(() => window.__v2 && (window.__v2.error || (window.__v2.shadowsReady && window.__v2.missing() === 0)),
+      null, { timeout: 120000 });
+  } catch { timed_out = true; }
+  res.large = await p3.evaluate(() => {
+    const v = window.__v2;
+    let tiles = 0, waiting = 0;
+    for (const t of v.comp.tiles.values()) { tiles++; if (!t.ready) waiting++; }
+    return { tiles, tiles_waiting: waiting, view_tiles_missing: v.missing(), shadows: !!v.shadowsReady,
+      first_view_s: v.firstViewMs ? v.firstViewMs / 1000 : null, error: v.error ?? null };
+  });
+  Object.assign(res.large, { requests, requests_failed: failed, timed_out, viewport: "2552x1278 CSS px, device pixel ratio 2" });
+  await ctx3.close();
+}
 res.gpu = await page.evaluate(() => { const gl = document.createElement("canvas").getContext("webgl2");
   const e = gl.getExtension("WEBGL_debug_renderer_info"); return { renderer: e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : "?",
     ua: navigator.userAgent }; });

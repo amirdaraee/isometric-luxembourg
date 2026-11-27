@@ -2,6 +2,7 @@
 // delta-coded per byte and zlib-compressed (v2/layers/common.py pack_bin): decoded exactly with DecompressionStream.
 
 import type { CutawaysIndex } from "./cutaways.ts";
+import { limiter, retry } from "./loadq.ts";
 
 export interface LayerIndex { levels: number; tiles: Record<string, Record<string, number>>; files: string[]; from_zoom?: number }
 export interface ReleaseIndex {
@@ -47,16 +48,26 @@ export interface LightConfig {
 
 export const BASE = (typeof location !== "undefined" && new URLSearchParams(location.search).get("data")) || "/data/";
 
-export async function fetchJSON<T>(name: string): Promise<T> {
-  const r = await fetch(BASE + name);
-  if (!r.ok) throw new Error(`${name}: ${r.status}`);
-  return r.json() as Promise<T>;
+// Every file of the release is loaded through one queue (loadq.ts): at most LOADS at a time, a request the network
+// fails made again. `wanted` (tiles) is asked when the load's turn comes: false drops it (rejected with Stale).
+const LOADS = 32;
+const load = limiter(LOADS);
+function get<T>(name: string, read: (r: Response) => Promise<T>, wanted?: () => boolean): Promise<T> {
+  return load(async () => read(await retry(() => fetch(BASE + name))), wanted);
 }
 
-export async function fetchBytes(name: string): Promise<ArrayBuffer> {
-  const r = await fetch(BASE + name);
-  if (!r.ok) throw new Error(`${name}: ${r.status}`);
-  return r.arrayBuffer();
+export function fetchJSON<T>(name: string): Promise<T> {
+  return get(name, (r) => {
+    if (!r.ok) throw new Error(`${name}: ${r.status}`);
+    return r.json() as Promise<T>;
+  });
+}
+
+export function fetchBytes(name: string): Promise<ArrayBuffer> {
+  return get(name, (r) => {
+    if (!r.ok) throw new Error(`${name}: ${r.status}`);
+    return r.arrayBuffer();
+  });
 }
 
 /** Undo the per-byte row delta of pack_bin, in place. */
@@ -75,15 +86,12 @@ export async function inflate(buf: ArrayBuffer): Promise<Uint8Array> {
   return new Uint8Array(await out.arrayBuffer());
 }
 
-/** A data tile: rows x (cols * bpp) bytes. */
-export async function fetchBin(name: string, rows: number, bpp: number): Promise<Uint8Array | null> {
-  const r = await fetch(BASE + name);
-  if (!r.ok) return null;
-  return undelta(await inflate(await r.arrayBuffer()), rows, bpp);
+/** A data tile: rows x (cols * bpp) bytes. Null if the release has no such file. */
+export function fetchBin(name: string, rows: number, bpp: number, wanted?: () => boolean): Promise<Uint8Array | null> {
+  return get(name, async (r) => (r.ok ? undelta(await inflate(await r.arrayBuffer()), rows, bpp) : null), wanted);
 }
 
-export async function fetchImage(name: string): Promise<ImageBitmap | null> {
-  const r = await fetch(BASE + name);
-  if (!r.ok) return null;
-  return createImageBitmap(await r.blob(), { premultiplyAlpha: "none", colorSpaceConversion: "none" });
+export function fetchImage(name: string, wanted?: () => boolean): Promise<ImageBitmap | null> {
+  return get(name, async (r) => (r.ok ? createImageBitmap(await r.blob(), { premultiplyAlpha: "none", colorSpaceConversion: "none" }) : null),
+    wanted);
 }
