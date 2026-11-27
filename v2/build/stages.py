@@ -60,7 +60,7 @@ def graph() -> Graph:
     # ---------------------------------------------------------------- the scene
     bati = lambda area: [raw_dir() / "bati3d" / "act2023v2-bati3d-luxembourg.zip"]  # noqa: E731
     S += [
-        Stage("scene_terrain", terrain.build, deps=("fetch_lidar", "fetch_osm_ground"), params=_p("terrain"), code=GEO,
+        Stage("scene_terrain", terrain.build, deps=("fetch_lidar", "fetch_osm_ground", "fetch_osm_transport"), params=_p("terrain"), code=GEO,
               doc="terrain and surface grids, slope, cliffs and walls"),
         Stage("scene_water", water.build, deps=("fetch_osm_ground",), code=GEO, doc="water polygons and river lines"),
         Stage("scene_buildings", buildings.build, deps=("scene_terrain",), params=_p("buildings"), raw=bati, code=GEO,
@@ -107,7 +107,7 @@ def graph() -> Graph:
                raw=lambda area: [REPO / "v2/data/exceptions.json"])
     S += [
         Stage("check_scope", dc.check_scope, deps=("scene",), **chk, doc="every part of the scene lies within the area"),
-        Stage("check_terrain", dc.check_terrain, deps=("scene_terrain", "scene_buildings"), **chk, doc="terrain complete; buildings sit on it"),
+        Stage("check_terrain", dc.check_terrain, deps=("scene_terrain", "scene_buildings", "fetch_osm_transport"), **chk, doc="terrain complete; buildings sit on it"),
         Stage("check_buildings", dc.check_buildings, deps=("scene_buildings",), **chk, doc="closed, valid, non-overlapping footprints"),
         Stage("check_facades", dc.check_facades, deps=("scene_facades", "scene_buildings"), **chk, doc="facade layout sanity"),
         Stage("check_trees", dc.check_trees, deps=("scene_trees", "scene_buildings", "scene_water", "scene_terrain"), **chk,

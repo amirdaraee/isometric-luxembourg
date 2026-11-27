@@ -10,8 +10,16 @@ One scene per area, built once from raw data and versioned by the build graph (`
   class 1 *steep* where slope ≥ 35°, class 2 *cliff* where slope ≥ 60° and the drop over 3 m ≥ 2.5 m. OSM
   retaining walls, city walls, walls, cliffs and embankments are kept as lines with their top and foot measured on
   the terrain 1.5 m either side (`walls.json`).
+- **Pits in paved squares** (`terrain.square_pits`; owner, 27 Nov 2026: "what are the holes inside the yard
+  for?"). The LiDAR ground has small deep pits in paved squares (light wells, stairs down to a car park, works
+  open on the day of the flight); with nothing known to draw in them they showed as rock patches in the paving.
+  Inside an OSM pedestrian area (`highway=pedestrian`, `area=yes`), a dip that goes more than 1 m under the
+  square's level (the median ground within 20 m) and covers at most 150 m² is put at that level, out to where it
+  is within 0.3 m of it; the filling is repeated until no such dip is left. Larger dips are kept: they are the
+  square's own shape. The ground model is changed before slope and classes are computed, so every layer sees the
+  filled ground.
 - **Output:** `terrain.npz` (mnt, mns, slope, cls, e0, n0, step), `walls.json`.
-- **Checks:** TR1–TR7.
+- **Checks:** TR1–TR8.
 
 ## Water (`scene_water`)
 OSM natural=water, waterway=riverbank, landuse=reservoir/basin and outdoor pools as polygons; rivers, streams and
@@ -44,7 +52,7 @@ See facades.md. Checks F1–F7.
   the survey's point is the crown's top, which can hang over a face, so a tree whose point is on a cliff cell
   gets its trunk on the nearest ground that is not one, within its measured crown's radius plus 1 m (1.5 to 4 m):
   above the point if there is such ground, else below it; its top keeps its height above the sea, so its own
-  height is its top above its new foot; a tree with no such ground in reach is left out (`trees.off_faces`); crown radius = 0.85 × crown_mean / 2 (the POC's "measured crowns read too big"),
+  height is its top above its new foot; a tree with no such ground in reach is left out (`trees.off_faces`); a trunk nearer than 1.5 m to a building's outline is put straight out from the wall, 1.5 m from it, and left out where that place is nearer than 1.5 m to any building, in water or on a cliff cell (`trees.wall_clear`; owner, 27 Nov 2026: "tree in the building"); crown radius = 0.85 × crown_mean / 2 (the POC's "measured crowns read too big"),
   widened to the tree's shape by species and age (layer-07 rule 1, by the measured height), then
   reduced (bisection) until ≤ 30% of the crown disc lies over buildings, but never under half its shaped radius
   (`trees.min_thin_share`: a crown thinned to nothing is drawn as a pole). Water does not thin a crown: a tree on a

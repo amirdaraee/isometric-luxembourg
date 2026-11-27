@@ -7,6 +7,7 @@ Meshes are (V, 3) vertices in world metres (E, N, z) plus (T, 3) triangles and p
   colour  palette key "group.name", or a blend "a.b|c.d|t"
 
 buildings_mesh      ACT LoD2 surfaces (roofs, walls, installations), surfaces grouped by plane for the outlines
+wall_skirts         a building's walls continued down to the ground where its base stands over the ground
 openings_mesh       windows, doors and shop fronts of the facade layout as quads 5 cm in front of their walls
 deck_mesh           the top of every bridge deck of the transport graph (layer 4 draws it)
 structures_mesh     deck sides, undersides and parapets of every bridge; the modelled viaducts' slab, arches and
@@ -106,6 +107,53 @@ def plane_groups(V, T, tbld, ang_deg=2.0):
     return g
 
 
+def wall_skirts(buildings, ground, p):
+    """Walls continued down to the ground (params buildings.skirt). ACT's walls end at the model's own ground
+    surface, one height per building; where the LiDAR ground at the outline lies lower, the building would stand in
+    the air. For every outline edge whose ground is more than min_gap_m under the building's base, one vertical
+    face from the base down to below_m under the lowest ground along that edge, facing out. `ground(e, n)` gives
+    the terrain's height. Returns (verts (n, 3), tris (m, 3), building index per triangle, gaps): gaps is, per
+    building, how far its base stands over the lowest ground at its outline (m, 0 if it does not)."""
+    from shapely.geometry import Polygon
+    from shapely.geometry.polygon import orient
+    V, T, TB = [], [], []
+    gaps = np.zeros(len(buildings))
+    nv = 0
+    for bi, b in enumerate(buildings):
+        top = float(b["ground_z"])
+        for part in b["footprint"]:
+            poly = orient(Polygon(part[0], part[1:]), 1.0)        # outside on the right of every ring's direction
+            for ring in [poly.exterior, *poly.interiors]:
+                c = np.asarray(ring.coords)[:, :2]
+                for a, d in zip(c[:-1], c[1:]):
+                    L = float(np.hypot(*(d - a)))
+                    if L < 0.05:
+                        continue
+                    t = np.linspace(0, 1, max(2, int(math.ceil(L / p["sample_m"])) + 1))[:, None]
+                    on = a + (d - a) * t
+                    out = on + np.array([d[1] - a[1], a[0] - d[0]]) / L * p["outside_m"]
+                    low = float(min(ground(on[:, 0], on[:, 1]).min(), ground(out[:, 0], out[:, 1]).min()))
+                    gaps[bi] = max(gaps[bi], top - low)
+                    if top - low <= p["min_gap_m"]:
+                        continue
+                    z = low - p["below_m"]
+                    V += [[a[0], a[1], z], [d[0], d[1], z], [d[0], d[1], top], [a[0], a[1], top]]
+                    T += [[nv, nv + 1, nv + 2], [nv, nv + 2, nv + 3]]
+                    TB += [bi, bi]
+                    nv += 4
+    return (np.array(V, float).reshape(-1, 3), np.array(T, np.int64).reshape(-1, 3), np.array(TB, np.int64),
+            np.maximum(gaps, 0.0))
+
+
+def scene_skirts(scene):
+    """wall_skirts for a scene, on its LiDAR terrain."""
+    from v2.config import params
+    from v2.layers.raster import HeightField
+    t = scene.terrain
+    hf = HeightField(t["mnt"], float(t["e0"]), float(t["n0"]), float(t["step"]))
+    return wall_skirts(scene.buildings, hf.sample, params()["buildings"]["skirt"])
+
+
 def buildings_mesh(scene):
     m = scene.mesh
     oe, on = (float(x) for x in m["origin_en"])
@@ -114,6 +162,12 @@ def buildings_mesh(scene):
     T = m["tris"][keep].astype(np.int64)
     kind = m["tri_kind"][keep]
     bld = m["tri_bld"][keep].astype(np.int64)
+    sv, st, sb, _ = scene_skirts(scene)                           # walls continued down to the ground
+    if len(st):
+        T = np.vstack([T, st + len(V)])
+        V = np.vstack([V, sv])
+        kind = np.r_[kind, np.full(len(st), 2, kind.dtype)]
+        bld = np.r_[bld, sb]
     groups = plane_groups(V, T, bld)
     B = scene.buildings
     cols = []

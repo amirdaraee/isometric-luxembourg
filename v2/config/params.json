@@ -24,12 +24,20 @@
   "steep_deg": 35.0,
   "cliff_deg": 60.0,
   "cliff_min_drop_m": 2.5,
+  "square_pits": {
+   "about": "Small deep pits inside paved squares are filled to the square's level (owner, 27 Nov 2026: \"what are the holes inside the yard for?\" on Place Guillaume II; of three choices: fill them flat). The LiDAR ground has pits 2 to 4 m deep there, 7 to 98 m2 each (stairs and ramps down to the car park), and the relief layer drew their sides as rock. A square is an area of pedestrian street (highway=pedestrian, area=yes). The level at a cell is the median ground within level_window_m; a dip (cells more than edge_m under the level, joined) that goes more than min_depth_m under it and covers at most max_area_m2 is put at the level.",
+   "min_depth_m": 1.0, "edge_m": 0.3, "max_area_m2": 150.0, "level_window_m": 20.0
+  },
   "osm_wall_tags": {"barrier": ["retaining_wall", "city_wall", "wall"], "historic": ["citywalls"], "natural": ["cliff"], "man_made": ["embankment"]}
  },
  "buildings": {
   "flat_roof_max_slope_deg": 8.0,
   "min_footprint_m2": 2.0,
-  "terrain_tolerance_m": 1.5
+  "terrain_tolerance_m": 1.5,
+  "skirt": {
+   "about": "A building's walls are continued down to the ground (owner, 27 Nov 2026: a building floating over a street in Pfaffenthal). ACT's walls end at the model's own ground surface, one height per building; the LiDAR ground at the outline can lie lower (49 of the test area's 1,135 buildings stood more than 0.5 m over it, one by 3.1 m). An outline edge whose ground, sampled every sample_m along the edge and outside_m outside it, is more than min_gap_m under the base gets one face from the base to below_m under the lowest ground along it.",
+   "min_gap_m": 0.1, "sample_m": 0.5, "outside_m": 0.5, "below_m": 0.5
+  }
  },
  "facades": {
   "ground_floor_m": 3.6,
@@ -179,6 +187,10 @@
   "max_overlap_share": 0.3,
   "min_thin_share": 0.5,
   "thin_about": "A crown is narrowed until at most max_overlap_share of its disc lies over buildings, but never under min_thin_share of its shaped radius: a crown thinned to nothing is a pole. Water does not thin a crown (a tree on a bank hangs over the river). Until 26 Nov 2026 water thinned crowns too and there was no least width: 51 trees of the test area were drawn as poles.",
+  "wall_clear": {
+   "about": "A trunk does not stand against a building's wall (owner, 27 Nov 2026: \"tree in the building\", a 12 m birch 0.4 m from a low building's wall, its crown over the roof). A tree nearer than clear_m to a building's outline is put straight out from the wall, clear_m from it; where that place is nearer than clear_m to any building, or in water, the tree is left out. Before: 81 trees of the test area stood within 1 m of a wall, 18 within 0.25 m.",
+   "clear_m": 1.5
+  },
   "off_faces": {
    "about": "A trunk cannot stand on the face of a wall or a cliff (owner, 25 Nov 2026: trees where they should not be). The survey's point is the crown's top, which can hang over a face. Such a tree's trunk is put on the nearest ground that is not a face (terrain class cliff), within its measured crown's radius plus margin_m (min_reach_m at least, max_reach_m at most): above the point if there is such ground (a tree leans out over a drop from its top), else below it. The crown's top stays at its measured height above the sea, so the tree's own height is its top above its new foot; a tree with no such ground in reach, or whose height would leave the survey's range, is left out.",
    "margin_m": 1.0, "min_reach_m": 1.5, "max_reach_m": 4.0

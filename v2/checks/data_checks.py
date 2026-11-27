@@ -97,6 +97,12 @@ def check_terrain(ctx):
     r.info("TR5", "90th percentile |building ground - terrain| (m)", round(float(np.percentile(np.abs(d), 90)), 2) if len(d) else 0)
     r.info("TR6", "steep / cliff area (m2)", [m["steep_m2"], m["cliff_m2"]])
     r.info("TR7", "OSM walls and cliffs measured", [m["walls"], m["walls_km"]])
+    # TR8: no small deep pit is left in a paved square (terrain.square_pits): filling again fills nothing
+    from v2.data.scene.terrain import fill_pits, squares
+    sq = squares(json.loads((ctx.dep("fetch_osm_transport") / "transport.json").read_text()))
+    _, left, _ = fill_pits(T["mnt"], float(T["e0"]), float(T["n0"]), float(T["step"]), sq, params()["terrain"]["square_pits"])
+    r.at_most("TR8", "small deep pits left in paved squares", left, 0)
+    r.info("TR8b", "paved squares; pits filled in them; cells filled", [m.get("squares"), m.get("square_pits_filled"), m.get("square_pit_cells")])
     return r.result()
 
 
@@ -498,6 +504,14 @@ def check_trees(ctx):
     r.info("TE3b", f"crowns held at {p['min_thin_share']} of their shaped radius that lie over a building by more than the share", n_held)
     r.at_most("TE3c", f"crowns narrower than {p['min_thin_share']} of their shaped radius (a pole)", poles, 0,
               [str(u) for u in t["uuid"][cr0 < p["min_thin_share"] * shape0 - 1e-3][:5]] if len(t["e"]) else [])
+    # TE3d: no trunk against a building's wall (trees.wall_clear): the nearest stands clear_m from an outline
+    clear = p["wall_clear"]["clear_m"]
+    close = 0
+    if fps and len(t["e"]):
+        (ti, _), dist = shapely.STRtree(list(fps)).query_nearest(shapely.points(t["e"], t["n"]), max_distance=clear,
+                                                                 return_distance=True, all_matches=False)
+        close = int((dist < clear - 0.01).sum())
+    r.at_most("TE3d", f"trunks nearer than {clear} m to a building's outline", close, 0)
     h = t["height"]                                             # as drawn
     hm = t["height_measured"] if "height_measured" in t.files else h
     r.add("TE4", f"measured heights within {p['min_height_m']}-{p['max_height_m']} m",

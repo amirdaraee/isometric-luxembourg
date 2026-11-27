@@ -5,6 +5,8 @@ From the LiDAR 2024 ground model (MNT) and surface model (MNS), over the area pl
   walls.json    OSM retaining walls, city walls, cliffs and embankments, with their top and foot heights
                 measured on the terrain either side of the line
 Small holes in the MNT (under buildings the survey has no ground there) are filled from their edges and counted.
+Small deep pits inside paved squares (stairs and ramps down to what lies under the square) are filled to the
+square's level and counted (fill_pits).
 """
 from __future__ import annotations
 
@@ -13,7 +15,7 @@ import json
 import numpy as np
 from scipy import ndimage
 
-from v2.data.geo import way_en
+from v2.data.geo import osm_area_en, way_en
 from v2.data.scene.grid import Grid
 
 
@@ -23,6 +25,58 @@ def fill_holes(z):
         return z, 0
     idx = ndimage.distance_transform_edt(bad, return_distances=False, return_indices=True)
     return z[tuple(idx)], int(bad.sum())
+
+
+def squares(transport_osm):
+    """The paved squares of the transport data: areas of pedestrian streets (highway=pedestrian, area=yes), as the
+    ground layer draws them."""
+    out = []
+    for el in transport_osm["elements"]:
+        tg = el.get("tags", {})
+        if el["type"] == "way" and tg.get("area") == "yes" and tg.get("highway") == "pedestrian":
+            g = osm_area_en(el)
+            if g is not None and not g.is_empty:
+                out.append(g)
+    return out
+
+
+def fill_pits(z, e0, n0, step, areas, p):
+    """Pits in paved squares filled to the square's level (params terrain.square_pits). The square's level at a
+    cell is the median ground within level_window_m around it. A dip (cells of the square more than edge_m under
+    the level, joined) is a pit when it goes more than min_depth_m under the level and covers at most max_area_m2:
+    its cells are put at the level. Returns (z, pits filled, cells filled)."""
+    import shapely
+    z = np.array(z, np.float32)
+    H, W = z.shape
+    win = max(3, int(round(p["level_window_m"] / step)) | 1)
+    pad = win // 2 + 1
+    pits = cells = 0
+    for g in areas:
+        x0, y0, x1, y1 = g.bounds
+        j0, j1 = max(0, int((x0 - e0) / step) - pad), min(W, int((x1 - e0) / step) + pad + 1)
+        i0, i1 = max(0, int((y0 - n0) / step) - pad), min(H, int((y1 - n0) / step) + pad + 1)
+        if j1 - j0 < 3 or i1 - i0 < 3:
+            continue
+        sub = z[i0:i1, j0:j1]
+        ee, nn = np.meshgrid(e0 + (np.arange(j0, j1) + 0.5) * step, n0 + (np.arange(i0, i1) + 0.5) * step)
+        inside = shapely.contains_xy(g, ee, nn)
+        if not inside.any():
+            continue
+        coarse = max(1, win // 20)                                 # the level on a coarser grid: it varies slowly
+        for _ in range(8):                                         # a filled pit moves the level a little: until none is left
+            level = ndimage.median_filter(sub[::coarse, ::coarse], size=max(3, (win // coarse) | 1), mode="nearest")
+            level = np.repeat(np.repeat(level, coarse, 0), coarse, 1)[:sub.shape[0], :sub.shape[1]]
+            lab, k = ndimage.label(inside & (sub < level - p["edge_m"]))
+            idx = np.arange(1, k + 1)
+            deepest = ndimage.maximum(level - sub, lab, idx) if k else np.zeros(0)
+            size = ndimage.sum(np.ones_like(lab), lab, idx) * step * step if k else np.zeros(0)
+            hit = idx[(deepest > p["min_depth_m"]) & (size <= p["max_area_m2"])]
+            if not len(hit):
+                break
+            m = np.isin(lab, hit)
+            sub[m] = level[m]
+            pits += len(hit); cells += int(m.sum())
+    return z, pits, cells
 
 
 def slope_deg(z, step):
@@ -82,6 +136,8 @@ def build(ctx):
     e0, n0, step = float(d["e0"]), float(d["n0"]), float(d["step"])
     mnt, holes_mnt = fill_holes(d["mnt"].astype(np.float32))
     mns, holes_mns = fill_holes(d["mns"].astype(np.float32))
+    sq = squares(json.loads((ctx.dep("fetch_osm_transport") / "transport.json").read_text()))
+    mnt, pits, pit_cells = fill_pits(mnt, e0, n0, step, sq, ctx.params["terrain"]["square_pits"])
     s, cls = classify(mnt, step, ctx.params["terrain"])
     np.savez_compressed(ctx.out / "terrain.npz", mnt=mnt, mns=mns, slope=s.astype(np.float16), cls=cls,
                         e0=e0, n0=n0, step=step)
@@ -90,6 +146,7 @@ def build(ctx):
     ctx.write_json("walls.json", {"walls": walls})
     cell = step * step
     return {"shape": list(mnt.shape), "step_m": step, "z_range": [float(mnt.min()), float(mnt.max())],
-            "holes_filled": {"mnt": holes_mnt, "mns": holes_mns}, "steep_m2": float((cls == 1).sum() * cell),
+            "holes_filled": {"mnt": holes_mnt, "mns": holes_mns}, "squares": len(sq), "square_pits_filled": pits,
+            "square_pit_cells": pit_cells, "steep_m2": float((cls == 1).sum() * cell),
             "cliff_m2": float((cls == 2).sum() * cell), "walls": len(walls),
             "walls_km": round(sum(w["length_m"] for w in walls) / 1000, 2)}

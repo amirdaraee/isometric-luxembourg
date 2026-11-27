@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import numpy as np
 import shapely
+import shapely.ops
 from shapely import STRtree
 from shapely.ops import unary_union
 
@@ -97,6 +98,36 @@ def shape_radius(h, r_survey, typ, e, n, p, names, width=None):
     return np.maximum(r_survey, np.minimum(allo, room)), allo
 
 
+def off_walls(e, n, blockers, clear_m):
+    """Trunks off the walls of buildings (params trees.wall_clear): a tree nearer than clear_m to a building's
+    outline is put straight out from the wall, clear_m from it; if that place is nearer than clear_m to any
+    building (a gap too narrow for a tree), the tree is left out. Returns (e, n, moved, keep)."""
+    e, n = np.asarray(e, float).copy(), np.asarray(n, float).copy()
+    moved, keep = np.zeros(len(e), bool), np.ones(len(e), bool)
+    if not len(e) or not len(blockers):
+        return e, n, moved, keep
+    tree = STRtree(blockers)
+    pts = shapely.points(e, n)
+    (ti, bi), d = tree.query_nearest(pts, max_distance=clear_m, return_distance=True, all_matches=False)
+    near = d < clear_m - 1e-6
+    for t, b_, dist in zip(ti[near], bi[near], d[near]):
+        q = shapely.ops.nearest_points(blockers[b_].boundary, pts[t])[0]
+        v = np.array([e[t] - q.x, n[t] - q.y])
+        if dist < 1e-3 or not np.hypot(*v) > 1e-6:                # on the outline itself: no way out is known
+            keep[t] = False
+            continue
+        v = v / np.hypot(*v) * clear_m
+        e[t], n[t] = q.x + v[0], q.y + v[1]
+        moved[t] = True
+    m = np.flatnonzero(moved)
+    if len(m):
+        (ti, _), d = tree.query_nearest(shapely.points(e[m], n[m]), max_distance=clear_m, return_distance=True, all_matches=False)
+        tight = m[ti[d < clear_m - 1e-3]]
+        keep[tight] = False
+        moved[tight] = False
+    return e, n, moved, keep
+
+
 def off_faces(e, n, h, r_meas, mnt, cls, e0, n0, step, p):
     """Trunks off the faces of walls and cliffs (params trees.off_faces): for each tree whose point lies on a cliff
     cell (terrain class 2) the nearest cell that is not one, within reach: above the point if there is one that
@@ -169,6 +200,16 @@ def build(ctx):
             keep &= ~(moved & np.asarray(shapely.contains_xy(unary_union(geoms), E, N)))
     dropped["on_a_face"] = int((~keep).sum())
     idx, E, N, Hm, moved = idx[keep], E[keep], N[keep], Hm[keep], moved[keep]
+    # trunks off the walls of buildings; a tree with no room, or whose new place is in water or on a face, is left out
+    E, N, off_wall, keep = off_walls(E, N, list(fps), p["wall_clear"]["clear_m"])
+    if water and off_wall.any():
+        keep &= ~(off_wall & np.asarray(shapely.contains_xy(unary_union(water), E, N)))
+    if off_wall.any():                                            # nor on the face of a wall or a cliff
+        cj = np.clip(np.floor((E - float(tz["e0"])) / float(tz["step"])).astype(int), 0, tz["cls"].shape[1] - 1)
+        ci = np.clip(np.floor((N - float(tz["n0"])) / float(tz["step"])).astype(int), 0, tz["cls"].shape[0] - 1)
+        keep &= ~(off_wall & (tz["cls"][ci, cj] == 2))
+    dropped["against_a_wall"] = int((~keep).sum())
+    idx, E, N, Hm, moved, off_wall = idx[keep], E[keep], N[keep], Hm[keep], moved[keep], off_wall[keep]
     r_meas = (T["cmean"][idx] / 2).astype(np.float64)
     names = [str(s) for s in T["type_names"]]
     r_survey = r_meas * p["crown_scale"]
@@ -204,7 +245,7 @@ def build(ctx):
                         species=sp.astype(np.int8), species_names=np.array(sp_names), species_rule=rule.astype(np.int8),
                         species_rules=np.array(tree_species.RULES), moved_off_a_face=moved)
     hw = drawn_height(Hm, p) / np.maximum(2 * r, 1e-3)
-    return {"trees": int(len(idx)), "dropped": dropped, "moved_off_a_face": int(moved.sum()), "crowns_thinned": thinned, "crowns_held_at_least_width": int(held.sum()), "crowns_widened": widened,
+    return {"trees": int(len(idx)), "dropped": dropped, "moved_off_a_face": int(moved.sum()), "moved_off_a_wall": int(off_wall.sum()), "crowns_thinned": thinned, "crowns_held_at_least_width": int(held.sum()), "crowns_widened": widened,
             "height_over_width_median": float(np.median(hw)) if len(idx) else 0,
             "by_type": {names[t]: int((typ == t).sum()) for t in range(len(names))},
             "register": {"trees": register["trees"], "with_a_drawn_species": register["drawn"],

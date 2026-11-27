@@ -20,21 +20,21 @@
      "id": "L1.2",
      "title": "no shading: worst relative luminance difference of a ground class, north vs south slopes",
      "passed": true,
-     "value": 0.0083,
+     "value": 0.0087,
      "threshold": "<= 0.02",
      "severity": "gate",
      "examples": [
       {
        "class": "drystone",
-       "north": 128.31,
+       "north": 128.34,
        "south": 127.24,
-       "diff": 0.0083
+       "diff": 0.0087
       },
       {
        "class": "rock",
-       "north": 171.6,
+       "north": 171.57,
        "south": 170.5,
-       "diff": 0.0065
+       "diff": 0.0063
       },
       {
        "class": "scrub",
@@ -56,9 +56,9 @@
       },
       {
        "class": "square",
-       "north": 140.52,
-       "south": 140.68,
-       "diff": 0.0012
+       "north": 140.44,
+       "south": 140.59,
+       "diff": 0.0011
       },
       {
        "class": "railground",
@@ -76,7 +76,7 @@
     },
     {
      "id": "L2.1",
-     "title": "flat ground changed by the relief (of 13181463 flat pixels)",
+     "title": "flat ground changed by the relief (of 13184274 flat pixels)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -85,7 +85,7 @@
     },
     {
      "id": "L8.1",
-     "title": "pixels where a layer's depth differs from layer 8's by > 1.0 cm (of 51219097)",
+     "title": "pixels where a layer's depth differs from layer 8's by > 1.0 cm (of 51219273)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -94,7 +94,7 @@
     },
     {
      "id": "L8.2",
-     "title": "normals not unit or facing away from the camera (of 51219097)",
+     "title": "normals not unit or facing away from the camera (of 51219273)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -114,14 +114,14 @@
      "id": "L8.3b",
      "title": "buildings with at least one pixel in layer 8",
      "passed": true,
-     "value": "1066 of 1135",
+     "value": "1063 of 1135",
      "threshold": null,
      "severity": "report",
      "examples": []
     },
     {
      "id": "L2.2",
-     "title": "walls (drop >= 1.5 m, in the area, in view) drawn along < 90% of their visible length (of 340)",
+     "title": "walls (drop >= 1.5 m, in the area, in view) drawn along < 90% of their visible length (of 339)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -130,7 +130,7 @@
     },
     {
      "id": "L3.1",
-     "title": "OSM water pixels not drawn as water, and water pixels outside OSM water (+- 1 px; 1335821 water pixels)",
+     "title": "OSM water pixels not drawn as water, and water pixels outside OSM water (+- 1 px; 1335856 water pixels)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -271,7 +271,7 @@
     },
     {
      "id": "L5.1/L9.2",
-     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 201 compared)",
+     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 204 compared)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -429,7 +429,7 @@
     },
     {
      "id": "S-buildings-v1",
-     "title": "buildings: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 740",
+     "title": "buildings: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 743",
      "passed": true,
      "value": {
       "borders": 3,
@@ -471,10 +471,10 @@
     },
     {
      "id": "S-trees-v1",
-     "title": "trees: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 640",
+     "title": "trees: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 643",
      "passed": true,
      "value": {
-      "borders": 9,
+      "borders": 12,
       "middles": 3.0
      },
      "threshold": null,
@@ -483,9 +483,9 @@
     },
     {
      "id": "L8.4",
-     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (4337 of 191750 vs 4479 of 187365; a seam would make it larger)",
+     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (4532 of 191713 vs 4259 of 187471; a seam would make it larger)",
      "passed": true,
-     "value": 0.946,
+     "value": 1.041,
      "threshold": "<= 1.5",
      "severity": "gate",
      "examples": []
@@ -503,7 +503,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 77.4
+      "audit_s": 76.2
      },
      "threshold": null,
      "severity": "report",
@@ -620,7 +620,7 @@
     },
     {
      "id": "C4",
-     "title": "probe pixels where the viewer's depth test disagrees with the exact geometry (of 12516108; 1793 more on silhouettes, within 1 px of an edge)",
+     "title": "probe pixels where the viewer's depth test disagrees with the exact geometry (of 12516098; 1793 more on silhouettes, within 1 px of an edge)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -641,8 +641,8 @@
      "title": "probe pixels hidden (under decks or past portals)",
      "passed": true,
      "value": {
-      "deck_and_under": 1365011,
-      "portals": 2123262
+      "deck_and_under": 1362360,
+      "portals": 2123488
      },
      "threshold": null,
      "severity": "report",
@@ -689,7 +689,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 248.7,
+     "value": 243.2,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -701,9 +701,9 @@
    "entries": [
     {
      "id": "L5.2-edges",
-     "title": "line score, building edges (creases and outlines of the 3D model): share of 723004 seen samples (every 0.25 m, of 1647926) whose drawn line is within 1.0 px of the model's",
+     "title": "line score, building edges (creases and outlines of the 3D model): share of 729867 seen samples (every 0.25 m, of 1672050) whose drawn line is within 1.0 px of the model's",
      "passed": true,
-     "value": 0.9685,
+     "value": 0.9636,
      "threshold": ">= 0.95",
      "severity": "gate",
      "examples": [
@@ -713,39 +713,39 @@
        "z": 323.24
       },
       {
-       "e": 78290.82,
-       "n": 75377.13,
-       "z": 257.55
+       "e": 77485.6,
+       "n": 75214.37,
+       "z": 318.67
       },
       {
-       "e": 77394.36,
-       "n": 76007.26,
-       "z": 253.73
+       "e": 77428.02,
+       "n": 74896.29,
+       "z": 295.82
       },
       {
-       "e": 77519.46,
-       "n": 75153.4,
-       "z": 313.69
+       "e": 77410.84,
+       "n": 75274.36,
+       "z": 320.24
       },
       {
-       "e": 77540.75,
-       "n": 74740.95,
-       "z": 288.76
+       "e": 77206.62,
+       "n": 75490.26,
+       "z": 317.33
       },
       {
-       "e": 77396.48,
-       "n": 75113.55,
-       "z": 322.62
+       "e": 77607.06,
+       "n": 74975.26,
+       "z": 258.6
       },
       {
-       "e": 78061.69,
-       "n": 75176.73,
-       "z": 260.8
+       "e": 77360.96,
+       "n": 75687.8,
+       "z": 247.89
       },
       {
-       "e": 77719.97,
-       "n": 75125.04,
-       "z": 256.84
+       "e": 77528.47,
+       "n": 75052.91,
+       "z": 288.56
       }
      ]
     },
@@ -783,19 +783,19 @@
        "z": 313.03
       },
       {
-       "e": 77539.83,
-       "n": 75558.67,
-       "z": 254.32
+       "e": 78038.29,
+       "n": 75461.17,
+       "z": 256.38
       },
       {
-       "e": 77419.17,
-       "n": 74831.08,
+       "e": 77420.77,
+       "n": 74828.23,
        "z": 304.59
       },
       {
-       "e": 77470.14,
-       "n": 75054.61,
-       "z": 318.68
+       "e": 77406.01,
+       "n": 75120.52,
+       "z": 318.3
       }
      ]
     },
@@ -836,7 +836,7 @@
      "value": [
       9,
       5,
-      244569,
+      244731,
       8080
      ],
      "threshold": null,
@@ -869,6 +869,30 @@
      "threshold": "<= 0",
      "severity": "gate",
      "examples": []
+    },
+    {
+     "id": "L5.9",
+     "title": "buildings whose base stands more than 0.1 m over the lowest ground at their outline and whose walls do not reach that ground",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L5.9b",
+     "title": "buildings whose walls were continued down; of them by more than 0.5 m and by more than 2 m; the largest (m); faces added",
+     "passed": true,
+     "value": [
+      331,
+      91,
+      16,
+      8.84,
+      914
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
     }
    ]
   },
@@ -883,7 +907,7 @@
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
       "images": 947,
-      "seconds": 318.9,
+      "seconds": 317.3,
       "queries": [
        "a car",
        "a parked car",
@@ -1059,9 +1083,9 @@
     },
     {
      "id": "V3-10",
-     "title": "shadows at 10:00 on 2026-06-21 match the Python reference (share of pixels; 10.9% in shadow)",
+     "title": "shadows at 10:00 on 2026-06-21 match the Python reference (share of pixels; 10.8% in shadow)",
      "passed": true,
-     "value": 0.9923,
+     "value": 0.9924,
      "threshold": ">= 0.97",
      "severity": "gate",
      "examples": []
@@ -1070,14 +1094,14 @@
      "id": "V3-16",
      "title": "shadows at 16:00 on 2026-06-21 match the Python reference (share of pixels; 20.1% in shadow)",
      "passed": true,
-     "value": 0.988,
+     "value": 0.9881,
      "threshold": ">= 0.97",
      "severity": "gate",
      "examples": []
     },
     {
      "id": "V3-13",
-     "title": "shadows at 13:00 on 2026-06-21 match the Python reference (share of pixels; 6.4% in shadow)",
+     "title": "shadows at 13:00 on 2026-06-21 match the Python reference (share of pixels; 6.3% in shadow)",
      "passed": true,
      "value": 0.998,
      "threshold": ">= 0.97",
@@ -1088,7 +1112,7 @@
      "id": "V2",
      "title": "?off=buildings: the viewer's shadows equal the reference without buildings (share of pixels)",
      "passed": true,
-     "value": 0.9931,
+     "value": 0.9932,
      "threshold": ">= 0.97",
      "severity": "gate",
      "examples": []
@@ -1097,7 +1121,7 @@
      "id": "V3b",
      "title": "share of pixels whose shadow changes between 10:00 and 16:00 (shadows move with ?hour)",
      "passed": true,
-     "value": 0.2241,
+     "value": 0.2249,
      "threshold": ">= 0.02",
      "severity": "gate",
      "examples": []
@@ -1142,7 +1166,7 @@
      "id": "V8n",
      "title": "coloured pixels lit to the screen's white at 13:00 (what V8 looks at)",
      "passed": true,
-     "value": 49783,
+     "value": 49510,
      "threshold": ">= 1000",
      "severity": "gate",
      "examples": []
@@ -1174,24 +1198,24 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.15379999995231627,
-      "first_view_warm_s": 0.10339999997615815,
+      "first_view_cold_s": 0.15089999997615813,
+      "first_view_warm_s": 0.09439999997615814,
       "pan_whole_area": {
-       "fps": 88.69678193136984,
-       "frame_ms_median": 0.5,
+       "fps": 91.59886187735638,
+       "frame_ms_median": 0.5999999046325684,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 97.51109781152418,
+       "fps": 97.86299181088147,
        "frame_ms_median": 0.2999999523162842,
        "tiles_missing": 0
       },
-      "pan_fps": 88.69678193136984,
+      "pan_fps": 91.59886187735638,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 87.73245350772967,
-        "frame_ms_median": 0.7000000476837158,
+        "fps": 93.48597710287736,
+        "frame_ms_median": 0.6999999284744263,
         "tiles_missing": 0
        }
       },
@@ -1205,7 +1229,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.103,
+     "value": 0.094,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1214,7 +1238,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 88.7,
+     "value": 91.6,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1226,8 +1250,8 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 87.73245350772967,
-       "frame_ms_median": 0.7000000476837158,
+       "fps": 93.48597710287736,
+       "frame_ms_median": 0.6999999284744263,
        "tiles_missing": 0
       }
      },
@@ -1260,7 +1284,7 @@
      "value": {
       "requests": 2019,
       "tiles": 643,
-      "first_view_s": 8.940300000071526
+      "first_view_s": 8.880600000023842
      },
      "threshold": null,
      "severity": "report",
@@ -1378,7 +1402,7 @@
      "id": "TR3",
      "title": "share of cells where the surface is > 0.5 m below the ground",
      "passed": true,
-     "value": 0.0,
+     "value": 7.656275701006133e-05,
      "threshold": "<= 0.001",
      "severity": "gate",
      "examples": []
@@ -1406,8 +1430,8 @@
      "title": "steep / cliff area (m2)",
      "passed": true,
      "value": [
-      245139.25,
-      73925.25
+      245102.25,
+      73874.25
      ],
      "threshold": null,
      "severity": "report",
@@ -1420,6 +1444,28 @@
      "value": [
       761,
       46.05
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "TR8",
+     "title": "small deep pits left in paved squares",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TR8b",
+     "title": "paved squares; pits filled in them; cells filled",
+     "passed": true,
+     "value": [
+      80,
+      47,
+      1313
      ],
      "threshold": null,
      "severity": "report",
@@ -2083,7 +2129,7 @@
      "id": "TE3b",
      "title": "crowns held at 0.5 of their shaped radius that lie over a building by more than the share",
      "passed": true,
-     "value": 23,
+     "value": 0,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -2091,6 +2137,15 @@
     {
      "id": "TE3c",
      "title": "crowns narrower than 0.5 of their shaped radius (a pole)",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "TE3d",
+     "title": "trunks nearer than 1.5 m to a building's outline",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -2122,7 +2177,7 @@
      "id": "TE5",
      "title": "trees",
      "passed": true,
-     "value": 12406,
+     "value": 12396,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -2140,7 +2195,7 @@
      "id": "TE13b",
      "title": "trees whose trunk was put on the nearest ground off a face",
      "passed": true,
-     "value": 480,
+     "value": 479,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -2180,12 +2235,12 @@
       "register": 734,
       "osm": 4,
       "named": 66,
-      "type": 666,
+      "type": 665,
       "water": 632,
       "street": 733,
-      "wood": 7086,
-      "park": 2485,
-      "known_share": 0.0648
+      "wood": 7088,
+      "park": 2474,
+      "known_share": 0.0649
      },
      "threshold": null,
      "severity": "report",
@@ -2196,29 +2251,29 @@
      "title": "trees by species",
      "passed": true,
      "value": {
-      "maple": 2950,
-      "maple_column": 79,
-      "lime": 1199,
-      "oak": 1539,
+      "maple": 2952,
+      "maple_column": 81,
+      "lime": 1191,
+      "oak": 1536,
       "oak_column": 23,
       "ash": 1940,
-      "plane": 289,
+      "plane": 286,
       "hornbeam": 965,
-      "hornbeam_column": 101,
-      "chestnut": 311,
-      "elm": 222,
+      "hornbeam_column": 104,
+      "chestnut": 313,
+      "elm": 219,
       "cherry": 186,
-      "cherry_plum_red": 20,
-      "beech": 664,
-      "copper_beech": 75,
-      "birch": 485,
-      "robinia": 573,
+      "cherry_plum_red": 19,
+      "beech": 667,
+      "copper_beech": 76,
+      "birch": 483,
+      "robinia": 572,
       "poplar": 34,
       "willow": 28,
-      "ginkgo": 106,
-      "pine": 320,
-      "spruce": 185,
-      "yew": 112
+      "ginkgo": 105,
+      "pine": 322,
+      "spruce": 186,
+      "yew": 108
      },
      "threshold": null,
      "severity": "report",
@@ -2290,7 +2345,7 @@
        32511
       ],
       "grass": [
-       0.3975,
+       0.3976,
        932354
       ],
       "cemetery": [
@@ -2314,7 +2369,7 @@
        1513106
       ],
       "pitch": [
-       0.2341,
+       0.2342,
        90023
       ],
       "water": [
@@ -2332,7 +2387,7 @@
      "passed": true,
      "value": [
       1956452,
-      0.2564
+      0.2566
      ],
      "threshold": null,
      "severity": "report",
@@ -2356,7 +2411,7 @@
      "id": "RF1",
      "title": "share of the 1135 buildings whose roof the orthophoto reads",
      "passed": true,
-     "value": 0.9789,
+     "value": 0.9806,
      "threshold": ">= 0.85",
      "severity": "gate",
      "examples": []
@@ -2390,9 +2445,9 @@
       "roof_flat": 84,
       "roof_slate_blue": 116,
       "roof_tile_brown": 2,
-      "not_read": 24,
+      "not_read": 22,
       "roof_flat_gravel": 25,
-      "roof_flat_green": 3,
+      "roof_flat_green": 5,
       "roof_tile": 1
      },
      "threshold": null,
@@ -2930,24 +2985,24 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.15379999995231627,
-  "first_view_warm_s": 0.10339999997615815,
+  "first_view_cold_s": 0.15089999997615813,
+  "first_view_warm_s": 0.09439999997615814,
   "pan_whole_area": {
-   "fps": 88.69678193136984,
-   "frame_ms_median": 0.5,
+   "fps": 91.59886187735638,
+   "frame_ms_median": 0.5999999046325684,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 97.51109781152418,
+   "fps": 97.86299181088147,
    "frame_ms_median": 0.2999999523162842,
    "tiles_missing": 0
   },
-  "pan_fps": 88.69678193136984,
+  "pan_fps": 91.59886187735638,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 87.73245350772967,
-    "frame_ms_median": 0.7000000476837158,
+    "fps": 93.48597710287736,
+    "frame_ms_median": 0.6999999284744263,
     "tiles_missing": 0
    }
   },
@@ -3081,5 +3136,5 @@
    }
   }
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/50ac94ba529d"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/69f5cda59fc8"
 }

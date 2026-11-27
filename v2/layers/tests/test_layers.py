@@ -247,3 +247,28 @@ def test_a_polygon_is_filled_the_same_wherever_the_canvas_begins():
         assert (shapely.contains_xy(P, X, Y) == (np.asarray(A) > 0)).all()
         n += 1
     assert n > 250
+
+
+def test_walls_are_continued_down_where_the_ground_lies_under_the_base():
+    from v2.layers.geometry import tri_normals, wall_skirts
+    p = {"min_gap_m": 0.1, "sample_m": 0.5, "outside_m": 0.5, "below_m": 0.5}
+    sq = [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]
+    yard = [[4, 4], [4, 6], [6, 6], [6, 4], [4, 4]]
+    blds = [{"ground_z": 100.0, "footprint": [[sq, yard]]},                    # on a slope falling to the east
+            {"ground_z": 100.0, "footprint": [[[[x + 50, y] for x, y in sq]]]}]  # on flat ground at its base
+    ground = lambda e, n: np.where(np.asarray(e) < 40, 100.0 - 0.3 * np.asarray(e), 100.0)   # noqa: E731
+    V, T, tb, gaps = wall_skirts(blds, ground, p)
+    assert np.allclose(gaps, [3.15, 0.0])                                      # 10.5 m east of the top: 0.5 m outside
+    assert set(tb) == {0}                                                      # the flat one gets no face
+    assert np.allclose(V[:, 2].max(), 100.0)                                   # every face hangs from the base
+    # the east wall reaches under its lowest ground; the west wall, on ground at the base, has no face
+    east = np.isclose(V[:, 0], 10).reshape(-1, 4).all(1)
+    assert east.sum() == 1 and np.isclose(V.reshape(-1, 4, 3)[east][0][:, 2].min(), 100 - 3.15 - 0.5)
+    assert not np.isclose(V[:, 0], 0).reshape(-1, 4).all(1).any()
+    # the faces look out: away from the middle of the building, and into the yard on the yard's ring
+    n, _ = tri_normals(V, T)
+    cen = V[T].mean(1)
+    yard_face = (np.abs(cen[:, 0] - 5) <= 1.01) & (np.abs(cen[:, 1] - 5) <= 1.01)
+    out = ((cen[:, :2] - 5.0) * n[:, :2]).sum(1)
+    assert yard_face.any() and (out[~yard_face] > 0).all() and (out[yard_face] < 0).all()
+    assert np.allclose(n[:, 2], 0)

@@ -93,6 +93,14 @@ index) for hover.
    held to them by the line score).
 4. AI layers are painted on unshadowed input at ≤ 0.125 m per model px so a window covers ≥ 2 latent cells.
 
+- **Walls down to the ground (owner, 27 Nov 2026: "building is floating").** ACT's walls end at the model's own
+  ground surface, one height per building. Where the LiDAR ground at the outline lies lower, the building stood in
+  the air (in the test area 91 buildings by more than 0.5 m, 16 by more than 2 m). For every outline edge whose
+  ground (sampled every 0.5 m along the edge and 0.5 m outside it) is more than 0.1 m under the base, the wall is
+  continued by one face from the base to 0.5 m under the lowest ground along that edge
+  (`geometry.wall_skirts`, params `buildings.skirt`). The face lies in its wall's plane, so it is drawn as that
+  wall's base course (the plinth's stone).
+
 **Checks.**
 - L5.1 (gate) No baked shadows: on each building the mean luminance of the same material on sunlit and shadow
   sides (for the photo's sun) differs by ≤ 5%; the shadow detector finds nothing (brief 5).
@@ -111,3 +119,5 @@ index) for hover.
 - L5.8 (gate, `check_lines`) Church tracery is straight: the mullion of every traceried window (its centre line
   from over the sill to under the springing), sampled every 0.25 m and scored as L5.2's lines are, >= 95% (the
   same limit, `line_score_share`).
+- L5.9 (gate, `check_lines`) No building stands in the air: 0 buildings whose base is more than 0.1 m over the
+  lowest ground at their outline and whose walls do not reach that ground.
