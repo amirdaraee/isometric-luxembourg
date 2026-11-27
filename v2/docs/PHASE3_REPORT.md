@@ -3688,3 +3688,81 @@ it) and 27 web tests pass.
 
 Question 72 is answered: the openings, without the wall. 44, 46, 65, 66, 67, 68, 69 and 71 stand. No new
 question.
+
+## 39. The evening's light: the golden hour begins earlier; winter trees chosen (26 November, $0)
+
+Questions 71 (the evening is too dark) and 68 (trees in winter) were shown as small trial pictures, made without
+a build: the viewer with trial light settings, and a trial drawing of the trees in a preview window.
+
+![The abbey at 20:30 on 24 June as it was (top left) and with the golden hour begun (top right); winter as it is, brown crowns (bottom left), and the trial of bare trees (bottom right)](img/test_evening_winter.jpg)
+
+### 39.1 What the owner chose
+
+1. To merge pull request 32 (section 38) into `v2`. Done.
+2. The evening, of three samples at 20:30 on 24 June (as it was; cast shadows lighter when the sun is low; the
+   golden hour beginning earlier): the golden hour beginning earlier.
+3. Trees in winter, of two samples (as now: every crown brown; broadleaved trees bare, evergreens green): bare
+   branches. It is its own step and is not built here (39.4).
+
+### 39.2 The evening
+
+On 24 June at 20:30 the sun is 10° up and sets at about 21:45. The golden hour's light (warm sun, the sky light
+1.5 times day's, a fill light, long shadows that fade with their length) began only under 6°, at about 21:00.
+Until then the long shadows were as dark as noon's, and they cover most of the valley: the valley floor and the
+river were nearly black.
+
+The golden hour now begins at 14° and is full from 6° (`light.json`: `grade.golden_deg` [0, 14],
+`golden_full_deg` 6; before: [0, 6] and 3.5). On 24 June that is from about 20:00. Nothing else of the light is
+changed, and the light above 14° is the day's as before. The mornings change the same way.
+
+The unit tests of the hour's light read the day's threshold from the settings, and a new one holds that at 10°
+the sky light is lifted and the shadows are soft. 28 web tests and 203 Python tests pass.
+
+### 39.3 The build
+
+Release `50ac94ba529d`. The layers' stages take the light settings as an input, so all 62 stages ran again. All
+62 pass: 294 gate entries pass, none fails; gates G1 and G3 pass.
+
+- **The picture is the sample's.** The built view of the abbey at 20:30 on 24 June is the chosen sample pixel for
+  pixel (largest difference 0), and the same view at 13:00 is section 38's build pixel for pixel.
+- **The pan speed check failed twice before it passed, and not from this change.** C2b gave 50.7 and then 43.2
+  frames per second (limit 60) while another program's browser tests were loading the machine (load average 6 to
+  8). Measured back to back under the same load, the old and the new settings pan at the same speed: 73.9 and
+  71.2 against 69.5 and 70.4 at night, 69.1 and 68.4 against 69.0 and 69.1 at 20:30, a frame taking 0.1 to 0.2 ms
+  in each. Run again with the machine quieter, the check gave 75.1. The tunnel view's pan (X8b) passed at 61.2 in
+  the loaded run (95.9 in section 38's). No limit was changed.
+
+| Check | Result | Limit |
+|---|---|---|
+| No painted vehicles (detector, 7 layers) | 0 detections | 0 |
+| L5.1 / L9.2 no baked light (201 materials) | 0 fail; worst: transport 3.0%, buildings 1.6%, ground 1.0% | 5% |
+| L9.1 shadow direction at 08:00, 13:00, 19:00 (median error) | 7.5°, 9.5°, 7.7° | 10° |
+| V2 shadows without buildings match the reference | 99.3% | 97% |
+| K3v a cutaway's opening is its colour times the one sky light, at 13:00, 21:18 and 23:15 | 0 pixels off | 0 |
+| C2b panning, desktop | 75.1 fps | 60 |
+| X8b panning in tunnel view | 61.2 fps (machine loaded) | 60 |
+
+### 39.4 Next: bare trees in winter (not built)
+
+The trial drew a broadleaved tree (every type but conifer) as its trunk, a branch from the trunk's line to the
+middle of each leaf clump the tree has in summer (`crown_lobes`: the clumps of one tree share a group), a twig
+from there to each of the clump's tufts, and the trunk's line on up to the highest clump; a small tree (one
+shape) as five short branches. Branches are flat strips turned to the camera, 0.16 to 0.34 m wide at the trunk
+and 0.13 m at the tip, twigs 0.11 to 0.13 m, in the species' bark colour. Conifers keep their crowns, a little
+duller. Seen in the trial:
+
+- With the map's black outline the branches came out as black scribbles; without an outline on or beside a
+  branch they read as bark.
+- The bare trees cast no shadow in the trial (the shadow height map takes crowns only).
+- It needs a second set of tree tiles for winter, which the viewer shows in that season. How much longer the
+  build is and how much larger the winter download was not measured.
+
+### 39.5 Not done
+
+- Bare winter trees (39.4).
+- Not looked at with the new evening: other dates than 24 June, the morning, a phone.
+
+### 39.6 Open questions
+
+71 is answered (the golden hour begins earlier) and 68 is answered (bare branches, evergreens green; to be
+built). 44, 46, 65, 66, 67 and 69 stand. No new question.
