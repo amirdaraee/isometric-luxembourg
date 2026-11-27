@@ -503,7 +503,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 84.2
+      "audit_s": 75.8
      },
      "threshold": null,
      "severity": "report",
@@ -689,7 +689,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 275.3,
+     "value": 240.0,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -883,7 +883,7 @@
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
       "images": 947,
-      "seconds": 427.1,
+      "seconds": 310.8,
       "queries": [
        "a car",
        "a parked car",
@@ -1174,24 +1174,24 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.12360000002384186,
-      "first_view_warm_s": 0.10260000002384186,
+      "first_view_cold_s": 0.155,
+      "first_view_warm_s": 0.10359999990463256,
       "pan_whole_area": {
-       "fps": 78.51054284572443,
-       "frame_ms_median": 0.40000009536743164,
+       "fps": 81.77307970333584,
+       "frame_ms_median": 0.5,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 75.0586005676577,
-       "frame_ms_median": 0.20000004768371582,
+       "fps": 89.83604921126037,
+       "frame_ms_median": 0.3999999761581421,
        "tiles_missing": 0
       },
-      "pan_fps": 75.0586005676577,
+      "pan_fps": 81.77307970333584,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 84.77745916967959,
-        "frame_ms_median": 0.7000000476837158,
+        "fps": 85.7050048719314,
+        "frame_ms_median": 0.8000000715255737,
         "tiles_missing": 0
        }
       },
@@ -1205,7 +1205,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.103,
+     "value": 0.104,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1214,7 +1214,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 75.1,
+     "value": 81.8,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1226,10 +1226,41 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 84.77745916967959,
-       "frame_ms_median": 0.7000000476837158,
+       "fps": 85.7050048719314,
+       "frame_ms_median": 0.8000000715255737,
        "tiles_missing": 0
       }
+     },
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "C5",
+     "title": "a large window's first view (2552x1278 CSS px, device pixel ratio 2): requests the browser refused or the network failed",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C5b",
+     "title": "the same view: its tiles not loaded, the shadow map counted as one",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "C5c",
+     "title": "the same view: requests made, tiles loaded, seconds to the first whole view (this machine)",
+     "passed": true,
+     "value": {
+      "requests": 2019,
+      "tiles": 643,
+      "first_view_s": 6.631600000023842
      },
      "threshold": null,
      "severity": "report",
@@ -2890,24 +2921,24 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.12360000002384186,
-  "first_view_warm_s": 0.10260000002384186,
+  "first_view_cold_s": 0.155,
+  "first_view_warm_s": 0.10359999990463256,
   "pan_whole_area": {
-   "fps": 78.51054284572443,
-   "frame_ms_median": 0.40000009536743164,
+   "fps": 81.77307970333584,
+   "frame_ms_median": 0.5,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 75.0586005676577,
-   "frame_ms_median": 0.20000004768371582,
+   "fps": 89.83604921126037,
+   "frame_ms_median": 0.3999999761581421,
    "tiles_missing": 0
   },
-  "pan_fps": 75.0586005676577,
+  "pan_fps": 81.77307970333584,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 84.77745916967959,
-    "frame_ms_median": 0.7000000476837158,
+    "fps": 85.7050048719314,
+    "frame_ms_median": 0.8000000715255737,
     "tiles_missing": 0
    }
   },

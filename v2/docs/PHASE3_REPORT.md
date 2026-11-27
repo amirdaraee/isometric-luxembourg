@@ -3766,3 +3766,63 @@ duller. Seen in the trial:
 
 71 is answered (the golden hour begins earlier) and 68 is answered (bare branches, evergreens green; to be
 built). 44, 46, 65, 66, 67 and 69 stand. No new question.
+
+## 40. The viewer on a large window: no trees, no bridges, no shadows (27 November, $0)
+
+Shown the evening's build in the local viewer, the owner sent a picture of the Corniche's footbridge at 20:30
+and asked what was happening: "I can see a lot similar to it". The picture had no trees, no railings on the
+bridge and no cast shadows. It was a fault of the viewer's loading, not of the art.
+
+### 40.1 Cause
+
+| Step | What happened |
+|---|---|
+| The window | 2552 x 1278 at two device pixels a pixel: a canvas of 5104 x 2556 |
+| Its first view | Asks for 1,947 files at once: three files a tile, seven layers, and each tile's coarser parents |
+| The browser | Refused 549 of them (`net::ERR_INSUFFICIENT_RESOURCES`): 183 of 643 tiles failed |
+| The viewer | Never asked for a failed tile again |
+| The shadow map | Is loaded after the first whole view, which never came: no cast shadows |
+
+Every check and every picture taken before used a window of 1600 x 1000 or smaller, where nothing is refused. A
+1728 x 1000 window at two device pixels a pixel did not show it either.
+
+### 40.2 The fix
+
+- **One queue for every file** (`v2/web/src/loadq.ts`): at most 32 loads at a time, in the order asked. A request
+  the network fails is made again, three times in all.
+- **A tile no longer wanted is not loaded.** When a waiting tile's turn comes and no frame has asked for it in 8
+  frames, it is dropped, so a view reached by a fast zoom does not wait behind the views passed on the way.
+- **A tile that still fails is asked for again** by the next frame that needs it: after 1 s, doubling to 30 s.
+- **New gate check C5** (`viewer_checks.mjs`): the owner's window size, zoom 0.5 over the old town. No request
+  refused or failed (C5), every tile of the view and the shadow map loaded (C5b).
+
+### 40.3 Results
+
+The same window and view, on release `50ac94ba529d`:
+
+| | Before | After |
+|---|---|---|
+| Requests refused | 549 of 1,947 | 0 of 2,056 |
+| Tiles failed | 183 of 643 | 0 of 643 |
+| Shadow map loaded | no | yes |
+| First whole view | never | 8.4 s |
+| First view, 1400 x 820 window | 0.45 to 0.57 s | 0.40 to 0.43 s |
+
+In the owner's own browser at that window size, after the fix: 643 of 643 tiles, shadows on.
+
+The build: all 62 stages pass, 296 gate entries pass (C5 and C5b new), none fails; gates G1 and G3 pass. The
+art is unchanged, so the release is still `50ac94ba529d`. C5 0 refused of 2,019 requests; C5b 0 not loaded; C2a
+first view 0.10 s (limit 0.5); C2b panning 81.8 fps (limit 60); X8b panning in tunnel view 113.0 fps (limit 60).
+33 web tests (5 new) and 203 Python tests pass.
+
+### 40.4 Not done
+
+- The first whole view of a window this large takes 6.6 to 9 s on the local server: it loads every coarser level
+  of every tile. Not looked at.
+- With everything loaded, the top edge of the wall under the houses above the footbridge is ragged. That is the
+  drawing; it was not worked on.
+- A phone and other browsers than Chromium were not tried.
+
+### 40.5 Open questions
+
+44, 46, 65, 66, 67 and 69 stand. No new question.
