@@ -98,7 +98,7 @@ Build checks: `v2/checks/repo_checks.py`. Thresholds: `v2/config/params.json` "c
 | G5 | yes | No vehicle bridge or tunnel with a dead end (garage driveways, class service, excepted: G5b report) |
 | G5c | report | Dead ends excepted (exceptions.json) |
 | G6 | report | Length by mode |
-| **Structures** | | V1–V7, see structures.md |
+| **Structures** | | V1–V7 (the viaducts) and V8–V13 (the other bridges' arches, the Red Bridge's legs), see structures.md |
 | **Transit** | | |
 | TT1 | yes | ≥ 99% of GTFS tram and train track in the area matched onto the rail graph |
 | TT2 | yes | ≥ 90% of GTFS samples within 17 m of their matched path (GTFS shapes are coarse) |
@@ -175,4 +175,5 @@ and the rule changes 0 pixels outside the opening; the interior's lit level besi
 `check_lines` also holds L5.7 (layer-05-buildings.md): no shutter, shop front or house window glass pixel on a
 building that is a church all over; and L5.8: the mullions of traceried church windows are straight lines (the
 line score, the same 95%). And L5.9: no building's base stands over the ground at its outline without its walls
-reaching that ground.
+reaching that ground. And L6.4 (layer-06-structures.md): every arch, pier and leg the scene gives a bridge is in
+layer 6's mesh.

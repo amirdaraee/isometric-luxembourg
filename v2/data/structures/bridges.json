@@ -1,0 +1,38 @@
+{
+ "about": "What stands under the bridges that have no model of their own (owner, 27 Nov 2026: 'where are the legs of the bridge?', 'bridge is floating'). The three railway viaducts are in viaducts.json. Every other bridge of the transport graph gets stone arches on piers by the rule in 'supports' (the owner chose arches over plain piers from samples, 27 Nov 2026). A bridge named in 'frames' is modelled by hand instead. Every number not from a source is marked as an assumption. Spec: v2/docs/specs/structures.md. Checked by check_structures.",
+ "supports": {
+  "about": "OpenStreetMap does not say what most bridges are made of, so one rule serves all: round stone arches on piers, the span following the height.",
+  "deck_thickness_m": {"value": 1.0, "note": "the slab layer 6 draws under every bridge way"},
+  "min_clear_m": {"value": 1.5, "assumption": "a deck less than this over the ground has no opening: its sides go down to the ground"},
+  "min_open_m": {"value": 4.0, "assumption": "a stretch shorter than this that stands clear gets no arch (its sides go down to the ground)"},
+  "span_per_height": {"value": 0.5, "assumption": "masonry viaducts of the city: 15 m arches at 30-45 m (Clausen, Pfaffenthal)"},
+  "span_m": {"value": [6.0, 15.0], "assumption": "the least and the largest arch"},
+  "pier_per_span": {"value": 0.2, "assumption": "pier thickness along the deck as a share of the span"},
+  "pier_m": {"value": [1.0, 3.0], "assumption": "the thinnest and the thickest pier"},
+  "crown_m": {"value": 0.3, "assumption": "stone between the arch's crown and the slab"},
+  "rise_share": {"value": 0.8, "assumption": "a low arch rises over this share of the room under its crown (a round arch where there is room for one)"},
+  "parallel_gap_m": {"value": 2.5, "assumption": "ways of one bridge (a road and its footways, two tracks) run within this of each other: they share one row of arches"},
+  "way_margin_m": {"value": 0.5, "assumption": "room kept between a pier and a road, track or path passing under the bridge"}
+ },
+ "frames": [
+  {
+   "id": "red_bridge",
+   "name": "Grand Duchess Charlotte Bridge (Pont Grande-Duchesse Charlotte, Roud Bréck)",
+   "names": ["Grande-Duchesse Charlotte", "Pont Rouge"],
+   "structure": "strut frame: a steel box girder on two pairs of slanted legs",
+   "colour": "structures.red_bridge",
+   "length_m": 355, "height_m": 74,
+   "feet_apart_m": {"value": 234, "assumption": "the main span as remembered (355 m long, 234 m main span); not checked against a source"},
+   "leg_run_per_height": {"value": 0.8, "assumption": "how far a leg leans toward the middle per metre it rises; read off research/01-landmarks/images/red-bridge__aerial.jpg and red-bridge__exterior.jpg"},
+   "girder_depth_m": {"value": 3.5, "assumption": "to verify on photos"},
+   "haunch_m": {"value": 3.0, "assumption": "the girder is deeper over the legs by this much; to verify on photos"},
+   "haunch_length_m": {"value": 22.0, "assumption": "to verify on photos"},
+   "girder_width_share": {"value": 0.56, "assumption": "the girder's width as a share of the deck's (the footways overhang); read off the aerial photo"},
+   "leg_offset_share": {"value": 0.2, "assumption": "each leg's place across the deck, either side of the axis, as a share of the deck's width"},
+   "leg_top_m": {"value": [6.4, 4.0], "assumption": "a leg's size at the girder, along and across the bridge"},
+   "leg_foot_m": {"value": [2.8, 2.7], "assumption": "a leg's size at its foot: the legs taper (the aerial photo)"},
+   "footing_m": {"value": [6.0, 4.3, 2.7], "assumption": "a concrete block under each foot: along, across, height"},
+   "sources": ["research/01-landmarks/README.md#red-bridge", "research/01-landmarks/images/red-bridge__aerial.jpg", "research/01-landmarks/images/red-bridge__exterior.jpg", "OpenStreetMap ways named Pont Grande-Duchesse Charlotte"]
+  }
+ ]
+}

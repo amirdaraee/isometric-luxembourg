@@ -3956,3 +3956,76 @@ Speed is as before: C2a first view 0.09 s (limit 0.5); C2b panning 91.6 fps (lim
 ### 42.5 Open questions
 
 44, 46, 65, 66, 67 and 69 stand. No new question.
+
+## 43. Bridges: legs for the Red Bridge, arches under the others, a gravel bed on the viaducts (27 November, $0)
+
+Three of the owner's notes of section 42 were about bridges: "where are the legs of the bridge?" (the Red
+Bridge), "bridge is floating" (the Béinchen) and "top surface of bridges for train tracks seems wrong" (a railway
+viaduct). Only the three railway viaducts had piers and arches; every other bridge was a deck with sides.
+
+### 43.1 Samples and the owner's choices
+
+A few tiles at each note were drawn with trial code, two ways each, and shown on one page.
+
+| Note | Shown | Chosen |
+|---|---|---|
+| 8, the Red Bridge | A: slanted legs, as built; B: upright piers | A |
+| 9, small bridges | A: stone arches on piers; B: plain piers | A |
+| 3, the viaduct's deck | A gravel bed and solid parapets | yes |
+
+### 43.2 What was built
+
+- **The bridges' supports are data** (`v2/data/structures/bridges.json`, `scene_structures`). The scene now gives,
+  for every bridge that is not a modelled viaduct, what stands under it; layer 6 draws it
+  (`geometry.supports_mesh`).
+- **Arches.** Ways of one bridge (a road and its footways, two tracks, a way OSM cut in two) share one row of
+  arches. Where the deck is more than 1.5 m over the ground for 4 m or more, round stone arches stand under it,
+  the span half the height, between 6 and 15 m; where it is lower, its sides go down to the ground. A pier is
+  kept off the roads, tracks and paths passing under the bridge where a layout near the rule's span allows it.
+- **The Red Bridge.** A red girder under the deck, deeper over the legs, on two pairs of slanted legs whose feet
+  stand on the valley's slopes on concrete footings. Steel is drawn without stone joints.
+- **The viaducts' deck.** A gravel bed, flecked stone by stone, between solid stone parapets 0.5 m thick under a
+  pale coping. A parapet in stone is now drawn as masonry everywhere; only a railing is bars.
+- **New gate checks.** V8 to V11 on the data (every bridge way has a viaduct, a frame or a row of arches; no
+  stretch standing clear without an arch; arches and piers sound; the Red Bridge's four legs on the ground) and
+  L6.4 on the layer (every arch, pier and leg is in the mesh).
+
+![Note 8: the Red Bridge, before and after, at 13:00](img/test_a_notes_red_bridge.jpg)
+![The whole Red Bridge on its legs](img/test_a_notes_red_bridge_whole.jpg)
+![Note 9: the Béinchen, before and after](img/test_a_notes_beinchen.jpg)
+![Note 3: the railway viaduct's deck, before and after](img/test_a_notes_viaduct_deck.jpg)
+
+### 43.3 Results
+
+All 62 stages pass; 305 gate entries pass (V8 to V11 and L6.4 new), none fails; gates G1 and G3 pass. New release
+`f9df8484cb16`.
+
+| | Count |
+|---|---|
+| Bridges given supports (rows of arches or low sides) | 47 |
+| … of them standing on arches | 38 |
+| Arches | 97 |
+| Piers | 57 |
+| Piers left standing on a way under their bridge | 1 |
+| Bridges on slanted legs | 1 (4 legs) |
+
+The Red Bridge in the data is 357.0 m long (documented 355 m); its feet stand 235.3 m apart and the tops of its
+legs 188.2 m apart.
+
+Speed: C2a first view 0.10 s (limit 0.5); C2b panning 81.3 fps (limit 60); X8b 112.4 fps (limit 60); C5 0
+requests refused; C6 0 faults. 213 Python tests pass (6 new).
+
+### 43.4 Not done
+
+- The Red Bridge's 234 m between the feet is from memory, and the lean of its legs, the girder's depth and the
+  legs' sizes are read off the project's research photos. None is from a source; all are marked as assumptions in
+  `bridges.json`.
+- OSM does not say what most bridges are made of, so a modern concrete bridge gets stone arches like an old one.
+- One pier of a 160 m railway bridge stands on a way passing under it: no layout near the rule's span was free.
+- A pier does not know about a building or another bridge under its deck.
+- The viaducts' own piers and arches are as before (their arch counts are still assumptions, section 3).
+- Notes 1, 2 and 5 (paths and a building on cliffs, flat roofs) are not worked on.
+
+### 43.5 Open questions
+
+44, 46, 65, 66, 67 and 69 stand. No new question.

@@ -65,7 +65,9 @@
  "structures": {
   "stone":       {"rgb": [186, 176, 158], "src": "pipeline/build_bridges.py STONE"},
   "red_bridge":  {"rgb": [172, 44, 40],   "src": "build_bridges.py RED (Pont Grande-Duchesse Charlotte)"},
-  "railing":     {"rgb": [196, 198, 200], "src": "build_bridges.py RAIL"}
+  "railing":     {"rgb": [196, 198, 200], "src": "build_bridges.py RAIL"},
+  "ballast":     {"rgb": [138, 129, 119], "src": "v2 phase 3 (the gravel bed of a viaduct's tracks: between ground.railground and the road's grey; owner 27 Nov 2026)"},
+  "coping":      {"rgb": [192, 182, 162], "src": "v2 phase 3 (a parapet's coping stone: transport.kerb's pale stone; owner 27 Nov 2026)"}
  },
  "buildings": {
   "note": "for the code-drawn buildings of bake-off method A and the material library of B; v1's buildings were painted",

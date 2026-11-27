@@ -15,7 +15,7 @@ from shapely import STRtree
 from shapely.geometry import Point, Polygon, box
 
 from v2.checks.framework import Report
-from v2.config import params
+from v2.config import REPO, params
 from v2.config.camera import camera
 from v2.data.geo import area_polygon
 from v2.data.scene.buildings import footprints, load as load_buildings
@@ -758,6 +758,62 @@ def check_structures(ctx):
     r.at_most("V5", "arches with the crown above the deck or the springing above the crown", len(arch_bad), 0, arch_bad)
     r.at_most("V6", "viaducts whose modelled length is off the documented length by > 15%", len(length_bad), 0, length_bad)
     r.info("V7", "modelled vs documented height (m)", [[v["id"], v.get("height_model_m"), v.get("height_documented_m")] for v in vs])
+    # the other bridges' supports (v2/data/structures/bridges.json; owner, 27 Nov 2026: "bridge is floating")
+    spec = json.loads((REPO / "v2/data/structures/bridges.json").read_text())
+    rule = {k: v["value"] for k, v in spec["supports"].items() if isinstance(v, dict)}
+    bare, bad, covered = [], [], set()
+    for b in s.get("supports", []):
+        covered |= set(b["edges"])
+        ln = np.array(b["line"], float)
+        ts = np.linspace(0, b["length_m"], len(ln))
+        clear = ln[:, 2] - ln[:, 3]
+        op = clear > rule["min_clear_m"]
+        ed = np.flatnonzero(np.diff(np.r_[False, op, False].astype(int)))
+        for i0, i1 in zip(ed[::2], ed[1::2] - 1):
+            if ts[i1] - ts[i0] >= rule["min_open_m"] and not any(ts[i0] - 0.01 <= a["t"][0] and a["t"][1] <= ts[i1] + 0.01
+                                                                 for a in b["arches"]):
+                bare.append([b["spine"], round(float(ts[i0]), 1), round(float(ts[i1]), 1)])
+        for a in b["arches"]:
+            if not (0.5 <= a["rise_m"] <= (a["t"][1] - a["t"][0]) / 2 + 0.01):
+                bad.append([b["spine"], "arch", a["t"]])
+        for p in b["piers"]:
+            gz = float(mnt.sample(*[np.array([np.interp(sum(p["t"]) / 2, ts, ln[:, k])]) for k in (0, 1)])[0])
+            if p["foot_z"] > gz + 0.5 or p["foot_z"] >= float(np.interp(sum(p["t"]) / 2, ts, ln[:, 2])):
+                bad.append([b["spine"], "pier", p["t"]])
+    area = area_polygon(ctx.area)
+    via_edges = {i for v in vs for i in v.get("deck_edges", [])}
+    framed = {i for f in s.get("frames", []) for i in f["edges"]}
+    missing = [e["id"] for e in g["edges"] if e["structure"] == "bridge" and e["mode"] != "elevator"
+               and e["id"] not in via_edges | framed | covered and any(q is not None for q in e["z"]) and len(e["en"]) > 1
+               and area.contains(shapely.Point(e["en"][len(e["en"]) // 2]))]
+    r.at_most("V8", "bridge ways in the area that are in no viaduct, frame or row of arches", len(missing), 0, missing[:5])
+    r.at_most("V9", f"stretches of a bridge standing more than {rule['min_clear_m']} m clear of the ground for "
+              f"{rule['min_open_m']} m or more with no arch under them", len(bare), 0, bare[:5])
+    r.at_most("V10", "arches that rise less than 0.5 m or more than half their span, and piers whose foot is over the "
+              "ground (> 0.5 m) or over the deck's underside", len(bad), 0, bad[:5])
+    legs_bad = []
+    for f in s.get("frames", []):
+        if len(f["legs"]) != 4:
+            legs_bad.append([f["id"], "legs", len(f["legs"])])
+        for k, leg in enumerate(f["legs"]):
+            gz = float(mnt.sample(np.array([leg["foot"][0]]), np.array([leg["foot"][1]]))[0])
+            lean = np.hypot(leg["top"][0] - leg["foot"][0], leg["top"][1] - leg["foot"][1])
+            if abs(leg["foot"][2] - gz) > 0.5 or leg["top"][2] < leg["foot"][2] + 5 or lean < 1:
+                legs_bad.append([f["id"], k])
+        if abs(f["length_model_m"] - f["length_documented_m"]) / f["length_documented_m"] > 0.15:
+            legs_bad.append([f["id"], "length", f["length_model_m"]])
+    want = [f["id"] for f in spec["frames"]
+            if any(e["structure"] == "bridge" and any(n in ((e.get("bridge_name") or "") + " " + (e.get("name") or "")) for n in f["names"])
+                   and area.contains(shapely.Point(e["en"][len(e["en"]) // 2])) for e in g["edges"])]
+    legs_bad += [[i, "not modelled"] for i in want if i not in {f["id"] for f in s.get("frames", [])}]
+    r.at_most("V11", "frames (the Red Bridge) in the area not modelled, without four slanted legs standing on the "
+              "ground, or off the documented length by > 15%", len(legs_bad), 0, legs_bad[:5])
+    r.info("V12", "bridges with a row of arches; arches; piers; piers standing on a road, track or path under their bridge",
+           [len(s.get("supports", [])), sum(len(b["arches"]) for b in s.get("supports", [])),
+            sum(len(b["piers"]) for b in s.get("supports", [])), sum(b["piers_on_a_way"] for b in s.get("supports", []))])
+    r.info("V13", "frames: length, feet apart, leg tops apart, height (m; documented length and height)",
+           [[f["id"], f["length_model_m"], f["feet_apart_m"], f["tops_apart_m"], f["height_model_m"],
+             f["length_documented_m"], f["height_documented_m"]] for f in s.get("frames", [])])
     return r.result()
 
 

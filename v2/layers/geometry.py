@@ -10,6 +10,7 @@ buildings_mesh      ACT LoD2 surfaces (roofs, walls, installations), surfaces gr
 wall_skirts         a building's walls continued down to the ground where its base stands over the ground
 openings_mesh       windows, doors and shop fronts of the facade layout as quads 5 cm in front of their walls
 deck_mesh           the top of every bridge deck of the transport graph (layer 4 draws it)
+supports_mesh       the arches and piers under the bridges without a model, the Red Bridge's girder and legs
 structures_mesh     deck sides, undersides and parapets of every bridge; the modelled viaducts' slab, arches and
                     piers; the Pfaffenthal lift (layer 6)
 portal_mesh         the dark mouth of every tunnel portal (layer 4)
@@ -429,6 +430,74 @@ def box(M, c, ax, w, l, z0, z1, cls, obj, col):
         M.quad(lo[k], lo[(k + 1) % 4], hi[(k + 1) % 4], hi[k], cls, obj, col)
 
 
+PARAPET_M = 0.5           # thickness of a viaduct's stone parapet
+
+
+def supports_mesh(M, st, by_id, edge_ok=lambda e: True):
+    """What stands under the bridges without a model of their own (scene structures "supports" and "frames";
+    v2/data/structures/bridges.json): rows of stone arches on piers, and the Red Bridge's girder and slanted legs."""
+    for b in st.get("supports", []):
+        if b["spine"] not in by_id or not all(edge_ok(by_id[i][1]) for i in b["edges"] if i in by_id):
+            continue
+        obj = by_id[b["spine"]][0]
+        ln = np.array(b["line"], float)
+        P, under, ground = ln[:, :2], ln[:, 2], ln[:, 3]
+        ts = np.linspace(0, b["length_m"], len(P))
+        _, left = edge_frame(P)
+        w, col = b["width_m"], "structures.stone"
+        at = lambda A, t: np.column_stack([np.interp(t, ts, A[:, k]) for k in range(A.shape[1])])      # noqa: E731
+        for a in b["arches"]:
+            t0, t1 = a["t"]
+            tt = np.linspace(t0, t1, 33)
+            Q, lf = at(P, tt), at(left, tt)
+            lf /= np.linalg.norm(lf, axis=1, keepdims=True)
+            top = np.interp(tt, ts, under)
+            x = np.clip((tt - (t0 + t1) / 2) / ((t1 - t0) / 2), -1, 1)
+            curve = top - b["crown_m"] - a["rise_m"] * (1 - np.sqrt(1 - x ** 2))
+            for s in (1, -1):                                  # the spandrel on both faces, then the barrel
+                side = Q + lf * (w / 2) * s
+                strip(M, np.column_stack([side, top]), np.column_stack([side, curve]), CLASS["arch"], obj, col)
+            strip(M, np.column_stack([Q + lf * w / 2, curve]), np.column_stack([Q - lf * w / 2, curve]), CLASS["arch"],
+                  obj, col + "|ink.line|0.25")
+        for p in b["piers"]:
+            t0, t1 = p["t"]
+            c = (t0 + t1) / 2
+            ax = at(P, np.array([c + 0.5]))[0] - at(P, np.array([c - 0.5]))[0]
+            box(M, at(P, np.array([c]))[0], ax, w, t1 - t0, p["foot_z"] - 0.4, float(np.interp(c, ts, under)),
+                CLASS["pier"], obj, col)
+        for i0, i1 in b["walls"]:                              # a low deck: its sides go down to the ground
+            for s in (1, -1):
+                side = P[i0:i1 + 1] + left[i0:i1 + 1] * (w / 2) * s
+                A = np.column_stack([side, under[i0:i1 + 1]])
+                B = np.column_stack([side, np.minimum(ground[i0:i1 + 1], under[i0:i1 + 1]) - 0.3])
+                strip(M, A, B, CLASS["structure"], obj, col)
+    for f in st.get("frames", []):
+        ids = [i for i in f["edges"] if i in by_id]
+        if not ids or not all(edge_ok(by_id[i][1]) for i in ids):
+            continue
+        obj, col = by_id[ids[0]][0], f["colour"]
+        u = np.array(f["axis"], float)
+        v = np.array([-u[1], u[0]])
+        G_ = np.array(f["girder"]["line"], float)
+        gw = f["girder"]["width_m"]
+        A, B = G_[:, :2] + v * gw / 2, G_[:, :2] - v * gw / 2
+        for S in (A, B):
+            strip(M, np.column_stack([S, G_[:, 2]]), np.column_stack([S, G_[:, 3]]), CLASS["structure"], obj, col)
+        strip(M, np.column_stack([A, G_[:, 3]]), np.column_stack([B, G_[:, 3]]), CLASS["structure"], obj, col + "|ink.line|0.3")
+        for leg in f["legs"]:
+            def ring(c, size, z):
+                return [np.r_[np.array(c[:2]) + u * a * size[0] / 2 + v * b_ * size[1] / 2, z]
+                        for a, b_ in ((1, 1), (-1, 1), (-1, -1), (1, -1))]
+            hi = ring(leg["top"], leg["top_m"], leg["top"][2] + 0.5)          # into the girder
+            lo = ring(leg["foot"], leg["foot_m"], leg["foot"][2] - 0.5)       # into its footing
+            for k in range(4):
+                M.quad(lo[k], lo[(k + 1) % 4], hi[(k + 1) % 4], hi[k], CLASS["pier"], obj, col)
+        for q in f["footings"]:
+            la, lc, h = q["size_m"]
+            box(M, np.array([q["e"], q["n"]]), u, lc, la, q["ground_z"] - 1.5, q["ground_z"] + h - 1.5, CLASS["pier"], obj,
+                "structures.stone")
+
+
 def structures_mesh(scene, edge_ok=lambda e: True, thickness=1.0, parapet=1.0, masks=None, terrain=None, dense=None,
                     on_face=None):
     import shapely
@@ -495,14 +564,19 @@ def structures_mesh(scene, edge_ok=lambda e: True, thickness=1.0, parapet=1.0, m
         Lb, Rb = L.copy(), R.copy()
         Lb[:, 2] -= th
         Rb[:, 2] -= th
-        strip(M, L, R, CLASS["structure"], vi, "structures.stone|transport.sleeper|0.3")
+        strip(M, L, R, CLASS["structure"], vi, "structures.ballast")         # the gravel bed the tracks lie in
         strip(M, L, Lb, CLASS["structure"], vi, "structures.stone")
         strip(M, R, Rb, CLASS["structure"], vi, "structures.stone")
-        Lp, Rp = L.copy(), R.copy()
-        Lp[:, 2] += pa
-        Rp[:, 2] += pa
-        strip(M, L, Lp, CLASS["parapet"], vi, "structures.stone")
-        strip(M, R, Rp, CLASS["parapet"], vi, "structures.stone")
+        # parapets: solid stone, PARAPET_M thick, under a pale coping (the owner, 27 Nov 2026: "top surface of
+        # bridges for train tracks seems wrong": the deck was one plain slab)
+        for A, s in ((L, 1), (R, -1)):
+            In, _ = ribbon(en, zt, s * (w - 2 * PARAPET_M))
+            Ap, Ip = A.copy(), In.copy()
+            Ap[:, 2] += pa
+            Ip[:, 2] += pa
+            strip(M, A, Ap, CLASS["parapet"], vi, "structures.stone")
+            strip(M, In, Ip, CLASS["parapet"], vi, "structures.stone")
+            strip(M, Ap, Ip, CLASS["parapet"], vi, "structures.coping")
         # arches: on both faces, the spandrel between the slab's underside and the arch's curve, and the barrel
         cum = np.r_[0, np.cumsum(np.linalg.norm(np.diff(en, axis=0), axis=1))]
         _, left = edge_frame(en)
@@ -532,6 +606,7 @@ def structures_mesh(scene, edge_ok=lambda e: True, thickness=1.0, parapet=1.0, m
             ax = en[min(k + 1, len(en) - 1)] - en[max(k - 1, 0)]
             box(M, c, ax, w, float(p.get("thickness_m", 3.0)), float(p["foot_z"]), float(p["deck_z"]) - th,
                 CLASS["pier"], vi, "structures.stone")
+    supports_mesh(M, st, {e["id"]: (i, e) for i, e in enumerate(g["edges"])}, edge_ok)
     for i, e in enumerate(g["edges"]):
         if e["mode"] != "elevator" or not edge_ok(e):
             continue
