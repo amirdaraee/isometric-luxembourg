@@ -5,6 +5,7 @@ import { BASE, fetchBin, fetchBytes, fetchJSON, inflate, undelta, type ReleaseIn
 import { Compositor, DEBUG_XDEPTH, DEBUG_XID, LAYER_ID, grade, type LightState, type View } from "./gl/compositor.ts";
 import { BUILDING_CLASSES, cutawayParam, depthWithCutaways, parseCutaway, tileMeets } from "./cutaways.ts";
 import { declutter, type Label } from "./labels.ts";
+import { noteLink, notesText, parseNotes, viewQuery, type Note } from "./notes.ts";
 import { luxDate, params, seasonOf, today, type Season } from "./params.ts";
 import { sunPosition, sunVector } from "./sun.ts";
 import type { TransitData } from "./sim/transit.ts";
@@ -16,6 +17,7 @@ const t0 = performance.now();
 const canvas = document.getElementById("map") as HTMLCanvasElement;
 const labelsEl = document.getElementById("labels") as HTMLDivElement;
 const tipEl = document.getElementById("tip") as HTMLDivElement;
+const notesEl = document.getElementById("notes") as HTMLDivElement;
 const DEBUG: Record<string, number> = { albedo: 1, layer: 2, shadow: 3, depth: 4, normal: 5, xid: DEBUG_XID, xdepth: DEBUG_XDEPTH };
 
 declare global { interface Window { __v2: Record<string, unknown> } }
@@ -240,7 +242,21 @@ async function main() {
     hooks.xrayDrawn = !!st.xray;
     hooks.cutawayDrawn = (st.cut ?? []).join(",");
     placeLabels();
+    placeNotes();
+    if (view.cx !== addr.cx || view.cy !== addr.cy || view.scale !== addr.scale || hourOverride !== addr.hour) {
+      addr = { cx: view.cx, cy: view.cy, scale: view.scale, hour: hourOverride };
+      clearTimeout(addrTimer);
+      addrTimer = window.setTimeout(writeAddress, 300);
+    }
   };
+  // the address follows the view once it rests, so the view on screen can be opened again from its address
+  let addr = { cx: view.cx, cy: view.cy, scale: view.scale, hour: hourOverride };
+  let addrTimer = 0;
+  const writeAddress = () => {
+    const u = new URL(location.href);
+    history.replaceState(null, "", u.pathname + viewQuery(u.search, { x: view.cx, y: view.cy, z: view.scale / dpr, hour: hourOverride }) + u.hash);
+  };
+  let placeNotes = () => {};
   let lastT = performance.now();
   let frames = 0;
   const loop = () => {
@@ -277,6 +293,7 @@ async function main() {
   const pointers = new Map<number, { x: number; y: number }>();
   let pinch = 0;
   canvas.addEventListener("pointerdown", (e) => {
+    if (params.review && (e.altKey || e.ctrlKey || e.button === 2)) { if (e.altKey) askNote(e.clientX, e.clientY); return; }   // a note, not a drag
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     drag = { x: e.clientX, y: e.clientY };
@@ -311,20 +328,17 @@ async function main() {
   canvas.addEventListener("wheel", (e) => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
   window.addEventListener("resize", () => { size(); dirty = true; });
   // hover: what is under the pointer (layer 8 ids)
-  const vd = { roads: new Map<number, string>() };
-  const hover = (x: number, y: number) => {
+  const toMap = (x: number, y: number): [number, number] => {
     const r = canvas.getBoundingClientRect();
-    const mx = view.cx + ((x - r.left) * dpr - comp.W / 2) / view.scale, my = view.cy + ((y - r.top) * dpr - comp.H / 2) / view.scale;
+    return [view.cx + ((x - r.left) * dpr - comp.W / 2) / view.scale, view.cy + ((y - r.top) * dpr - comp.H / 2) / view.scale];
+  };
+  /** What the map has at a map pixel: "wall", "road: Rue Large", a cut-open landmark's name; "" where nothing is known. */
+  const whatAt = (mx: number, my: number): string => {
     const b = bufferAt(mx, my, comp.level(view));
-    if (!b || !b.id) { tipEl.style.display = "none"; return; }
+    if (!b || !b.id) return "";
     const cls = b.id & 255, obj = b.id >>> 8;
     const cutHere = cutOn.find((n) => idx.cutaways!.landmarks[n].replaces_index.includes(obj));
-    if (cutHere && BUILDING_CLASSES.has(cls) && !off.has("buildings")) {            // a building that is cut open: its name
-      tipEl.textContent = `${idx.cutaways!.landmarks[cutHere].name}, cut open`;
-      tipEl.style.display = "block";
-      tipEl.style.left = `${x + 12}px`; tipEl.style.top = `${y + 12}px`;
-      return;
-    }
+    if (cutHere && BUILDING_CLASSES.has(cls) && !off.has("buildings")) return `${idx.cutaways!.landmarks[cutHere].name}, cut open`;
     const names: Record<number, string> = { 1: "ground", 2: "wall", 3: "water", 4: "road", 5: "railway", 6: "tram line", 7: "path",
       8: "steps", 9: "bridge", 10: "tunnel portal", 11: "building", 12: "window", 13: "door", 14: "shop front", 15: "bridge",
       16: "viaduct pier", 17: "viaduct arch", 18: "tree", 19: "tree", 20: "parapet", 21: "lift", 22: "building", 23: "roof" };
@@ -334,7 +348,11 @@ async function main() {
       const road = (veh as Vehicles).roadById.get(obj - 1);
       text += road?.n ? `: ${road.n}` : e ? ` (${e.id})` : "";
     }
-    void vd;
+    return text;
+  };
+  hooks.whatAt = whatAt;
+  const hover = (x: number, y: number) => {
+    const text = whatAt(...toMap(x, y));
     tipEl.textContent = text;
     tipEl.style.display = text ? "block" : "none";
     tipEl.style.left = `${x + 12}px`; tipEl.style.top = `${y + 12}px`;
@@ -405,6 +423,91 @@ async function main() {
     if (t.checked) off.delete(t.dataset.l!); else off.add(t.dataset.l!);
     dirty = true;
   });
+  // ------------------------------------------------------------------ review notes (?review, notes.ts)
+  let askNote = (_x: number, _y: number) => {};
+  if (params.review) {
+    const KEY = "v2.notes";
+    const page = location.origin + location.pathname;
+    const boxEl = document.getElementById("noteBox") as HTMLFormElement;
+    const textIn = document.getElementById("noteText") as HTMLInputElement;
+    const listEl = document.getElementById("noteList") as HTMLOListElement;
+    const outEl = document.getElementById("noteOut") as HTMLTextAreaElement;
+    const saidEl = document.getElementById("noteSaid") as HTMLSpanElement;
+    const copyBtn = document.getElementById("noteCopy") as HTMLButtonElement;
+    const clearBtn = document.getElementById("noteClear") as HTMLButtonElement;
+    (document.getElementById("review") as HTMLDivElement).hidden = false;
+    let notes: Note[] = [];
+    try { notes = parseNotes(localStorage.getItem(KEY)); } catch { /* no storage: the notes live until the page closes */ }
+    let at: [number, number] | null = null;                       // the map pixel the open box is for
+    const say = (t: string) => { saidEl.textContent = t; };
+    const keep = () => {
+      const json = JSON.stringify(notes);
+      try { localStorage.setItem(KEY, json); } catch { /* as above */ }
+      fetch("/notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: json })   // the dev server's copy
+        .then((r) => say(r.ok ? "saved" : ""), () => say(""));
+    };
+    const show = () => {
+      copyBtn.disabled = clearBtn.disabled = notes.length === 0;
+      clearBtn.textContent = "Clear all";
+      listEl.replaceChildren(...notes.map((n, i) => {
+        const li = document.createElement("li");
+        const go = li.appendChild(document.createElement("button"));
+        go.type = "button"; go.className = "go"; go.textContent = n.text; go.title = "Go to this place";
+        go.addEventListener("click", () => { view.cx = n.x; view.cy = n.y; view.scale = n.z * dpr; dirty = true; });
+        const del = li.appendChild(document.createElement("button"));
+        del.type = "button"; del.className = "del"; del.textContent = "×"; del.title = "Remove this note";
+        del.setAttribute("aria-label", `Remove note ${i + 1}`);
+        del.addEventListener("click", () => { notes.splice(i, 1); keep(); show(); });
+        return li;
+      }));
+      placeNotes();                                               // the pins now, not at the next frame
+      dirty = true;
+    };
+    placeNotes = () => {
+      notesEl.replaceChildren(...notes.map((n, i) => {
+        const d = document.createElement("div");
+        d.className = "note"; d.textContent = String(i + 1); d.title = n.text;
+        d.style.left = `${(n.x - view.cx) * view.scale / dpr + comp.W / dpr / 2}px`;
+        d.style.top = `${(n.y - view.cy) * view.scale / dpr + comp.H / dpr / 2}px`;
+        return d;
+      }));
+    };
+    const closeBox = () => { boxEl.hidden = true; at = null; };
+    askNote = (x, y) => {
+      at = toMap(x, y);
+      boxEl.hidden = false;
+      boxEl.style.left = `${Math.min(x + 10, window.innerWidth - 300)}px`; boxEl.style.top = `${Math.min(y + 10, window.innerHeight - 70)}px`;
+      textIn.value = "";
+      tipEl.style.display = "none";
+      setTimeout(() => textIn.focus(), 0);
+    };
+    canvas.addEventListener("contextmenu", (e) => { e.preventDefault(); askNote(e.clientX, e.clientY); });
+    boxEl.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const text = textIn.value.trim();
+      if (at && text) {
+        const d = params.date;
+        notes.push({ x: Math.round(at[0]), y: Math.round(at[1]), z: +(view.scale / dpr).toFixed(3), hour: +st.hour.toFixed(2),
+          date: d ? `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}` : null, what: whatAt(at[0], at[1]), text });
+        keep(); show();
+      }
+      closeBox();
+    });
+    window.addEventListener("keydown", (e) => { if (e.key === "Escape" && !boxEl.hidden) closeBox(); });
+    canvas.addEventListener("pointerdown", (e) => { if (!e.altKey && !e.ctrlKey && e.button !== 2) closeBox(); });
+    copyBtn.addEventListener("click", () => {
+      const text = notesText(notes, page);
+      const byHand = () => { outEl.hidden = false; outEl.value = text; outEl.select(); say("select all and copy"); };
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => say(`copied ${notes.length}`), byHand); else byHand();
+    });
+    clearBtn.addEventListener("click", () => {                    // asked twice: the notes cannot be brought back
+      if (clearBtn.textContent === "Clear all") { clearBtn.textContent = "Really clear?"; setTimeout(() => { clearBtn.textContent = "Clear all"; }, 3000); return; }
+      notes = []; outEl.hidden = true; keep(); show();
+    });
+    hooks.notes = () => notes;
+    hooks.noteLink = (i: number) => noteLink(page, notes[i]);
+    show();
+  }
   void BASE; void inflate; void undelta;
 }
 

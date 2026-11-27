@@ -886,6 +886,14 @@ def check_viewer(ctx):
                 L["view_tiles_missing"] + L["tiles_waiting"] + (0 if L["shadows"] else 1) + (1 if L["timed_out"] or L["error"] else 0), 0)
     rep.info("C5c", "the same view: requests made, tiles loaded, seconds to the first whole view (this machine)",
              {"requests": L["requests"], "tiles": L["tiles"], "first_view_s": L["first_view_s"]})
+    # C6: the owner asked how to say where on the map something is wrong: ?review takes a note on a place, and the
+    # address follows the view so that any view can be opened again
+    N = V["notes"]
+    rep.at_most("C6", "review notes and the address: a note's pin on its place and moving with the map, the note kept over "
+                "a reload, the address following the view and opening the same view, none of it without ?review (faults)",
+                len(N["faults"]), 0)
+    if N["faults"]:
+        rep.info("C6b", "the faults", N["faults"])
     return rep.result()
 
 
