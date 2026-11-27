@@ -24,6 +24,8 @@ python -m v2.view test              # serve it: http://localhost:5174/  (install
 | `src/sim/traffic.ts`, `src/sim/transit.ts` | v1's traffic simulation and transit, kept; changes marked `v2:` |
 | `src/vehicles.ts` | layer 12: the simulation on the v2 graph, lifted to each edge's height profile |
 | `src/labels.ts` | layer 15: decluttered labels and pins |
+| `src/notes.ts` | review notes (`?review`): a note on a place, the notes as text, the address of a view (`compositor.md`, design 7) |
+| `src/loadq.ts` | the loads' queue: at most 32 files at a time, failed requests made again (`compositor.md`, design 6) |
 | `scripts/audit.ts` | the headless audit of layer 12 for the gate checks (a simulated day) |
 | `scripts/viewer_checks.mjs`, `scripts/previews.mjs`, `scripts/shot.mjs` | headless Chromium (Playwright): the viewer's checks, the report's previews, one screenshot |
 | `scripts/cutaway_checks.mjs`, `scripts/compare_viewers.mjs` | the cutaways' checks in the browser (K2, K5, K6); two viewers on one release, pixel for pixel |

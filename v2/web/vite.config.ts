@@ -1,6 +1,8 @@
 // The v2 viewer's dev server. It serves the built release of an area (python -m v2.build <area> release) under
 // /data/: <ISOLUX_DATA>/v2/<V2_AREA>/release/<current>/ (data root default: the repository's data/, area: test).
-import { createReadStream, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+// It also keeps the review notes written in the viewer (?review, src/notes.ts): POST /notes writes them to
+// <ISOLUX_DATA>/v2/<V2_AREA>/review_notes.json, GET /notes reads them back.
+import { createReadStream, existsSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { extname, join, resolve, sep } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 
@@ -22,6 +24,11 @@ function bakeIndex(): Record<string, { release: string | null; note?: string }> 
   const root = resolve(process.env.ISOLUX_DATA ?? resolve(__dirname, "../../data"));
   const p = join(root, "v2", process.env.V2_AREA ?? "test", "bakeoff", "releases.json");
   return existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : {};
+}
+
+function notesFile(): string {
+  const root = resolve(process.env.ISOLUX_DATA ?? resolve(__dirname, "../../data"));
+  return join(root, "v2", process.env.V2_AREA ?? "test", "review_notes.json");
 }
 
 function sendFile(dir: string, url: string, res: any, next: () => void) {
@@ -53,6 +60,27 @@ function serveRelease(): Plugin {
         const rel = m ? idx[m[1]]?.release : null;
         if (!m || !rel) { res.statusCode = 404; res.end(); return; }
         sendFile(resolve(rel), m[2], res, next);
+      });
+      server.middlewares.use("/notes", (req, res) => {
+        const file = notesFile();
+        if (req.method === "GET") {
+          res.setHeader("Content-Type", "application/json");
+          res.end(existsSync(file) ? readFileSync(file, "utf8") : "[]");
+          return;
+        }
+        if (req.method !== "POST") { res.statusCode = 405; res.end(); return; }
+        // a page of this server only: another site's page cannot send JSON here without asking first, and is not answered
+        if (!(req.headers["content-type"] ?? "").startsWith("application/json")) { res.statusCode = 415; res.end(); return; }
+        let body = "";
+        req.setEncoding("utf8");
+        req.on("data", (c: string) => { body += c; if (body.length > 1_000_000) req.destroy(); });
+        req.on("end", () => {
+          let notes: unknown;
+          try { notes = JSON.parse(body); } catch { notes = null; }
+          if (!Array.isArray(notes)) { res.statusCode = 400; res.end(); return; }
+          writeFileSync(file, JSON.stringify(notes, null, 1) + "\n");
+          res.statusCode = 204; res.end();
+        });
       });
       server.middlewares.use("/data", (req, res, next) => {
         const dir = releaseDir();          // per request: a rebuilt release is served without a restart

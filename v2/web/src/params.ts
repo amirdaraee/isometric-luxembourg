@@ -17,6 +17,9 @@
 //                          ?off=casemates leaves the Bock casemates out; ?debug=xid|xdepth for its checks
 //   ?cutaway               the landmark cutaways on (landmark-cutaways.md): each landmark cut open in place;
 //                          ?cutaway=cathedral,palace only those
+//   ?review                review notes (notes.ts): right-click or Alt-click a place to write a note on it
+//
+// The address follows the view: once the view rests, x, y and z (and hour, when it was set) are written back to it.
 
 export type Season = "spring" | "summer" | "autumn" | "winter";
 export const LAYERS = ["ground", "relief", "water", "transport", "buildings", "structures", "trees"] as const;
@@ -51,6 +54,7 @@ export const params = {
   xray: q.has("xray"),
   cutaway: q.get("cutaway"),          // null: off; "": every landmark; "a,b": those
   ui: !q.has("noui"),
+  review: q.has("review"),
 };
 
 /** "Now", unless ?date= is given: then that day at ?hour= (else noon), Luxembourg time. */

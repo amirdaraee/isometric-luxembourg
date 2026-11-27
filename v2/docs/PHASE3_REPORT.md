@@ -3826,3 +3826,56 @@ first view 0.10 s (limit 0.5); C2b panning 81.8 fps (limit 60); X8b panning in t
 ### 40.5 Open questions
 
 44, 46, 65, 66, 67 and 69 stand. No new question.
+
+## 41. Notes on places in the viewer (27 November, $0)
+
+With the loading fixed, the owner sent a second picture of the Corniche's footbridge, zoomed in about three
+times, asked what was happening there, and asked: "how can I give you feedback on specific places?" Until now
+only a picture could say where.
+
+### 41.1 What the picture shows
+
+Everything was loaded. The faults are in the drawing, all on the steep ground between the upper town and the
+valley. Found by switching layers off and asking the map what it has at each spot:
+
+| In the picture | What it is |
+|---|---|
+| A cobbled band across the cliff | Footpaths and steps from OpenStreetMap (ways 911838410, 825778398 and others), drawn onto the face they climb |
+| Rock patches and a dark outline in the grass | The relief layer: rock wherever the ground model is steep, cell by cell |
+| Saw-tooth tops of walls and cliffs | The ground model's 0.5 m cells at the edge |
+| A strip of windows inside the rock | A building (object 1102) partly covered by the rock around it; the cause was not looked for |
+| White blocks on the footbridge | Its parapet (layer 6) |
+
+The view was at about three screen pixels a map pixel, so each fault is three times its drawn size. None of
+this is fixed in this step.
+
+### 41.2 What was built
+
+- **Review notes** (`?review`, `v2/web/src/notes.ts`). A right-click or Alt-click on a place asks for a note.
+  The note keeps the map pixel, the scale, the hour, the date and what the map has there. A numbered pin stands
+  on the place. The panel lists the notes: a click goes to one, × removes it, "Copy notes" gives them as text
+  with a link to each place.
+- **Where the notes are kept.** In the browser (`localStorage`), and the dev server keeps a copy in
+  `<ISOLUX_DATA>/v2/<area>/review_notes.json`, outside the repository (`POST /notes`, `vite.config.ts`).
+- **The address follows the view.** Once the view rests, `x`, `y` and `z` are written to the address (and `hour`
+  when it was set), so the address of any view opens that view again.
+- **New gate check C6** (`viewer_checks.mjs`): a note's pin is on the place clicked and moves with the map, the
+  note is kept over a reload, the address follows the view and opens the same view, and without `?review` there
+  is no note, pin or panel.
+
+### 41.3 Results
+
+All 62 stages pass, 297 gate entries pass (C6 new), none fails; gates G1 and G3 pass. The art is unchanged:
+release `50ac94ba529d`. C6 0 faults; C5 0 refused of 2,019 requests; C2a first view 0.10 s (limit 0.5); C2b
+panning 88.7 fps (limit 60); X8b 111.6 fps (limit 60). 38 web tests (5 new) and 203 Python tests pass.
+
+### 41.4 Not done
+
+- The notes tool was tried in headless Chromium, and the owner's first notes came through it from their own
+  browser. A touch screen has no way to add a note.
+- The faults of 41.1 are not worked on. They are slope and cliff faults: the owner's notes come first, then
+  small samples.
+
+### 41.5 Open questions
+
+44, 46, 65, 66, 67 and 69 stand. No new question.

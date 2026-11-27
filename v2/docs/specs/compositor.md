@@ -20,6 +20,14 @@ test parameters `?hour`, `?season`, `?seed`, screenshot and speed harness).
    device pixels a pixel asks for 1,947 files in its first view; asked all at once, Chrome refused 549 of them
    (`net::ERR_INSUFFICIENT_RESOURCES`), the tiles were never asked for again, and because the shadow map waits for
    the first whole view, the view also had no shadows (the owner's picture of the Corniche, 27 Nov 2026).
+7. The address follows the view: once the view rests (0.3 s), `x`, `y` and `z` are written back to the address, and
+   `hour` when it was set, so the view on screen can be opened again from its address. With `?review` a reader
+   writes notes on places (`src/notes.ts`): a right-click (or Alt-click) on a place asks for a note; the note keeps
+   the map pixel, the scale, the hour, the date and what the map has there; a numbered pin stands on the place.
+   The notes are kept in the browser (`localStorage`), listed in the panel, and copied as text with a link to each
+   place. The dev server keeps a copy (`POST /notes`, `vite.config.ts`) in
+   `<ISOLUX_DATA>/v2/<area>/review_notes.json`, outside the repository. Why: the owner asked how to say where on
+   the map something is wrong (27 Nov 2026); before, only a picture could.
 
 **Checks.**
 - C1 (gate) Switching any layer off leaves no trace of it (pixel diff against the composite rendered without it).
@@ -29,3 +37,6 @@ test parameters `?hour`, `?season`, `?seed`, screenshot and speed harness).
 - C4 (gate) Depth test at every portal and bridge of the test area (brief 8; with L12.1).
 - C5 (gate) A large window's first view (2552 x 1278 at two device pixels a pixel, zoom 0.5 over the old town): no
   request refused or failed, every tile of the view loaded, the shadow map loaded.
+- C6 (gate) Review notes and the address: a note's pin stands on the place clicked (within 1 px) and moves with
+  the map; the note is kept over a reload; the address follows the view and, opened anew, gives the same view;
+  without `?review` a right-click asks for no note and no pin or panel shows.

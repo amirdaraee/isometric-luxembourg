@@ -95,6 +95,61 @@ const pixels = () => page.evaluate(() => {
   Object.assign(res.large, { requests, requests_failed: failed, timed_out, viewport: "2552x1278 CSS px, device pixel ratio 2" });
   await ctx3.close();
 }
+// ---------------------------------------------------------------- review notes and the address (C6)
+// ?review: a right-click on a place asks for a note; its pin stands on the place and moves with the map; the notes
+// are kept over a reload. The address follows the view, and opened anew gives the same view. Without ?review there
+// is none of it.
+{
+  const ctx4 = await browser.newContext({ viewport: { width: 1200, height: 800 }, deviceScaleFactor: 1 });
+  const faults = [];
+  const ready = (p) => p.waitForFunction(() => window.__v2 && (window.__v2.error || window.__v2.firstViewMs > 0), null, { timeout: 60000 });
+  const pins = (p) => p.$$eval(".note", (els) => els.map((e) => [parseFloat(e.style.left), parseFloat(e.style.top)]));
+  const near = (a, x, y) => a && Math.hypot(a[0] - x, a[1] - y) <= 1;
+  const q = `nosim&x=62900&y=33750&z=1&hour=13&date=${DATE}`;
+  let address = null, note = null;
+  try {
+    const p4 = await ctx4.newPage();
+    await p4.route("**/notes", (r) => r.abort());            // the dev server's copy of the notes is not this check's to write
+    await p4.goto(base + "?review&" + q);
+    await ready(p4);
+    await p4.mouse.click(700, 450, { button: "right" });
+    await p4.waitForSelector("#noteBox:not([hidden])", { timeout: 5000 });
+    await p4.fill("#noteText", "a note on this place");
+    await p4.press("#noteText", "Enter");
+    let at = await pins(p4);
+    if (at.length !== 1 || !near(at[0], 700, 450)) faults.push(`the pin is not on the place clicked: ${JSON.stringify(at)}`);
+    note = (await p4.evaluate(() => window.__v2.notes()))[0] ?? null;
+    if (!note || note.x !== 63000 || note.y !== 33800 || note.z !== 1 || note.hour !== 13 || note.date !== DATE)
+      faults.push(`the note is not the place, scale, hour and date: ${JSON.stringify(note)}`);
+    await p4.mouse.move(600, 400); await p4.mouse.down(); await p4.mouse.move(500, 340, { steps: 4 }); await p4.mouse.up();
+    await p4.waitForTimeout(700);
+    at = await pins(p4);
+    if (!near(at[0], 600, 390)) faults.push(`the pin did not move with the map: ${JSON.stringify(at)}`);
+    address = await p4.evaluate(() => location.search);
+    const want = `?review&nosim&x=63000&y=33810&z=1&hour=13&date=${DATE}`;
+    if (address !== want) faults.push(`the address did not follow the view: ${address}, not ${want}`);
+    const p5 = await ctx4.newPage();                          // the address opened anew: the same view, the note kept
+    await p5.route("**/notes", (r) => r.abort());
+    await p5.goto(base + address);
+    await ready(p5);
+    const v = await p5.evaluate(() => ({ cx: window.__v2.view.cx, cy: window.__v2.view.cy, scale: window.__v2.view.scale,
+      notes: window.__v2.notes().length, link: window.__v2.noteLink(0) }));
+    if (v.cx !== 63000 || v.cy !== 33810 || v.scale !== 1) faults.push(`the address opens another view: ${JSON.stringify(v)}`);
+    if (v.notes !== 1) faults.push(`the note was not kept: ${v.notes} notes`);
+    if (!v.link.endsWith(`?x=63000&y=33800&z=1&hour=13&date=${DATE}&review`)) faults.push(`the note's link: ${v.link}`);
+    if (!near((await pins(p5))[0], 600, 390)) faults.push("the kept note's pin is not on its place");
+    const p6 = await ctx4.newPage();                          // without ?review: no notes, a right-click asks for none
+    await p6.goto(base + "?" + q);
+    await ready(p6);
+    await p6.mouse.click(700, 450, { button: "right" });
+    await p6.waitForTimeout(200);
+    const plain = await p6.evaluate(() => ({ panel: document.getElementById("review").hidden, box: document.getElementById("noteBox").hidden,
+      pins: document.querySelectorAll(".note").length }));
+    if (!plain.panel || !plain.box || plain.pins) faults.push(`notes without ?review: ${JSON.stringify(plain)}`);
+  } catch (e) { faults.push(`the check stopped: ${String(e).slice(0, 300)}`); }
+  res.notes = { faults, address, note };
+  await ctx4.close();
+}
 res.gpu = await page.evaluate(() => { const gl = document.createElement("canvas").getContext("webgl2");
   const e = gl.getExtension("WEBGL_debug_renderer_info"); return { renderer: e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : "?",
     ua: navigator.userAgent }; });
