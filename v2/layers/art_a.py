@@ -60,6 +60,7 @@ ROOFS = [("roof_tile_old", "tile", 0.0), ("roof_tile", "tile", 0.0), ("roof_tile
          ("roof_slate", "slate", 0.3)]
 # clean fills (v1's cartoon look): the share kept of every grain, mottle and stone-to-stone or slate-to-slate tone
 GRAIN = 0.0
+GRAVEL_M, GRAVEL_TONE = 0.35, 0.22       # a viaduct's gravel bed: the size of a fleck (m) and how far its tone goes
 # v1's roof lines: a light stroke down the slope every `every` m along the eave, `width` m wide, `gain` times the slate;
 # and the courses parallel to the eave, darker by `course`
 ROOF_STROKE = {"every": 0.9, "width": 0.14, "gain": 1.22, "course": 0.14}
@@ -758,20 +759,28 @@ class ArtA:
     # ------------------------------------------------------------------ structures and trees
     @staticmethod
     def stone_rgb(base, P, nrm, px, py, cls):
-        """Ashlar: courses every 0.5 m, joints every 0.9 m (staggered) along the face; railings as bars."""
+        """Ashlar: courses every 0.5 m, joints every 0.9 m (staggered) along the face; railings as bars. By the
+        surface's own colour: a parapet in stone is masonry like the wall under it (only a railing is bars); steel
+        (the Red Bridge) has no joints; a gravel bed is flecked, stone by stone."""
         rgb = base.copy()
         h = np.linalg.norm(nrm[:, :2], axis=1)
         vertical = h > 0.7
         d = np.where(h[:, None] > 1e-6, nrm[:, :2] / np.maximum(h, 1e-6)[:, None], 0)
         along = P[:, 0] * -d[:, 1] + P[:, 1] * d[:, 0]
         row = np.floor(P[:, 2] / 0.5)
-        stone = vertical & (cls != CLASS["parapet"]) & (cls != CLASS["lift"])
+        is_ = lambda key: np.abs(base - pal("structures", key)).sum(1) < 1.5                  # noqa: E731
+        railing = ((cls == CLASS["parapet"]) & is_("railing")) | (cls == CLASS["lift"])
+        steel = (base[:, 0] > 1.8 * base[:, 1]) & (base[:, 0] > 1.8 * base[:, 2])          # painted red, also in shade
+        stone = vertical & ~railing & ~steel
         tone = 1 + (ihash(row, np.floor((along + (row % 2) * 0.45) / 0.9)) - 0.5) * 0.08 * GRAIN
         rgb[stone] *= tone[stone, None]
         joint = stone & (band(P[:, 2], 0.5, 0.06) | band(along + (row % 2) * 0.45, 0.9, 0.06))
         rgb[joint] *= 0.86
-        bars = vertical & ((cls == CLASS["parapet"]) | (cls == CLASS["lift"])) & band(along, 0.25, 0.06)
+        bars = vertical & railing & band(along, 0.25, 0.06)
         rgb[bars] *= 0.72
+        gravel = ~vertical & is_("ballast")
+        fleck = 1 + (ihash(np.floor(P[:, 0] / GRAVEL_M), np.floor(P[:, 1] / GRAVEL_M)) - 0.5) * GRAVEL_TONE
+        rgb[gravel] *= fleck[gravel, None]
         return rgb * gp(px, py, 0.02 * GRAIN, 17)[:, None]
 
     @staticmethod

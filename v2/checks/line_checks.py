@@ -215,6 +215,28 @@ def check_lines(ctx):
     rep.info("L5.9b", "buildings whose walls were continued down; of them by more than 0.5 m and by more than 2 m; the largest (m); "
              "faces added", [int((gaps > sk["min_gap_m"]).sum()), int((gaps > 0.5).sum()), int((gaps > 2).sum()),
                              round(float(gaps.max()), 2) if len(gaps) else 0, len(st) // 2])
+    # L6.4: no bridge stands in the air. Every arch and pier of the scene's supports, and the Red Bridge's four
+    # legs, are surfaces of layer 6's mesh (geometry.supports_mesh)
+    from v2.layers.common import CLASS
+    S6 = sc.structures
+    idx = {e["id"]: i for i, e in enumerate(sc.graph["edges"])}
+    m6 = G.structures_mesh(sc)
+    n_arch = np.bincount(m6["obj"][m6["cls"] == CLASS["arch"]], minlength=len(idx) + 1)
+    n_pier = np.bincount(m6["obj"][m6["cls"] == CLASS["pier"]], minlength=len(idx) + 1)
+    undrawn = []
+    for b in S6.get("supports", []):
+        i = idx[b["spine"]]
+        if n_arch[i] < 2 * 3 * 32 * len(b["arches"]) or n_pier[i] < 10 * len(b["piers"]):
+            undrawn.append(b["spine"])
+    for f in S6.get("frames", []):
+        if n_pier[idx[f["edges"][0]]] < 8 * len(f["legs"]) + 10 * len(f["footings"]):
+            undrawn.append(f["id"])
+    rep.at_most("L6.4", "bridges whose arches, piers or legs (scene structures) are not all in layer 6's mesh",
+                len(undrawn), 0, undrawn[:5])
+    rep.info("L6.4b", "bridges on arches; arches; piers; bridges on slanted legs; legs",
+             [sum(bool(b["arches"]) for b in S6.get("supports", [])), sum(len(b["arches"]) for b in S6.get("supports", [])),
+              sum(len(b["piers"]) for b in S6.get("supports", [])), len(S6.get("frames", [])),
+              sum(len(f["legs"]) for f in S6.get("frames", []))])
     return rep.result()
 
 

@@ -272,3 +272,36 @@ def test_walls_are_continued_down_where_the_ground_lies_under_the_base():
     out = ((cen[:, :2] - 5.0) * n[:, :2]).sum(1)
     assert yard_face.any() and (out[~yard_face] > 0).all() and (out[yard_face] < 0).all()
     assert np.allclose(n[:, 2], 0)
+
+
+def test_supports_mesh_draws_arches_piers_and_the_red_bridges_legs():
+    """The supports of scene structures as surfaces: each arch its two faces and its barrel, each pier a box down
+    to its foot, a low deck's sides to the ground; a frame its girder and four legs from foot to girder."""
+    from v2.layers import geometry as G
+    from v2.layers.common import CLASS
+    line = [[float(x), 0.0, 300.0, 300.0 - 10.0 * (10 < x < 40)] for x in np.arange(0, 50.5, 0.5)]
+    st = {"supports": [{"edges": [7], "spine": 7, "length_m": 50.0, "width_m": 4.0, "crown_m": 0.3, "line": line,
+                        "arches": [{"t": [10.0, 24.0], "rise_m": 7.0}, {"t": [26.0, 40.0], "rise_m": 7.0}],
+                        "piers": [{"t": [24.0, 26.0], "foot_z": 290.0}], "walls": [[0, 4]]}],
+          "frames": [{"edges": [8], "axis": [1.0, 0.0], "colour": "structures.red_bridge",
+                      "girder": {"width_m": 10.0, "line": [[0.0, 20.0, 339.0, 335.0], [100.0, 20.0, 339.0, 335.0]]},
+                      "legs": [{"top": [40.0, 20.0, 335.0], "foot": [20.0, 20.0, 300.0], "top_m": [6.0, 4.0], "foot_m": [3.0, 3.0]}],
+                      "footings": [{"e": 20.0, "n": 20.0, "ground_z": 300.0, "size_m": [6.0, 4.0, 2.5]}]}]}
+    by_id = {7: (0, {"id": 7}), 8: (1, {"id": 8})}
+    M = G.Mesh()
+    G.supports_mesh(M, st, by_id)
+    m = M.done()
+    V, T, cls, obj = m["V"], m["T"], m["cls"], m["obj"]
+    arch = V[T[(cls == CLASS["arch"]) & (obj == 0)]]
+    assert len(arch) == 2 * 3 * 32 * 2                                   # two arches: two faces and a barrel, 32 quads each
+    assert abs(arch[:, :, 2].max() - 300.0) < 1e-6 and abs(arch[:, :, 2].min() - (300.0 - 0.3 - 7.0)) < 1e-6
+    pier = V[T[(cls == CLASS["pier"]) & (obj == 0)]]
+    assert abs(pier[:, :, 2].min() - 289.6) < 1e-6 and abs(pier[:, :, 2].max() - 300.0) < 1e-6
+    assert pier[:, :, 0].min() == 24.0 and pier[:, :, 0].max() == 26.0
+    leg = V[T[(cls == CLASS["pier"]) & (obj == 1)]]
+    assert leg[:, :, 2].min() <= 299.5 and abs(leg[:, :, 2].max() - 335.5) < 1e-6
+    red = {k for k in m["col_keys"] if k.startswith("structures.red_bridge")}
+    assert red and "structures.stone" in m["col_keys"]
+    M2 = G.Mesh()
+    G.supports_mesh(M2, st, by_id, edge_ok=lambda e: e["id"] != 7)       # a way that is not drawn has no arches
+    assert not (M2.done()["obj"] == 0).any()

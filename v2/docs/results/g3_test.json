@@ -114,7 +114,7 @@
      "id": "L8.3b",
      "title": "buildings with at least one pixel in layer 8",
      "passed": true,
-     "value": "1063 of 1135",
+     "value": "1061 of 1135",
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -271,7 +271,7 @@
     },
     {
      "id": "L5.1/L9.2",
-     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 204 compared)",
+     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 210 compared)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -285,9 +285,9 @@
      "value": {
       "ground": 0.0097,
       "buildings": 0.0164,
+      "structures": 0.0053,
       "water": 0.0,
-      "structures": 0.0,
-      "transport": 0.0297
+      "transport": 0.022
      },
      "threshold": null,
      "severity": "report",
@@ -450,7 +450,7 @@
     },
     {
      "id": "S-structures-v1",
-     "title": "structures: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 54",
+     "title": "structures: v1's seam rule, flagged chunks at the borders and (control) through the tiles' middles, of 57",
      "passed": true,
      "value": {
       "borders": 3,
@@ -483,7 +483,7 @@
     },
     {
      "id": "L8.4",
-     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (4532 of 191713 vs 4259 of 187471; a seam would make it larger)",
+     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (4537 of 191698 vs 4260 of 187461; a seam would make it larger)",
      "passed": true,
      "value": 1.041,
      "threshold": "<= 1.5",
@@ -503,7 +503,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 76.2
+      "audit_s": 81.8
      },
      "threshold": null,
      "severity": "report",
@@ -620,7 +620,7 @@
     },
     {
      "id": "C4",
-     "title": "probe pixels where the viewer's depth test disagrees with the exact geometry (of 12516098; 1793 more on silhouettes, within 1 px of an edge)",
+     "title": "probe pixels where the viewer's depth test disagrees with the exact geometry (of 12516098; 1809 more on silhouettes, within 1 px of an edge)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -641,7 +641,7 @@
      "title": "probe pixels hidden (under decks or past portals)",
      "passed": true,
      "value": {
-      "deck_and_under": 1362360,
+      "deck_and_under": 1408735,
       "portals": 2123488
      },
      "threshold": null,
@@ -689,7 +689,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 243.2,
+     "value": 266.8,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -893,6 +893,30 @@
      "threshold": null,
      "severity": "report",
      "examples": []
+    },
+    {
+     "id": "L6.4",
+     "title": "bridges whose arches, piers or legs (scene structures) are not all in layer 6's mesh",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "L6.4b",
+     "title": "bridges on arches; arches; piers; bridges on slanted legs; legs",
+     "passed": true,
+     "value": [
+      38,
+      97,
+      57,
+      1,
+      4
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
     }
    ]
   },
@@ -907,7 +931,7 @@
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
       "images": 947,
-      "seconds": 317.3,
+      "seconds": 338.6,
       "queries": [
        "a car",
        "a parked car",
@@ -1198,24 +1222,24 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.15089999997615813,
-      "first_view_warm_s": 0.09439999997615814,
+      "first_view_cold_s": 0.15739999997615814,
+      "first_view_warm_s": 0.09920000004768371,
       "pan_whole_area": {
-       "fps": 91.59886187735638,
+       "fps": 81.276489653453,
        "frame_ms_median": 0.5999999046325684,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 97.86299181088147,
-       "frame_ms_median": 0.2999999523162842,
+       "fps": 87.416953894842,
+       "frame_ms_median": 0.20000004768371582,
        "tiles_missing": 0
       },
-      "pan_fps": 91.59886187735638,
+      "pan_fps": 81.276489653453,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 93.48597710287736,
-        "frame_ms_median": 0.6999999284744263,
+        "fps": 83.45201508983111,
+        "frame_ms_median": 0.7000000476837158,
         "tiles_missing": 0
        }
       },
@@ -1229,7 +1253,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.094,
+     "value": 0.099,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1238,7 +1262,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 91.6,
+     "value": 81.3,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1250,8 +1274,8 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 93.48597710287736,
-       "frame_ms_median": 0.6999999284744263,
+       "fps": 83.45201508983111,
+       "frame_ms_median": 0.7000000476837158,
        "tiles_missing": 0
       }
      },
@@ -1282,9 +1306,9 @@
      "title": "the same view: requests made, tiles loaded, seconds to the first whole view (this machine)",
      "passed": true,
      "value": {
-      "requests": 2019,
+      "requests": 2018,
       "tiles": 643,
-      "first_view_s": 8.880600000023842
+      "first_view_s": 8.737299999952317
      },
      "threshold": null,
      "severity": "report",
@@ -2809,6 +2833,75 @@
      "threshold": null,
      "severity": "report",
      "examples": []
+    },
+    {
+     "id": "V8",
+     "title": "bridge ways in the area that are in no viaduct, frame or row of arches",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V9",
+     "title": "stretches of a bridge standing more than 1.5 m clear of the ground for 4.0 m or more with no arch under them",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V10",
+     "title": "arches that rise less than 0.5 m or more than half their span, and piers whose foot is over the ground (> 0.5 m) or over the deck's underside",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V11",
+     "title": "frames (the Red Bridge) in the area not modelled, without four slanted legs standing on the ground, or off the documented length by > 15%",
+     "passed": true,
+     "value": 0,
+     "threshold": "<= 0",
+     "severity": "gate",
+     "examples": []
+    },
+    {
+     "id": "V12",
+     "title": "bridges with a row of arches; arches; piers; piers standing on a road, track or path under their bridge",
+     "passed": true,
+     "value": [
+      47,
+      97,
+      57,
+      1
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
+    },
+    {
+     "id": "V13",
+     "title": "frames: length, feet apart, leg tops apart, height (m; documented length and height)",
+     "passed": true,
+     "value": [
+      [
+       "red_bridge",
+       357.0,
+       235.3,
+       188.2,
+       67.1,
+       355,
+       74
+      ]
+     ],
+     "threshold": null,
+     "severity": "report",
+     "examples": []
     }
    ]
   },
@@ -3418,17 +3511,27 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 8.699999928474426
+        "ms": 10
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 7.100000023841858
+        "ms": 8
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 9
+        "ms": 8.200000047683716
+       },
+       {
+        "on": false,
+        "frames": 1,
+        "ms": 8.400000095367432
+       },
+       {
+        "on": true,
+        "frames": 1,
+        "ms": 8
        },
        {
         "on": false,
@@ -3438,49 +3541,39 @@
        {
         "on": true,
         "frames": 1,
-        "ms": 9
-       },
-       {
-        "on": false,
-        "frames": 1,
-        "ms": 7.400000095367432
-       },
-       {
-        "on": true,
-        "frames": 1,
         "ms": 7.899999976158142
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 10.199999928474426
+        "ms": 8.400000095367432
        },
        {
         "on": true,
         "frames": 1,
-        "ms": 7.899999976158142
+        "ms": 8.200000047683716
        },
        {
         "on": false,
         "frames": 1,
-        "ms": 8.100000023841858
+        "ms": 8.299999952316284
        }
       ],
       "pan_whole_area": {
-       "fps": 118.00513933377233,
-       "frame_ms_median": 0.5,
+       "fps": 118.05226246248627,
+       "frame_ms_median": 0.3999999761581421,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
       "pan_zoom1": {
-       "fps": 113.05780173839248,
-       "frame_ms_median": 0.2999999523162842,
+       "fps": 112.44658787143132,
+       "frame_ms_median": 0.3999999761581421,
        "tiles_missing": 0,
        "xray": true,
        "tunnel_vehicles": 0
       },
-      "pan_fps": 113.05780173839248,
+      "pan_fps": 112.44658787143132,
       "viewport": "1600x1000 CSS px, device pixel ratio 1"
      },
      "threshold": null,
@@ -3489,7 +3582,7 @@
     },
     {
      "id": "X8a",
-     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 10.2 ms at most)",
+     "title": "turning the view on or off: frames until it is drawn (the most of 10 turns; 10.0 ms at most)",
      "passed": true,
      "value": 1,
      "threshold": "<= 1",
@@ -3500,7 +3593,7 @@
      "id": "X8b",
      "title": "panning in tunnel view, desktop (frames per second, the whole area and 1:1)",
      "passed": true,
-     "value": 113.1,
+     "value": 112.4,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -3509,7 +3602,7 @@
      "id": "X9",
      "title": "seconds",
      "passed": true,
-     "value": 103.0,
+     "value": 105.1,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -4876,7 +4969,7 @@
     },
     {
      "id": "K2v-colour-abbey",
-     "title": "Neum\u00fcnster Abbey: layer 5 pixels (the cutaway's and the other buildings', 618555) whose colour is not the tiles'",
+     "title": "Neum\u00fcnster Abbey: layer 5 pixels (the cutaway's and the other buildings', 618186) whose colour is not the tiles'",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -5014,7 +5107,7 @@
      "id": "K6v-far-on",
      "title": "far zoom: pixels the cutaways change when on",
      "passed": true,
-     "value": 829150,
+     "value": 828541,
      "threshold": ">= 1",
      "severity": "gate",
      "examples": []
@@ -5032,28 +5125,28 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.15089999997615813,
-  "first_view_warm_s": 0.09439999997615814,
+  "first_view_cold_s": 0.15739999997615814,
+  "first_view_warm_s": 0.09920000004768371,
   "pan_whole_area": {
-   "fps": 91.59886187735638,
+   "fps": 81.276489653453,
    "frame_ms_median": 0.5999999046325684,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 97.86299181088147,
-   "frame_ms_median": 0.2999999523162842,
+   "fps": 87.416953894842,
+   "frame_ms_median": 0.20000004768371582,
    "tiles_missing": 0
   },
-  "pan_fps": 91.59886187735638,
+  "pan_fps": 81.276489653453,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 93.48597710287736,
-    "frame_ms_median": 0.6999999284744263,
+    "fps": 83.45201508983111,
+    "frame_ms_median": 0.7000000476837158,
     "tiles_missing": 0
    }
   },
   "viewport": "1600x1000 CSS px, device pixel ratio 1"
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/69f5cda59fc8"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/f9df8484cb16"
 }
