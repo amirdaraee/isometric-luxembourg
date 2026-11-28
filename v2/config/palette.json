@@ -82,6 +82,7 @@
   "roof_flat":   {"rgb": [132, 138, 150], "src": "v2 phase 3 (flat roof, grey membrane or metal; owner 26 Nov 2026)"},
   "roof_flat_gravel": {"rgb": [164, 146, 118], "src": "v2 phase 3 (flat roof under gravel, as the photo shows it; owner 26 Nov 2026)"},
   "roof_flat_green": {"rgb": [124, 146, 88], "src": "v2 phase 3 (planted flat roof, as the photo shows it; owner 26 Nov 2026)"},
+  "roof_rim":    {"rgb": [192, 182, 162], "src": "v2 phase 3 (the parapet rim round a flat roof: a coping's pale stone; owner 27 Nov 2026)"},
   "facade_cream":  {"rgb": [243, 222, 170], "src": "v2 phase 3 (the houses' colours, stronger for the cartoon look; owner 26 Nov 2026)"},
   "facade_ochre":  {"rgb": [231, 188, 111], "src": "v2 phase 3 (the houses' colours, stronger for the cartoon look; owner 26 Nov 2026)"},
   "facade_pink":   {"rgb": [236, 172, 164], "src": "v2 phase 3 (the houses' colours, stronger for the cartoon look; owner 26 Nov 2026)"},

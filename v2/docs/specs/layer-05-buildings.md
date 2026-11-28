@@ -26,7 +26,18 @@ Chosen by `params.json` art.method (or `V2_ART`); each method builds into its ow
     creams (`FACADE_SHARES`) is gone.
   - A roof's covering is the one the orthophoto shows (owner, 26 Nov 2026, asked why all roofs were grey: "Real,
     from the photo"; scene.md, "Roofs"): slate in four shades, bright or brown tile, a flat roof grey, under gravel
-    or planted. A roof the photo does not read is slate by rule; a well-known building's own roof wins over the
+    or planted. A flat roof is not one plain colour (owner, 27 Nov 2026: "top of flat buildings look dull"; of
+    three samples: the rim and a surface). Its surface is drawn by what covers it: gravel flecked stone by stone
+    (one in every 0.35 m), a grey membrane in sheets with a seam every 1.5 m, a planted roof in tufts (one in every
+    0.7 m). A stone or a tuft is a round dot, lighter or darker than the roof, that covers 40% of its cell: the
+    roof's own colour stays the larger part of any patch of it, so the middle tone of even a small roof is the
+    roof's own (the shadow detector, L5.1; with whole cells toned, a planted roof of 150 pixels read 16% apart in
+    and out of the photo's shadow by the luck of its few tufts). Round every level part of it runs a pale parapet
+    rim 0.45 m wide (`buildings.roof_rim`) with a dark line inside it, where the roof's mean width is 2.5 m or more
+    (on a narrower roof the rim would be most of it). The rim is a material of its own (class trim, as a wall's
+    stone trim), and the top of a part (a dormer, a chimney) has none. The rim follows the roof's own mesh, so a
+    step between two levels has a rim on both. Nothing is invented: no roof lights, no plant.
+    A roof the photo does not read is slate by rule; a well-known building's own roof wins over the
     photo. In the test area 3 of 999 pitched roofs read are tile: the real roofs are slate. Slate is v1's, measured
     in v1's art (106, 115, 129 lit): darker and bluer than the first cartoon build's (owner: "Darker and bluer, as
     v1").

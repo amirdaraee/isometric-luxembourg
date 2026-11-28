@@ -305,3 +305,81 @@ def test_supports_mesh_draws_arches_piers_and_the_red_bridges_legs():
     M2 = G.Mesh()
     G.supports_mesh(M2, st, by_id, edge_ok=lambda e: e["id"] != 7)       # a way that is not drawn has no arches
     assert not (M2.done()["obj"] == 0).any()
+
+
+def _flat_art(name="roof_flat_gravel", size=(20.0, 10.0), step=None):
+    """Method A's roof painter on one building with a level roof `size` m at 310 m (and, with `step`, a second level
+    part beside it, `step` m higher)."""
+    from types import SimpleNamespace
+    from v2.layers.art_a import ArtA
+    w, d = size
+    V = [[0, 0, 310], [w, 0, 310], [w, d, 310], [0, d, 310]]
+    T = [[0, 1, 2], [0, 2, 3]]
+    if step:
+        V += [[w, 0, 310 + step], [w + 6, 0, 310 + step], [w + 6, d, 310 + step], [w, d, 310 + step]]
+        T += [[4, 5, 6], [4, 6, 7]]
+    A = object.__new__(ArtA)
+    A.bmesh = {"V": np.array(V, float), "T": np.array(T), "obj": np.zeros(len(T), int), "kind": np.ones(len(T), int)}
+    A._levels = {}
+    A.styles = [SimpleNamespace(roof_name=name)]
+    return A
+
+
+def test_a_flat_roof_has_a_pale_rim_round_each_level_and_a_surface_inside():
+    from v2.layers.art_a import B, FLAT_ROOF as F
+    A = _flat_art(step=3.0)
+    lines, ax, wide = A.roof_levels(0)
+    assert wide and abs(lines.length - (2 * 30 + 2 * 16)) < 1e-6         # both levels' own outlines, the step twice
+    assert abs(abs(ax[0]) - 1) < 1e-9
+    x, y = np.meshgrid(np.arange(0.05, 20, 0.1), np.arange(0.05, 10, 0.1))
+    P = np.column_stack([x.ravel(), y.ravel(), np.full(x.size, 310.0)])
+    base = np.tile(B("roof_flat_gravel"), (len(P), 1))
+    rgb = base.copy()
+    on_rim = A.flat_roofs(rgb, np.zeros(len(P), int), P, np.ones(len(P), bool))
+    d = np.minimum.reduce([P[:, 0], 20 - P[:, 0], P[:, 1], 10 - P[:, 1]])
+    rim, line, inside = d < F["rim_m"] - 0.01, (d > F["rim_m"] + 0.01) & (d < F["rim_m"] + F["line_m"] - 0.01), d > 1.0
+    assert np.allclose(rgb[rim], B("roof_rim"))
+    assert on_rim[rim].all() and not on_rim[d > F["rim_m"] + 0.01].any()    # the rim's pixels: a material of their own
+    plain = base.copy()                                                  # a part's top: the surface, no rim
+    assert not A.flat_roofs(plain, np.zeros(len(P), int), P, np.ones(len(P), bool), rim=False).any()
+    assert not np.isclose(plain, B("roof_rim")).all(1).any()
+    assert (rgb[line].sum(1) < 0.8 * base[line].sum(1)).all()
+    tone = rgb[inside].sum(1) / base[inside].sum(1)                      # gravel: flecked about the roof's own colour
+    assert abs(np.median(tone) - 1) < 0.03 and tone.std() > 0.02 and np.abs(tone - 1).max() <= F["gravel_tone"] / 2 + 1e-9
+    out = base.copy()                                                    # pixels that are not level roof are left
+    A.flat_roofs(out, np.zeros(len(P), int), P, np.zeros(len(P), bool))
+    assert (out == base).all()
+
+
+def test_a_narrow_flat_roof_has_no_rim_and_a_membrane_roof_has_seams():
+    from v2.layers.art_a import B, FLAT_ROOF as F
+    A = _flat_art(name="roof_flat", size=(12.0, 2.0))                    # 2 m wide: the rim would be most of it
+    assert not A.roof_levels(0)[2]
+    x, y = np.meshgrid(np.arange(0.05, 12, 0.1), np.arange(0.05, 2, 0.1))
+    P = np.column_stack([x.ravel(), y.ravel(), np.full(x.size, 310.0)])
+    base = np.tile(B("roof_flat"), (len(P), 1))
+    rgb = base.copy()
+    A.flat_roofs(rgb, np.zeros(len(P), int), P, np.ones(len(P), bool))
+    assert not np.isclose(rgb, B("roof_rim")).all(1).any()
+    seam = np.isclose(rgb, base * F["seam"]).all(1)
+    assert 0 < seam.mean() < 0.2 and (np.isclose(rgb, base).all(1) | seam).all()
+
+
+def test_a_flat_roofs_own_colour_is_the_larger_part_of_every_patch_of_it():
+    """Stones and tufts are dots on the roof's colour: the middle tone of a small roof, or of the part of one in a
+    shadow, is the roof's own (L5.1; with whole cells toned a planted roof of 150 pixels read 16% apart)."""
+    from v2.layers.art_a import B, FLAT_ROOF as F
+    for name, cell in (("roof_flat_gravel", F["gravel_m"]), ("roof_flat_green", F["tuft_m"])):
+        A = _flat_art(name=name, size=(12.0, 2.0))                       # narrow: the surface alone, no rim
+        x, y = np.meshgrid(np.arange(0.03, 12, 0.06), np.arange(0.03, 2, 0.06))
+        P = np.column_stack([x.ravel(), y.ravel(), np.full(x.size, 310.0)])
+        base = np.tile(B(name), (len(P), 1))
+        rgb = base.copy()
+        A.flat_roofs(rgb, np.zeros(len(P), int), P, np.ones(len(P), bool))
+        tone = (rgb.sum(1) / base.sum(1)).reshape(x.shape)
+        on = ~np.isclose(tone, 1)
+        assert abs(on.mean() - F["dot_share"]) < 0.06 and (tone < 1).any() and (tone > 1).any()
+        w = int(round(3 * cell / 0.06))                                  # every patch three cells long, 2 m wide
+        for j in range(0, x.shape[1] - w, 5):
+            patch = tone[:, j:j + w]
+            assert np.median(patch) == 1.0 and (~np.isclose(patch, 1)).mean() < 0.5
