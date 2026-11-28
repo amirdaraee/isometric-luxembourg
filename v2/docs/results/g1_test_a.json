@@ -271,7 +271,7 @@
     },
     {
      "id": "L5.1/L9.2",
-     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 210 compared)",
+     "title": "materials darker or lighter in the 3D shadow of the photo's sun (2024-06-15T11:00:00+02:00) than lit next to it by > 5% (median luminance inside surfaces; of 209 compared)",
      "passed": true,
      "value": 0,
      "threshold": "<= 0",
@@ -483,9 +483,9 @@
     },
     {
      "id": "L8.4",
-     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (4537 of 191698 vs 4260 of 187461; a seam would make it larger)",
+     "title": "depth: share of border pixels with a step on one surface, over the share across the tiles' middle lines (4539 of 191663 vs 4260 of 187370; a seam would make it larger)",
      "passed": true,
-     "value": 1.041,
+     "value": 1.042,
      "threshold": "<= 1.5",
      "severity": "gate",
      "examples": []
@@ -503,7 +503,7 @@
       "car_samples": 901179,
       "transit_samples": 30106,
       "every_s": 20,
-      "audit_s": 81.8
+      "audit_s": 75.7
      },
      "threshold": null,
      "severity": "report",
@@ -689,7 +689,7 @@
      "id": "V9",
      "title": "seconds",
      "passed": true,
-     "value": 266.8,
+     "value": 243.0,
      "threshold": null,
      "severity": "report",
      "examples": []
@@ -703,7 +703,7 @@
      "id": "L5.2-edges",
      "title": "line score, building edges (creases and outlines of the 3D model): share of 729867 seen samples (every 0.25 m, of 1672050) whose drawn line is within 1.0 px of the model's",
      "passed": true,
-     "value": 0.9636,
+     "value": 0.964,
      "threshold": ">= 0.95",
      "severity": "gate",
      "examples": [
@@ -713,39 +713,39 @@
        "z": 323.24
       },
       {
-       "e": 77485.6,
-       "n": 75214.37,
-       "z": 318.67
+       "e": 77587.73,
+       "n": 75010.49,
+       "z": 257.42
       },
       {
-       "e": 77428.02,
-       "n": 74896.29,
-       "z": 295.82
+       "e": 77428.21,
+       "n": 74896.11,
+       "z": 310.82
       },
       {
-       "e": 77410.84,
-       "n": 75274.36,
-       "z": 320.24
+       "e": 77955.63,
+       "n": 74587.79,
+       "z": 295.6
       },
       {
-       "e": 77206.62,
-       "n": 75490.26,
-       "z": 317.33
+       "e": 77500.25,
+       "n": 74788.6,
+       "z": 311.08
       },
       {
-       "e": 77607.06,
-       "n": 74975.26,
-       "z": 258.6
+       "e": 77686.23,
+       "n": 75432.14,
+       "z": 246.64
       },
       {
-       "e": 77360.96,
-       "n": 75687.8,
-       "z": 247.89
+       "e": 77198.97,
+       "n": 75401.25,
+       "z": 317.69
       },
       {
-       "e": 77528.47,
-       "n": 75052.91,
-       "z": 288.56
+       "e": 77446.96,
+       "n": 75093.48,
+       "z": 316.19
       }
      ]
     },
@@ -931,7 +931,7 @@
       "model": "google/owlv2-base-patch16-ensemble",
       "device": "mps",
       "images": 947,
-      "seconds": 338.6,
+      "seconds": 310.8,
       "queries": [
        "a car",
        "a parked car",
@@ -1222,24 +1222,24 @@
      "title": "speed (desktop, this machine's GPU)",
      "passed": true,
      "value": {
-      "first_view_cold_s": 0.15739999997615814,
-      "first_view_warm_s": 0.09920000004768371,
+      "first_view_cold_s": 0.15229999995231627,
+      "first_view_warm_s": 0.103,
       "pan_whole_area": {
-       "fps": 81.276489653453,
-       "frame_ms_median": 0.5999999046325684,
+       "fps": 91.50978680962473,
+       "frame_ms_median": 0.6000000238418579,
        "tiles_missing": 0
       },
       "pan_zoom1": {
-       "fps": 87.416953894842,
-       "frame_ms_median": 0.20000004768371582,
+       "fps": 98.00987580544502,
+       "frame_ms_median": 0.3999999761581421,
        "tiles_missing": 0
       },
-      "pan_fps": 81.276489653453,
+      "pan_fps": 91.50978680962473,
       "throttled": {
        "cpu_slowdown": 4,
        "pan_zoom1": {
-        "fps": 83.45201508983111,
-        "frame_ms_median": 0.7000000476837158,
+        "fps": 93.68910208587789,
+        "frame_ms_median": 0.7999999523162842,
         "tiles_missing": 0
        }
       },
@@ -1253,7 +1253,7 @@
      "id": "C2a",
      "title": "first view, warm (s)",
      "passed": true,
-     "value": 0.099,
+     "value": 0.103,
      "threshold": "<= 0.5",
      "severity": "gate",
      "examples": []
@@ -1262,7 +1262,7 @@
      "id": "C2b",
      "title": "panning, desktop (frames per second, all layers on, vehicles moving)",
      "passed": true,
-     "value": 81.3,
+     "value": 91.5,
      "threshold": ">= 60",
      "severity": "gate",
      "examples": []
@@ -1274,8 +1274,8 @@
      "value": {
       "cpu_slowdown": 4,
       "pan_zoom1": {
-       "fps": 83.45201508983111,
-       "frame_ms_median": 0.7000000476837158,
+       "fps": 93.68910208587789,
+       "frame_ms_median": 0.7999999523162842,
        "tiles_missing": 0
       }
      },
@@ -1306,9 +1306,9 @@
      "title": "the same view: requests made, tiles loaded, seconds to the first whole view (this machine)",
      "passed": true,
      "value": {
-      "requests": 2018,
+      "requests": 2019,
       "tiles": 643,
-      "first_view_s": 8.737299999952317
+      "first_view_s": 8.778800000071525
      },
      "threshold": null,
      "severity": "report",
@@ -3078,24 +3078,24 @@
   }
  },
  "speed": {
-  "first_view_cold_s": 0.15739999997615814,
-  "first_view_warm_s": 0.09920000004768371,
+  "first_view_cold_s": 0.15229999995231627,
+  "first_view_warm_s": 0.103,
   "pan_whole_area": {
-   "fps": 81.276489653453,
-   "frame_ms_median": 0.5999999046325684,
+   "fps": 91.50978680962473,
+   "frame_ms_median": 0.6000000238418579,
    "tiles_missing": 0
   },
   "pan_zoom1": {
-   "fps": 87.416953894842,
-   "frame_ms_median": 0.20000004768371582,
+   "fps": 98.00987580544502,
+   "frame_ms_median": 0.3999999761581421,
    "tiles_missing": 0
   },
-  "pan_fps": 81.276489653453,
+  "pan_fps": 91.50978680962473,
   "throttled": {
    "cpu_slowdown": 4,
    "pan_zoom1": {
-    "fps": 83.45201508983111,
-    "frame_ms_median": 0.7000000476837158,
+    "fps": 93.68910208587789,
+    "frame_ms_median": 0.7999999523162842,
     "tiles_missing": 0
    }
   },
@@ -3229,5 +3229,5 @@
    }
   }
  },
- "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/f9df8484cb16"
+ "release": "/Users/amirdaraee/00/projects/isometric-luxembourg/data/v2/test/release/f5b6ce4662b8"
 }

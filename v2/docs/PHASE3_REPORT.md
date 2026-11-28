@@ -4029,3 +4029,83 @@ requests refused; C6 0 faults. 213 Python tests pass (6 new).
 ### 43.5 Open questions
 
 44, 46, 65, 66, 67 and 69 stand. No new question.
+
+## 44. Flat roofs: a rim and a surface (28 November, $0)
+
+The owner's note 5 of section 42: "top of flat buildings look dull". A flat roof was one plain colour with paper
+grain.
+
+### 44.1 Samples and the owner's choice
+
+One view at the note was drawn three ways with trial code and shown on one page.
+
+| Sample | What it draws | Chosen |
+|---|---|---|
+| A: rim only | a pale parapet rim round each roof | |
+| B: rim and surface | the rim, and a surface by what covers the roof | yes |
+| C: B with roof furniture | B, and invented roof lights and plant | |
+
+C would have invented things no source gives; B draws only what the data holds.
+
+### 44.2 What was built
+
+- **The surface, by what covers the roof** (the covering read from the orthophoto, section 36): gravel is flecked
+  stone by stone, a grey membrane lies in sheets with a seam every 1.5 m, a planted roof has tufts.
+- **The rim.** Round every level part of a flat roof runs a pale parapet rim 0.45 m wide with a dark line inside
+  it. The rim follows the roof's own mesh, so a step between two levels has a rim on both. A roof whose mean width
+  is under 2.5 m has none (the rim would be most of it), and neither has the top of a dormer or a chimney.
+- **Nothing invented**: no roof lights, no plant, no lift houses.
+- Code: `art_a.flat_roofs`, `art_a.roof_levels`, `art_a.dots`; colour `buildings.roof_rim`; rule in
+  `specs/layer-05-buildings.md`.
+
+![Note 5: flat roofs, before and after, at 13:00](img/test_a_notes_flat_roofs.jpg)
+
+### 44.3 Two failed builds and what they changed
+
+The shadow detector (L5.1/L9.2) compares each material in the photo's shadow with the same material lit beside
+it, by the middle tone of its pixels. The first full build failed it on one material of 210, the roof of
+building 145: 17.65% apart (limit 5%).
+
+1. **A wrong guess.** The pale rim was taken for the cause (two colours in one material), so the rim became a
+   material of its own, class trim, as a wall's stone trim is. That is right in itself and is kept. The second
+   build failed with the same number: the guess was not checked on the failing roof before 70 minutes were spent.
+2. **The cause.** Building 145 is a planted roof of some 260 pixels inside its edges, 109 of them in shadow. Its
+   tufts were whole cells of 0.7 m, each lighter or darker by up to 15%. So few pixels hold only a handful of
+   tufts, and the middle tone of a handful is luck.
+3. **The fix.** A stone or a tuft is now a round dot covering 40% of its cell, on the roof's own colour. The
+   roof's own colour is the larger part of every patch, so it is the middle tone of any patch, however small. On
+   the failing roof the two middle tones are now equal. Before the third build the detector was run on the
+   buildings layer of all 78 sampled tiles with the new code: 174 materials compared, the worst 1.6% apart.
+
+Gravel had passed with whole cells (its cells are a quarter of a tuft's), but by the same reasoning a small gravel
+roof could fail in the whole city, so gravel is dots too.
+
+### 44.4 Results
+
+The third build: all 62 stages pass; 305 gate entries pass, none fails (no new gate); gates G1 and G3 pass. New
+release `f5b6ce4662b8`.
+
+| Flat roofs in the test area | Buildings | With a rim |
+|---|---|---|
+| Grey membrane | 82 | 64 |
+| Gravel | 25 | 23 |
+| Planted | 5 | 3 |
+| All | 112 | 90 |
+
+L5.1/L9.2: 0 of 209 materials over the limit; the worst on the buildings layer is 1.64% apart (limit 5%).
+
+Speed: C2a first view 0.10 s (limit 0.5); C2b panning 91.5 fps (limit 60); X8b 112.0 fps (limit 60); C5 0
+requests refused; C6 0 faults. 216 Python tests pass (3 new).
+
+### 44.5 Not done
+
+- The covering is still the photo's reading (section 36): a roof the photo does not read as gravel or planted is a
+  grey membrane.
+- A level part of a pitched roof (the flat top of a mansard) is not a flat roof: it has no rim and no surface.
+- The parapet is drawn, not built: it has no height and casts no shadow.
+- Notes 1 and 2 (paths and a building on cliffs) are not built. A trial is on a sample page for the owner
+  (section 45 will record the choice).
+
+### 44.6 Open questions
+
+44, 46, 65, 66, 67 and 69 stand. No new question.

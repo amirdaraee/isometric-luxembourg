@@ -1159,12 +1159,16 @@ class Renderer:
             sc_[wall] = wc
             pcls[on_b] = sc_
             roof = kind == 1
-            sub[roof] = A.roofs_rgb(bi[roof], P_[roof], n_[roof], x_[roof], y_[roof])
+            rc = pcls[on_b][roof]
+            sub[roof] = A.roofs_rgb(bi[roof], P_[roof], n_[roof], x_[roof], y_[roof], cls_out=rc)
+            sc_ = pcls[on_b]
+            sc_[roof] = rc
+            pcls[on_b] = sc_
             part = kind == 3
             if part.any():
                 vert = np.abs(n_[part][:, 2]) < 0.3
                 pw = np.array([A.styles[x].wall for x in bi[part]]).reshape(-1, 3)
-                pr = A.roofs_rgb(bi[part], P_[part], n_[part], x_[part], y_[part])
+                pr = A.roofs_rgb(bi[part], P_[part], n_[part], x_[part], y_[part], rim=False)
                 sub[part] = np.where(vert[:, None], pw, pr)
                 # a dormer's or chimney's sloped faces are roof (the building's roof material), its sides are part
                 sc_ = pcls[on_b]

@@ -9,7 +9,8 @@ computed per pixel from the pixel's world position on its surface (from the dept
               keystone and sill round every window, a surround and a lintel round every door (phase 3)
   roofs       the covering the orthophoto shows (scene/roofs.py: slate in four shades, tile, a flat roof grey,
               under gravel or planted), in the building's own tone: a light stroke down the slope every 0.9 m (v1's
-              roof lines) and faint courses parallel to the eave; flat roofs plain
+              roof lines) and faint courses parallel to the eave; a flat roof its surface (gravel flecks, a membrane's
+              sheets, a planted roof's tufts) inside a pale parapet rim
   fills       clean, as a cartoon's: no paper grain, no mottle, no stone-to-stone or slate-to-slate tone (GRAIN)
   openings    windows with a white frame, glazing bars (a cross, or six panes) and a sill line, each window's glass
               its own tone; shutters on some buildings; doors with a frame, panels and a fanlight; garage doors with
@@ -40,6 +41,7 @@ from __future__ import annotations
 import math
 
 import numpy as np
+import shapely
 from shapely import contains_xy
 from shapely.geometry import Polygon
 
@@ -61,6 +63,24 @@ ROOFS = [("roof_tile_old", "tile", 0.0), ("roof_tile", "tile", 0.0), ("roof_tile
 # clean fills (v1's cartoon look): the share kept of every grain, mottle and stone-to-stone or slate-to-slate tone
 GRAIN = 0.0
 GRAVEL_M, GRAVEL_TONE = 0.35, 0.22       # a viaduct's gravel bed: the size of a fleck (m) and how far its tone goes
+# flat roofs: the parapet rim round a level roof (m) and the dark line inside it (m; times the roof's colour), on a roof
+# whose mean width is rim_min_m or more; a gravel roof's flecks, a planted roof's tufts (size in m; how far the tone
+# goes), a membrane roof's sheets (m) and the seam between two (m; times the roof's colour)
+FLAT_ROOF = {"rim_m": 0.45, "line_m": 0.14, "line": 0.72, "rim_min_m": 2.5, "gravel_m": 0.35, "gravel_tone": 0.2,
+             "tuft_m": 0.7, "tuft_tone": 0.3, "dot_share": 0.4, "sheet_m": 1.5, "seam_m": 0.1, "seam": 0.9}
+
+
+def dots(u, v, size, *seed):
+    """(inside, tone): one round dot in every cell of `size` metres, at a place of its own in the cell, covering
+    FLAT_ROOF["dot_share"] of it; `tone` is the cell's 0..1. The surface's own colour is the larger part of every
+    cell, so it is the middle tone of any patch of the surface, however few cells the patch holds (L5.1)."""
+    cu, cv = u / size, v / size
+    iu, iv = np.floor(cu), np.floor(cv)
+    r = math.sqrt(FLAT_ROOF["dot_share"] / math.pi)
+    room = 1 - 2 * r
+    ou = 0.5 + (ihash(iu, iv, 3, *seed) - 0.5) * room
+    ov = 0.5 + (ihash(iu, iv, 5, *seed) - 0.5) * room
+    return np.hypot(cu - iu - ou, cv - iv - ov) < r, ihash(iu, iv, *seed)
 # v1's roof lines: a light stroke down the slope every `every` m along the eave, `width` m wide, `gain` times the slate;
 # and the courses parallel to the eave, darker by `course`
 ROOF_STROKE = {"every": 0.9, "width": 0.14, "gain": 1.22, "course": 0.14}
@@ -202,6 +222,8 @@ class ArtA:
                         for wi, w in enumerate(walls) if w.get("merged")}
         self.w_door = [np.array([r[:4] for r in w["doors"]], float).reshape(-1, 4) for w in walls]
         self.tri_wall = self._wall_of_tris(bmesh)
+        self.bmesh = bmesh
+        self._levels = {}
         # parts of a well-known building in sheet metal (landmark_styles.json, clad): per building index
         self.clad_parts = {bi: [(float(c["centre"][0]), float(c["centre"][1]), float(c["radius"]), float(c["above"]),
                                  B(c["colour"])) for c in known[b["id"]]["clad"]]
@@ -503,7 +525,9 @@ class ArtA:
                 m |= q
         return m, rgb[m] * gp(px[m], py[m], 0.03 * GRAIN, 17)[:, None]
 
-    def roofs_rgb(self, bi, P, nrm, px, py):
+    def roofs_rgb(self, bi, P, nrm, px, py, cls_out=None, rim=True):
+        """Roof pixels' albedo. `cls_out` (the pixels' classes, changed in place): a flat roof's rim is a material
+        of its own (class trim), as a wall's stone trim is. `rim` False: no rim (a part's top is not the roof's)."""
         n = len(bi)
         rgb = np.zeros((n, 3))
         if not n:
@@ -558,7 +582,74 @@ class ArtA:
                     rgb[mm] = t
         flat = ~slope_ok
         rgb[flat] = base[flat] * gp(px[flat], py[flat], 0.09 * GRAIN, 13)[:, None] if flat.any() else rgb[flat]   # gravel
+        on_rim = self.flat_roofs(rgb, bi, P, (h < 0.09) & (kind == 0), rim=rim)
+        if cls_out is not None:
+            cls_out[on_rim] = CLASS["trim"]
         return rgb
+
+    def roof_levels(self, b):
+        """The level parts of a building's roof, from its mesh: the lines round each of them (the edges only one
+        level roof triangle has; a step between two levels is an edge of both), the direction of the longest (the
+        roof's own axis), and whether the roof is wide enough for a rim (twice its area over the length of its
+        lines, its mean width, is FLAT_ROOF["rim_min_m"] or more). None if the roof has no level part."""
+        if b not in self._levels:
+            M = self.bmesh
+            tri = M["V"][M["T"][(M["obj"] == b) & (M["kind"] == 1)]]
+            c = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]) if len(tri) else np.zeros((0, 3))
+            tri = tri[np.abs(c[:, 2]) > 0.996 * np.maximum(np.linalg.norm(c, axis=1), 1e-9)] if len(tri) else tri
+            out = None
+            if len(tri):
+                q = np.round(tri, 2)
+                ends = np.concatenate([np.stack([q[:, k], q[:, (k + 1) % 3]], axis=1) for k in range(3)])   # (E, 2, 3)
+                diff = ends[:, 0] - ends[:, 1]                       # each edge with its lesser end first
+                swap = diff[np.arange(len(diff)), (diff != 0).argmax(1)] > 0
+                ends[swap] = ends[swap][:, ::-1]
+                uniq, n = np.unique(ends.reshape(len(ends), 6), axis=0, return_counts=True)
+                seg = uniq[n == 1].reshape(-1, 2, 3)[:, :, :2]
+                ln = np.linalg.norm(seg[:, 1] - seg[:, 0], axis=1)
+                seg, ln = seg[ln > 1e-6], ln[ln > 1e-6]
+                if len(seg):
+                    ax = (seg[ln.argmax(), 1] - seg[ln.argmax(), 0]) / ln.max()
+                    e1, e2 = tri[:, 1, :2] - tri[:, 0, :2], tri[:, 2, :2] - tri[:, 0, :2]
+                    area = 0.5 * np.abs(e1[:, 0] * e2[:, 1] - e1[:, 1] * e2[:, 0]).sum()
+                    out = (shapely.MultiLineString(seg.tolist()), ax,
+                           2 * area / ln.sum() >= FLAT_ROOF["rim_min_m"])
+            self._levels[b] = out
+        return self._levels[b]
+
+    def flat_roofs(self, rgb, bi, P, level, rim=True):
+        """A flat roof (the owner, 27 Nov 2026: "top of flat buildings look dull"; of three samples: the rim and a
+        surface), in place. Its surface by what covers it (scene/roofs.py): gravel flecked stone by stone, a grey
+        membrane in sheets with a seam between them, a planted roof in tufts (stones and tufts: `dots`). Round every level part of it a pale
+        parapet rim and a dark line inside the rim, where the roof is wide enough to hold them. Returns the rim's
+        pixels: pale stone on a roof is another material than the roof (the shadow detector, L5.1, compares a
+        material in the photo's shadow with the same material beside it)."""
+        F = FLAT_ROOF
+        on_rim = np.zeros(len(bi), bool)
+        for b in np.unique(bi[level]):
+            lv = self.roof_levels(int(b))
+            if lv is None:
+                continue
+            lines, ax, wide = lv
+            k = np.flatnonzero(level & (bi == b))
+            u, v = P[k, :2] @ ax, P[k, :2] @ np.array([-ax[1], ax[0]])
+            name = self.styles[b].roof_name
+            c = rgb[k]
+            if name == "roof_flat_gravel":
+                on, tone = dots(u, v, F["gravel_m"])
+                c[on] *= (1 + (tone[on] - 0.5) * F["gravel_tone"])[:, None]
+            elif name == "roof_flat_green":
+                on, tone = dots(u, v, F["tuft_m"], b)
+                c[on] *= (1 + (tone[on] - 0.5) * F["tuft_tone"])[:, None]
+            else:
+                c[band(v, F["sheet_m"], F["seam_m"])] *= F["seam"]
+            if wide and rim:
+                d = shapely.distance(shapely.points(P[k, :2]), lines)
+                c[d < F["rim_m"]] = B("roof_rim")
+                c[(d >= F["rim_m"]) & (d < F["rim_m"] + F["line_m"])] *= F["line"]
+                on_rim[k[d < F["rim_m"]]] = True
+            rgb[k] = np.minimum(c, 255.0)
+        return on_rim
 
     def openings_rgb(self, O, ti, P, bi):
         """Opening pixels from their local (s, t) across and up the rectangle (metres): (albedo, class). Each part is
